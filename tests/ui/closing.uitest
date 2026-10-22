@@ -1,4 +1,4 @@
-# A page closes; without one the pen writes nowhere and the hint starts a new page.
+# A page closes; without one the pen writes nowhere and the hint starts a new page in the Inbox.
 size 1280 800
 expect-text pageTitle First page
 click-item closePage
@@ -15,5 +15,5 @@ expect-prop noPage visible true
 click-item noPageNewPage
 type Fresh start
 key Return
-expect-file Fresh start.svg
+expect-file Inbox/Fresh start.svg
 expect-text pageTitle Fresh start

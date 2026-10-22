@@ -19,6 +19,8 @@ Rectangle {
     signal printRequested()
     signal settingsRequested()
     signal aboutRequested()
+    signal newPageRequested()
+    signal newNotebookRequested()
 
     implicitHeight: Theme.ribbonHeight
     color: Theme.ribbon
@@ -193,23 +195,15 @@ Rectangle {
                 objectName: "fileNewPage"
                 iconName: "page-add"
                 text: qsTr("New page")
-                tip: {
-                    // displayName() and currentFolder() follow these.
-                    AppController.libraryPath
-                    AppController.currentPage
-                    return qsTr("New page in %1 (Ctrl+N)").arg(AppController.displayName(AppController.currentFolder()))
-                }
-                onClicked: AppController.newPage(AppController.currentFolder())
+                tip: qsTr("New page: choose its name and notebook (Ctrl+N)")
+                onClicked: ribbon.newPageRequested()
             }
             RibbonButton {
                 objectName: "fileNewNotebook"
                 iconName: "plus"
                 text: qsTr("New notebook")
-                tip: {
-                    AppController.libraryPath // displayName() follows it.
-                    return qsTr("New notebook in %1").arg(AppController.displayName(AppController.treeFocus))
-                }
-                onClicked: AppController.newNotebook(AppController.treeFocus)
+                tip: qsTr("New notebook: choose its name and where it is saved")
+                onClicked: ribbon.newNotebookRequested()
             }
             RibbonButton {
                 objectName: "fileClosePage"

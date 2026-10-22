@@ -10,16 +10,13 @@ click-item row_Uni/3. Semester/Statik
 click-item row_Uni/3. Semester/Statik/VO
 click-item row_Uni/3. Semester/Statik/VO/Slides.PDF
 expect-text pageTitle Slides.PDF
-# Notebooks show notes pages only at first; the plain SVG logo makes no notebook.
-click-item viewNotebooks
-expect-prop notebookList count 2
+# The filter hides kinds of files in Folders.
 click-item treeFilter
 click-item filterPdfs
-expect-prop notebookList count 5
+expect-prop notebookList count 8
 click-item treeFilter
 click-item filterPdfs
-expect-prop notebookList count 2
-click-item viewFolders
+expect-prop notebookList count 9
 right-click-item row_Uni/3. Semester
 click-item menuFocus
 expect-prop notebookTree focused true

@@ -171,7 +171,7 @@ ApplicationWindow {
     }
     Shortcut { sequences: [StandardKey.ZoomOut]; onActivated: canvas.zoomBy(0.8) }
     Shortcut { sequence: "F11"; onActivated: window.toggleFullScreen() }
-    Shortcut { sequence: "Ctrl+N"; onActivated: AppController.newPage(AppController.currentFolder()) }
+    Shortcut { sequence: "Ctrl+N"; onActivated: newPageDialog.show("") }
     Shortcut { sequence: "Ctrl+\\"; onActivated: window.sidebarVisible = !window.sidebarVisible }
     Shortcut { sequences: [StandardKey.Open]; onActivated: openFileDialog.open() }
     Shortcut {
@@ -211,6 +211,8 @@ ApplicationWindow {
             pageTitle: window.pageTitle
             visible: window.visibility !== Window.FullScreen
             onAboutRequested: aboutDialog.open()
+            onNewPageRequested: newPageDialog.show("")
+            onNewNotebookRequested: newNotebookDialog.show(AppController.treeFocus)
             onSettingsRequested: settingsDialog.open()
             onExportRequested: exportDialog.open()
             onOpenFolderRequested: folderDialog.open()
@@ -233,6 +235,8 @@ ApplicationWindow {
             onPrintRequested: AppController.print()
             onSettingsRequested: settingsDialog.open()
             onAboutRequested: aboutDialog.open()
+            onNewPageRequested: newPageDialog.show("")
+            onNewNotebookRequested: newNotebookDialog.show(AppController.treeFocus)
         }
 
         RowLayout {
@@ -275,104 +279,114 @@ ApplicationWindow {
                     deleteDialog.open()
                 }
                 onOpenFolderRequested: folderDialog.open()
+                onNewPageRequested: (folder) => newPageDialog.show(folder)
+                onNewNotebookRequested: (location) => newNotebookDialog.show(location)
+                onMakeNotebookRequested: (folder) => newNotebookDialog.showForFolder(folder)
             }
 
-            Item {
+            ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                clip: true
+                spacing: 0
 
-                InkCanvas {
-                    id: canvas
-                    objectName: "canvas"
-                    anchors.fill: parent
-                    deskColor: Theme.desk
-                    enabled: AppController.currentPage.length > 0
-                }
-                // Plain desk instead of an empty page that can't be written on.
-                Rectangle {
-                    anchors.fill: parent
-                    color: Theme.desk
-                    visible: !canvas.enabled
+                LocationBar {
+                    objectName: "locationBar"
+                    Layout.fillWidth: true
+                    visible: AppController.currentPage.length > 0
                 }
 
-                ColumnLayout {
-                    objectName: "noPage"
-                    anchors.centerIn: parent
-                    width: Math.min(360, parent.width - 40)
-                    visible: !canvas.enabled
-                    spacing: 12
-                    Label {
-                        Layout.fillWidth: true
-                        horizontalAlignment: Text.AlignHCenter
-                        wrapMode: Text.WordWrap
-                        text: qsTr("No page open")
-                        color: Theme.text
-                        font.pixelSize: 18
-                        font.weight: Font.DemiBold
-                    }
-                    Label {
-                        Layout.fillWidth: true
-                        horizontalAlignment: Text.AlignHCenter
-                        wrapMode: Text.WordWrap
-                        text: qsTr("Pick a page in the notebook list, or start a new one.")
-                        color: Theme.textMuted
-                        font.pixelSize: 13
-                    }
-                    RibbonButton {
-                        objectName: "noPageNewPage"
-                        Layout.alignment: Qt.AlignHCenter
-                        iconName: "page-add"
-                        text: {
-                            // displayName() and currentFolder() follow these.
-                            AppController.libraryPath
-                            AppController.currentPage
-                            return qsTr("New page in %1").arg(AppController.displayName(AppController.currentFolder()))
-                        }
-                        onClicked: AppController.newPage(AppController.currentFolder())
-                    }
-                }
-
-                TextLayer {
-                    id: textLayer
-                    objectName: "textLayer"
-                    anchors.fill: canvas
-                    canvas: canvas
-                    onNoticeRequested: (message) => toast.show(message, true)
-                }
-
-                MathLayer {
-                    id: mathLayer
-                    objectName: "mathLayer"
-                    anchors.fill: canvas
-                    canvas: canvas
-                    onNoticeRequested: (message) => toast.show(message, true)
-                }
-
-                PenBar {
-                    id: penBar
-                    objectName: "penBar"
-                    canvas: canvas
-                    onRight: window.penBarRight
-                    onScreenshotRequested: window.takeScreenshot()
-                    onPictureRequested: imageFileDialog.open()
-                    visible: window.penBarVisible && canvas.enabled
-                    x: window.penBarRight ? parent.width - width - 10 : 10
-                    anchors.verticalCenter: parent.verticalCenter
-                    height: Math.min(implicitHeight, parent.height - 20)
+                Item {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
                     clip: true
-                }
 
-                SelectionBar {
-                    objectName: "selectionBar"
-                    canvas: canvas
-                }
+                    InkCanvas {
+                        id: canvas
+                        objectName: "canvas"
+                        anchors.fill: parent
+                        deskColor: Theme.desk
+                        enabled: AppController.currentPage.length > 0
+                    }
+                    // Plain desk instead of an empty page that can't be written on.
+                    Rectangle {
+                        anchors.fill: parent
+                        color: Theme.desk
+                        visible: !canvas.enabled
+                    }
 
-                Toast {
-                    id: toast
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.bottom: parent.bottom
-                    anchors.bottomMargin: 24
+                    ColumnLayout {
+                        objectName: "noPage"
+                        anchors.centerIn: parent
+                        width: Math.min(360, parent.width - 40)
+                        visible: !canvas.enabled
+                        spacing: 12
+                        Label {
+                            Layout.fillWidth: true
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.WordWrap
+                            text: qsTr("No page open")
+                            color: Theme.text
+                            font.pixelSize: 18
+                            font.weight: Font.DemiBold
+                        }
+                        Label {
+                            Layout.fillWidth: true
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.WordWrap
+                            text: qsTr("Pick a page in the notebook list, or start a new one.")
+                            color: Theme.textMuted
+                            font.pixelSize: 13
+                        }
+                        RibbonButton {
+                            objectName: "noPageNewPage"
+                            Layout.alignment: Qt.AlignHCenter
+                            iconName: "page-add"
+                            text: qsTr("New page…")
+                            onClicked: newPageDialog.show("")
+                        }
+                    }
+
+                    TextLayer {
+                        id: textLayer
+                        objectName: "textLayer"
+                        anchors.fill: canvas
+                        canvas: canvas
+                        onNoticeRequested: (message) => toast.show(message, true)
+                    }
+
+                    MathLayer {
+                        id: mathLayer
+                        objectName: "mathLayer"
+                        anchors.fill: canvas
+                        canvas: canvas
+                        onNoticeRequested: (message) => toast.show(message, true)
+                    }
+
+                    PenBar {
+                        id: penBar
+                        objectName: "penBar"
+                        canvas: canvas
+                        onRight: window.penBarRight
+                        onScreenshotRequested: window.takeScreenshot()
+                        onPictureRequested: imageFileDialog.open()
+                        visible: window.penBarVisible && canvas.enabled
+                        x: window.penBarRight ? parent.width - width - 10 : 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        height: Math.min(implicitHeight, parent.height - 20)
+                        clip: true
+                    }
+
+                    SelectionBar {
+                        objectName: "selectionBar"
+                        canvas: canvas
+                    }
+
+                    Toast {
+                        id: toast
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.bottom: parent.bottom
+                        anchors.bottomMargin: 24
+                    }
                 }
             }
         }
@@ -516,11 +530,14 @@ ApplicationWindow {
         }
     }
 
+    NewPageDialog { id: newPageDialog }
+    NewNotebookDialog { id: newNotebookDialog }
+
     AppDialog {
         id: aboutDialog
         objectName: "aboutDialog"
         title: qsTr("About Ductus")
-        message: qsTr("Handwritten notebooks for Linux and Windows.\nDevelopment preview · GPL-3.0-or-later\n\nLibrary: %1").arg(AppController.libraryPath)
+        message: qsTr("Handwritten notebooks for Linux, Windows and Android.\nDevelopment preview · GPL-3.0-or-later\n\nLibrary: %1").arg(AppController.libraryPath)
         acceptText: qsTr("Close")
         rejectText: ""
     }

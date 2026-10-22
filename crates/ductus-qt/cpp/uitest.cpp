@@ -230,8 +230,15 @@ public:
         } else if (cmd == u"expect-text") {
             const QString name = args.value(0);
             const QString text = rest.section(QLatin1Char(' '), 1);
-            QQuickItem *item = findItem(m_window->contentItem(), name);
-            const QString actual = item ? item->property("text").toString() : QString();
+            // Lists create their rows a frame or two later.
+            QString actual;
+            for (int i = 0; i < 20; ++i) {
+                QQuickItem *item = findItem(m_window->contentItem(), name);
+                actual = item ? item->property("text").toString() : QString();
+                if (item && actual.contains(text))
+                    break;
+                QTest::qWait(100);
+            }
             if (!actual.contains(text))
                 return fail(QStringLiteral("%1 shows \"%2\", expected \"%3\"").arg(name, actual, text));
         } else if (cmd == u"touch") {

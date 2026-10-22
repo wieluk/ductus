@@ -14,8 +14,12 @@ const SETTLE: Duration = Duration::from_secs(2);
 /// The old name stays so existing favorites survive.
 const FAVORITES_FILE: &str = "quick-access.json";
 const NOTEBOOK_ORDER_FILE: &str = "notebook-order.json";
+const RECENT_FILE: &str = "recent.json";
+const RECENT_LIMIT: usize = 8;
+/// Present once the folders that were notebooks before marking existed are marked.
+const NOTEBOOKS_MARKED: &str = "notebooks-marked";
 /// Lists of paths that follow renames and deletes.
-const PATH_LISTS: [&str; 2] = [FAVORITES_FILE, NOTEBOOK_ORDER_FILE];
+const PATH_LISTS: [&str; 3] = [FAVORITES_FILE, NOTEBOOK_ORDER_FILE, RECENT_FILE];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Filter {
@@ -138,32 +142,46 @@ impl Library {
                 .any(|n| n.kind == NodeKind::Folder && self.holds_files(&n.path, filter))
     }
 
-    pub fn notebook_folders(&self, under: &str, filter: Filter) -> Vec<String> {
-        fn walk(lib: &Library, folder: &str, filter: Filter, out: &mut Vec<String>) {
+    /// Before notebooks were marked, every folder with pages was one: the topmost of those
+    /// become notebooks once, and folders inside them their sections.
+    pub(crate) fn mark_existing_notebooks(&self) -> Result<(), Error> {
+        fn walk(lib: &Library, folder: &str, out: &mut Vec<String>) {
             if depth(folder) > MAX_DEPTH {
                 return;
             }
             let Ok(nodes) = lib.list(folder) else {
                 return;
             };
-            if nodes
-                .iter()
-                .any(|n| n.kind != NodeKind::Folder && filter.shows(n.kind))
-            {
+            if !folder.is_empty() && nodes.iter().any(|n| n.kind == NodeKind::Page) {
                 out.push(folder.to_owned());
+                return;
             }
             for n in nodes.iter().filter(|n| n.kind == NodeKind::Folder) {
-                walk(lib, &n.path, filter, out);
+                walk(lib, &n.path, out);
             }
         }
-        let mut out = Vec::new();
-        walk(self, under, filter, &mut out);
-        out
+        let marker = self.data_dir().join(NOTEBOOKS_MARKED);
+        if marker.exists() {
+            return Ok(());
+        }
+        let mut found = Vec::new();
+        walk(self, "", &mut found);
+        for folder in found {
+            if self.notebook_name(&folder).is_none() {
+                self.set_notebook(&folder, Some(""))?;
+            }
+        }
+        write_atomic(&marker, b"")
     }
 
     /// Notebooks in the user's order; ones not sorted yet follow in folder order.
-    pub fn notebooks(&self, under: &str, filter: Filter) -> Vec<String> {
-        let mut found = self.notebook_folders(under, filter);
+    pub fn notebooks(&self, under: &str) -> Vec<String> {
+        let mut found: Vec<String> = self
+            .marked_notebooks()
+            .into_iter()
+            .filter(|p| under.is_empty() || p == under || p.starts_with(&format!("{under}/")))
+            .filter(|p| self.abs(p).is_dir())
+            .collect();
         let order = self.stored_paths(NOTEBOOK_ORDER_FILE);
         let rank = |p: &String| order.iter().position(|o| o == p).unwrap_or(usize::MAX);
         found.sort_by_key(rank);
@@ -171,14 +189,8 @@ impl Library {
     }
 
     /// Swaps a notebook with its neighbour among those shown; folders on disk stay as they are.
-    pub fn move_notebook(
-        &self,
-        rel: &str,
-        delta: i32,
-        under: &str,
-        filter: Filter,
-    ) -> Result<(), Error> {
-        let shown = self.notebooks(under, filter);
+    pub fn move_notebook(&self, rel: &str, delta: i32, under: &str) -> Result<(), Error> {
+        let shown = self.notebooks(under);
         let Some(index) = shown.iter().position(|p| p == rel) else {
             return Ok(());
         };
@@ -188,13 +200,7 @@ impl Library {
         else {
             return Ok(());
         };
-        let everything = Filter {
-            pages: true,
-            pdfs: true,
-            other_files: true,
-            hide_empty_folders: false,
-        };
-        let mut all = self.notebooks("", everything);
+        let mut all = self.notebooks("");
         let a = all.iter().position(|p| p == rel);
         let b = all.iter().position(|p| p == other);
         if let (Some(a), Some(b)) = (a, b) {
@@ -204,13 +210,38 @@ impl Library {
         Ok(())
     }
 
-    /// A folder with notes or PDFs of its own.
     pub fn is_notebook(&self, folder: &str) -> bool {
-        self.list(folder).is_ok_and(|nodes| {
-            nodes
-                .iter()
-                .any(|n| matches!(n.kind, NodeKind::Page | NodeKind::Pdf))
-        })
+        self.notebook_name(folder).is_some()
+    }
+
+    /// The notebook a page or folder belongs to: itself or its nearest notebook folder.
+    pub fn notebook_of(&self, rel: &str) -> Option<String> {
+        let mut folder = rel;
+        loop {
+            if !folder.is_empty() && self.abs(folder).is_dir() && self.is_notebook(folder) {
+                return Some(folder.to_owned());
+            }
+            folder = folder.rsplit_once('/').map_or("", |(parent, _)| parent);
+            if folder.is_empty() {
+                return None;
+            }
+        }
+    }
+
+    /// The pages opened last, newest first.
+    pub fn recent(&self) -> Vec<String> {
+        self.stored_paths(RECENT_FILE)
+            .into_iter()
+            .filter(|p| self.exists(p))
+            .collect()
+    }
+
+    pub fn add_recent(&self, rel: &str) -> Result<(), Error> {
+        let mut paths = self.stored_paths(RECENT_FILE);
+        paths.retain(|p| p != rel);
+        paths.insert(0, rel.to_owned());
+        paths.truncate(RECENT_LIMIT);
+        self.set_paths(RECENT_FILE, &paths)
     }
 
     fn stored_paths(&self, file: &str) -> Vec<String> {
@@ -316,14 +347,6 @@ mod tests {
         };
         assert!(lib.has_visible("Uni/Math", pdfs_only));
         assert_eq!(lib.visible("Uni/Math", pdfs_only).len(), 1, "only Week 1");
-        assert_eq!(
-            lib.notebook_folders("", Filter::default()),
-            ["Uni/Math", "Uni/Math/Week 1"]
-        );
-        assert_eq!(
-            lib.notebook_folders("Uni/Math/Week 1", Filter::default()),
-            ["Uni/Math/Week 1"]
-        );
     }
 
     #[test]
@@ -349,11 +372,6 @@ mod tests {
             )]
         );
         assert_eq!(lib.list("Thesis").unwrap()[1].kind, NodeKind::Page);
-        let notes = Filter {
-            pdfs: false,
-            ..Filter::default()
-        };
-        assert_eq!(lib.notebook_folders("", notes), ["Thesis"]);
         assert!(lib.exists("Thesis/base/logo.svg"));
         lib.delete("Thesis/base/logo.svg").unwrap();
         assert!(!lib.abs("Thesis/base/logo.svg").exists());
@@ -387,43 +405,77 @@ mod tests {
     }
 
     #[test]
-    fn notebooks_keep_their_own_order() {
-        let (_dir, mut lib) = library();
-        for folder in ["Uni/Math", "Uni/Physics", "Work", "Art"] {
-            fs::create_dir_all(lib.abs(folder)).unwrap();
+    fn folders_with_pages_become_notebooks_once_and_keep_their_own_order() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut before = Library::open(dir.path(), &dir.path().join(".old")).unwrap();
+        for folder in ["Uni/Math/Week 1", "Uni/Physics", "Uni/Admin", "Work"] {
+            fs::create_dir_all(before.abs(folder)).unwrap();
         }
-        for folder in ["Uni/Math", "Uni/Physics", "Work"] {
-            lib.create_page(folder, "Notes", PageSettings::default())
+        for folder in ["Uni/Math", "Uni/Math/Week 1", "Uni/Physics", "Work"] {
+            before
+                .create_page(folder, "Notes", PageSettings::default())
                 .unwrap();
         }
-        let notes = Filter::default();
+        touch(&before, "Uni/Admin/form.pdf");
+
+        // The topmost folders with pages; Week 1 is a section of Math, Admin holds no pages.
+        let mut lib = Library::open(dir.path(), &dir.path().join(".app")).unwrap();
+        assert_eq!(lib.notebooks(""), ["Uni/Math", "Uni/Physics", "Work"]);
+        assert_eq!(lib.notebook_name("Uni/Math").as_deref(), Some("Math"));
         assert_eq!(
-            lib.notebooks("", notes),
-            ["Uni/Math", "Uni/Physics", "Work"]
+            lib.notebook_of("Uni/Math/Week 1/Notes").as_deref(),
+            Some("Uni/Math")
         );
-        lib.move_notebook("Work", -1, "", notes).unwrap();
-        lib.move_notebook("Work", -1, "", notes).unwrap();
+        assert_eq!(lib.notebook_of("Uni/Admin/form.pdf"), None);
+        assert_eq!(lib.notebooks("Uni"), ["Uni/Math", "Uni/Physics"]);
+
+        lib.set_notebook("Uni/Admin", Some("Paperwork")).unwrap();
+        assert_eq!(lib.notebook_name("Uni/Admin").as_deref(), Some("Paperwork"));
+        lib.move_notebook("Work", -1, "").unwrap();
+        lib.move_notebook("Work", -1, "").unwrap();
         assert_eq!(
-            lib.notebooks("", notes),
-            ["Work", "Uni/Math", "Uni/Physics"]
+            lib.notebooks(""),
+            ["Uni/Admin", "Work", "Uni/Math", "Uni/Physics"]
         );
         lib.rename("Uni", "Study").unwrap();
         assert_eq!(
-            lib.notebooks("", notes),
-            ["Work", "Study/Math", "Study/Physics"]
+            lib.notebooks(""),
+            ["Study/Admin", "Work", "Study/Math", "Study/Physics"]
         );
+        assert_eq!(
+            lib.notebook_name("Study/Admin").as_deref(),
+            Some("Paperwork")
+        );
+
+        // Pages made later don't turn folders into notebooks; marking does.
+        fs::create_dir_all(lib.abs("Art")).unwrap();
         lib.create_page("Art", "Sketch", PageSettings::default())
             .unwrap();
-        assert_eq!(lib.notebooks("", notes).last().unwrap(), "Art");
-        assert!(lib.is_notebook("Study/Math") && !lib.is_notebook("Study"));
-        assert_eq!(
-            lib.list("")
-                .unwrap()
-                .iter()
-                .map(|n| n.name.as_str())
-                .collect::<Vec<_>>(),
-            ["Art", "Study", "Work"]
-        );
+        assert!(!lib.is_notebook("Art"));
+        lib.set_notebook("Art", Some(" ")).unwrap();
+        assert_eq!(lib.notebook_name("Art").as_deref(), Some("Art"));
+        lib.set_notebook("Art", None).unwrap();
+        assert!(!lib.notebooks("").contains(&"Art".to_owned()));
+        let reopened = Library::open(dir.path(), &dir.path().join(".app")).unwrap();
+        assert!(!reopened.is_notebook("Art"), "marking happens only once");
+    }
+
+    #[test]
+    fn recent_pages_follow_renames() {
+        let (_dir, mut lib) = library();
+        fs::create_dir_all(lib.abs("Math")).unwrap();
+        for name in ["One", "Two", "Three"] {
+            let page = lib
+                .create_page("Math", name, PageSettings::default())
+                .unwrap();
+            lib.add_recent(&page).unwrap();
+        }
+        lib.add_recent("Math/One").unwrap();
+        assert_eq!(lib.recent(), ["Math/One", "Math/Three", "Math/Two"]);
+        lib.rename("Math", "Analysis").unwrap();
+        assert_eq!(lib.recent()[0], "Analysis/One");
+        lib.delete("Analysis/Two").unwrap();
+        assert_eq!(lib.recent(), ["Analysis/One", "Analysis/Three"]);
     }
 
     #[test]

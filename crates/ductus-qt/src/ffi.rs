@@ -38,9 +38,13 @@ pub mod qobject {
         expanded: bool,
         conflict: bool,
         pinned: bool,
+        /// A shortcut under Favorites or Recent, not the item in its place.
         quick: bool,
-        /// A folder with notes or PDFs of its own.
+        /// Notebooks view: "favorites", "recent" or "notebooks".
+        section: String,
         is_notebook: bool,
+        /// A notebook folder's name under Notebooks.
+        notebook_name: String,
     }
 
     #[derive(Debug, Default)]
@@ -211,14 +215,18 @@ pub mod qobject {
             keep: &str,
         ) -> Result<Vec<TreeRow>>;
         fn set_pinned(self: &LibraryHandle, path: &str, pinned: bool) -> Result<()>;
-        /// Reorders the notebook list only; `flags` and `focus` as for `rows`.
-        fn move_notebook(
-            self: &LibraryHandle,
-            path: &str,
-            delta: i32,
-            flags: u8,
-            focus: &str,
-        ) -> Result<()>;
+        /// Reorders the notebook list only; `focus` as for `rows`.
+        fn move_notebook(self: &LibraryHandle, path: &str, delta: i32, focus: &str) -> Result<()>;
+        /// `name` "" makes it a plain folder again.
+        fn set_notebook(self: &LibraryHandle, folder: &str, name: &str) -> Result<()>;
+        fn notebook_name(self: &LibraryHandle, folder: &str) -> String;
+        /// The notebook a page or folder belongs to, or "".
+        fn notebook_of(self: &LibraryHandle, path: &str) -> String;
+        fn add_recent(self: &LibraryHandle, page: &str) -> Result<()>;
+        /// Where a new page can go: notebooks and their sections, as "path\tlabel" lines.
+        fn page_targets(self: &LibraryHandle) -> String;
+        /// The subfolders of `folder`, as "name\tnotebook name" lines.
+        fn subfolders(self: &LibraryHandle, folder: &str) -> String;
         fn absolute_path(self: &LibraryHandle, path: &str) -> String;
         fn import_page(self: &LibraryHandle, parent: &str, file: &str) -> Result<String>;
         fn unique_name(self: &LibraryHandle, parent: &str, base: &str) -> String;

@@ -27,7 +27,12 @@ struct TreeView<'a> {
     expanded: &'a HashSet<&'a str>,
     pinned: &'a HashSet<String>,
     keep: &'a str,
+    /// Inside a notebook, folders that are notebooks themselves are listed on their own.
+    sections_only: bool,
 }
+
+/// Recent pages shown above the notebooks.
+const RECENT_SHOWN: usize = 5;
 
 pub struct LibraryHandle {
     library: Library,
@@ -69,6 +74,10 @@ fn filter(flags: u8) -> Filter {
         other_files: flags & 4 != 0,
         hide_empty_folders: flags & 8 != 0,
     }
+}
+
+fn row_open(rows: &[TreeRow]) -> bool {
+    rows.last().is_some_and(|r| r.expanded)
 }
 
 fn parent_of(rel: &str) -> &str {
@@ -128,47 +137,59 @@ impl LibraryHandle {
         let filter = filter(flags);
         let pinned: HashSet<String> = self.library.favorites().into_iter().collect();
         let mut out = Vec::new();
-        if notebooks {
-            for path in self.library.favorites() {
-                if let Some(node) = self.node(&path) {
-                    let mut row = self.row(&node, 0, self.inherited_color(&path), &pinned);
-                    row.quick = true;
-                    row.subtitle = parent_of(&path).replace('/', " › ");
-                    out.push(row);
-                }
-            }
-            for folder in self.library.notebooks(focus, filter) {
-                let color = self.inherited_color(&folder);
-                let mut row = match self.node(&folder) {
-                    Some(node) => self.row(&node, 0, color, &pinned),
-                    None => TreeRow {
-                        name: self.library_name(),
-                        is_folder: true,
-                        ..TreeRow::default()
-                    },
-                };
-                row.subtitle = relative(parent_of(&folder), focus).replace('/', " › ");
-                row.has_children = true;
-                row.is_notebook = true;
-                row.expanded = expanded.contains(folder.as_str());
-                out.push(row);
-                if expanded.contains(folder.as_str()) {
-                    for node in self.library.visible(&folder, filter) {
-                        if node.kind != NodeKind::Folder {
-                            out.push(self.row(&node, 1, color, &pinned));
-                        }
-                    }
-                }
-            }
-        } else {
+        let mut view = TreeView {
+            filter,
+            expanded: &expanded,
+            pinned: &pinned,
+            keep,
+            sections_only: notebooks,
+        };
+        if !notebooks {
             let color = self.inherited_color(focus);
-            let view = TreeView {
-                filter,
-                expanded: &expanded,
-                pinned: &pinned,
-                keep,
-            };
             self.tree_rows(focus, 0, color, &view, &mut out);
+            return Ok(out);
+        }
+        let recent = self.library.recent().into_iter().take(RECENT_SHOWN);
+        for (section, path) in self
+            .library
+            .favorites()
+            .into_iter()
+            .map(|p| ("favorites", p))
+            .chain(recent.map(|p| ("recent", p)))
+        {
+            if let Some(node) = self.node(&path) {
+                let mut row = self.row(&node, 0, self.inherited_color(&path), &pinned);
+                row.quick = true;
+                row.section = section.into();
+                row.subtitle = self.place(&path);
+                out.push(row);
+            }
+        }
+        view.keep = "";
+        for folder in self.library.notebooks(focus) {
+            let Some(node) = self.node(&folder) else {
+                continue;
+            };
+            let color = self.inherited_color(&folder);
+            let mut row = self.row(&node, 0, color, &pinned);
+            row.section = "notebooks".into();
+            row.is_notebook = true;
+            if let Some(name) = self.library.notebook_name(&folder) {
+                row.name = name;
+            }
+            // Where it is on disk, down to its own folder when that is named differently.
+            let location = if row.name == node.name {
+                parent_of(&folder)
+            } else {
+                &folder
+            };
+            row.subtitle = relative(location, focus).replace('/', " › ");
+            row.has_children = true;
+            row.expanded = expanded.contains(folder.as_str());
+            out.push(row);
+            if row_open(&out) {
+                self.tree_rows(&folder, 1, color, &view, &mut out);
+            }
         }
         Ok(out)
     }
@@ -190,15 +211,27 @@ impl LibraryHandle {
             {
                 continue;
             }
+            if view.sections_only
+                && node.kind == NodeKind::Folder
+                && self.library.is_notebook(&node.path)
+            {
+                continue;
+            }
             let color = match node.kind {
                 NodeKind::Folder => self.library.folder_color(&node.path).or(inherited),
                 _ => inherited,
             };
             let mut row = self.row(node, depth, color, view.pinned);
+            if view.sections_only {
+                row.section = "notebooks".into();
+            }
             if node.kind == NodeKind::Folder {
                 row.has_children = self.library.has_visible(&node.path, view.filter);
                 row.expanded = view.expanded.contains(node.path.as_str());
-                row.is_notebook = self.library.is_notebook(&node.path);
+                if let Some(name) = self.library.notebook_name(&node.path) {
+                    row.is_notebook = true;
+                    row.notebook_name = name;
+                }
             }
             let open = row.expanded;
             out.push(row);
@@ -257,9 +290,71 @@ impl LibraryHandle {
         self.library.set_pinned(path, pinned)
     }
 
-    pub fn move_notebook(&self, path: &str, delta: i32, flags: u8, focus: &str) -> Result<()> {
+    pub fn move_notebook(&self, path: &str, delta: i32, focus: &str) -> Result<()> {
+        self.library.move_notebook(path, delta, focus)
+    }
+
+    pub fn set_notebook(&self, folder: &str, name: &str) -> Result<()> {
+        let name = name.trim();
         self.library
-            .move_notebook(path, delta, focus, filter(flags))
+            .set_notebook(folder, (!name.is_empty()).then_some(name))
+    }
+
+    pub fn notebook_name(&self, folder: &str) -> String {
+        self.library.notebook_name(folder).unwrap_or_default()
+    }
+
+    pub fn notebook_of(&self, path: &str) -> String {
+        self.library.notebook_of(path).unwrap_or_default()
+    }
+
+    pub fn add_recent(&self, page: &str) -> Result<()> {
+        self.library.add_recent(page)
+    }
+
+    pub fn page_targets(&self) -> String {
+        let mut lines = Vec::new();
+        for notebook in self.library.notebooks("") {
+            let name = self.notebook_name(&notebook);
+            lines.push(format!("{notebook}\t{name}"));
+            self.section_targets(&notebook, &name, &mut lines);
+        }
+        lines.join("\n")
+    }
+
+    fn section_targets(&self, folder: &str, label: &str, lines: &mut Vec<String>) {
+        for node in self.library.visible(folder, Filter::default()) {
+            if node.kind == NodeKind::Folder && !self.library.is_notebook(&node.path) {
+                let label = format!("{label} › {}", node.name);
+                lines.push(format!("{}\t{label}", node.path));
+                self.section_targets(&node.path, &label, lines);
+            }
+        }
+    }
+
+    pub fn subfolders(&self, folder: &str) -> String {
+        self.library
+            .visible(folder, Filter::default())
+            .into_iter()
+            .filter(|n| n.kind == NodeKind::Folder)
+            .map(|n| format!("{}\t{}", n.name, self.notebook_name(&n.path)))
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    /// Notebook and section a shortcut leads to, else its folders.
+    fn place(&self, path: &str) -> String {
+        let parent = parent_of(path);
+        match self.library.notebook_of(path) {
+            Some(notebook) if notebook != path => {
+                let name = self.notebook_name(&notebook);
+                match relative(parent, &notebook) {
+                    "" => name,
+                    section => format!("{name} › {}", section.replace('/', " › ")),
+                }
+            }
+            _ => parent.replace('/', " › "),
+        }
     }
 
     pub fn absolute_path(&self, path: &str) -> String {
@@ -710,12 +805,23 @@ mod tests {
         assert_eq!(names, [(0, "Statik"), (1, "VO")]);
         assert!(rows.iter().all(|r| r.color == "#1f4fd1"));
 
+        // Only marked folders are notebooks; VO shows as "Statik", with its folder below the name.
+        handle
+            .set_notebook("Uni/Sem 3/Statik/VO", "Statik")
+            .unwrap();
+        handle.add_recent("Uni/Sem 3/Statik/VO/Week 1").unwrap();
         let rows = handle.rows("", 3, true, "Uni/Sem 3", "").unwrap();
         let summary: Vec<_> = rows
             .iter()
-            .map(|r| (r.name.as_str(), r.subtitle.as_str()))
+            .map(|r| (r.section.as_str(), r.name.as_str(), r.subtitle.as_str()))
             .collect();
-        assert_eq!(summary, [("VO", "Statik")]);
+        assert_eq!(
+            summary,
+            [
+                ("recent", "Week 1", "Statik"),
+                ("notebooks", "Statik", "Statik › VO")
+            ]
+        );
         assert_eq!(relative("Uni/Sem 3", "Uni/Sem 3"), "");
         assert_eq!(relative("Uni/Sem 30/x", "Uni/Sem 3"), "Uni/Sem 30/x");
     }

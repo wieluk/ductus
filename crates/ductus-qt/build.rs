@@ -26,6 +26,9 @@ fn main() {
         QmlFile::from("qml/LinePatternIcon.qml"),
         QmlFile::from("qml/SearchBox.qml"),
         QmlFile::from("qml/UpdateDialog.qml"),
+        QmlFile::from("qml/LocationBar.qml"),
+        QmlFile::from("qml/NewPageDialog.qml"),
+        QmlFile::from("qml/NewNotebookDialog.qml"),
     ]);
     let mut builder = CxxQtBuilder::new_qml_module(qml)
         .qt_module("Quick")

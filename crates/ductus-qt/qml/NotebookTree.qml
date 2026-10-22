@@ -12,6 +12,10 @@ Rectangle {
 
     signal deleteRequested(string path, string name, bool isFolder)
     signal openFolderRequested()
+    /// "" for the default place.
+    signal newPageRequested(string folder)
+    signal newNotebookRequested(string location)
+    signal makeNotebookRequested(string folder)
 
     color: Theme.sidebar
 
@@ -149,28 +153,18 @@ Rectangle {
             RibbonButton {
                 objectName: "sidebarNewPage"
                 iconName: "page-add"
-                tip: {
-                    // currentFolder() follows these.
-                    AppController.currentPage
-                    AppController.treeFocus
-                    const folder = AppController.currentFolder()
-                    return qsTr("New page in %1").arg(folder.length > 0 ? sidebar.lastName(folder)
-                                                                         : sidebar.crumbs[0].name)
-                }
+                tip: qsTr("New page…")
                 implicitHeight: 32
                 implicitWidth: 32
-                onClicked: AppController.newPage(AppController.currentFolder())
+                onClicked: sidebar.newPageRequested("")
             }
             RibbonButton {
                 objectName: "sidebarNewNotebook"
                 iconName: "plus"
-                tip: {
-                    AppController.libraryPath // displayName() follows it.
-                    return qsTr("New notebook in %1").arg(AppController.displayName(AppController.treeFocus))
-                }
+                tip: qsTr("New notebook…")
                 implicitHeight: 32
                 implicitWidth: 32
-                onClicked: AppController.newNotebook(AppController.treeFocus)
+                onClicked: sidebar.newNotebookRequested(AppController.treeFocus)
             }
         }
 
@@ -241,14 +235,14 @@ Rectangle {
             spacing: 1
             ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
-            // Headings only when there is a quick access section.
-            section.property: AppController.tree.hasQuick ? "quick" : ""
+            section.property: AppController.tree.hasSections ? "section" : ""
             section.delegate: Label {
                 required property string section
                 height: 26
                 leftPadding: 14
                 topPadding: 6
-                text: section === "true" ? qsTr("Favorites") : qsTr("Notebooks")
+                text: ({ favorites: qsTr("Favorites"), recent: qsTr("Recent"),
+                         notebooks: qsTr("Notebooks") })[section] || ""
                 color: Theme.textMuted
                 font.pixelSize: 11
                 font.weight: Font.DemiBold
@@ -274,13 +268,19 @@ Rectangle {
                 required property bool pinned
                 required property bool quick
                 required property bool isNotebook
+                required property string section
+                required property string notebookName
+                // Folders shows which folders are notebooks under another name.
+                readonly property string caption: subtitle.length > 0 ? subtitle
+                    : isNotebook && !AppController.notebookView && notebookName !== name
+                      ? qsTr("Notebook \u201c%1\u201d").arg(notebookName) : ""
 
                 readonly property bool isSubject: isFolder && depth === 0
                 readonly property color mark: color.length > 0 ? color : Theme.accent
 
-                objectName: (quick ? "quick_" : "row_") + path
+                objectName: (section === "recent" ? "recent_" : quick ? "quick_" : "row_") + path
                 width: ListView.view.width
-                height: subtitle.length > 0 ? 42 : 34
+                height: caption.length > 0 ? 42 : 34
 
                 function activate() {
                     if (row.isFolder && row.quick)
@@ -339,17 +339,18 @@ Rectangle {
                         rotation: row.expanded ? 90 : 0
                     }
                     Rectangle {
-                        visible: row.isSubject
+                        visible: row.isSubject && !row.isNotebook
                         Layout.preferredWidth: 12
                         Layout.preferredHeight: 12
                         radius: 3
                         color: row.mark
                     }
                     IconImage {
-                        visible: !row.isSubject
+                        visible: !row.isSubject || row.isNotebook
                         Layout.preferredWidth: 16
                         Layout.preferredHeight: 16
-                        source: Qt.resolvedUrl(row.isFolder ? "icons/folder.svg"
+                        source: Qt.resolvedUrl(row.isNotebook ? "icons/notebooks.svg"
+                                               : row.isFolder ? "icons/folder.svg"
                                                : row.isPdf ? "icons/pdf.svg"
                                                : row.isFile ? "icons/file.svg" : "icons/page.svg")
                         sourceSize: Qt.size(16, 16)
@@ -369,9 +370,9 @@ Rectangle {
                             font.weight: (row.isSubject && !row.quick) || row.isCurrent ? Font.DemiBold : Font.Normal
                         }
                         Label {
-                            visible: row.subtitle.length > 0
+                            visible: row.caption.length > 0
                             Layout.fillWidth: true
-                            text: row.subtitle
+                            text: row.caption
                             // The nearest folders tell same-named ones apart.
                             elide: Text.ElideLeft
                             color: Theme.textMuted
@@ -406,7 +407,12 @@ Rectangle {
                             if (sidebar.renaming !== row.path)
                                 return
                             sidebar.renaming = ""
-                            if (text.trim() !== row.name)
+                            if (text.trim() === row.name)
+                                return
+                            // Under Notebooks the folder on disk keeps its name.
+                            if (AppController.notebookView && row.isNotebook)
+                                AppController.setNotebook(row.path, text)
+                            else
                                 AppController.rename(row.path, text)
                         }
                         onAccepted: commit()
@@ -468,23 +474,37 @@ Rectangle {
                     AppMenuItem {
                         visible: row.isFolder
                         height: visible ? implicitHeight : 0
-                        text: qsTr("New page")
+                        text: qsTr("New page…")
                         objectName: "menuNewPage"
-                        onTriggered: AppController.newPage(row.path)
-                    }
-                    AppMenuItem {
-                        visible: row.isFolder
-                        height: visible ? implicitHeight : 0
-                        text: qsTr("New notebook inside")
-                        objectName: "menuNewNotebook"
-                        onTriggered: AppController.newNotebook(row.path)
+                        onTriggered: sidebar.newPageRequested(row.path)
                     }
                     AppMenuItem {
                         visible: row.isFolder && !AppController.notebookView
                         height: visible ? implicitHeight : 0
-                        text: qsTr("New folder inside")
+                        text: qsTr("New notebook inside…")
+                        objectName: "menuNewNotebook"
+                        onTriggered: sidebar.newNotebookRequested(row.path)
+                    }
+                    AppMenuItem {
+                        visible: row.isFolder
+                        height: visible ? implicitHeight : 0
+                        text: AppController.notebookView ? qsTr("New section") : qsTr("New folder inside")
                         objectName: "menuNewFolder"
                         onTriggered: AppController.newFolder(row.path)
+                    }
+                    AppMenuItem {
+                        visible: row.isFolder && !row.isNotebook && !AppController.notebookView
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("Make this a notebook…")
+                        objectName: "menuMakeNotebook"
+                        onTriggered: sidebar.makeNotebookRequested(row.path)
+                    }
+                    AppMenuItem {
+                        visible: row.isNotebook && !row.quick
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("No longer a notebook")
+                        objectName: "menuUnmarkNotebook"
+                        onTriggered: AppController.setNotebook(row.path, "")
                     }
                     AppMenuItem {
                         text: row.pinned ? qsTr("Remove from favorites") : qsTr("Add to favorites")
@@ -492,7 +512,7 @@ Rectangle {
                         onTriggered: AppController.setPinned(row.path, !row.pinned)
                     }
                     AppMenuItem {
-                        visible: AppController.notebookView && (row.quick || row.depth === 0)
+                        visible: AppController.notebookView && (row.quick || row.isNotebook)
                         height: visible ? implicitHeight : 0
                         text: qsTr("Show in folders")
                         objectName: "menuReveal"
@@ -514,7 +534,7 @@ Rectangle {
                     AppMenuItem {
                         visible: !row.quick
                         height: visible ? implicitHeight : 0
-                        text: qsTr("Rename")
+                        text: AppController.notebookView && row.isNotebook ? qsTr("Rename notebook") : qsTr("Rename")
                         objectName: "menuRename"
                         onTriggered: sidebar.renaming = row.path
                     }
@@ -568,9 +588,10 @@ Rectangle {
 
             ColumnLayout {
                 readonly property int flags: AppController.treeFilter
-                readonly property bool filtered: (flags & 7) !== 7
-                                                 && (AppController.notebookView || flags !== AppController.defaultTreeFilter)
-                                                 || (!AppController.notebookView && (flags & 8) !== 0)
+                // Under Notebooks the filter only picks the pages inside them.
+                readonly property bool filtered: !AppController.notebookView
+                                                 && ((flags & 7) !== 7 && flags !== AppController.defaultTreeFilter
+                                                     || (flags & 8) !== 0)
                 anchors.centerIn: parent
                 width: parent.width - 40
                 visible: list.count === 0
@@ -583,8 +604,9 @@ Rectangle {
                     color: Theme.textMuted
                     text: parent.filtered
                           ? qsTr("Nothing matches the filter: only %1 are shown.").arg(sidebar.shownKinds())
-                          : (sidebar.focused ? qsTr("Nothing to show in this folder.") : qsTr("No notebooks yet."))
-                            + "\n" + qsTr("Create a notebook with the + button.")
+                          : AppController.notebookView
+                          ? qsTr("No notebooks yet.\nCreate one with the + button, or make a folder a notebook under Folders.")
+                          : qsTr("Nothing to show in this folder.")
                 }
                 RibbonButton {
                     objectName: "showEverything"

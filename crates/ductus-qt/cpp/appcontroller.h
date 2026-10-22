@@ -27,7 +27,8 @@ class NotebookModel : public QAbstractListModel
 {
     Q_OBJECT
     QML_ANONYMOUS
-    Q_PROPERTY(bool hasQuick READ hasQuick NOTIFY rowsChanged)
+    /// Notebooks view: Favorites, Recent and Notebooks headings.
+    Q_PROPERTY(bool hasSections READ hasSections NOTIFY rowsChanged)
 
 public:
     enum Role {
@@ -46,6 +47,8 @@ public:
         PinnedRole,
         QuickRole,
         IsNotebookRole,
+        SectionRole,
+        NotebookNameRole,
     };
 
     struct Row {
@@ -63,6 +66,8 @@ public:
         bool pinned = false;
         bool quick = false;
         bool isNotebook = false;
+        QString section;
+        QString notebookName;
     };
 
     using QAbstractListModel::QAbstractListModel;
@@ -74,7 +79,7 @@ public:
     void setRows(QList<Row> rows);
     void setCurrent(const QString &path);
     const QList<Row> &rows() const { return m_rows; }
-    bool hasQuick() const { return !m_rows.isEmpty() && m_rows.first().quick; }
+    bool hasSections() const { return !m_rows.isEmpty() && !m_rows.first().section.isEmpty(); }
     Q_INVOKABLE int treeIndexOf(const QString &path) const;
 
 Q_SIGNALS:
@@ -140,15 +145,28 @@ public:
 
     Q_INVOKABLE void openLibrary(const QString &pathOrUrl);
     Q_INVOKABLE void openPage(const QString &path);
-    /// A folder with a first page: an empty folder is no notebook.
-    Q_INVOKABLE QString newNotebook(const QString &parent);
+    /// A notebook called `name` in `location`: in a new folder of that name, or `location` itself.
+    /// A new folder gets a first page, which opens.
+    Q_INVOKABLE QString addNotebook(const QString &location, const QString &name, bool ownFolder);
+    /// A page in `folder` (a notebook or one of its sections), which opens.
+    Q_INVOKABLE QString addPage(const QString &folder, const QString &name);
+    /// Where a new page goes unless chosen otherwise: beside the open page, else the Inbox.
+    Q_INVOKABLE QString defaultPageFolder() const;
+    /// Notebooks and their sections: {path, label}; the Inbox comes first even before it exists.
+    Q_INVOKABLE QVariantList pageTargets() const;
+    /// {name, path, notebook} of each folder in `folder`.
+    Q_INVOKABLE QVariantList subfolders(const QString &folder) const;
+    /// "" makes the folder a plain folder again.
+    Q_INVOKABLE void setNotebook(const QString &folder, const QString &name);
+    Q_INVOKABLE QString notebookName(const QString &folder) const;
+    /// The notebook a page or folder belongs to, or "".
+    Q_INVOKABLE QString notebookOf(const QString &path) const;
     Q_INVOKABLE QString newFolder(const QString &parent);
     /// The folder's name, or the library's for "".
     Q_INVOKABLE QString displayName(const QString &path) const;
     Q_INVOKABLE void showInNotebooks(const QString &path);
     /// History and trash of the open library, in the app's data folder.
     Q_INVOKABLE void showLibraryData();
-    Q_INVOKABLE QString newPage(const QString &parent);
     Q_INVOKABLE QString rename(const QString &path, const QString &name);
     Q_INVOKABLE void remove(const QString &path);
     Q_INVOKABLE void setColor(const QString &path, const QString &color);
@@ -215,9 +233,9 @@ private:
     /// Each library reopens its own last page; "" forgets it.
     void rememberPage(const QString &path);
     QString rememberedPage() const;
-    QString createFolder(const QString &parent, const QString &baseName, bool withPage);
+    QString inboxFolder() const;
     static QString dataDir();
-    QString createPage(const QString &parent);
+    QString createPage(const QString &parent, const QString &baseName = {});
     bool paintPages(QPrinter &printer);
     QByteArray textOverlay();
     static rust::Slice<const std::uint8_t> bytes(const QByteArray &data);

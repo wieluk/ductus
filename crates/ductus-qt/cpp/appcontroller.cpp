@@ -107,6 +107,10 @@ QVariant NotebookModel::data(const QModelIndex &index, int role) const
         return row.quick;
     case IsNotebookRole:
         return row.isNotebook;
+    case SectionRole:
+        return row.section;
+    case NotebookNameRole:
+        return row.notebookName;
     default:
         return {};
     }
@@ -130,6 +134,8 @@ QHash<int, QByteArray> NotebookModel::roleNames() const
         {PinnedRole, "pinned"},
         {QuickRole, "quick"},
         {IsNotebookRole, "isNotebook"},
+        {SectionRole, "section"},
+        {NotebookNameRole, "notebookName"},
     };
 }
 
@@ -139,11 +145,13 @@ void NotebookModel::setRows(QList<Row> rows)
     // scroll position and delegates.
     bool sameShape = rows.size() == m_rows.size();
     for (qsizetype i = 0; sameShape && i < rows.size(); ++i)
-        sameShape = rows[i].path == m_rows[i].path && rows[i].quick == m_rows[i].quick;
+        sameShape = rows[i].path == m_rows[i].path && rows[i].section == m_rows[i].section;
     if (sameShape) {
         m_rows = std::move(rows);
         if (!m_rows.isEmpty())
             Q_EMIT dataChanged(index(0), index(static_cast<int>(m_rows.size()) - 1));
+        // Names may have changed (a notebook renamed): the location bar follows.
+        Q_EMIT rowsChanged();
         return;
     }
     beginResetModel();
@@ -340,6 +348,7 @@ QString AppController::ensureStarterContent()
             return;
         const rust::String subject = (*m_library)->create_folder("", toStd(tr("My Notebook")));
         (*m_library)->set_color(toStd(toQ(subject)), "#5a43c0");
+        (*m_library)->set_notebook(toStd(toQ(subject)), subject);
         page = toQ((*m_library)->create_page(toStd(toQ(subject)), toStd(tr("First page")),
                                              m_canvas->engine()));
         m_expanded.insert(toQ(subject));
@@ -403,7 +412,8 @@ void AppController::refreshTree()
         for (const TreeRow &r : rows) {
             out.append({toQ(r.name), toQ(r.path), int(r.depth), r.is_folder, r.is_pdf,
                         toQ(r.color), r.has_children, r.expanded, r.conflict, r.is_file,
-                        toQ(r.subtitle), r.pinned, r.quick, r.is_notebook});
+                        toQ(r.subtitle), r.pinned, r.quick, r.is_notebook, toQ(r.section),
+                        toQ(r.notebook_name)});
         }
         m_tree.setRows(std::move(out));
     });
@@ -455,6 +465,7 @@ void AppController::openPage(const QString &path)
     m_savedRevision = m_canvas->revision();
     setDirty(false);
     rememberPage(path);
+    attempt([&] { (*m_library)->add_recent(toStd(path)); });
     expandTo(path);
     // The open page is always in the sidebar.
     if (!inFocus(path)) {
@@ -496,14 +507,132 @@ void AppController::toggleExpanded(const QString &path)
     refreshTree();
 }
 
-QString AppController::newNotebook(const QString &parent)
-{
-    return createFolder(parent, tr("New notebook"), true);
-}
-
 QString AppController::newFolder(const QString &parent)
 {
-    return createFolder(parent, tr("New folder"), false);
+    if (!m_library)
+        return {};
+    QString path;
+    attempt([&] {
+        const rust::String name = (*m_library)->unique_name(toStd(parent), toStd(tr("New folder")));
+        path = toQ((*m_library)->create_folder(toStd(parent), name));
+    });
+    if (path.isEmpty())
+        return {};
+    // Shown even while empty folders are hidden, to be named right away.
+    m_keepVisible = path;
+    expandTo(path);
+    refreshTree();
+    Q_EMIT renameRequested(path);
+    Q_EMIT revealRequested(path);
+    return path;
+}
+
+QString AppController::addNotebook(const QString &location, const QString &name, bool ownFolder)
+{
+    if (!m_library || name.trimmed().isEmpty())
+        return {};
+    QString folder = location;
+    QString page;
+    const bool ok = attempt([&] {
+        if (ownFolder) {
+            const rust::String unique = (*m_library)->unique_name(toStd(location), toStd(name.trimmed()));
+            folder = toQ((*m_library)->create_folder(toStd(location), unique));
+        }
+        (*m_library)->set_notebook(toStd(folder), toStd(name));
+    });
+    if (!ok || folder.isEmpty())
+        return {};
+    if (ownFolder)
+        page = createPage(folder);
+    m_expanded.insert(folder);
+    storeExpanded();
+    if (!page.isEmpty())
+        openPage(page);
+    else
+        refreshTree();
+    Q_EMIT revealRequested(folder);
+    return folder;
+}
+
+QString AppController::addPage(const QString &folder, const QString &name)
+{
+    if (!m_library || !m_canvas)
+        return {};
+    // The Inbox appears with its first page.
+    if (folder == inboxFolder() && !QFileInfo(libraryPath() + QLatin1Char('/') + folder).isDir()) {
+        if (!attempt([&] {
+                (*m_library)->create_folder("", toStd(folder));
+                (*m_library)->set_notebook(toStd(folder), toStd(folder));
+            }))
+            return {};
+    }
+    const QString path = createPage(folder, name);
+    if (!path.isEmpty())
+        openPage(path);
+    return path;
+}
+
+QString AppController::inboxFolder() const
+{
+    return tr("Inbox");
+}
+
+QString AppController::defaultPageFolder() const
+{
+    const QString page = currentPage();
+    if (!page.isEmpty() && !notebookOf(page).isEmpty())
+        return parentOf(page);
+    return inboxFolder();
+}
+
+QVariantList AppController::pageTargets() const
+{
+    QVariantList out;
+    if (!m_library)
+        return out;
+    const QString inbox = inboxFolder();
+    bool hasInbox = false;
+    const QStringList lines = toQ((*m_library)->page_targets()).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    for (const QString &line : lines) {
+        const QString path = line.section(QLatin1Char('\t'), 0, 0);
+        hasInbox = hasInbox || path == inbox;
+        out.append(QVariantMap{{QStringLiteral("path"), path},
+                               {QStringLiteral("label"), line.section(QLatin1Char('\t'), 1)}});
+    }
+    if (!hasInbox)
+        out.prepend(QVariantMap{{QStringLiteral("path"), inbox}, {QStringLiteral("label"), inbox}});
+    return out;
+}
+
+QVariantList AppController::subfolders(const QString &folder) const
+{
+    QVariantList out;
+    if (!m_library)
+        return out;
+    const QStringList lines = toQ((*m_library)->subfolders(toStd(folder))).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    for (const QString &line : lines) {
+        const QString name = line.section(QLatin1Char('\t'), 0, 0);
+        out.append(QVariantMap{{QStringLiteral("name"), name},
+                               {QStringLiteral("path"), folder.isEmpty() ? name : folder + QLatin1Char('/') + name},
+                               {QStringLiteral("notebook"), line.section(QLatin1Char('\t'), 1)}});
+    }
+    return out;
+}
+
+void AppController::setNotebook(const QString &folder, const QString &name)
+{
+    if (m_library && attempt([&] { (*m_library)->set_notebook(toStd(folder), toStd(name)); }))
+        refreshTree();
+}
+
+QString AppController::notebookName(const QString &folder) const
+{
+    return m_library ? toQ((*m_library)->notebook_name(toStd(folder))) : QString();
+}
+
+QString AppController::notebookOf(const QString &path) const
+{
+    return m_library ? toQ((*m_library)->notebook_of(toStd(path))) : QString();
 }
 
 QString AppController::dataDir()
@@ -534,39 +663,14 @@ void AppController::showInNotebooks(const QString &path)
     Q_EMIT revealRequested(path);
 }
 
-QString AppController::createFolder(const QString &parent, const QString &baseName, bool withPage)
-{
-    if (!m_library)
-        return {};
-    QString path;
-    attempt([&] {
-        const rust::String name = (*m_library)->unique_name(toStd(parent), toStd(baseName));
-        path = toQ((*m_library)->create_folder(toStd(parent), name));
-    });
-    if (path.isEmpty()) {
-        refreshTree();
-        return {};
-    }
-    const QString page = withPage ? createPage(path) : QString();
-    if (!page.isEmpty()) {
-        openPage(page); // also expands the new folder
-    } else {
-        m_keepVisible = path;
-        expandTo(path);
-        refreshTree();
-    }
-    Q_EMIT renameRequested(path);
-    Q_EMIT revealRequested(path);
-    return path;
-}
-
-QString AppController::createPage(const QString &parent)
+QString AppController::createPage(const QString &parent, const QString &baseName)
 {
     if (!m_library || !m_canvas)
         return {};
     QString path;
     attempt([&] {
-        const rust::String name = (*m_library)->unique_name(toStd(parent), toStd(tr("Untitled page")));
+        const QString base = baseName.trimmed().isEmpty() ? tr("Untitled page") : baseName.trimmed();
+        const rust::String name = (*m_library)->unique_name(toStd(parent), toStd(base));
         // New pages copy the open page's style, or use the style from the settings.
         QSettings settings;
         if (settings.value(QStringLiteral("pages/useDefault"), false).toBool()) {
@@ -579,16 +683,6 @@ QString AppController::createPage(const QString &parent)
             path = toQ((*m_library)->create_page(toStd(parent), name, m_canvas->engine()));
         }
     });
-    return path;
-}
-
-QString AppController::newPage(const QString &parent)
-{
-    const QString path = createPage(parent);
-    if (path.isEmpty())
-        return {};
-    openPage(path);
-    Q_EMIT renameRequested(path);
     return path;
 }
 
@@ -662,8 +756,7 @@ void AppController::moveBy(const QString &path, int delta)
     });
     if (m_notebookView && notebook != m_tree.rows().cend()) {
         if (attempt([&] {
-                (*m_library)->move_notebook(toStd(path), delta, static_cast<std::uint8_t>(m_notebookFilter),
-                                            toStd(m_treeFocus));
+                (*m_library)->move_notebook(toStd(path), delta, toStd(m_treeFocus));
             }))
             refreshTree();
         return;

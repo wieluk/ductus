@@ -50,6 +50,9 @@ struct FolderMeta {
     color: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     order: Vec<String>,
+    /// Set when the folder is a notebook: the name it shows under Notebooks.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    notebook: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -264,6 +267,7 @@ impl Library {
             listings: RefCell::default(),
         };
         library.reload_folders();
+        library.mark_existing_notebooks()?;
         Ok(library)
     }
 
@@ -388,6 +392,36 @@ impl Library {
                 .insert(folder.to_owned(), meta.clone());
         }
         self.save_folders()
+    }
+
+    /// The name a folder shows as a notebook, if it is one.
+    pub fn notebook_name(&self, folder: &str) -> Option<String> {
+        self.read_meta(folder).notebook
+    }
+
+    /// Makes a folder a notebook under `name` (its own name when blank), or `None` a plain folder again.
+    pub fn set_notebook(&self, folder: &str, name: Option<&str>) -> Result<(), Error> {
+        let mut meta = self.read_meta(folder);
+        meta.notebook = name.map(|n| {
+            let n = n.trim();
+            if n.is_empty() {
+                folder.rsplit('/').next().unwrap_or_default().to_owned()
+            } else {
+                n.to_owned()
+            }
+        });
+        self.write_meta(folder, &meta)
+    }
+
+    /// Every folder marked as a notebook, in path order.
+    pub(crate) fn marked_notebooks(&self) -> Vec<String> {
+        self.reload_folders();
+        self.folders
+            .borrow()
+            .iter()
+            .filter(|(path, meta)| meta.notebook.is_some() && !path.is_empty())
+            .map(|(path, _)| path.clone())
+            .collect()
     }
 
     /// Colors and orders follow a renamed or moved folder; `to` None drops them with it.

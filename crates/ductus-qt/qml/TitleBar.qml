@@ -22,6 +22,8 @@ Rectangle {
     signal printRequested()
     signal sidebarToggled()
     signal updateRequested()
+    signal newPageRequested()
+    signal newNotebookRequested()
 
     implicitHeight: Theme.titleHeight
     color: Theme.titleBar
@@ -66,16 +68,13 @@ Rectangle {
                 objectName: "appMenu"
                 AppMenuItem {
                     objectName: "menuNewPage"
-                    text: qsTr("New Page")
-                    onTriggered: AppController.newPage(AppController.currentFolder())
+                    text: qsTr("New Page…")
+                    onTriggered: bar.newPageRequested()
                 }
                 AppMenuItem {
                     objectName: "menuNewNotebook"
-                    text: {
-                        AppController.libraryPath // displayName() follows it.
-                        return qsTr("New Notebook in %1").arg(AppController.displayName(AppController.treeFocus))
-                    }
-                    onTriggered: AppController.newNotebook(AppController.treeFocus)
+                    text: qsTr("New Notebook…")
+                    onTriggered: bar.newNotebookRequested()
                 }
                 AppMenuItem {
                     objectName: "menuOpenFile"
