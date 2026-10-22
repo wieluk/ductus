@@ -74,6 +74,7 @@ InkCanvas::InkCanvas(QQuickItem *parent)
     connect(QGuiApplication::clipboard(), &QClipboard::dataChanged, this,
             [this] { m_systemClipboardNewer = true; });
     setCursor(Qt::CrossCursor);
+    m_engine->set_eraser_whole_strokes(m_eraserWholeStrokes);
 
     m_settleTimer.setSingleShot(true);
     m_settleTimer.setInterval(150);

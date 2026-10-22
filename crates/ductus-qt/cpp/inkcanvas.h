@@ -286,7 +286,7 @@ private:
     int m_holdDelay = 500;
     int m_palmRejection = 600;
     bool m_penTipVisible = true;
-    bool m_eraserWholeStrokes = false;
+    bool m_eraserWholeStrokes = true;
     int m_eraserSize = 8;
     bool m_tipEraser = false;
     bool m_tipBuiltEraser = false;

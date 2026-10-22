@@ -9,7 +9,7 @@ Rectangle {
     id: bar
 
     required property InkCanvas canvas
-    /// JSON: { type: pen|highlighter, color, width } or { type: tool, tool }.
+    /// JSON: { type: pen|highlighter, color, width, pattern? } or { type: tool, tool }.
     property string presetsJson: ""
     property bool onRight: false
 
@@ -33,14 +33,14 @@ Rectangle {
         { type: "tool", tool: "eraser" },
         { type: "tool", tool: "text" },
         { type: "pen", color: "#1a1a1f", width: 1.5 },
-        { type: "pen", color: "#1a1a1f", width: 3 },
         { type: "pen", color: "#1f4fd1", width: 2 },
         { type: "pen", color: "#d12f2f", width: 2 },
         { type: "pen", color: "#1d8a3b", width: 2 },
+        { type: "pen", color: "#5f6368", width: 2, pattern: "dotted" },
         { type: "highlighter", color: "#ffd91a", width: 18 },
-        { type: "highlighter", color: "#7ee07e", width: 18 },
+        { type: "highlighter", color: "#5cc8ff", width: 18 },
         { type: "highlighter", color: "#ff8fd0", width: 18 },
-        { type: "tool", tool: "screenshot" }
+        { type: "tool", tool: "math" }
     ]
     readonly property var penColors: ["#1a1a1f", "#5f6368", "#1f4fd1", "#0a8a8a", "#1d8a3b",
                                       "#7b2fd1", "#c2185b", "#d12f2f", "#e07b00", "#8d5524"]
