@@ -79,6 +79,14 @@ Rectangle {
             onClicked: ribbon.canvas.tool = InkCanvas.Lasso
         }
         RibbonButton {
+            objectName: "toolHand"
+            iconName: "hand"
+            tip: qsTr("Hand: drag text, formulas and pictures to move them, their corners to resize; elsewhere it scrolls")
+            checkable: true
+            checked: ribbon.canvas.tool === InkCanvas.Hand
+            onClicked: ribbon.canvas.tool = InkCanvas.Hand
+        }
+        RibbonButton {
             objectName: "toolPen"
             iconName: "pen"
             tip: qsTr("Pen")

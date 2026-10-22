@@ -108,7 +108,9 @@ InkCanvas::Tool InkCanvas::tool() const
         return Text;
     if (m_mathTool)
         return Math;
-    return static_cast<Tool>(m_engine->tool());
+    // The engine counts the hand as 4, after the lasso.
+    const std::uint8_t engineTool = m_engine->tool();
+    return engineTool == 4 ? Hand : static_cast<Tool>(engineTool);
 }
 
 void InkCanvas::setTool(Tool tool)
@@ -118,9 +120,10 @@ void InkCanvas::setTool(Tool tool)
     m_textTool = tool == Text;
     m_mathTool = tool == Math;
     if (!m_textTool && !m_mathTool)
-        m_engine->set_tool(static_cast<std::uint8_t>(tool));
+        m_engine->set_tool(tool == Hand ? 4 : static_cast<std::uint8_t>(tool));
     else
         clearSelection();
+    setCursor(tool == Hand ? Qt::OpenHandCursor : Qt::CrossCursor);
     Q_EMIT toolChanged();
 }
 
@@ -888,11 +891,20 @@ bool InkCanvas::handleTablet(QTabletEvent *event)
         forceActiveFocus();
         // A barrel button held while touching down erases.
         const bool barrel = event->buttons() & (Qt::MiddleButton | Qt::RightButton);
-        m_engine->pointer_down(eraserEnd ? 1 : 0, sample, barrel);
-        trackHold(position);
+        if (m_engine->pointer_down(eraserEnd ? 1 : 0, sample, barrel)) {
+            trackHold(position);
+        } else {
+            m_tabletPanning = true;
+            m_lastPanPosition = position;
+        }
         hidePenTip();
     } else if (event->type() == QEvent::TabletMove) {
-        if (m_engine->is_drawing()) {
+        if (m_tabletPanning) {
+            const QPointF delta = position - m_lastPanPosition;
+            m_lastPanPosition = position;
+            m_engine->pan_by(delta.x(), delta.y());
+            viewMoved();
+        } else if (m_engine->is_drawing()) {
             m_engine->pointer_move(rust::Slice<const PointerSample>(&sample, 1));
             trackHold(position);
             updateSelection();
@@ -903,6 +915,7 @@ bool InkCanvas::handleTablet(QTabletEvent *event)
         }
     } else {
         m_tabletGrab = false;
+        m_tabletPanning = false;
         stopHold();
         if (m_engine->is_drawing()) {
             m_engine->pointer_move(rust::Slice<const PointerSample>(&sample, 1));
@@ -924,6 +937,7 @@ void InkCanvas::mousePressEvent(QMouseEvent *event)
     hidePenTip();
     if (event->button() == Qt::MiddleButton) {
         m_mousePanning = true;
+        m_panButton = Qt::MiddleButton;
         m_lastPanPosition = event->position();
     } else if (event->button() == Qt::LeftButton && m_textTool) {
         const QPointF p = event->position();
@@ -933,8 +947,13 @@ void InkCanvas::mousePressEvent(QMouseEvent *event)
         Q_EMIT mathRequested(p, static_cast<qint64>(m_engine->math_at(p.x(), p.y())));
     } else if (event->button() == Qt::LeftButton) {
         forceActiveFocus();
-        m_engine->pointer_down(2, sampleAt(event->position(), event->timestamp()), false);
-        trackHold(event->position());
+        if (m_engine->pointer_down(2, sampleAt(event->position(), event->timestamp()), false)) {
+            trackHold(event->position());
+        } else {
+            m_mousePanning = true;
+            m_panButton = Qt::LeftButton;
+            m_lastPanPosition = event->position();
+        }
     }
     event->accept();
     update();
@@ -960,7 +979,7 @@ void InkCanvas::mouseMoveEvent(QMouseEvent *event)
 
 void InkCanvas::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (m_mousePanning && event->button() == Qt::MiddleButton) {
+    if (m_mousePanning && event->button() == m_panButton) {
         m_mousePanning = false;
     } else if (m_engine->is_drawing()) {
         stopHold();

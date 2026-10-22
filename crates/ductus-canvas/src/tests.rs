@@ -265,6 +265,39 @@ fn lasso_selects_moves_and_undoes() {
 }
 
 #[test]
+fn hand_moves_and_resizes_text_but_pans_over_ink() {
+    let mut c = canvas();
+    draw_wave(&mut c, 40.0, 160.0, 220.0);
+    c.add_text(40.0, 40.0, 120.0, 30.0, "Limits").unwrap();
+    c.set_tool(ToolMode::Hand);
+    // Ink and empty paper are left to panning.
+    assert!(!c.pointer_down(Device::Pen, pen_sample(100.0, 220.0, 0, 0.5), false));
+    assert!(!c.pointer_down(Device::Touch, pen_sample(300.0, 150.0, 0, 0.5), false));
+    assert_eq!(c.selection_count(), 0);
+
+    let grab = c.view.to_screen(Point::new(100.0, 55.0));
+    drag(&mut c, (grab.x, grab.y), (grab.x, grab.y + 50.0));
+    let text = &c.document().texts()[0];
+    assert_eq!((text.x, text.y), (40.0, 90.0));
+    assert_eq!(c.selection_count(), 1, "the moved text stays selected");
+
+    let corner = c.selection_screen_rect().unwrap();
+    drag(
+        &mut c,
+        (corner.x1, corner.y1),
+        (corner.x1 + 60.0, corner.y1 + 15.0),
+    );
+    assert!(
+        c.document().texts()[0].scale > 1.2,
+        "the corner grip resizes"
+    );
+    c.undo();
+    c.undo();
+    let text = &c.document().texts()[0];
+    assert_eq!((text.x, text.y, text.scale), (40.0, 40.0, 1.0));
+}
+
+#[test]
 fn copy_paste_and_delete_selection() {
     let mut c = canvas();
     draw_wave(&mut c, 40.0, 160.0, 80.0);

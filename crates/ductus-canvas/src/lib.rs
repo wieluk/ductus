@@ -31,6 +31,8 @@ pub enum ToolMode {
     Highlighter,
     Eraser,
     Lasso,
+    /// Moves and resizes text, formulas and pictures; elsewhere the page pans.
+    Hand,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -429,13 +431,22 @@ impl Canvas {
     }
 
     /// False for touch without finger drawing, so the caller pans.
+    /// False when nothing starts: the caller pans the page instead.
     pub fn pointer_down(&mut self, device: Device, sample: Sample, erase_button: bool) -> bool {
+        let at = self.view.to_doc(Point::new(sample.x, sample.y));
+        if self.tool == ToolMode::Hand && !erase_button && device != Device::PenEraser {
+            self.pointer_cancel();
+            let gesture = self.begin_hand_gesture(at);
+            let grabbed = gesture.is_some();
+            self.gesture = gesture;
+            self.redraw_overlay();
+            return grabbed;
+        }
         if device == Device::Touch && !self.finger_draws {
             return false;
         }
         self.pointer_cancel();
         let erase = erase_button || device == Device::PenEraser || self.tool == ToolMode::Eraser;
-        let at = self.view.to_doc(Point::new(sample.x, sample.y));
         if self.tool == ToolMode::Lasso && !erase {
             let gesture = self.begin_selection_gesture(at);
             self.gesture = Some(gesture);

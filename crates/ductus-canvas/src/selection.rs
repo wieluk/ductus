@@ -206,6 +206,29 @@ impl Canvas {
     }
 
     pub(crate) fn begin_selection_gesture(&mut self, at: Point) -> Gesture {
+        if let Some(gesture) = self.grab_selection(at) {
+            return gesture;
+        }
+        self.clear_selection();
+        Gesture::Lasso { points: vec![at] }
+    }
+
+    /// The hand takes the selection, else the text, formula or picture under it, which it selects.
+    pub(crate) fn begin_hand_gesture(&mut self, at: Point) -> Option<Gesture> {
+        if let Some(gesture) = self.grab_selection(at) {
+            return Some(gesture);
+        }
+        self.clear_selection();
+        let id = self.object_at(at)?;
+        self.selection = vec![id];
+        if let Some(bounds) = self.selection_bounds() {
+            self.tiles.invalidate(TileLayer::Base, bounds);
+        }
+        Some(Gesture::MovingSelection { start: at })
+    }
+
+    /// A drag on a corner grip scales the selection; inside its frame, it moves.
+    fn grab_selection(&mut self, at: Point) -> Option<Gesture> {
         if let (Some(frame), Some(bounds)) = (self.selection_frame(), self.selection_bounds()) {
             let reach = GRIP_REACH / self.view.zoom;
             let corners = [
@@ -232,14 +255,13 @@ impl Canvas {
             if grip.is_some() || frame.contains(at) {
                 // The selection moves from the base layer to the overlay.
                 self.tiles.invalidate(TileLayer::Base, bounds);
-                return match grip {
+                return Some(match grip {
                     Some((start, anchor)) => Gesture::ScalingSelection { anchor, start },
                     None => Gesture::MovingSelection { start: at },
-                };
+                });
             }
         }
-        self.clear_selection();
-        Gesture::Lasso { points: vec![at] }
+        None
     }
 
     pub(crate) fn finish_lasso(&mut self, points: &[Point]) {
@@ -267,14 +289,23 @@ impl Canvas {
                     .map(|s| s.id)
             })
             .or_else(|| self.math_at(at))
-            .or_else(|| {
-                self.doc
-                    .images()
-                    .iter()
-                    .rev()
-                    .find(|i| image_rect(i).contains(at))
-                    .map(|i| i.id)
-            })
+            .or_else(|| self.image_at(at))
+    }
+
+    /// What the hand picks up: everything but ink, which it would otherwise grab when panning.
+    fn object_at(&self, at: Point) -> Option<StrokeId> {
+        self.text_at(at)
+            .or_else(|| self.math_at(at))
+            .or_else(|| self.image_at(at))
+    }
+
+    fn image_at(&self, at: Point) -> Option<StrokeId> {
+        self.doc
+            .images()
+            .iter()
+            .rev()
+            .find(|i| image_rect(i).contains(at))
+            .map(|i| i.id)
     }
 
     pub(crate) fn select_inside(&mut self, lasso: &[Point]) {

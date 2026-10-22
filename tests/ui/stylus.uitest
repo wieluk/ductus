@@ -1,19 +1,19 @@
 # Outside the page the pen acts as a mouse: the pen bar, ribbon colors, tabs and menus.
 size 1280 800
-pen-tap preset4
+pen-tap preset5
 expect-prop canvas tool Pen
 expect-prop canvas penColor #1f4fd1
 # Its tooltip is open now and must not take the next tap.
 wait 900
-pen-tap preset8
+pen-tap preset9
 expect-prop canvas tool Highlighter
-expect-prop preset8 hovered true
+expect-prop preset9 hovered true
 pen p=0.6 400,400 500,420
-expect-prop preset8 hovered false
+expect-prop preset9 hovered false
 expect-cursor hidden
 pen-tap tab_draw
 expect-cursor shown
-pen-tap preset7
+pen-tap preset8
 expect-prop canvas penPattern dotted
 pen-tap toolPen
 pen-tap color2

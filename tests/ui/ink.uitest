@@ -19,7 +19,7 @@ key Backspace
 expect-prop canvas selectionCount 0
 expect-prop canvas canUndo true
 # Eraser size from the pen bar.
-right-click-item preset1
+right-click-item preset2
 click-item barEraserSize30
 expect-prop canvas eraserSize 30
 expect-prop canvas tool Eraser

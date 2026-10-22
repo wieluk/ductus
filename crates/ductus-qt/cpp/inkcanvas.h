@@ -105,7 +105,7 @@ class InkCanvas : public QQuickItem
 
 public:
     /// Text and Math aren't engine tools: they place boxes.
-    enum Tool { Pen, Highlighter, Eraser, Lasso, Text, Math };
+    enum Tool { Pen, Highlighter, Eraser, Lasso, Text, Math, Hand };
     Q_ENUM(Tool)
 
     explicit InkCanvas(QQuickItem *parent = nullptr);
@@ -272,6 +272,9 @@ private:
     bool m_cursorHidden = false;
 
     bool m_mousePanning = false;
+    Qt::MouseButton m_panButton = Qt::MiddleButton;
+    /// The hand tool's pen on empty paper scrolls the page.
+    bool m_tabletPanning = false;
     QPointF m_lastPanPosition;
     bool m_touchDrawing = false;
     bool m_pinching = false;

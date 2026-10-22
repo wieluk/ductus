@@ -208,6 +208,7 @@ impl CanvasEngine {
             1 => ToolMode::Highlighter,
             2 => ToolMode::Eraser,
             3 => ToolMode::Lasso,
+            4 => ToolMode::Hand,
             _ => ToolMode::Pen,
         });
     }
@@ -435,6 +436,7 @@ impl CanvasEngine {
             ToolMode::Highlighter => 1,
             ToolMode::Eraser => 2,
             ToolMode::Lasso => 3,
+            ToolMode::Hand => 4,
         }
     }
 

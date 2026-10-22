@@ -18,6 +18,7 @@ Rectangle {
 
     readonly property var tools: [
         { tool: "lasso", icon: "lasso", label: qsTr("Lasso") },
+        { tool: "hand", icon: "hand", label: qsTr("Hand: move text, formulas and pictures, or scroll") },
         { tool: "eraser", icon: "eraser", label: qsTr("Eraser") },
         { tool: "text", icon: "text", label: qsTr("Text") },
         { tool: "math", icon: "math", label: qsTr("Math") },
@@ -30,6 +31,7 @@ Rectangle {
     ]
     readonly property var defaults: [
         { type: "tool", tool: "lasso" },
+        { type: "tool", tool: "hand" },
         { type: "tool", tool: "eraser" },
         { type: "tool", tool: "text" },
         { type: "pen", color: "#1a1a1f", width: 1.5 },
@@ -100,6 +102,7 @@ Rectangle {
     function toolChecked(name) {
         switch (name) {
         case "lasso": return canvas.tool === InkCanvas.Lasso
+        case "hand": return canvas.tool === InkCanvas.Hand
         case "eraser": return canvas.tool === InkCanvas.Eraser
         case "text": return canvas.tool === InkCanvas.Text
         case "math": return canvas.tool === InkCanvas.Math
@@ -120,6 +123,7 @@ Rectangle {
     function runTool(name) {
         switch (name) {
         case "lasso": canvas.tool = InkCanvas.Lasso; break
+        case "hand": canvas.tool = InkCanvas.Hand; break
         case "eraser": canvas.tool = InkCanvas.Eraser; break
         case "text": canvas.tool = InkCanvas.Text; break
         case "math": canvas.tool = InkCanvas.Math; break
