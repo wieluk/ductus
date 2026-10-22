@@ -19,6 +19,7 @@
 #include <QTabletEvent>
 #include <QTouchEvent>
 #include <QWheelEvent>
+#include <private/qhighdpiscaling_p.h>
 #include <qpa/qwindowsysteminterface.h>
 
 #include <algorithm>
@@ -834,8 +835,10 @@ void InkCanvas::forwardAsMouse(QTabletEvent *event)
         type = QEvent::MouseButtonRelease;
     }
     const bool down = m_tabletForward && type != QEvent::MouseButtonRelease;
-    QWindowSystemInterface::handleMouseEvent(window(), event->timestamp(), event->position(),
-                                             event->globalPosition(),
+    // It expects native pixels like a platform sends; Qt's own are scaled on 125-200% screens.
+    QWindowSystemInterface::handleMouseEvent(window(), event->timestamp(),
+                                             QHighDpi::toNativeLocalPosition(event->position(), window()),
+                                             QHighDpi::toNativeGlobalPosition(event->globalPosition(), window()),
                                              down ? Qt::MouseButtons(m_forwardButton) : Qt::NoButton,
                                              type == QEvent::MouseMove ? Qt::NoButton : m_forwardButton,
                                              type);

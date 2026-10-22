@@ -19,6 +19,7 @@
 // The GUI helpers need QT_GUI_LIB, which this build doesn't define.
 #include <QtTest/qtest_gui.h>
 #include <QTimer>
+#include <private/qhighdpiscaling_p.h>
 #include <qpa/qwindowsysteminterface.h>
 
 #include <cstdio>
@@ -266,8 +267,11 @@ private:
     {
         const Qt::MouseButtons buttons =
             type == QEvent::TabletRelease ? Qt::NoButton : Qt::MouseButtons(button);
-        QWindowSystemInterface::handleTabletEvent(m_window, m_time += 5, device, pos,
-                                                  m_window->mapToGlobal(pos), buttons, pressure,
+        // Platforms report native pixels; Qt scales them, as on a 150% Windows screen.
+        QWindowSystemInterface::handleTabletEvent(m_window, m_time += 5, device,
+                                                  QHighDpi::toNativeLocalPosition(pos, m_window),
+                                                  QHighDpi::toNativeGlobalPosition(m_window->mapToGlobal(pos), m_window),
+                                                  buttons, pressure,
                                                   0, 0, 0, 0, 0, Qt::NoModifier);
         QWindowSystemInterface::flushWindowSystemEvents();
     }

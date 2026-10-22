@@ -1,4 +1,5 @@
-# Outside the page the pen acts as a mouse: the pen bar, ribbon colors, tabs and menus.
+# Outside the page the pen acts as a mouse: the pen bar, ribbon colors, tabs and menus; at 150% scaling, as on Windows tablets.
+# env: QT_SCALE_FACTOR=1.5
 size 1280 800
 pen-tap preset5
 expect-prop canvas tool Pen

@@ -61,7 +61,7 @@ fn main() {
         link_android_qt_libraries();
     }
     let version = format!("\"{}\"", env!("CARGO_PKG_VERSION"));
-    // The UI test driver needs Qt's private QPA headers; cxx-qt marks raw cc access unsafe.
+    // Injecting input (pen as mouse, UI test driver) needs Qt's private headers; cxx-qt marks raw cc access unsafe.
     #[allow(unsafe_code)]
     let builder = unsafe {
         builder.cc_builder(|cc| {
