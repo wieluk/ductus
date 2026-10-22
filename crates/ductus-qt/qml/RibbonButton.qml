@@ -24,7 +24,11 @@ ToolButton {
     font.pixelSize: 13
     palette.buttonText: icon.color
 
-    ToolTip.visible: hovered && tip.length > 0
+    // Once pressed it stays hidden until the pointer leaves, so it doesn't cover a menu it opened.
+    property bool tipDismissed: false
+    onPressed: tipDismissed = true
+    onHoveredChanged: if (!hovered) tipDismissed = false
+    ToolTip.visible: hovered && tip.length > 0 && !tipDismissed
     ToolTip.delay: 600
     ToolTip.text: tip
 

@@ -188,7 +188,17 @@ impl LibraryHandle {
             row.expanded = expanded.contains(folder.as_str());
             out.push(row);
             if row_open(&out) {
+                let before = out.len();
                 self.tree_rows(&folder, 1, color, &view, &mut out);
+                if out.len() == before {
+                    out.push(TreeRow {
+                        depth: 1,
+                        path: folder.clone(),
+                        section: "notebooks".into(),
+                        placeholder: true,
+                        ..TreeRow::default()
+                    });
+                }
             }
         }
         Ok(out)

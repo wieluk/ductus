@@ -20,8 +20,8 @@ click-item menuMakeNotebook
 type Mechanics
 key Return
 click-item viewNotebooks
-right-click-item row_Uni/Mech/notebook
-click-item menuNewPage
+# An empty notebook offers to add its first page.
+click-item empty_Uni/Mech/notebook
 type Week1
 key Return
 expect-file Uni/Mech/notebook/Week1.svg

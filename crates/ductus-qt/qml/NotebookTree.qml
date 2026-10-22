@@ -270,6 +270,7 @@ Rectangle {
                 required property bool isNotebook
                 required property string section
                 required property string notebookName
+                required property bool placeholder
                 // Folders shows which folders are notebooks under another name.
                 readonly property string caption: subtitle.length > 0 ? subtitle
                     : isNotebook && !AppController.notebookView && notebookName !== name
@@ -278,12 +279,14 @@ Rectangle {
                 readonly property bool isSubject: isFolder && depth === 0
                 readonly property color mark: color.length > 0 ? color : Theme.accent
 
-                objectName: (section === "recent" ? "recent_" : quick ? "quick_" : "row_") + path
+                objectName: (placeholder ? "empty_" : section === "recent" ? "recent_" : quick ? "quick_" : "row_") + path
                 width: ListView.view.width
                 height: caption.length > 0 ? 42 : 34
 
                 function activate() {
-                    if (row.isFolder && row.quick)
+                    if (row.placeholder)
+                        sidebar.newPageRequested(row.path)
+                    else if (row.isFolder && row.quick)
                         AppController.reveal(row.path)
                     else if (row.isFolder)
                         AppController.toggleExpanded(row.path)
@@ -303,6 +306,7 @@ Rectangle {
                 }
                 TapHandler {
                     acceptedButtons: Qt.RightButton
+                    enabled: !row.placeholder
                     onTapped: (eventPoint) => rowMenu.popup(eventPoint.position.x, eventPoint.position.y)
                 }
 
@@ -346,7 +350,7 @@ Rectangle {
                         color: row.mark
                     }
                     IconImage {
-                        visible: !row.isSubject || row.isNotebook
+                        visible: (!row.isSubject || row.isNotebook) && !row.placeholder
                         Layout.preferredWidth: 16
                         Layout.preferredHeight: 16
                         source: Qt.resolvedUrl(row.isNotebook ? "icons/notebooks.svg"
@@ -358,14 +362,15 @@ Rectangle {
                     }
 
                     ColumnLayout {
-                        visible: sidebar.renaming !== row.path || row.quick
+                        visible: sidebar.renaming !== row.path || row.quick || row.placeholder
                         Layout.fillWidth: true
                         spacing: 0
                         Label {
                             Layout.fillWidth: true
-                            text: row.name
+                            text: row.placeholder ? qsTr("No pages yet. Tap to add one.") : row.name
                             elide: Text.ElideRight
-                            color: row.isFile ? Theme.textMuted : Theme.text
+                            color: row.isFile || row.placeholder ? Theme.textMuted : Theme.text
+                            font.italic: row.placeholder
                             font.pixelSize: 13
                             font.weight: (row.isSubject && !row.quick) || row.isCurrent ? Font.DemiBold : Font.Normal
                         }
@@ -382,7 +387,7 @@ Rectangle {
                     TextField {
                         id: nameField
                         objectName: "renameField"
-                        visible: sidebar.renaming === row.path && !row.quick
+                        visible: sidebar.renaming === row.path && !row.quick && !row.placeholder
                         Layout.fillWidth: true
                         text: row.name
                         font.pixelSize: 13
@@ -443,7 +448,7 @@ Rectangle {
                     }
                     RibbonButton {
                         objectName: "more_" + row.path
-                        visible: hover.hovered || row.isCurrent || rowMenu.visible
+                        visible: (hover.hovered || row.isCurrent || rowMenu.visible) && !row.placeholder
                         iconName: "more"
                         tip: qsTr("More")
                         implicitWidth: 26

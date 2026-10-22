@@ -111,6 +111,8 @@ QVariant NotebookModel::data(const QModelIndex &index, int role) const
         return row.section;
     case NotebookNameRole:
         return row.notebookName;
+    case PlaceholderRole:
+        return row.placeholder;
     default:
         return {};
     }
@@ -136,6 +138,7 @@ QHash<int, QByteArray> NotebookModel::roleNames() const
         {IsNotebookRole, "isNotebook"},
         {SectionRole, "section"},
         {NotebookNameRole, "notebookName"},
+        {PlaceholderRole, "placeholder"},
     };
 }
 
@@ -370,7 +373,14 @@ void AppController::rememberPage(const QString &path)
 
 QString AppController::rememberedPage() const
 {
-    return QSettings().value(QStringLiteral("library/lastPages")).toMap().value(libraryPath()).toString();
+    QSettings settings;
+    const QVariantMap pages = settings.value(QStringLiteral("library/lastPages")).toMap();
+    if (pages.contains(libraryPath()))
+        return pages.value(libraryPath()).toString();
+    // Versions before per-library pages kept one; it is offered once, to the first library opened.
+    const QString old = settings.value(QStringLiteral("library/lastPage")).toString();
+    settings.remove(QStringLiteral("library/lastPage"));
+    return old;
 }
 
 void AppController::closePage()
@@ -413,7 +423,7 @@ void AppController::refreshTree()
             out.append({toQ(r.name), toQ(r.path), int(r.depth), r.is_folder, r.is_pdf,
                         toQ(r.color), r.has_children, r.expanded, r.conflict, r.is_file,
                         toQ(r.subtitle), r.pinned, r.quick, r.is_notebook, toQ(r.section),
-                        toQ(r.notebook_name)});
+                        toQ(r.notebook_name), r.placeholder});
         }
         m_tree.setRows(std::move(out));
     });

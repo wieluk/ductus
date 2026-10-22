@@ -99,6 +99,16 @@ public:
                    args);
                 } else if (cmd == u"click") {
             QTest::mouseClick(m_window, Qt::LeftButton, {}, parsePoint(args.value(0)).toPoint());
+        } else if (cmd == u"mouse-drag") {
+            // `mouse-drag x,y x,y`: the left button down along a straight line, like a mouse stroke.
+            const QPoint from = parsePoint(args.value(0)).toPoint();
+            const QPoint to = parsePoint(args.value(1)).toPoint();
+            QTest::mouseMove(m_window, from);
+            QTest::mousePress(m_window, Qt::LeftButton, {}, from);
+            for (int i = 1; i <= 20; ++i)
+                QTest::mouseMove(m_window, from + (to - from) * i / 20, 10);
+            QTest::mouseRelease(m_window, Qt::LeftButton, {}, to);
+            QTest::qWait(60);
         } else if (cmd == u"click-item" || cmd == u"right-click-item") {
             const Qt::MouseButton button = cmd == u"click-item" ? Qt::LeftButton : Qt::RightButton;
             if (!clickItem(rest, button))

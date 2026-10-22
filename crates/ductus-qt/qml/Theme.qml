@@ -15,6 +15,8 @@ QtObject {
     readonly property color ribbonBorder: dark ? "#3b3847" : "#e0dde9"
     readonly property color text: dark ? "#ecebf2" : "#1f1d26"
     readonly property color textMuted: dark ? "#a29fb2" : "#6a6779"
+    /// Under ink swatches on dark bars: pens show as they write on the light page.
+    readonly property color swatchPaper: "#f4f3f8"
     // Still readable: disabled options must be legible, just quieter.
     readonly property color textDisabled: dark ? "#8b879c" : "#9e9bab"
     readonly property color hover: dark ? "#383545" : "#e9e6f3"

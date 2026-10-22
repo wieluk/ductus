@@ -411,6 +411,7 @@ Dialog {
                     objectName: "sidebarSide"
                     enabled: dialog.window.sidebarVisible
                     label: qsTr("Notebook list side")
+                    hint: qsTr("Next to the page on the left or the right.")
                     options: [qsTr("Left"), qsTr("Right")]
                     value: dialog.window.sidebarRight ? 1 : 0
                     onPicked: (index) => dialog.window.sidebarRight = index === 1
@@ -418,7 +419,7 @@ Dialog {
                 Toggle {
                     objectName: "penBar"
                     label: qsTr("Pen bar")
-                    hint: qsTr("Your favourite pens in a column at the side of the page.")
+                    hint: qsTr("Your favorite pens in a column at the side of the page.")
                     checked: dialog.window.penBarVisible
                     onToggled: (on) => dialog.window.penBarVisible = on
                 }

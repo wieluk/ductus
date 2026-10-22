@@ -219,7 +219,10 @@ Rectangle {
                     else
                         bar.apply(modelData)
                 }
-                ToolTip.visible: hovered
+                property bool tipDismissed: false
+                onPressed: tipDismissed = true
+                onHoveredChanged: if (!hovered) tipDismissed = false
+                ToolTip.visible: hovered && !tipDismissed
                 ToolTip.delay: 600
                 ToolTip.text: isTool ? info.label
                                      : (highlighter ? qsTr("Highlighter") : qsTr("Pen")) + " · " + modelData.width
@@ -242,6 +245,13 @@ Rectangle {
                     border.color: Theme.accent
                 }
                 contentItem: Item {
+                    Rectangle {
+                        visible: Theme.dark && !item.isTool
+                        anchors.fill: parent
+                        anchors.margins: 2
+                        radius: Theme.radius
+                        color: Theme.swatchPaper
+                    }
                     LinePatternIcon {
                         visible: !item.isTool && !item.highlighter
                                  && (item.modelData.pattern || "solid") !== "solid"
@@ -261,8 +271,6 @@ Rectangle {
                         rotation: -35
                         color: item.isTool ? "transparent" : item.modelData.color
                         opacity: item.highlighter ? 0.6 : 1
-                        border.width: Theme.dark && !item.highlighter ? 1 : 0
-                        border.color: Qt.rgba(1, 1, 1, 0.4)
                     }
                     IconImage {
                         visible: item.isTool

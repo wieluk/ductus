@@ -45,6 +45,8 @@ pub mod qobject {
         is_notebook: bool,
         /// A notebook folder's name under Notebooks.
         notebook_name: String,
+        /// Stands in for the pages of an open notebook that has none; `path` is the notebook's.
+        placeholder: bool,
     }
 
     #[derive(Debug, Default)]

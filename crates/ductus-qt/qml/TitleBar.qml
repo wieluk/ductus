@@ -91,6 +91,12 @@ Rectangle {
                     text: qsTr("Save Now")
                     onTriggered: AppController.saveNow()
                 }
+                AppMenuItem {
+                    objectName: "menuClosePage"
+                    text: qsTr("Close Page")
+                    enabled: AppController.currentPage.length > 0
+                    onTriggered: AppController.closePage()
+                }
                 AppMenuSeparator {}
                 AppMenuItem {
                     objectName: "menuExportPdf"

@@ -49,6 +49,7 @@ public:
         IsNotebookRole,
         SectionRole,
         NotebookNameRole,
+        PlaceholderRole,
     };
 
     struct Row {
@@ -68,6 +69,7 @@ public:
         bool isNotebook = false;
         QString section;
         QString notebookName;
+        bool placeholder = false;
     };
 
     using QAbstractListModel::QAbstractListModel;

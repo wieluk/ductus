@@ -115,11 +115,21 @@ AppDialog {
                     objectName: "pickFolder_" + modelData.name
                     width: ListView.view.width
                     height: 32
-                    text: modelData.notebook.length > 0
-                          ? qsTr("%1 (notebook “%2”)").arg(modelData.name).arg(modelData.notebook)
-                          : modelData.name
+                    text: modelData.notebook.length === 0 ? modelData.name
+                          : modelData.notebook === modelData.name ? qsTr("%1 (notebook)").arg(modelData.name)
+                          : qsTr("%1 (notebook “%2”)").arg(modelData.name).arg(modelData.notebook)
                     font.pixelSize: 13
+                    rightPadding: 28
                     onClicked: dialog.location = modelData.path
+                    // Tapping opens the folder; the place shown above is where it goes.
+                    Label {
+                        anchors.right: parent.right
+                        anchors.rightMargin: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "›"
+                        color: Theme.textMuted
+                        font.pixelSize: 16
+                    }
                 }
                 Label {
                     anchors.centerIn: parent

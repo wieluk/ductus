@@ -529,7 +529,7 @@ Rectangle {
                 objectName: "penBarToggle"
                 iconName: "pen-bar"
                 text: qsTr("Pen bar")
-                tip: qsTr("Your favourite pens at the side of the page")
+                tip: qsTr("Your favorite pens at the side of the page")
                 checkable: true
                 checked: ribbon.window.penBarVisible
                 onClicked: ribbon.window.penBarVisible = checked
