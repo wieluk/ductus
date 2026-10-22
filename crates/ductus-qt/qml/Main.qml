@@ -12,6 +12,7 @@ ApplicationWindow {
     property string themeMode: "system"
     property bool darkMode: false
     property bool sidebarVisible: true
+    property int sidebarWidth: Theme.sidebarWidth
     property bool penBarVisible: true
     property bool penBarRight: false
     property alias currentTab: titleBar.currentTab
@@ -87,6 +88,7 @@ ApplicationWindow {
         category: "ui"
         property alias themeMode: window.themeMode
         property alias sidebarVisible: window.sidebarVisible
+        property alias sidebarWidth: window.sidebarWidth
         property alias penBarRight: window.penBarRight
         property alias holdDelay: canvas.holdDelay
         property alias palmRejection: canvas.palmRejection
@@ -239,8 +241,25 @@ ApplicationWindow {
                 id: tree
                 objectName: "notebookTree"
                 Layout.fillHeight: true
-                Layout.preferredWidth: Theme.sidebarWidth
+                Layout.preferredWidth: Math.min(window.sidebarWidth, window.width * 0.6)
                 visible: window.sidebarVisible && window.visibility !== Window.FullScreen
+
+                MouseArea {
+                    objectName: "sidebarResize"
+                    property real startX
+                    property int startWidth
+                    anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
+                    width: 6
+                    cursorShape: Qt.SizeHorCursor
+                    onPressed: (mouse) => {
+                        startX = mapToItem(null, mouse.x, 0).x
+                        startWidth = tree.width
+                    }
+                    onPositionChanged: (mouse) => {
+                        const moved = mapToItem(null, mouse.x, 0).x - startX
+                        window.sidebarWidth = Math.round(Math.max(200, Math.min(640, startWidth + moved)))
+                    }
+                }
                 onDeleteRequested: (path, name, isFolder) => {
                     deleteDialog.path = path
                     deleteDialog.name = name
