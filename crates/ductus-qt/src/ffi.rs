@@ -126,6 +126,47 @@ pub mod qobject {
         file: String,
     }
 
+    #[derive(Debug, Default)]
+    struct ConvertState {
+        busy: bool,
+        done: usize,
+        total: usize,
+        result: String,
+        error: String,
+    }
+
+    #[derive(Debug, Default)]
+    struct ModelRow {
+        id: String,
+        title: String,
+        size: u64,
+        installed: bool,
+    }
+
+    /// `busy` is the id of the model being downloaded, or empty.
+    #[derive(Debug, Default)]
+    struct ModelsState {
+        busy: String,
+        received: u64,
+        total: u64,
+        error: String,
+    }
+
+    extern "Rust" {
+        type ConvertHandle;
+        fn open_converter() -> Box<ConvertHandle>;
+        fn start(self: &ConvertHandle, kind: &str, url: &str, model: &str, jobs: Vec<LineJob>);
+        fn state(self: &ConvertHandle) -> ConvertState;
+
+        type ModelsHandle;
+        fn open_models() -> Box<ModelsHandle>;
+        fn model_rows(dir: &str) -> Vec<ModelRow>;
+        fn remove_model(dir: &str, id: &str) -> String;
+        fn install(self: &ModelsHandle, dir: &str, id: &str);
+        fn cancel(self: &ModelsHandle);
+        fn state(self: &ModelsHandle) -> ModelsState;
+    }
+
     extern "Rust" {
         type UpdateHandle;
         fn open_updater() -> Box<UpdateHandle>;
@@ -323,6 +364,8 @@ pub mod qobject {
         fn selection_rect(self: &CanvasEngine) -> Vec<f64>;
         fn clear_selection(self: &mut CanvasEngine);
         fn select_all(self: &mut CanvasEngine);
+        fn selection_jobs(self: &CanvasEngine, math: bool) -> Vec<LineJob>;
+        fn replace_ink(self: &mut CanvasEngine, content: &str, math: bool) -> bool;
         fn delete_selection(self: &mut CanvasEngine);
         fn copy_selection(self: &mut CanvasEngine);
         fn cut_selection(self: &mut CanvasEngine);
@@ -360,8 +403,10 @@ pub mod qobject {
     }
 }
 
+pub use crate::convert::{ConvertHandle, open_converter};
 pub use crate::engine::{CanvasEngine, new_canvas_engine};
 pub use crate::library::{LibraryHandle, PrintJob, open_library, pdf_support_problem, pdf_text};
+pub use crate::models::{ModelsHandle, model_rows, open_models, remove_model};
 pub use crate::recognize::{RecognitionHandle, open_recognizer};
 pub use crate::search::{SearchHandle, open_search};
 pub use crate::update::{UpdateHandle, open_updater, update_is_newer};

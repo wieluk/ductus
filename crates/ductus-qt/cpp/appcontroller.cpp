@@ -1,5 +1,6 @@
 #include "ductus-qt/cpp/appcontroller.h"
 #include "ductus-qt/cpp/inkcanvas.h"
+#include "ductus-qt/cpp/models.h"
 #include "ductus-qt/src/ffi.cxxqt.h"
 
 #include <QAbstractTextDocumentLayout>
@@ -17,6 +18,7 @@
 #include <QPdfWriter>
 #include <QTextDocument>
 #include <QDir>
+#include <QLocale>
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QImage>
@@ -185,6 +187,9 @@ AppController::AppController(QObject *parent)
         refreshIndex();
     });
     m_recognizer.emplace(open_recognizer());
+    m_converter.emplace(open_converter());
+    m_convertPoll.setInterval(200);
+    connect(&m_convertPoll, &QTimer::timeout, this, &AppController::pollConversion);
     m_recognizeTimer.setSingleShot(true);
     m_recognizeTimer.setInterval(2000);
     connect(&m_recognizeTimer, &QTimer::timeout, this, &AppController::recognizeOpenPage);
@@ -882,9 +887,17 @@ void AppController::recognizeOpenPage()
     if (kind == u"off")
         return;
     QSettings settings;
-    (*m_recognizer)->configure(toStd(kind),
-                               toStd(settings.value(QStringLiteral("hwr/url")).toString()),
-                               toStd(settings.value(QStringLiteral("hwr/model")).toString()),
+    QString url = settings.value(QStringLiteral("hwr/url")).toString();
+    QString model = settings.value(QStringLiteral("hwr/model")).toString();
+    if (kind == u"builtin") {
+        url = Models::dir();
+        model = textModel();
+        if (!Models::installed(model)) {
+            setRecognitionStatus(tr("Download a handwriting model in Settings › Handwriting."));
+            return;
+        }
+    }
+    (*m_recognizer)->configure(toStd(kind), toStd(url), toStd(model),
                                toStd(settings.value(QStringLiteral("hwr/key")).toString()));
     const QString lang = settings.value(QStringLiteral("hwr/lang"), QStringLiteral("auto")).toString();
     const QString page = currentPage();
@@ -897,6 +910,63 @@ void AppController::recognizeOpenPage()
     if (!jobs.empty())
         m_recognitionPoll.start();
     pollRecognition();
+}
+
+QString AppController::textModel() const
+{
+    const QString lang = QSettings().value(QStringLiteral("hwr/lang"), QStringLiteral("auto")).toString();
+    if (lang == u"de" || lang == u"en")
+        return QStringLiteral("text-") + lang;
+    if (Models::installed(QStringLiteral("text-de")))
+        return QStringLiteral("text-de");
+    if (Models::installed(QStringLiteral("text-en")) || QLocale::system().language() != QLocale::German)
+        return QStringLiteral("text-en");
+    return QStringLiteral("text-de");
+}
+
+void AppController::convertSelection(const QString &kind)
+{
+    if (!m_canvas || m_converting)
+        return;
+    const bool math = kind == u"math";
+    if (kind == u"page")
+        m_canvas->selectAll();
+    QString recognizer = QStringLiteral("builtin");
+    QString model = math ? QStringLiteral("math") : textModel();
+    // Tests: every line reads as this text.
+    const QString fixed = qEnvironmentVariable("DUCTUS_TEST_RECOGNIZER");
+    if (!fixed.isEmpty())
+        recognizer = QStringLiteral("fixed:") + fixed;
+    else if (!Models::installed(model)) {
+        Q_EMIT modelsNeeded(model);
+        return;
+    }
+    rust::Vec<LineJob> jobs = m_canvas->engine().selection_jobs(math);
+    if (jobs.empty()) {
+        Q_EMIT notice(tr("Select some handwriting first."));
+        return;
+    }
+    m_convertMath = math;
+    m_converting = true;
+    Q_EMIT convertingChanged();
+    Q_EMIT notice(tr("Reading the handwriting…"));
+    (*m_converter)->start(toStd(recognizer), toStd(Models::dir()), toStd(model), std::move(jobs));
+    m_convertPoll.start();
+}
+
+void AppController::pollConversion()
+{
+    const ConvertState state = (*m_converter)->state();
+    if (state.busy)
+        return;
+    m_convertPoll.stop();
+    m_converting = false;
+    Q_EMIT convertingChanged();
+    const QString error = toQ(state.error);
+    if (!error.isEmpty())
+        Q_EMIT errorOccurred(tr("The handwriting couldn't be read: %1").arg(error));
+    else if (!m_canvas || !m_canvas->replaceInk(toQ(state.result), m_convertMath))
+        Q_EMIT notice(tr("No handwriting was recognized."));
 }
 
 void AppController::setRecognitionStatus(const QString &status)

@@ -941,6 +941,7 @@ fn tail_bounds(points: &[ductus_core::InkPoint], style: &StrokeStyle) -> Option<
     Some(r.inflate(pad, pad))
 }
 
+mod convert;
 mod focus;
 mod math;
 mod selection;

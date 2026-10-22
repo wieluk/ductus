@@ -1,4 +1,4 @@
-use crate::ffi::qobject::{PointerSample, TextRow, TileInfo};
+use crate::ffi::qobject::{LineJob, PointerSample, TextRow, TileInfo};
 use ductus_canvas::{Canvas, Device, EraserMode, Sample, TILE_SIZE, TileKey, TileLayer, ToolMode};
 use ductus_core::{Orientation, PageKind, PageSettings, PaperSize, PatternStyle, Rgba, StrokeId};
 use kurbo::{Point, Vec2};
@@ -374,6 +374,35 @@ impl CanvasEngine {
 
     pub fn delete_selection(&mut self) {
         self.0.delete_selection();
+    }
+
+    /// The selected ink as images to read: one per line of text, or one for a formula.
+    pub fn selection_jobs(&self, math: bool) -> Vec<LineJob> {
+        let ink = self.0.selected_ink();
+        let job = |png, rect: kurbo::Rect| LineJob {
+            png,
+            key: String::new(),
+            x: rect.x0,
+            y: rect.y0,
+            w: rect.width(),
+            h: rect.height(),
+        };
+        if math {
+            let all: Vec<usize> = (0..ink.len()).collect();
+            let rect = ink.iter().map(ductus_ink::bounds).reduce(|a, b| a.union(b));
+            return match (ductus_hwr::ink_png(&ink, &all, 896), rect) {
+                (Some(png), Some(rect)) => vec![job(png, rect)],
+                _ => Vec::new(),
+            };
+        }
+        ductus_hwr::find_lines(&ink)
+            .into_iter()
+            .filter_map(|line| Some(job(ductus_hwr::line_png(&ink, &line, 96)?, line.rect)))
+            .collect()
+    }
+
+    pub fn replace_ink(&mut self, content: &str, math: bool) -> bool {
+        self.0.replace_ink(content, math)
     }
 
     pub fn copy_selection(&mut self) {

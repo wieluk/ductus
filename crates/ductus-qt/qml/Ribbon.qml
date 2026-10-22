@@ -329,6 +329,14 @@ Rectangle {
                 onClicked: ribbon.canvas.selectAll()
             }
             RibbonButton {
+                objectName: "pageToText"
+                iconName: "text"
+                text: qsTr("Page to text")
+                tip: qsTr("Replace all handwriting on the page with typed text")
+                enabled: !AppController.converting
+                onClicked: AppController.convertSelection("page")
+            }
+            RibbonButton {
                 objectName: "paste"
                 iconName: "paste"
                 tip: qsTr("Paste ink or a screenshot (Ctrl+V)")

@@ -454,22 +454,59 @@ Dialog {
             }
 
             Section {
-                Heading { text: qsTr("Reading handwriting") }
+                Heading { text: qsTr("Built-in recognition") }
+                Described {
+                    label: qsTr("Turns handwriting into text or formulas on this computer.")
+                    hint: qsTr("Select handwriting with the lasso and choose Text or Formula, or use Draw › Page to text. The models are large, so each downloads once, when you want it; nothing is sent anywhere.")
+                }
+                Repeater {
+                    model: Models.entries
+                    delegate: RowLayout {
+                        id: modelRow
+                        required property var modelData
+                        readonly property bool loading: Models.busy === modelData.id
+                        Layout.fillWidth: true
+                        spacing: 12
+                        Described {
+                            label: modelRow.modelData.title
+                            hint: modelRow.loading ? qsTr("Downloading… %1%").arg(Math.round(Models.progress * 100))
+                                : (modelRow.modelData.size / 1e9).toFixed(1) + " GB"
+                                  + (modelRow.modelData.installed ? " · " + qsTr("installed") : "")
+                        }
+                        RibbonButton {
+                            objectName: "model_" + modelRow.modelData.id
+                            text: modelRow.modelData.installed ? qsTr("Remove")
+                                : modelRow.loading ? qsTr("Cancel") : qsTr("Download")
+                            enabled: Models.busy === "" || modelRow.loading
+                            onClicked: modelRow.modelData.installed ? Models.remove(modelRow.modelData.id)
+                                : modelRow.loading ? Models.cancel() : Models.download(modelRow.modelData.id)
+                        }
+                    }
+                }
+                Label {
+                    visible: Models.error.length > 0
+                    Layout.fillWidth: true
+                    text: Models.error
+                    color: Theme.danger
+                    font.pixelSize: 12
+                    wrapMode: Text.WordWrap
+                }
+                Heading { text: qsTr("Reading handwriting for search") }
                 Described {
                     label: qsTr("Search finds handwriting once it has been read.")
-                    hint: qsTr("After a page is saved, its new lines of writing are sent, one image per line, to the recognizer chosen here. The text is kept with the page and only read again when the ink changes.")
+                    hint: qsTr("After a page is saved, its new lines of writing are read by the recognizer chosen here. The text is kept with the page and only read again when the ink changes. Built-in recognition takes a few seconds per line.")
                 }
                 Choice {
                     objectName: "hwrBackend"
                     label: qsTr("Recognizer")
-                    readonly property var kinds: ["off", "server"]
-                    options: [qsTr("Off"), qsTr("Vision model server")]
+                    readonly property var kinds: ["off", "builtin", "server"]
+                    options: [qsTr("Off"), qsTr("Built-in"), qsTr("Vision model server")]
                     value: kinds.indexOf(hwr.backend)
                     onPicked: (index) => hwr.backend = kinds[index]
                 }
                 Field {
                     objectName: "hwrUrl"
-                    visible: hwr.backend !== "off"
+                    visible: hwr.backend === "server"
                     label: qsTr("Server")
                     hint: qsTr("An OpenAI-compatible API: Ollama, LM Studio, llama.cpp or a cloud service.")
                     placeholder: "http://localhost:11434/v1"
@@ -478,7 +515,7 @@ Dialog {
                 }
                 Field {
                     objectName: "hwrModel"
-                    visible: hwr.backend !== "off"
+                    visible: hwr.backend === "server"
                     label: qsTr("Model")
                     hint: qsTr("A model that reads images, e.g. qwen2.5vl.")
                     placeholder: "qwen2.5vl"
@@ -487,7 +524,7 @@ Dialog {
                 }
                 Field {
                     objectName: "hwrKey"
-                    visible: hwr.backend !== "off"
+                    visible: hwr.backend === "server"
                     label: qsTr("API key")
                     hint: qsTr("Only for services that ask for one.")
                     secret: true
@@ -504,7 +541,7 @@ Dialog {
                     onPicked: (index) => hwr.lang = langs[index]
                 }
                 Described {
-                    visible: hwr.backend !== "off"
+                    visible: hwr.backend === "server"
                     readonly property bool local: hwr.url.length === 0
                         || /^https?:\/\/(localhost|127\.|192\.168\.|10\.|\[::1\])/.test(hwr.url)
                     label: local ? qsTr("Your handwriting stays on your computer or network.")

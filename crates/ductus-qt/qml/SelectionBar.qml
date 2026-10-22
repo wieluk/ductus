@@ -71,5 +71,31 @@ Rectangle {
                 onClicked: bar.canvas.recolorSelection(modelData)
             }
         }
+        Rectangle {
+            visible: bar.canvas.selectionHasInk
+            Layout.preferredWidth: 1
+            Layout.preferredHeight: 22
+            Layout.leftMargin: 4
+            Layout.rightMargin: 4
+            color: Theme.separator
+        }
+        RibbonButton {
+            objectName: "selectionToText"
+            visible: bar.canvas.selectionHasInk
+            enabled: !AppController.converting
+            iconName: "text"
+            text: qsTr("Text")
+            tip: qsTr("Replace the handwriting with typed text")
+            onClicked: AppController.convertSelection("text")
+        }
+        RibbonButton {
+            objectName: "selectionToMath"
+            visible: bar.canvas.selectionHasInk
+            enabled: !AppController.converting
+            iconName: "math"
+            text: qsTr("Formula")
+            tip: qsTr("Replace the handwriting with a formula")
+            onClicked: AppController.convertSelection("math")
+        }
     }
 }

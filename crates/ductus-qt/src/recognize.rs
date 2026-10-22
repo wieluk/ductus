@@ -11,9 +11,11 @@ struct Job {
     lang: String,
 }
 
+type Config = (String, String, String, String);
+
 #[derive(Default)]
 struct Shared {
-    config: (String, String, String, String),
+    config: Config,
     queued: HashSet<(String, String)>,
     results: Vec<RecognitionResult>,
     error: String,
@@ -31,11 +33,15 @@ pub fn open_recognizer() -> Box<RecognitionHandle> {
     std::thread::Builder::new()
         .name("handwriting".into())
         .spawn(move || {
+            // Kept while the settings stay: a built-in model takes seconds to load.
+            let mut current: Option<(Config, Option<Box<dyn ductus_hwr::Recognizer>>)> = None;
             while let Ok(job) = inbox.recv() {
                 let config = worker.lock().map(|s| s.config.clone()).unwrap_or_default();
-                let recognizer =
-                    ductus_hwr::from_settings(&config.0, &config.1, &config.2, &config.3);
-                let outcome = match recognizer {
+                if current.as_ref().is_none_or(|(c, _)| *c != config) {
+                    let r = ductus_hwr::from_settings(&config.0, &config.1, &config.2, &config.3);
+                    current = Some((config, r));
+                }
+                let outcome = match current.as_ref().and_then(|(_, r)| r.as_ref()) {
                     Some(r) => r.recognize(&job.png, &job.lang),
                     None => Err(String::new()), // turned off meanwhile
                 };

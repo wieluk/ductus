@@ -168,6 +168,8 @@ public:
     Q_INVOKABLE void zoomBy(qreal factor);
     Q_INVOKABLE void setPageStyle(const QString &kind, bool landscape, const QString &pattern);
     Q_INVOKABLE void selectAll();
+    /// Replaces the selected ink with recognized text or a LaTeX formula (one undo step).
+    bool replaceInk(const QString &content, bool math);
     Q_INVOKABLE void clearSelection();
     Q_INVOKABLE void deleteSelection();
     Q_INVOKABLE void copySelection();

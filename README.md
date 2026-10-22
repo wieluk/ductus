@@ -1,7 +1,8 @@
 # Ductus
 
 Handwritten notebooks with stylus input, for Linux and Windows (macOS and Android builds too).
-Notes are SVG files in plain folders; PDFs get real PDF annotations.
+Notes are SVG files in plain folders; PDFs get real PDF annotations. Handwriting turns into
+text or formulas on the device, with recognition models downloaded on request.
 
 Rust core, Qt 6.10 Quick UI ([cxx-qt](https://github.com/KDAB/cxx-qt)). GPL-3.0-or-later.
 

@@ -4,10 +4,12 @@
 extern crate cxx_qt_lib;
 
 // cxx bridges are inherently unsafe FFI; this is the only place unsafe is allowed.
+mod convert;
 mod engine;
 #[allow(unsafe_code)]
 mod ffi;
 mod library;
+mod models;
 mod recognize;
 mod search;
 mod update;

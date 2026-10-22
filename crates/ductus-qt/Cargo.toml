@@ -20,6 +20,7 @@ ductus-format.workspace = true
 ductus-pdf.workspace = true
 ductus-search.workspace = true
 ductus-hwr.workspace = true
+ductus-ink.workspace = true
 ductus-update.workspace = true
 ductus-render.workspace = true
 kurbo.workspace = true

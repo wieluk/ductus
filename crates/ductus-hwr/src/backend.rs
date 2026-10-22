@@ -78,6 +78,24 @@ impl Recognizer for Server {
     }
 }
 
+/// A built-in model (see [`crate::builtin`]), loaded on first use.
+pub struct Builtin {
+    dir: std::path::PathBuf,
+    id: String,
+    model: std::sync::Mutex<Option<crate::builtin::Model>>,
+}
+
+impl Recognizer for Builtin {
+    fn recognize(&self, png: &[u8], _lang: &str) -> Result<String, String> {
+        let image = tiny_skia::Pixmap::decode_png(png).map_err(|e| e.to_string())?;
+        let mut model = self.model.lock().map_err(|_| "recognizer failed before")?;
+        if model.is_none() {
+            *model = Some(crate::builtin::Model::load(&self.dir.join(&self.id))?);
+        }
+        model.as_mut().expect("loaded").recognize(&image)
+    }
+}
+
 pub struct Fixed(pub String);
 
 impl Recognizer for Fixed {
@@ -101,6 +119,11 @@ pub fn from_settings(
             url: or(url, "http://localhost:11434/v1"),
             model: or(model, "qwen2.5vl"),
             api_key: api_key.into(),
+        })),
+        "builtin" => Some(Box::new(Builtin {
+            dir: url.into(),
+            id: model.into(),
+            model: Default::default(),
         })),
         k => k
             .strip_prefix("fixed:")

@@ -426,6 +426,14 @@ void InkCanvas::setShapeAssist(bool on)
     Q_EMIT shapeAssistChanged();
 }
 
+bool InkCanvas::replaceInk(const QString &content, bool math)
+{
+    if (!m_engine->replace_ink(content.toStdString(), math))
+        return false;
+    afterEdit();
+    return true;
+}
+
 void InkCanvas::selectAll()
 {
     setTool(Lasso);

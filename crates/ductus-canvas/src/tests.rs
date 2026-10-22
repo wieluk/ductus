@@ -362,3 +362,19 @@ fn pictures_move_scale_and_undo() {
     c.delete_selection();
     assert_eq!(c.document().images().len(), 1);
 }
+
+#[test]
+fn recognized_ink_becomes_text_or_a_formula_in_one_undo_step() {
+    let mut c = canvas();
+    draw_wave(&mut c, 50.0, 250.0, 100.0);
+    c.select_all();
+    assert!(c.replace_ink("x^2", true));
+    assert!(c.document().strokes().is_empty());
+    assert_eq!(c.document().maths()[0].source, "x^2");
+    c.undo();
+    assert_eq!(c.document().strokes().len(), 1);
+    assert!(c.document().maths().is_empty());
+    c.select_all();
+    assert!(c.replace_ink("Grenzwert", false));
+    assert_eq!(c.document().texts()[0].markdown, "Grenzwert");
+}

@@ -140,16 +140,20 @@ pub fn parse_checksums(text: &str) -> HashMap<String, [u8; 32]> {
         .filter_map(|line| {
             let (hex, name) = line.trim().split_once(char::is_whitespace)?;
             let name = name.trim_start().trim_start_matches('*');
-            let mut digest = [0u8; 32];
-            if hex.len() != 64 {
-                return None;
-            }
-            for (i, byte) in digest.iter_mut().enumerate() {
-                *byte = u8::from_str_radix(hex.get(2 * i..2 * i + 2)?, 16).ok()?;
-            }
-            Some((name.to_owned(), digest))
+            Some((name.to_owned(), digest_from_hex(hex)?))
         })
         .collect()
+}
+
+pub fn digest_from_hex(hex: &str) -> Option<[u8; 32]> {
+    let mut digest = [0u8; 32];
+    if hex.len() != 64 {
+        return None;
+    }
+    for (i, byte) in digest.iter_mut().enumerate() {
+        *byte = u8::from_str_radix(hex.get(2 * i..2 * i + 2)?, 16).ok()?;
+    }
+    Some(digest)
 }
 
 pub fn verify(message: &[u8], signature: &[u8], key: &str) -> bool {

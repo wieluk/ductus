@@ -117,6 +117,14 @@ ApplicationWindow {
         function onNotice(message, error) { toast.show(message, error) }
     }
     Connections {
+        target: AppController
+        function onModelsNeeded(id) {
+            settingsDialog.section = 4
+            settingsDialog.open()
+            toast.show(qsTr("Download the recognizer for this first."), false)
+        }
+    }
+    Connections {
         target: Updater
         function onUpdateFound() {
             toast.show(qsTr("Ductus %1 is available: Update is in the title bar.").arg(Updater.latestVersion), false)

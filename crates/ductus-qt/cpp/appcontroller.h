@@ -19,6 +19,7 @@
 struct LibraryHandle;
 struct SearchHandle;
 struct RecognitionHandle;
+struct ConvertHandle;
 struct TreeRow;
 class QPrinter;
 
@@ -99,6 +100,8 @@ class AppController : public QObject
     Q_PROPERTY(bool indexing READ indexing NOTIFY indexStatusChanged)
     Q_PROPERTY(QString indexStatus READ indexStatus NOTIFY indexStatusChanged)
     Q_PROPERTY(QString recognitionStatus READ recognitionStatus NOTIFY recognitionStatusChanged)
+    /// Selected handwriting is being turned into text or a formula.
+    Q_PROPERTY(bool converting READ converting NOTIFY convertingChanged)
     Q_PROPERTY(bool notebookView READ notebookView WRITE setNotebookView NOTIFY treeViewChanged)
     /// "" for the whole library.
     Q_PROPERTY(QString treeFocus READ treeFocus WRITE setTreeFocus NOTIFY treeViewChanged)
@@ -115,6 +118,7 @@ public:
     QString pdfProblem() const;
     bool indexing() const { return m_indexing; }
     QString recognitionStatus() const { return m_recognitionStatus; }
+    bool converting() const { return m_converting; }
     QString indexStatus() const { return m_indexStatus; }
     int treeFilter() const { return m_treeFilter; }
     void setTreeFilter(int flags);
@@ -155,6 +159,9 @@ public:
     Q_INVOKABLE QVariantList search(const QString &query, int limit = 50);
     Q_INVOKABLE void openSearchHit(const QVariantMap &hit);
     Q_INVOKABLE void recognizeNow();
+    /// Replaces the selected handwriting with text ("text"), a formula ("math"), or all of
+    /// the page's handwriting with text ("page"), read by the built-in recognizer.
+    Q_INVOKABLE void convertSelection(const QString &kind);
 
 Q_SIGNALS:
     void libraryChanged();
@@ -168,6 +175,9 @@ Q_SIGNALS:
     void screenshotTaken(const QString &file);
     void indexStatusChanged();
     void recognitionStatusChanged();
+    void convertingChanged();
+    /// A built-in model has to be downloaded first.
+    void modelsNeeded(const QString &id);
     void screenshotCancelled();
     void screenshotFailed(const QString &message);
 
@@ -207,6 +217,12 @@ private:
     QString m_recognitionStatus;
     /// "off", "server" or "fixed:<text>" (tests).
     QString recognizerKind() const;
+    QString textModel() const;
+    void pollConversion();
+    std::optional<rust::Box<ConvertHandle>> m_converter;
+    QTimer m_convertPoll;
+    bool m_converting = false;
+    bool m_convertMath = false;
     void recognizeOpenPage();
     void pollRecognition();
     void setRecognitionStatus(const QString &status);

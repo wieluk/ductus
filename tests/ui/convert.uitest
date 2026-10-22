@@ -1,0 +1,23 @@
+# Handwriting becomes a formula or text (a stand-in recognizer reads every line); without a
+# downloaded model, Settings opens at the download.
+# env: DUCTUS_MODELS_DIR=target/ui-no-models
+size 1280 800
+setenv DUCTUS_TEST_RECOGNIZER x^2
+pen p=0.6 420,300 440,280 460,310 480,285 500,305
+click-item tab_draw
+click-item toolLasso
+pen 400,260 560,260 560,330 400,330 400,260
+expect-prop canvas selectionCount 1
+click-item selectionToMath
+wait 500
+expect-in-file My Notebook/First page.svg | dx:math="latex"
+key Ctrl+Z
+expect-prop canvas canRedo true
+setenv DUCTUS_TEST_RECOGNIZER Grenzwert
+click-item pageToText
+wait 500
+expect-in-file My Notebook/First page.svg | Grenzwert
+key Ctrl+Z
+setenv DUCTUS_TEST_RECOGNIZER
+click-item pageToText
+expect-prop model_text-en visible true

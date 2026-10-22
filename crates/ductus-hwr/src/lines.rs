@@ -132,24 +132,49 @@ fn line_key(strokes: &[Stroke], indices: &[usize]) -> String {
 }
 
 pub fn line_png(strokes: &[Stroke], line: &InkLine, height: u32) -> Option<Vec<u8>> {
-    let rect = line.rect;
-    let scale = (f64::from(height) / rect.height().max(1.0)).clamp(0.25, 4.0);
-    let pad = f64::from(height) * 0.25;
+    let scale = (f64::from(height) / line.rect.height().max(1.0)).clamp(0.25, 4.0);
+    render(
+        strokes,
+        &line.strokes,
+        line.rect,
+        scale,
+        f64::from(height) * 0.25,
+    )
+}
+
+/// The strokes as one image whose longer side is about `side` pixels (formulas).
+pub fn ink_png(strokes: &[Stroke], indices: &[usize], side: u32) -> Option<Vec<u8>> {
+    let rect = indices
+        .iter()
+        .map(|&i| ductus_ink::bounds(&strokes[i]))
+        .reduce(|a, b| a.union(b))?;
+    let scale = (f64::from(side) / rect.width().max(rect.height()).max(1.0)).min(4.0);
+    render(strokes, indices, rect, scale, f64::from(side) * 0.05)
+}
+
+fn render(
+    strokes: &[Stroke],
+    indices: &[usize],
+    rect: Rect,
+    scale: f64,
+    pad: f64,
+) -> Option<Vec<u8>> {
     let width = (rect.width() * scale + 2.0 * pad).ceil() as u32;
-    let total_height = (rect.height() * scale + 2.0 * pad).ceil() as u32;
-    let mut pixmap = Pixmap::new(width.clamp(1, 8192), total_height.clamp(1, 2048))?;
+    let height = (rect.height() * scale + 2.0 * pad).ceil() as u32;
+    let mut pixmap = Pixmap::new(width.clamp(1, 8192), height.clamp(1, 4096))?;
     pixmap.fill(tiny_skia::Color::WHITE);
     let vp = Viewport {
         origin: Point::new(rect.x0 - pad / scale, rect.y0 - pad / scale),
         scale,
     };
     let black = Rgba::rgb(0.0, 0.0, 0.0);
-    let paths: Vec<StrokePath> = line
-        .strokes
+    let paths: Vec<StrokePath> = indices
         .iter()
         .filter_map(|&i| {
-            let s = &strokes[i];
-            StrokePath::fill(&ductus_ink::outline(&s.points, &s.style), black)
+            StrokePath::fill(
+                &ductus_ink::outline(&strokes[i].points, &strokes[i].style),
+                black,
+            )
         })
         .collect();
     ductus_render::render_strokes(&mut pixmap, &vp, paths.iter(), None);
