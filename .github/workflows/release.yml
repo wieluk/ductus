@@ -37,7 +37,7 @@ jobs:
 
   prepare:
     name: Version and notes
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -79,7 +79,7 @@ jobs:
   linux:
     needs: prepare
     if: github.event_name != 'workflow_dispatch' || inputs.linux
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
@@ -133,7 +133,7 @@ jobs:
   android:
     needs: prepare
     if: github.event_name != 'workflow_dispatch' || inputs.android
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 90
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
@@ -164,7 +164,7 @@ jobs:
       always() && !cancelled() && !contains(needs.*.result, 'failure')
       && needs.tests.result == 'success'
       && (github.ref_type == 'tag' || inputs.create_release)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: write
@@ -217,7 +217,7 @@ jobs:
     if: |
       always() && needs.release.result == 'success' && github.ref_type == 'tag'
       && !contains(needs.prepare.outputs.version, '-')
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     concurrency:
       group: gh-pages
