@@ -1,0 +1,21 @@
+[package]
+name = "ductus-pdf"
+description = "PDF rendering (pdfium), ink annotations and export for Ductus"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+ductus-core.workspace = true
+ductus-ink.workspace = true
+ductus-render.workspace = true
+ductus-math.workspace = true
+kurbo.workspace = true
+lopdf = "0.46"
+pdfium-render = { version = "0.9", default-features = false, features = ["pdfium_latest", "thread_safe"] }
+thiserror = "2"
+tiny-skia = "0.12"
+
+[lints]
+workspace = true
