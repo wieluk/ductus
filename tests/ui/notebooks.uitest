@@ -30,3 +30,5 @@ click-item confirmDelete
 expect-no-file Mathematics/Limits.svg
 # History and trash live in the app data, not in the library.
 expect-no-file .ductus
+expect-no-file .ductus.json
+expect-no-file Mathematics/.ductus.json

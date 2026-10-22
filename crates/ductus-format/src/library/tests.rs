@@ -280,3 +280,41 @@ fn data_lives_outside_the_library_and_old_data_moves_there() {
     assert_ne!(other.data_dir(), lib.data_dir());
     assert!(other.favorites().is_empty());
 }
+
+#[test]
+fn folder_colors_and_order_live_outside_the_library() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().join("Notes");
+    let app = dir.path().join("app");
+    fs::create_dir_all(root.join("Uni/Math")).unwrap();
+    fs::write(
+        root.join("Uni/.ductus.json"),
+        r##"{"color":"#1f4fd1","order":["Math"]}"##,
+    )
+    .unwrap();
+    let lib = Library::open(&root, &app).unwrap();
+    assert!(lib.folder_color("Uni").is_some());
+    assert!(
+        !root.join("Uni/.ductus.json").exists(),
+        "an old file moves out"
+    );
+
+    lib.create_folder("Uni", "Art").unwrap();
+    lib.rename("Uni", "Study").unwrap();
+    assert!(
+        lib.folder_color("Study").is_some(),
+        "the color follows a rename"
+    );
+    let reopened = Library::open(&root, &app).unwrap();
+    assert!(reopened.folder_color("Study").is_some());
+    reopened.delete("Study").unwrap();
+    assert!(reopened.folder_color("Study").is_none());
+    let mut leftovers = Vec::new();
+    for entry in fs::read_dir(&root).unwrap() {
+        leftovers.push(entry.unwrap().file_name());
+    }
+    assert!(
+        leftovers.is_empty(),
+        "the library holds only notes: {leftovers:?}"
+    );
+}

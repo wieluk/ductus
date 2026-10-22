@@ -1,17 +1,20 @@
-//! A plain folder tree any sync tool handles: .ductus.json keeps folder colors and order, .ductus/ history and trash.
+//! A plain folder tree with only notes in it; colors, order, history and trash live in the app's data folder.
 
 use crate::page::{DX_NS, PageFile, escape_attr, read_page, write_page, write_page_in};
 use crate::{Error, new_id};
 use ductus_core::{Document, PageSettings, Rgba};
 use serde::{Deserialize, Serialize};
-use std::cell::RefCell;
-use std::collections::HashMap;
+use std::cell::{Cell, RefCell};
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-pub const META_FILE: &str = ".ductus.json";
+/// Where older versions kept a folder's color and order, inside the folder.
+const LEGACY_META_FILE: &str = ".ductus.json";
+/// Every folder's color and order, by path.
+const FOLDERS_FILE: &str = "folders.json";
 /// Where older versions kept history, trash and favorites inside the library.
 const LEGACY_APP_DIR: &str = ".ductus";
 /// Names the library a data folder belongs to, for people looking at it.
@@ -41,7 +44,7 @@ pub struct Node {
     pub children: Vec<Node>,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 struct FolderMeta {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     color: Option<String>,
@@ -68,6 +71,9 @@ pub struct Library {
     root: PathBuf,
     /// History, trash and the sidebar's lists: per device, outside the synced folder.
     data: PathBuf,
+    folders: RefCell<BTreeMap<String, FolderMeta>>,
+    /// When `folders` was last read or written, to skip rereading an unchanged file.
+    folders_stamp: Cell<Option<SystemTime>>,
     policy: HistoryPolicy,
     snapshots: HashMap<String, SystemTime>,
     pub(crate) listings: RefCell<HashMap<String, crate::browse::Listing>>,
@@ -248,13 +254,17 @@ impl Library {
         if legacy.is_dir() {
             merge_into(&legacy, &data)?;
         }
-        Ok(Self {
+        let library = Self {
             root,
             data,
+            folders: RefCell::default(),
+            folders_stamp: Cell::new(None),
             policy,
             snapshots: HashMap::new(),
             listings: RefCell::default(),
-        })
+        };
+        library.reload_folders();
+        Ok(library)
     }
 
     pub fn data_dir(&self) -> &Path {
@@ -325,16 +335,81 @@ impl Library {
         }
     }
 
-    fn read_meta(&self, folder: &str) -> FolderMeta {
-        fs::read_to_string(self.abs(folder).join(META_FILE))
+    /// Another Library on the same data (the search worker's) may have written since.
+    fn reload_folders(&self) {
+        let file = self.data.join(FOLDERS_FILE);
+        let stamp = fs::metadata(&file).and_then(|m| m.modified()).ok();
+        if stamp.is_some() && stamp == self.folders_stamp.get() {
+            return;
+        }
+        *self.folders.borrow_mut() = fs::read_to_string(&file)
             .ok()
             .and_then(|s| serde_json::from_str(&s).ok())
-            .unwrap_or_default()
+            .unwrap_or_default();
+        self.folders_stamp.set(stamp);
+    }
+
+    fn save_folders(&self) -> Result<(), Error> {
+        let file = self.data.join(FOLDERS_FILE);
+        let json = serde_json::to_string_pretty(&*self.folders.borrow())?;
+        write_atomic(&file, json.as_bytes())?;
+        self.folders_stamp
+            .set(fs::metadata(&file).and_then(|m| m.modified()).ok());
+        Ok(())
+    }
+
+    fn read_meta(&self, folder: &str) -> FolderMeta {
+        if let Some(meta) = self.folders.borrow().get(folder) {
+            return meta.clone();
+        }
+        self.reload_folders();
+        if let Some(meta) = self.folders.borrow().get(folder) {
+            return meta.clone();
+        }
+        // Moves an older version's file out of the library the first time the folder shows.
+        let legacy = self.abs(folder).join(LEGACY_META_FILE);
+        let Ok(text) = fs::read_to_string(&legacy) else {
+            return FolderMeta::default();
+        };
+        let meta: FolderMeta = serde_json::from_str(&text).unwrap_or_default();
+        if self.write_meta(folder, &meta).is_ok() {
+            let _ = fs::remove_file(legacy);
+        }
+        meta
     }
 
     fn write_meta(&self, folder: &str, meta: &FolderMeta) -> Result<(), Error> {
-        let json = serde_json::to_string_pretty(meta)?;
-        write_atomic(&self.abs(folder).join(META_FILE), json.as_bytes())
+        self.reload_folders();
+        if *meta == FolderMeta::default() {
+            self.folders.borrow_mut().remove(folder);
+        } else {
+            self.folders
+                .borrow_mut()
+                .insert(folder.to_owned(), meta.clone());
+        }
+        self.save_folders()
+    }
+
+    /// Colors and orders follow a renamed or moved folder; `to` None drops them with it.
+    pub(crate) fn folders_moved(&self, from: &str, to: Option<&str>) -> Result<(), Error> {
+        self.reload_folders();
+        let mut folders = self.folders.borrow_mut();
+        let keys: Vec<String> = folders
+            .keys()
+            .filter(|k| *k == from || k.starts_with(&format!("{from}/")))
+            .cloned()
+            .collect();
+        if keys.is_empty() {
+            return Ok(());
+        }
+        for key in keys {
+            let meta = folders.remove(&key).unwrap_or_default();
+            if let Some(to) = to {
+                folders.insert(format!("{to}{}", &key[from.len()..]), meta);
+            }
+        }
+        drop(folders);
+        self.save_folders()
     }
 
     fn edit_order(&self, folder: &str, f: impl FnOnce(&mut Vec<String>)) -> Result<(), Error> {

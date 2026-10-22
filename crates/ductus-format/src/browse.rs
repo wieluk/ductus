@@ -261,6 +261,7 @@ impl Library {
     }
 
     pub(crate) fn path_lists_moved(&self, from: &str, to: &str) -> Result<(), Error> {
+        self.folders_moved(from, Some(to))?;
         for file in PATH_LISTS {
             let paths = self.stored_paths(file);
             if paths.iter().any(|p| moved(p, from, to).is_some()) {
@@ -275,6 +276,7 @@ impl Library {
     }
 
     pub(crate) fn path_lists_removed(&self, rel: &str) -> Result<(), Error> {
+        self.folders_moved(rel, None)?;
         for file in PATH_LISTS {
             let paths = self.stored_paths(file);
             let kept: Vec<String> = paths
