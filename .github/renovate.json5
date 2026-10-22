@@ -1,0 +1,71 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:recommended", "helpers:pinGitHubActionDigests"],
+  schedule: ["before 6am on monday"],
+  timezone: "Europe/Vienna",
+  labels: ["dependencies"],
+  // Gives a hijacked release time to be noticed and pulled before it reaches a PR.
+  minimumReleaseAge: "3 days",
+  lockFileMaintenance: { enabled: true, schedule: ["before 6am on monday"] },
+  customManagers: [
+    {
+      // Qt, aqtinstall and the pdfium builds, marked with a `renovate:` comment above them.
+      customType: "regex",
+      managerFilePatterns: ["/^\\.github/actions/.+\\.yml$/", "/^build-aux/fetch-pdfium\\.sh$/"],
+      matchStrings: [
+        '# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n[^\\n]*?[:=]\\s*"?(?<currentValue>[0-9][^"\\s]*)"?',
+      ],
+    },
+  ],
+  packageRules: [
+    {
+      // One PR a week for everything that should not break anything.
+      matchUpdateTypes: ["minor", "patch", "digest"],
+      groupName: "non-major dependencies",
+    },
+    {
+      // The bridge's build and runtime halves must be the same release.
+      matchPackageNames: ["cxx", "cxx-qt", "cxx-qt-lib", "cxx-qt-build"],
+      groupName: "cxx-qt",
+    },
+    {
+      matchPackageNames: ["candle-core", "candle-nn"],
+      groupName: "candle",
+    },
+    {
+      // tylax writes Typst for the typst version it was built against.
+      matchPackageNames: ["typst", "/^typst-/", "tylax"],
+      groupName: "typst",
+    },
+    {
+      // Pixmaps pass between them, so they must share one tiny-skia.
+      matchPackageNames: ["resvg", "tiny-skia", "ttf-parser"],
+      groupName: "resvg",
+    },
+    {
+      // The Flatpak's KDE runtime is Qt 6.10; a new minor Qt moves with the runtime, by hand.
+      matchPackageNames: ["qt/qtbase"],
+      extractVersion: "^v(?<version>\\d+\\.\\d+\\.\\d+)$",
+      allowedVersions: "<6.11",
+      groupName: "Qt",
+    },
+    {
+      // Its tag names the KDE runtime, which changes together with Qt.
+      matchPackageNames: ["ghcr.io/flathub-infra/flatpak-github-actions"],
+      enabled: false,
+    },
+    {
+      matchPackageNames: ["bblanchon/pdfium-binaries"],
+      extractVersion: "^chromium/(?<version>\\d+)$",
+      versioning: "loose",
+    },
+    {
+      // pdfium-render binds the newest pdfium API it knows, so the library follows it.
+      matchPackageNames: ["pdfium-render", "bblanchon/pdfium-binaries"],
+      groupName: "pdfium",
+      prBodyNotes: [
+        "The checksums in `build-aux/fetch-pdfium.sh` need updating by hand: download each platform's archive for the new build and put its SHA-256 in. CI fails until then.",
+      ],
+    },
+  ],
+}

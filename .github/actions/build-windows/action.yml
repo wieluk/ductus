@@ -16,6 +16,7 @@ runs:
         cache-on-failure: true
     - uses: jurplel/install-qt-action@v4
       with:
+        # renovate: datasource=github-tags depName=qt/qtbase
         version: "6.10.3"
         arch: win64_msvc2022_64
         cache: true
