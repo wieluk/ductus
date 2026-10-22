@@ -40,7 +40,7 @@ jobs:
           path: target/ui-shots
 
   windows:
-    runs-on: windows-2022
+    runs-on: windows-2025
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7.0.1
