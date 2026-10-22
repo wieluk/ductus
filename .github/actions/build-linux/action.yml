@@ -3,6 +3,9 @@ description: Builds in the KDE SDK, runs the UI tests and packages the Flatpak (
 runs:
   using: composite
   steps:
+    # Mounted by the workflow; the runner's disk is too small for the build otherwise.
+    - shell: bash
+      run: rm -rf /runner-tools/*/* && df -h .
     - uses: dtolnay/rust-toolchain@stable
     # Tags can only restore caches saved on main.
     - uses: Swatinem/rust-cache@v2

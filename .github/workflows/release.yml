@@ -87,6 +87,12 @@ jobs:
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
       options: --privileged
+      # build-linux deletes these unused runner toolchains: the build needs their disk space.
+      volumes:
+        - /usr/share/dotnet:/runner-tools/dotnet
+        - /usr/local/lib/android:/runner-tools/android
+        - /usr/local/.ghcup:/runner-tools/ghcup
+        - /opt/hostedtoolcache:/runner-tools/toolcache
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
     steps:
@@ -155,6 +161,11 @@ jobs:
           arch: clang_64
           cache: true
       - run: bash build-aux/macos/build-app.sh
+      - uses: actions/upload-artifact@v7.0.1
+        if: failure()
+        with:
+          name: ui-shots-macos-${{ matrix.arch }}
+          path: target/ui-shots
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: ductus-macos-${{ matrix.arch }}

@@ -24,6 +24,12 @@ jobs:
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
       options: --privileged
+      # build-linux deletes these unused runner toolchains: the build needs their disk space.
+      volumes:
+        - /usr/share/dotnet:/runner-tools/dotnet
+        - /usr/local/lib/android:/runner-tools/android
+        - /usr/local/.ghcup:/runner-tools/ghcup
+        - /opt/hostedtoolcache:/runner-tools/toolcache
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: ./.github/actions/build-linux
