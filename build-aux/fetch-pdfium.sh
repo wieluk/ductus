@@ -8,10 +8,10 @@ dest=$2
 # renovate: datasource=github-releases depName=bblanchon/pdfium-binaries
 build=8111
 case $platform in
-  linux-x64) sha=1c1894a12d4d96ee01400c3874444126254180c5c7d2ab628576b67f8120320a ;;
-  linux-arm64) sha=58c87a95a40a24c914a9c755fae798843f46f06adf9e5e9f2c893302d4bdb040 ;;
-  win-x64) sha=51621bcc1d9be9ea448f4b84b0516862b928e3968d3fca899af1a6d6e2848d6d ;;
-  android-arm64) sha=e9bab2929443d3d881166af9ec1d191c76ecdd37effb07a58743a7d7b507e149 ;;
+  linux-x64) sha=bdc60126399f39fe768566a18d4be055a7b3681bc9e248e8a6656b4f6cae0aa2 ;;
+  linux-arm64) sha=042de247138f96341534cccf24ed21c2550a7245b936bb4a60d2340120000f05 ;;
+  win-x64) sha=3452d11031050ec65e57f180215b57b9e6d465e3fbedafa8a77ad90885c7d23e ;;
+  android-arm64) sha=727cb2645ece75d28d0b72f2ec05b82858ca3bfb6712cd333ffc248807016e2c ;;
   *) echo "unknown platform $platform" >&2; exit 1 ;;
 esac
 [ -f "$dest/.$platform-$build" ] && exit 0
