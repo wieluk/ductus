@@ -17,9 +17,6 @@ on:
       windows:
         type: boolean
         default: true
-      macos:
-        type: boolean
-        default: true
       android:
         type: boolean
         default: true
@@ -133,45 +130,6 @@ jobs:
             dist/*-setup.exe
           if-no-files-found: error
 
-  macos:
-    needs: prepare
-    if: github.event_name != 'workflow_dispatch' || inputs.macos
-    strategy:
-      matrix:
-        include:
-          - { runner: macos-15, arch: arm64 }
-          - { runner: macos-15-intel, arch: x86_64 }
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 75
-    env:
-      VERSION: ${{ needs.prepare.outputs.version }}
-    steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: ./.github/actions/stamp
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: macos-${{ matrix.arch }}
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-      - uses: jurplel/install-qt-action@v4
-        with:
-          version: "6.10.3"
-          host: mac
-          target: desktop
-          arch: clang_64
-          cache: true
-      - run: bash build-aux/macos/build-app.sh
-      - uses: actions/upload-artifact@v7.0.1
-        if: failure()
-        with:
-          name: ui-shots-macos-${{ matrix.arch }}
-          path: target/ui-shots
-      - uses: actions/upload-artifact@v7.0.1
-        with:
-          name: ductus-macos-${{ matrix.arch }}
-          path: dist/*.dmg
-          if-no-files-found: error
-
   android:
     needs: prepare
     if: github.event_name != 'workflow_dispatch' || inputs.android
@@ -200,7 +158,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    needs: [tests, prepare, linux, windows, macos, android]
+    needs: [tests, prepare, linux, windows, android]
     # Skipped platforms don't block a draft; a failed one blocks everything.
     if: |
       always() && !cancelled() && !contains(needs.*.result, 'failure')

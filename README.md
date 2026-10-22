@@ -1,6 +1,6 @@
 # Ductus
 
-Handwritten notebooks with stylus input, for Linux and Windows (macOS and Android builds too).
+Handwritten notebooks with stylus input, for Linux, Windows and Android.
 Notes are SVG files in plain folders; PDFs get real PDF annotations. Handwriting turns into
 text or formulas on the device, with recognition models downloaded on request.
 
@@ -17,7 +17,7 @@ PDF support loads [pdfium](https://github.com/bblanchon/pdfium-binaries) at runt
 `build-aux/fetch-pdfium.sh linux-x64 target/pdfium`.
 
 Packages: `build-aux/linux/build-flatpak.sh`, `build-aux/windows/package.ps1`,
-`build-aux/macos/build-app.sh`, `build-aux/android/build-apk.sh`.
+`build-aux/android/build-apk.sh`.
 
 ## Test
 

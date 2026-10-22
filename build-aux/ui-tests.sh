@@ -12,8 +12,6 @@ fi
 if [ -n "${WINDIR:-}" ]; then
   export QT_QPA_FONTDIR="$WINDIR\\Fonts"
 fi
-limit=()
-command -v timeout > /dev/null && limit=(timeout 300) # macOS has none
 failed=0
 for script in tests/ui/${2:-*}.uitest; do
   name=$(basename "$script" .uitest)
@@ -26,7 +24,7 @@ for script in tests/ui/${2:-*}.uitest; do
   while IFS= read -r line; do script_env+=("$line"); done < <(sed -n 's/^# env: //p' "$script")
   if env ${script_env[@]+"${script_env[@]}"} QT_QPA_PLATFORM=offscreen DUCTUS_UI_SCRIPT="$script" \
     DUCTUS_UI_SHOTS="$shots" DUCTUS_LIBRARY="$sandbox/Notes" DUCTUS_CONFIG_DIR="$sandbox/config" \
-    DUCTUS_CACHE_DIR="$sandbox/cache" ${limit[@]+"${limit[@]}"} "$binary" 2> >(grep -v '^Fontconfig error' >&2); then
+    DUCTUS_CACHE_DIR="$sandbox/cache" timeout 300 "$binary" 2> >(grep -v '^Fontconfig error' >&2); then
     echo "PASS $name"
   else
     echo "FAIL $name"
