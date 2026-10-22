@@ -6,7 +6,7 @@ runs:
     # Mounted by the workflow; the runner's disk is too small for the build otherwise.
     - shell: bash
       run: rm -rf /runner-tools/*/* && df -h .
-    - uses: dtolnay/rust-toolchain@stable
+    - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
     # Tags can only restore caches saved on main.
     - uses: Swatinem/rust-cache@v2
       with:
