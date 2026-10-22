@@ -42,7 +42,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # notes come from the commits since the last tag
       - id: version
@@ -68,7 +68,7 @@ jobs:
             echo "Development build of $GITHUB_SHA." > notes.md
           fi
           git diff > stamp.patch
-      - uses: actions/upload-artifact@v7.0.1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: stamp
           path: |
@@ -93,7 +93,7 @@ jobs:
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/stamp
       # Signed bundles follow the update repository.
       - if: github.ref_type == 'tag'
@@ -101,7 +101,7 @@ jobs:
           FLATPAK_GPG_PRIVATE_KEY: ${{ secrets.FLATPAK_GPG_PRIVATE_KEY }}
         run: build-aux/linux/import-key.sh
       - uses: ./.github/actions/build-linux
-      - uses: actions/upload-artifact@v7.0.1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ductus-linux
           path: dist/*.flatpak
@@ -117,12 +117,12 @@ jobs:
     steps:
       # The version patch has LF line endings.
       - run: git config --global core.autocrlf false
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/stamp
       - uses: ./.github/actions/build-windows
         with:
           args: -Version ${{ env.VERSION }}
-      - uses: actions/upload-artifact@v7.0.1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ductus-windows
           path: |
@@ -138,7 +138,7 @@ jobs:
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/stamp
       - env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -151,7 +151,7 @@ jobs:
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      - uses: actions/upload-artifact@v7.0.1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ductus-android
           path: dist/*.apk
@@ -171,15 +171,15 @@ jobs:
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v8.0.1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: packages
           pattern: ductus-*
           merge-multiple: true
-      - uses: actions/download-artifact@v8.0.1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: stamp
           path: stamp
@@ -201,7 +201,7 @@ jobs:
           fi
           openssl pkeyutl -sign -inkey "$RUNNER_TEMP/update.pem" -rawin \
             -in packages/SHA256SUMS.txt -out packages/SHA256SUMS.txt.sig
-      - uses: softprops/action-gh-release@v3.0.2
+      - uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           tag_name: v${{ env.VERSION }}
           target_commitish: ${{ github.sha }}
@@ -224,10 +224,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v8.0.1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: ductus-linux
           path: bundle
@@ -239,7 +239,7 @@ jobs:
       - id: pages
         if: env.FLATPAK_GPG_KEY_ID != ''
         run: git ls-remote --exit-code --heads origin gh-pages > /dev/null && echo "exists=true" >> "$GITHUB_OUTPUT" || true
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.pages.outputs.exists == 'true'
         with:
           ref: gh-pages
@@ -247,7 +247,7 @@ jobs:
           persist-credentials: false
       - if: env.FLATPAK_GPG_KEY_ID != ''
         run: build-aux/linux/publish-repo.sh bundle/*.flatpak pages/repo
-      - uses: peaceiris/actions-gh-pages@v4
+      - uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4
         if: env.FLATPAK_GPG_KEY_ID != ''
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
