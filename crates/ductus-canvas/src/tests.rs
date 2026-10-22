@@ -1,0 +1,364 @@
+use super::*;
+
+fn canvas() -> Canvas {
+    let mut c = Canvas::new();
+    c.set_viewport(400.0, 300.0, 1.0);
+    c
+}
+
+fn pen_sample(x: f64, y: f64, t: u32, pressure: f64) -> Sample {
+    Sample {
+        pressure: Some(pressure),
+        ..Sample::at(x, y, t)
+    }
+}
+
+fn draw_wave(c: &mut Canvas, x0: f64, x1: f64, y: f64) {
+    let n = 60;
+    let point = |i: u32| {
+        let f = f64::from(i) / f64::from(n);
+        pen_sample(
+            x0 + (x1 - x0) * f,
+            y + 15.0 * (f * 12.0).sin(),
+            i * 5,
+            0.3 + 0.7 * f,
+        )
+    };
+    assert!(c.pointer_down(Device::Pen, point(0), false));
+    for i in 1..=n {
+        c.pointer_move(&[point(i)]);
+    }
+    c.pointer_up();
+}
+
+pub(crate) fn canvas_for_tests() -> Canvas {
+    canvas()
+}
+
+fn shot(c: &mut Canvas) -> Pixmap {
+    c.snapshot().expect("viewport has a size")
+}
+
+fn ink_in(p: &Pixmap, x0: u32, y0: u32, x1: u32, y1: u32) -> usize {
+    let mut n = 0;
+    for y in y0..y1.min(p.height()) {
+        for x in x0..x1.min(p.width()) {
+            let c = p.pixel(x, y).unwrap();
+            if c.red() < 100 && c.green() < 100 {
+                n += 1;
+            }
+        }
+    }
+    n
+}
+
+#[test]
+fn pen_stroke_is_committed_and_rendered() {
+    let mut c = canvas();
+    draw_wave(&mut c, 50.0, 350.0, 150.0);
+    assert_eq!(c.document().strokes().len(), 1);
+    assert!(c.can_undo());
+    let p = shot(&mut c);
+    assert!(ink_in(&p, 50, 125, 350, 175) > 300, "ink along the wave");
+    assert_eq!(ink_in(&p, 0, 200, 400, 300), 0, "no ink below");
+}
+
+#[test]
+fn only_touched_tiles_are_rerendered() {
+    let mut c = canvas();
+    c.set_viewport(800.0, 600.0, 1.0);
+    let before: HashMap<_, _> = c
+        .frame()
+        .into_iter()
+        .map(|t| (t.key, t.generation))
+        .collect();
+    draw_wave(&mut c, 60.0, 160.0, 80.0);
+    let after = c.frame();
+    let changed: Vec<_> = after
+        .iter()
+        .filter(|t| before.get(&t.key) != Some(&t.generation))
+        .map(|t| (t.key.x, t.key.y))
+        .collect();
+    assert_eq!(changed, [(0, 0)]);
+}
+
+#[test]
+fn eraser_removes_strokes_in_one_undo_step() {
+    let mut c = canvas();
+    c.set_eraser_mode(EraserMode::Stroke);
+    draw_wave(&mut c, 50.0, 350.0, 100.0);
+    draw_wave(&mut c, 50.0, 350.0, 200.0);
+    c.pointer_down(Device::PenEraser, pen_sample(200.0, 60.0, 0, 1.0), false);
+    for i in 1..=40 {
+        c.pointer_move(&[pen_sample(200.0, 60.0 + f64::from(i) * 5.0, i * 5, 1.0)]);
+    }
+    c.pointer_up();
+    assert!(c.document().strokes().is_empty());
+    let p = shot(&mut c);
+    assert_eq!(ink_in(&p, 0, 0, 400, 300), 0);
+
+    c.undo();
+    assert_eq!(c.document().strokes().len(), 2);
+    let p = shot(&mut c);
+    assert!(ink_in(&p, 50, 75, 350, 125) > 100);
+}
+
+#[test]
+fn touch_pans_unless_finger_drawing_is_on() {
+    let mut c = canvas();
+    assert!(!c.pointer_down(Device::Touch, Sample::at(10.0, 10.0, 0), false));
+    assert!(!c.is_drawing());
+    c.set_finger_draws(true);
+    assert!(c.pointer_down(Device::Touch, Sample::at(10.0, 10.0, 0), false));
+    assert!(c.is_drawing());
+}
+
+#[test]
+fn cancel_discards_live_stroke_and_restores_erased() {
+    let mut c = canvas();
+    draw_wave(&mut c, 50.0, 350.0, 150.0);
+    c.pointer_down(Device::PenEraser, pen_sample(200.0, 100.0, 0, 1.0), false);
+    c.pointer_move(&[pen_sample(200.0, 200.0, 50, 1.0)]);
+    c.pointer_cancel();
+    assert_eq!(c.document().strokes().len(), 1);
+    let p = shot(&mut c);
+    assert!(ink_in(&p, 50, 125, 350, 175) > 300, "stroke visible again");
+}
+
+fn paper(pattern: ductus_core::PatternStyle) -> PageSettings {
+    PageSettings {
+        kind: ductus_core::PageKind::Paper {
+            size: ductus_core::PaperSize::A5,
+            orientation: ductus_core::Orientation::Portrait,
+        },
+        background: ductus_core::PageBackground {
+            pattern,
+            spacing: pattern.default_spacing(),
+            ..ductus_core::PageBackground::default()
+        },
+    }
+}
+
+#[test]
+fn writing_on_the_last_sheet_adds_another() {
+    let mut c = Canvas::new();
+    c.set_viewport(900.0, 700.0, 1.0);
+    c.load_document(Document::with_contents(
+        paper(ductus_core::PatternStyle::Grid),
+        [],
+    ));
+    let (_, sheet_h) = c.page_settings().kind.sheet_size().unwrap();
+    c.pan_by(0.0, -(sheet_h + ductus_core::SHEET_GAP));
+    draw_wave(&mut c, 300.0, 600.0, 200.0);
+    assert_eq!(c.layout().sheets.len(), 3);
+    c.undo();
+    assert_eq!(c.layout().sheets.len(), 2);
+}
+
+fn press_through(c: &mut Canvas, points: &[(f64, f64)]) {
+    let (x, y) = points[0];
+    assert!(c.pointer_down(Device::Pen, pen_sample(x, y, 0, 0.6), false));
+    for (i, &(x, y)) in points.iter().enumerate().skip(1) {
+        c.pointer_move(&[pen_sample(x, y, i as u32 * 8, 0.6)]);
+    }
+}
+
+fn shaky_line(n: u32, from: (f64, f64), to: (f64, f64)) -> Vec<(f64, f64)> {
+    (0..=n)
+        .map(|i| {
+            let f = f64::from(i) / f64::from(n);
+            let wobble = 2.0 * (f * 17.0).sin();
+            (
+                from.0 + (to.0 - from.0) * f,
+                from.1 + (to.1 - from.1) * f + wobble,
+            )
+        })
+        .collect()
+}
+
+#[test]
+fn holding_turns_a_shaky_line_straight() {
+    let mut c = canvas();
+    press_through(&mut c, &shaky_line(40, (60.0, 150.0), (340.0, 153.0)));
+    assert_eq!(c.hold(), Some("line"));
+    c.pointer_move(&[pen_sample(360.0, 152.0, 400, 0.6)]);
+    c.pointer_up();
+    let stroke = &c.document().strokes()[0];
+    let ys: Vec<f64> = stroke.points.iter().map(|p| p.y).collect();
+    let spread =
+        ys.iter().cloned().fold(f64::MIN, f64::max) - ys.iter().cloned().fold(f64::MAX, f64::min);
+    assert!(spread < 0.5, "line is not straight: spread {spread}");
+    let last = stroke.points.last().unwrap();
+    assert!((last.x - c.view.to_doc(Point::new(360.0, 0.0)).x).abs() < 1.0);
+    shot(&mut c);
+    c.undo();
+    assert!(
+        c.document().strokes().is_empty(),
+        "the shape is one undo step"
+    );
+}
+
+#[test]
+fn hold_on_a_scribble_keeps_the_ink() {
+    let mut c = canvas();
+    let scribble: Vec<(f64, f64)> = (0..60)
+        .map(|i| {
+            let f = f64::from(i);
+            (
+                100.0 + f * 3.0,
+                150.0 + 40.0 * (f * 0.9).sin() * (f * 0.31).cos(),
+            )
+        })
+        .collect();
+    press_through(&mut c, &scribble);
+    assert_eq!(c.hold(), None);
+    c.pointer_up();
+    assert_eq!(c.document().strokes().len(), 1);
+}
+
+fn lasso(c: &mut Canvas, rect: (f64, f64, f64, f64)) {
+    let (x0, y0, x1, y1) = rect;
+    let ring = [(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)];
+    assert!(c.pointer_down(Device::Pen, pen_sample(x0, y0, 0, 0.5), false));
+    for (i, &(x, y)) in ring.iter().enumerate().skip(1) {
+        c.pointer_move(&[pen_sample(x, y, i as u32 * 10, 0.5)]);
+    }
+    c.pointer_up();
+}
+
+pub(crate) fn drag(c: &mut Canvas, from: (f64, f64), to: (f64, f64)) {
+    assert!(c.pointer_down(Device::Pen, pen_sample(from.0, from.1, 0, 0.5), false));
+    for i in 1..=10 {
+        let f = f64::from(i) / 10.0;
+        let (x, y) = (from.0 + (to.0 - from.0) * f, from.1 + (to.1 - from.1) * f);
+        c.pointer_move(&[pen_sample(x, y, i * 10, 0.5)]);
+    }
+    c.pointer_up();
+}
+
+#[test]
+fn lasso_selects_moves_and_undoes() {
+    let mut c = canvas();
+    draw_wave(&mut c, 40.0, 160.0, 80.0);
+    draw_wave(&mut c, 220.0, 360.0, 220.0);
+    c.set_tool(ToolMode::Lasso);
+    lasso(&mut c, (20.0, 40.0, 180.0, 130.0));
+    assert_eq!(c.selection_count(), 1);
+    let rect = c.selection_screen_rect().unwrap();
+    assert!(rect.x0 > 20.0 && rect.x1 < 180.0);
+    shot(&mut c);
+
+    let start = rect.center();
+    drag(&mut c, (start.x, start.y), (start.x, start.y + 100.0));
+    let p = shot(&mut c);
+    assert_eq!(ink_in(&p, 40, 60, 160, 100), 0, "old place is empty");
+    assert!(
+        ink_in(&p, 40, 160, 160, 200) > 0,
+        "wave is at its new place"
+    );
+    assert_eq!(c.selection_count(), 1, "selection follows the move");
+
+    c.undo();
+    let p = shot(&mut c);
+    assert!(ink_in(&p, 40, 60, 160, 100) > 0);
+    assert_eq!(ink_in(&p, 40, 160, 160, 200), 0);
+}
+
+#[test]
+fn copy_paste_and_delete_selection() {
+    let mut c = canvas();
+    draw_wave(&mut c, 40.0, 160.0, 80.0);
+    c.set_tool(ToolMode::Lasso);
+    lasso(&mut c, (20.0, 40.0, 180.0, 130.0));
+    c.copy_selection();
+    c.paste();
+    assert_eq!(c.document().strokes().len(), 2);
+    assert_eq!(c.selection_count(), 1);
+    let pasted = c.selection[0];
+    assert_ne!(pasted, c.document().strokes()[0].id);
+    c.delete_selection();
+    assert_eq!(c.document().strokes().len(), 1);
+    assert_eq!(c.selection_count(), 0);
+    c.undo();
+    assert_eq!(c.document().strokes().len(), 2);
+    c.undo();
+    assert_eq!(c.document().strokes().len(), 1);
+}
+
+fn erase_down(c: &mut Canvas, x: f64) {
+    c.pointer_down(Device::PenEraser, pen_sample(x, 60.0, 0, 1.0), false);
+    for i in 1..=40 {
+        c.pointer_move(&[pen_sample(x, 60.0 + f64::from(i) * 5.0, i * 5, 1.0)]);
+    }
+    c.pointer_up();
+}
+
+#[test]
+fn partial_eraser_cuts_strokes_in_one_undo_step() {
+    let mut c = canvas();
+    draw_wave(&mut c, 50.0, 350.0, 100.0);
+    draw_wave(&mut c, 50.0, 350.0, 200.0);
+    erase_down(&mut c, 200.0);
+    assert_eq!(c.document().strokes().len(), 4, "each wave is cut in two");
+    let p = shot(&mut c);
+    assert_eq!(ink_in(&p, 194, 0, 206, 300), 0, "gap under the eraser");
+    assert!(ink_in(&p, 50, 75, 180, 125) > 50);
+    assert!(ink_in(&p, 220, 75, 350, 125) > 50);
+
+    c.undo();
+    assert_eq!(c.document().strokes().len(), 2);
+    let p = shot(&mut c);
+    assert!(ink_in(&p, 194, 75, 206, 125) > 0);
+    c.redo();
+    assert_eq!(c.document().strokes().len(), 4);
+}
+
+fn png(width: u32, height: u32, color: tiny_skia::Color) -> Vec<u8> {
+    let mut p = Pixmap::new(width, height).unwrap();
+    p.fill(color);
+    p.encode_png().unwrap()
+}
+
+fn red_in(p: &Pixmap, x: u32, y: u32) -> bool {
+    let c = p.pixel(x, y).unwrap();
+    c.red() > 200 && c.green() < 80
+}
+
+#[test]
+fn pictures_move_scale_and_undo() {
+    let mut c = canvas();
+    c.insert_picture(
+        png(100, 50, tiny_skia::Color::from_rgba8(220, 30, 30, 255)),
+        None,
+    );
+    let before = c.document().images()[0].clone();
+    drag(&mut c, (200.0, 150.0), (150.0, 100.0));
+    let moved = c.document().images()[0].clone();
+    assert_eq!((moved.x, moved.y), (before.x - 50.0, before.y - 50.0));
+    let frame = c.selection_screen_rect().unwrap();
+    let grip = (frame.x1, frame.y1);
+    let anchor = (frame.x0, frame.y0);
+    let target = (
+        anchor.0 + 2.0 * (grip.0 - anchor.0),
+        anchor.1 + 2.0 * (grip.1 - anchor.1),
+    );
+    drag(&mut c, grip, target);
+    let scaled = c.document().images()[0].clone();
+    assert!((scaled.width / scaled.height - 2.0).abs() < 1e-6);
+    assert!((scaled.width - 200.0).abs() < 0.01, "{}", scaled.width);
+    let p = shot(&mut c);
+    let corner = c
+        .view
+        .to_screen(Point::new(scaled.x + scaled.width - 5.0, scaled.y + 5.0));
+    assert!(red_in(&p, corner.x as u32, corner.y as u32));
+    c.undo();
+    c.undo();
+    assert_eq!(c.document().images()[0], before);
+    c.set_tool(ToolMode::Lasso);
+    lasso(&mut c, (20.0, 20.0, 380.0, 280.0));
+    c.copy_selection();
+    c.paste();
+    assert_eq!(c.document().images().len(), 2);
+    c.delete_selection();
+    assert_eq!(c.document().images().len(), 1);
+}
