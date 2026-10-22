@@ -407,6 +407,14 @@ Dialog {
                     checked: dialog.window.sidebarVisible
                     onToggled: (on) => dialog.window.sidebarVisible = on
                 }
+                Choice {
+                    objectName: "sidebarSide"
+                    enabled: dialog.window.sidebarVisible
+                    label: qsTr("Notebook list side")
+                    options: [qsTr("Left"), qsTr("Right")]
+                    value: dialog.window.sidebarRight ? 1 : 0
+                    onPicked: (index) => dialog.window.sidebarRight = index === 1
+                }
                 Toggle {
                     objectName: "penBar"
                     label: qsTr("Pen bar")

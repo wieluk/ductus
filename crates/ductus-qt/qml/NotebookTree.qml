@@ -8,6 +8,7 @@ Rectangle {
     id: sidebar
 
     property string renaming: ""
+    property bool onRight: false
 
     signal deleteRequested(string path, string name, bool isFolder)
     signal openFolderRequested()
@@ -48,14 +49,16 @@ Rectangle {
     }
 
     Rectangle {
-        anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
+        x: sidebar.onRight ? 0 : parent.width - width
+        height: parent.height
         width: 1
         color: Theme.sidebarBorder
     }
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.rightMargin: 1
+        anchors.leftMargin: sidebar.onRight ? 1 : 0
+        anchors.rightMargin: sidebar.onRight ? 0 : 1
         spacing: 0
 
         RowLayout {
@@ -161,7 +164,10 @@ Rectangle {
             RibbonButton {
                 objectName: "sidebarNewNotebook"
                 iconName: "plus"
-                tip: qsTr("New notebook in %1").arg(AppController.displayName(AppController.treeFocus))
+                tip: {
+                    AppController.libraryPath // displayName() follows it.
+                    return qsTr("New notebook in %1").arg(AppController.displayName(AppController.treeFocus))
+                }
                 implicitHeight: 32
                 implicitWidth: 32
                 onClicked: AppController.newNotebook(AppController.treeFocus)

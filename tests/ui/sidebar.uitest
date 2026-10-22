@@ -36,3 +36,12 @@ type Drafts
 key Return
 expect-file Physics/Drafts
 expect-prop row_Physics/Drafts visible true
+# On the right, the list resizes from its left edge.
+click-item appMenuButton
+click-item menuSettings
+click-item settingsSection2
+click-item sidebarSide1
+click-item settingsClose
+expect-prop notebookTree x 878
+pen 880,400 780,400
+expect-prop notebookTree width 502

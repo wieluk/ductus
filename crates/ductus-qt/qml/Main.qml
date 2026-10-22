@@ -15,6 +15,7 @@ ApplicationWindow {
     property int sidebarWidth: Theme.sidebarWidth
     property bool penBarVisible: true
     property bool penBarRight: false
+    property bool sidebarRight: false
     property alias currentTab: titleBar.currentTab
 
     width: 1280
@@ -90,6 +91,7 @@ ApplicationWindow {
         property alias sidebarVisible: window.sidebarVisible
         property alias sidebarWidth: window.sidebarWidth
         property alias penBarRight: window.penBarRight
+        property alias sidebarRight: window.sidebarRight
         property alias holdDelay: canvas.holdDelay
         property alias palmRejection: canvas.palmRejection
         property alias penTipVisible: canvas.penTipVisible
@@ -236,6 +238,7 @@ ApplicationWindow {
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: 0
+            layoutDirection: window.sidebarRight ? Qt.RightToLeft : Qt.LeftToRight
 
             NotebookTree {
                 id: tree
@@ -243,12 +246,15 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 Layout.preferredWidth: Math.min(window.sidebarWidth, window.width * 0.6)
                 visible: window.sidebarVisible && window.visibility !== Window.FullScreen
+                onRight: window.sidebarRight
 
                 MouseArea {
                     objectName: "sidebarResize"
                     property real startX
                     property int startWidth
-                    anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
+                    // On the edge next to the page.
+                    x: window.sidebarRight ? 0 : parent.width - width
+                    height: parent.height
                     width: 6
                     cursorShape: Qt.SizeHorCursor
                     onPressed: (mouse) => {
@@ -257,7 +263,8 @@ ApplicationWindow {
                     }
                     onPositionChanged: (mouse) => {
                         const moved = mapToItem(null, mouse.x, 0).x - startX
-                        window.sidebarWidth = Math.round(Math.max(200, Math.min(640, startWidth + moved)))
+                        const grown = window.sidebarRight ? -moved : moved
+                        window.sidebarWidth = Math.round(Math.max(200, Math.min(640, startWidth + grown)))
                     }
                 }
                 onDeleteRequested: (path, name, isFolder) => {
