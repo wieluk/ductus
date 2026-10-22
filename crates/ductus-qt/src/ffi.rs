@@ -1,0 +1,367 @@
+#[cxx_qt::bridge]
+pub mod qobject {
+    #[derive(Debug, Clone, Copy)]
+    struct PointerSample {
+        x: f64,
+        y: f64,
+        pressure: f64,
+        has_pressure: bool,
+        tilt_x: f64,
+        tilt_y: f64,
+        time_ms: u32,
+    }
+
+    /// `layer`: 0 = base, 1 = live overlay.
+    #[derive(Debug, Clone, Copy)]
+    struct TileInfo {
+        layer: u8,
+        x: i32,
+        y: i32,
+        generation: u64,
+        rect_x: f64,
+        rect_y: f64,
+        rect_w: f64,
+        rect_h: f64,
+    }
+
+    #[derive(Debug, Default)]
+    struct TreeRow {
+        depth: u32,
+        is_folder: bool,
+        is_pdf: bool,
+        is_file: bool,
+        name: String,
+        path: String,
+        subtitle: String,
+        color: String,
+        has_children: bool,
+        expanded: bool,
+        conflict: bool,
+        pinned: bool,
+        quick: bool,
+    }
+
+    #[derive(Debug, Default)]
+    struct TextRow {
+        id: u64,
+        markdown: String,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+        scale: f64,
+        selected: bool,
+    }
+
+    /// `w` < 0: no box; `page` -1: no page.
+    #[derive(Debug, Default)]
+    struct SearchHit {
+        path: String,
+        title: String,
+        location: String,
+        kind: String,
+        page: i64,
+        x: f64,
+        y: f64,
+        w: f64,
+        h: f64,
+        /// The match is between \u{1} and \u{2}.
+        snippet: String,
+    }
+
+    #[derive(Debug, Default)]
+    struct RecognitionResult {
+        page: String,
+        key: String,
+        text: String,
+        x: f64,
+        y: f64,
+        w: f64,
+        h: f64,
+        lang: String,
+    }
+
+    #[derive(Debug, Default)]
+    struct LineJob {
+        key: String,
+        x: f64,
+        y: f64,
+        w: f64,
+        h: f64,
+        png: Vec<u8>,
+    }
+
+    extern "Rust" {
+        type RecognitionHandle;
+        fn open_recognizer() -> Box<RecognitionHandle>;
+        /// `kind`: "off", "server" or "fixed:<text>".
+        fn configure(self: &RecognitionHandle, kind: &str, url: &str, model: &str, key: &str);
+        #[allow(clippy::too_many_arguments)]
+        fn submit(
+            self: &RecognitionHandle,
+            page: &str,
+            key: &str,
+            x: f64,
+            y: f64,
+            w: f64,
+            h: f64,
+            png: &[u8],
+            lang: &str,
+        );
+        fn pending(self: &RecognitionHandle) -> usize;
+        fn take_results(self: &RecognitionHandle) -> Vec<RecognitionResult>;
+        fn last_error(self: &RecognitionHandle) -> String;
+    }
+
+    #[derive(Debug, Default)]
+    struct UpdateState {
+        busy: bool,
+        checked: bool,
+        latest: String,
+        notes: String,
+        page: String,
+        error: String,
+        received: u64,
+        total: u64,
+        file: String,
+    }
+
+    extern "Rust" {
+        type UpdateHandle;
+        fn open_updater() -> Box<UpdateHandle>;
+        fn update_is_newer(latest: &str, current: &str) -> bool;
+        fn check(self: &UpdateHandle, feed: &str);
+        fn download(self: &UpdateHandle, suffix: &str, dir: &str);
+        fn cancel(self: &UpdateHandle);
+        fn asset_url(self: &UpdateHandle, suffix: &str) -> String;
+        fn state(self: &UpdateHandle) -> UpdateState;
+    }
+
+    extern "Rust" {
+        type SearchHandle;
+        fn open_search(cache_dir: &str, root: &str) -> Result<Box<SearchHandle>>;
+        fn refresh(self: &SearchHandle);
+        fn reindex(self: &SearchHandle, path: &str);
+        fn indexing(self: &SearchHandle) -> bool;
+        fn index_progress(self: &SearchHandle) -> Vec<u64>;
+        fn index_error(self: &SearchHandle) -> String;
+        fn search(self: &SearchHandle, query: &str, limit: usize) -> Vec<SearchHit>;
+    }
+
+    extern "Rust" {
+        type LibraryHandle;
+
+        fn open_library(root: &str) -> Result<Box<LibraryHandle>>;
+        fn root(self: &LibraryHandle) -> String;
+        fn is_empty(self: &LibraryHandle) -> Result<bool>;
+        /// `flags`: 1 notes, 2 PDFs, 4 other files, 8 hide folders without those; `focus` "" is the whole library.
+        fn rows(
+            self: &LibraryHandle,
+            expanded: &str,
+            flags: u8,
+            notebooks: bool,
+            focus: &str,
+        ) -> Result<Vec<TreeRow>>;
+        fn first_page(self: &LibraryHandle) -> String;
+        fn set_pinned(self: &LibraryHandle, path: &str, pinned: bool) -> Result<()>;
+        fn absolute_path(self: &LibraryHandle, path: &str) -> String;
+        fn import_page(self: &LibraryHandle, parent: &str, file: &str) -> Result<String>;
+        fn unique_name(self: &LibraryHandle, parent: &str, base: &str) -> String;
+        fn create_folder(self: &LibraryHandle, parent: &str, name: &str) -> Result<String>;
+        fn create_page(
+            self: &mut LibraryHandle,
+            parent: &str,
+            name: &str,
+            like: &CanvasEngine,
+        ) -> Result<String>;
+        fn create_page_styled(
+            self: &mut LibraryHandle,
+            parent: &str,
+            name: &str,
+            kind: &str,
+            landscape: bool,
+            pattern: &str,
+        ) -> Result<String>;
+        fn rename(self: &mut LibraryHandle, path: &str, name: &str) -> Result<String>;
+        /// `index` < 0 appends.
+        fn move_to(
+            self: &mut LibraryHandle,
+            path: &str,
+            parent: &str,
+            index: i32,
+        ) -> Result<String>;
+        fn remove(self: &mut LibraryHandle, path: &str) -> Result<()>;
+        fn set_color(self: &LibraryHandle, path: &str, color: &str) -> Result<()>;
+        fn open_page(self: &LibraryHandle) -> String;
+        fn page_file(self: &LibraryHandle, path: &str) -> String;
+        fn load_into(self: &mut LibraryHandle, path: &str, canvas: &mut CanvasEngine)
+        -> Result<()>;
+        fn save_from(self: &mut LibraryHandle, canvas: &CanvasEngine) -> Result<()>;
+        fn close_page(self: &mut LibraryHandle);
+        fn accepts_pictures(self: &LibraryHandle) -> bool;
+        fn recognition_jobs(self: &LibraryHandle, canvas: &CanvasEngine) -> Vec<LineJob>;
+        /// True when the line is on the open page, which then needs saving.
+        #[allow(clippy::too_many_arguments)]
+        fn apply_recognition(
+            self: &mut LibraryHandle,
+            page: &str,
+            key: &str,
+            text: &str,
+            x: f64,
+            y: f64,
+            w: f64,
+            h: f64,
+            lang: &str,
+        ) -> Result<bool>;
+        fn import_pdf(
+            self: &mut LibraryHandle,
+            parent: &str,
+            file: &str,
+            annotate: bool,
+        ) -> Result<String>;
+        fn export_pdf(
+            self: &LibraryHandle,
+            target: &str,
+            canvas: &CanvasEngine,
+            overlay: &[u8],
+        ) -> Result<()>;
+        fn export_areas(self: &LibraryHandle, canvas: &CanvasEngine) -> Vec<f64>;
+        fn pdf_support_problem() -> String;
+        fn pdf_text(path: &str) -> String;
+
+        type PrintJob;
+        fn print_job(
+            self: &LibraryHandle,
+            canvas: &CanvasEngine,
+            overlay: &[u8],
+        ) -> Result<Box<PrintJob>>;
+        fn print_page_count(self: &PrintJob) -> usize;
+        fn print_page_aspect(self: &PrintJob, index: usize) -> f64;
+        fn print_page_pixels(
+            self: &PrintJob,
+            index: usize,
+            width: u32,
+            height: u32,
+        ) -> Result<Vec<u8>>;
+    }
+
+    extern "Rust" {
+        type CanvasEngine;
+
+        fn new_canvas_engine() -> Box<CanvasEngine>;
+
+        fn set_viewport(self: &mut CanvasEngine, width: f64, height: f64, dpr: f64);
+        fn frame(self: &mut CanvasEngine) -> Vec<TileInfo>;
+        fn tile_pixels(self: &CanvasEngine, layer: u8, x: i32, y: i32) -> &[u8];
+        fn tile_size(self: &CanvasEngine) -> u32;
+
+        /// `device`: 0 = pen, 1 = pen eraser end, 2 = mouse, 3 = touch.
+        fn pointer_down(
+            self: &mut CanvasEngine,
+            device: u8,
+            sample: &PointerSample,
+            erase_button: bool,
+        ) -> bool;
+        fn pointer_move(self: &mut CanvasEngine, samples: &[PointerSample]);
+        fn pointer_up(self: &mut CanvasEngine);
+        fn pointer_cancel(self: &mut CanvasEngine);
+        fn is_drawing(self: &CanvasEngine) -> bool;
+
+        fn pan_by(self: &mut CanvasEngine, dx: f64, dy: f64);
+        fn zoom_around(self: &mut CanvasEngine, x: f64, y: f64, zoom: f64);
+        fn set_view(self: &mut CanvasEngine, zoom: f64, offset_x: f64, offset_y: f64);
+        fn zoom(self: &CanvasEngine) -> f64;
+        fn offset_x(self: &CanvasEngine) -> f64;
+        fn offset_y(self: &CanvasEngine) -> f64;
+        fn reset_view(self: &mut CanvasEngine);
+        fn needs_settle(self: &CanvasEngine) -> bool;
+        fn settle(self: &mut CanvasEngine);
+
+        /// `tool`: 0 = pen, 1 = highlighter, 2 = eraser.
+        fn set_tool(self: &mut CanvasEngine, tool: u8);
+        fn tool(self: &CanvasEngine) -> u8;
+        fn set_eraser_whole_strokes(self: &mut CanvasEngine, on: bool);
+        fn set_eraser_size(self: &mut CanvasEngine, radius: f64);
+        fn set_pen_pattern(self: &mut CanvasEngine, name: &str);
+        fn set_highlighter(self: &mut CanvasEngine, r: f32, g: f32, b: f32, width: f64);
+        fn hold(self: &mut CanvasEngine) -> String;
+        fn selection_count(self: &CanvasEngine) -> usize;
+        fn text_rows(self: &CanvasEngine) -> Vec<TextRow>;
+        fn has_selection_drag(self: &CanvasEngine) -> bool;
+        fn focus_rect(self: &mut CanvasEngine, x: f64, y: f64, w: f64, h: f64);
+        fn focus_sheet(self: &mut CanvasEngine, index: usize);
+        fn clear_mark(self: &mut CanvasEngine);
+        fn begin_math(
+            self: &mut CanvasEngine,
+            x: f64,
+            y: f64,
+            syntax: &str,
+            r: f32,
+            g: f32,
+            b: f32,
+        );
+        fn edit_math(self: &mut CanvasEngine, id: u64) -> Vec<String>;
+        fn set_math_draft(self: &mut CanvasEngine, source: &str, syntax: &str) -> String;
+        fn commit_math(self: &mut CanvasEngine) -> bool;
+        fn cancel_math(self: &mut CanvasEngine);
+        fn math_at(self: &CanvasEngine, x: f64, y: f64) -> u64;
+        fn math_draft_rect(self: &CanvasEngine) -> Vec<f64>;
+        fn add_text(
+            self: &mut CanvasEngine,
+            x: f64,
+            y: f64,
+            width: f64,
+            height: f64,
+            markdown: &str,
+        ) -> u64;
+        fn set_text(self: &mut CanvasEngine, id: u64, markdown: &str, height: f64) -> bool;
+        fn set_text_height(self: &mut CanvasEngine, id: u64, height: f64);
+        fn text_at(self: &CanvasEngine, x: f64, y: f64) -> u64;
+        fn to_doc(self: &CanvasEngine, x: f64, y: f64) -> Vec<f64>;
+        fn texts_of_page(self: &CanvasEngine) -> Vec<TextRow>;
+        fn selection_has_ink(self: &CanvasEngine) -> bool;
+        fn selection_rect(self: &CanvasEngine) -> Vec<f64>;
+        fn clear_selection(self: &mut CanvasEngine);
+        fn select_all(self: &mut CanvasEngine);
+        fn delete_selection(self: &mut CanvasEngine);
+        fn copy_selection(self: &mut CanvasEngine);
+        fn cut_selection(self: &mut CanvasEngine);
+        fn paste(self: &mut CanvasEngine);
+        fn can_paste(self: &CanvasEngine) -> bool;
+        fn insert_picture(self: &mut CanvasEngine, png: &[u8], x: f64, y: f64) -> bool;
+        fn recolor_selection(self: &mut CanvasEngine, r: f32, g: f32, b: f32, a: f32);
+        fn set_pen_color(self: &mut CanvasEngine, r: f32, g: f32, b: f32, a: f32);
+        fn set_pen_width(self: &mut CanvasEngine, width: f64);
+        fn pen_width(self: &CanvasEngine) -> f64;
+        fn set_finger_draws(self: &mut CanvasEngine, on: bool);
+        fn finger_draws(self: &CanvasEngine) -> bool;
+
+        fn undo(self: &mut CanvasEngine);
+        fn redo(self: &mut CanvasEngine);
+        fn clear(self: &mut CanvasEngine);
+        fn can_undo(self: &CanvasEngine) -> bool;
+        fn can_redo(self: &CanvasEngine) -> bool;
+        fn revision(self: &CanvasEngine) -> u64;
+
+        fn page_kind(self: &CanvasEngine) -> String;
+        fn page_landscape(self: &CanvasEngine) -> bool;
+        fn page_pattern(self: &CanvasEngine) -> String;
+        fn set_page_style(self: &mut CanvasEngine, kind: &str, landscape: bool, pattern: &str);
+        fn set_desk_color(self: &mut CanvasEngine, r: f32, g: f32, b: f32);
+        fn set_pressure_gamma(self: &mut CanvasEngine, gamma: f64);
+        /// 0 = off … 3 = strong.
+        fn set_smoothing_level(self: &mut CanvasEngine, level: u8);
+    }
+
+    unsafe extern "C++" {
+        include!("ductus-qt/cpp/app.h");
+
+        fn run_app() -> i32;
+    }
+}
+
+pub use crate::engine::{CanvasEngine, new_canvas_engine};
+pub use crate::library::{LibraryHandle, PrintJob, open_library, pdf_support_problem, pdf_text};
+pub use crate::recognize::{RecognitionHandle, open_recognizer};
+pub use crate::search::{SearchHandle, open_search};
+pub use crate::update::{UpdateHandle, open_updater, update_is_newer};

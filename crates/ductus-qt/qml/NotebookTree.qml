@@ -1,0 +1,589 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Controls.impl
+import QtQuick.Layouts
+import Ductus
+
+Rectangle {
+    id: sidebar
+
+    property string renaming: ""
+
+    signal deleteRequested(string path, string name, bool isFolder)
+    signal openFolderRequested()
+
+    color: Theme.sidebar
+
+    Connections {
+        target: AppController
+        function onRenameRequested(path) { sidebar.renaming = path }
+        function onRevealRequested(path) {
+            const i = AppController.tree.treeIndexOf(path)
+            if (i >= 0)
+                list.positionViewAtIndex(i, ListView.Contain)
+        }
+    }
+
+    function hasFilter(bit) { return (AppController.treeFilter & bit) !== 0 }
+    function toggleFilter(bit) { AppController.treeFilter = AppController.treeFilter ^ bit }
+    function lastName(path) { return path.split(/[\\/]/).pop() }
+
+    readonly property bool focused: AppController.treeFocus.length > 0
+    readonly property var crumbs: {
+        const out = [{ name: lastName(AppController.libraryPath), path: "" }]
+        const focus = AppController.treeFocus
+        if (focus.length > 0) {
+            const parts = focus.split("/")
+            for (let i = 0; i < parts.length; ++i)
+                out.push({ name: parts[i], path: parts.slice(0, i + 1).join("/") })
+        }
+        return out
+    }
+
+    Rectangle {
+        anchors { top: parent.top; bottom: parent.bottom; right: parent.right }
+        width: 1
+        color: Theme.sidebarBorder
+    }
+
+    ColumnLayout {
+        anchors.fill: parent
+        anchors.rightMargin: 1
+        spacing: 0
+
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.leftMargin: 14
+            Layout.rightMargin: 6
+            Layout.topMargin: 6
+            Layout.bottomMargin: 2
+            spacing: 0
+
+            Repeater {
+                model: [{ notebooks: false, label: qsTr("Folders") },
+                        { notebooks: true, label: qsTr("Notebooks") }]
+                delegate: AbstractButton {
+                    id: viewButton
+                    required property var modelData
+                    readonly property bool active: AppController.notebookView === modelData.notebooks
+                    objectName: modelData.notebooks ? "viewNotebooks" : "viewFolders"
+                    implicitHeight: 28
+                    implicitWidth: viewLabel.implicitWidth + 16
+                    focusPolicy: Qt.NoFocus
+                    onClicked: AppController.notebookView = modelData.notebooks
+                    ToolTip.visible: hovered
+                    ToolTip.delay: 600
+                    ToolTip.text: modelData.notebooks
+                                  ? qsTr("Every folder with notes or PDFs, however deep")
+                                  : qsTr("The library's folder tree")
+                    contentItem: Label {
+                        id: viewLabel
+                        text: viewButton.modelData.label
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        color: viewButton.active ? Theme.accent : Theme.textMuted
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
+                    }
+                    background: Rectangle {
+                        radius: Theme.radius
+                        color: viewButton.active ? Theme.checked : (viewButton.hovered ? Theme.hover : "transparent")
+                    }
+                }
+            }
+            Item { Layout.fillWidth: true }
+            RibbonButton {
+                objectName: "treeFilter"
+                iconName: "filter"
+                tip: qsTr("Show…")
+                implicitHeight: 32
+                implicitWidth: 32
+                checked: AppController.treeFilter !== 3
+                onClicked: filterMenu.popup(this, 0, height)
+
+                AppMenu {
+                    id: filterMenu
+                    AppMenuItem {
+                        objectName: "filterNotes"
+                        text: qsTr("Notes pages")
+                        checkable: true
+                        checked: sidebar.hasFilter(1)
+                        onTriggered: sidebar.toggleFilter(1)
+                    }
+                    AppMenuItem {
+                        objectName: "filterPdfs"
+                        text: qsTr("PDFs")
+                        checkable: true
+                        checked: sidebar.hasFilter(2)
+                        onTriggered: sidebar.toggleFilter(2)
+                    }
+                    AppMenuItem {
+                        objectName: "filterOther"
+                        text: qsTr("Other files")
+                        checkable: true
+                        checked: sidebar.hasFilter(4)
+                        onTriggered: sidebar.toggleFilter(4)
+                    }
+                    AppMenuSeparator {}
+                    AppMenuItem {
+                        objectName: "filterHideEmpty"
+                        text: qsTr("Hide folders without these")
+                        checkable: true
+                        checked: sidebar.hasFilter(8)
+                        onTriggered: sidebar.toggleFilter(8)
+                    }
+                }
+            }
+            RibbonButton {
+                objectName: "sidebarNewPage"
+                iconName: "page-add"
+                tip: {
+                    // currentFolder() follows these.
+                    AppController.currentPage
+                    AppController.treeFocus
+                    const folder = AppController.currentFolder()
+                    return qsTr("New page in %1").arg(folder.length > 0 ? sidebar.lastName(folder)
+                                                                         : sidebar.crumbs[0].name)
+                }
+                implicitHeight: 32
+                implicitWidth: 32
+                onClicked: AppController.newPage(AppController.currentFolder())
+            }
+            RibbonButton {
+                objectName: "sidebarNewSubject"
+                iconName: "plus"
+                tip: sidebar.focused
+                     ? qsTr("New section in %1").arg(sidebar.lastName(AppController.treeFocus))
+                     : qsTr("New subject")
+                implicitHeight: 32
+                implicitWidth: 32
+                onClicked: AppController.newSubject()
+            }
+        }
+
+        RowLayout {
+            objectName: "breadcrumbs"
+            visible: sidebar.focused
+            Layout.fillWidth: true
+            Layout.leftMargin: 8
+            Layout.rightMargin: 6
+            Layout.bottomMargin: 2
+            spacing: 2
+
+            RibbonButton {
+                objectName: "focusUp"
+                iconName: "arrow-up"
+                tip: qsTr("Up one folder")
+                implicitHeight: 28
+                implicitWidth: 28
+                padding: 4
+                onClicked: AppController.treeFocus = AppController.parentOf(AppController.treeFocus)
+            }
+            ListView {
+                id: crumbList
+                Layout.fillWidth: true
+                Layout.preferredHeight: 28
+                orientation: ListView.Horizontal
+                clip: true
+                boundsBehavior: Flickable.StopAtBounds
+                model: sidebar.crumbs
+                // The deepest folder is the one that matters.
+                onCountChanged: positionViewAtEnd()
+                onWidthChanged: positionViewAtEnd()
+                delegate: AbstractButton {
+                    id: crumb
+                    required property var modelData
+                    required property int index
+                    readonly property bool last: index === crumbList.count - 1
+                    objectName: "crumb_" + modelData.path
+                    height: 28
+                    implicitWidth: crumbLabel.implicitWidth + 8
+                    focusPolicy: Qt.NoFocus
+                    enabled: !last
+                    onClicked: AppController.treeFocus = modelData.path
+                    contentItem: Label {
+                        id: crumbLabel
+                        text: (crumb.index > 0 ? "› " : "") + crumb.modelData.name
+                        verticalAlignment: Text.AlignVCenter
+                        color: crumb.last ? Theme.text : crumb.hovered ? Theme.accent : Theme.textMuted
+                        font.pixelSize: 12
+                        font.weight: crumb.last ? Font.DemiBold : Font.Normal
+                    }
+                    background: Rectangle {
+                        radius: Theme.radius
+                        color: crumb.hovered && !crumb.last ? Theme.hover : "transparent"
+                    }
+                }
+            }
+        }
+
+        ListView {
+            id: list
+            objectName: "notebookList"
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            model: AppController.tree
+            spacing: 1
+            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+
+            // Headings only when there is a quick access section.
+            section.property: AppController.tree.hasQuick ? "quick" : ""
+            section.delegate: Label {
+                required property string section
+                height: 26
+                leftPadding: 14
+                topPadding: 6
+                text: section === "true" ? qsTr("Quick access")
+                      : AppController.notebookView ? qsTr("Notebooks") : qsTr("Folders")
+                color: Theme.textMuted
+                font.pixelSize: 11
+                font.weight: Font.DemiBold
+                font.capitalization: Font.AllUppercase
+            }
+
+            delegate: Item {
+                id: row
+
+                required property int index
+                required property string name
+                required property string path
+                required property int depth
+                required property bool isFolder
+                required property bool isPdf
+                required property string color
+                required property bool hasChildren
+                required property bool expanded
+                required property bool conflict
+                required property bool isCurrent
+                required property bool isFile
+                required property string subtitle
+                required property bool pinned
+                required property bool quick
+
+                readonly property bool isSubject: isFolder && depth === 0
+                readonly property color mark: color.length > 0 ? color : Theme.accent
+
+                objectName: (quick ? "quick_" : "row_") + path
+                width: ListView.view.width
+                height: subtitle.length > 0 ? 42 : 34
+
+                function activate() {
+                    if (row.isFolder && row.quick)
+                        AppController.reveal(row.path)
+                    else if (row.isFolder)
+                        AppController.toggleExpanded(row.path)
+                    else if (row.isFile)
+                        AppController.openExternally(row.path)
+                    else
+                        AppController.openPage(row.path)
+                }
+
+                HoverHandler { id: hover }
+                TapHandler {
+                    acceptedButtons: Qt.LeftButton
+                    onTapped: row.activate()
+                    // Open menus where the finger or pointer is, not at the
+                    // global cursor (which touch input doesn't move).
+                    onLongPressed: rowMenu.popup(point.position.x, point.position.y)
+                }
+                TapHandler {
+                    acceptedButtons: Qt.RightButton
+                    onTapped: (eventPoint) => rowMenu.popup(eventPoint.position.x, eventPoint.position.y)
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.leftMargin: 6
+                    anchors.rightMargin: 6
+                    radius: Theme.radius
+                    color: row.isCurrent ? Theme.checked : (hover.hovered ? Theme.hover : "transparent")
+                }
+                Rectangle {
+                    visible: row.isCurrent
+                    x: 6
+                    width: 3
+                    height: parent.height - 12
+                    anchors.verticalCenter: parent.verticalCenter
+                    radius: 1.5
+                    color: row.mark
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 12 + row.depth * 16
+                    anchors.rightMargin: 8
+                    spacing: 6
+
+                    IconImage {
+                        visible: !row.quick
+                        Layout.preferredWidth: 14
+                        Layout.preferredHeight: 14
+                        source: row.isFolder && row.hasChildren ? Qt.resolvedUrl("icons/chevron.svg") : ""
+                        sourceSize: Qt.size(14, 14)
+                        color: Theme.textMuted
+                        rotation: row.expanded ? 90 : 0
+                    }
+                    Rectangle {
+                        visible: row.isSubject
+                        Layout.preferredWidth: 12
+                        Layout.preferredHeight: 12
+                        radius: 3
+                        color: row.mark
+                    }
+                    IconImage {
+                        visible: !row.isSubject
+                        Layout.preferredWidth: 16
+                        Layout.preferredHeight: 16
+                        source: Qt.resolvedUrl(row.isFolder ? "icons/folder.svg"
+                                               : row.isPdf ? "icons/pdf.svg"
+                                               : row.isFile ? "icons/file.svg" : "icons/page.svg")
+                        sourceSize: Qt.size(16, 16)
+                        color: row.isFolder ? row.mark : Theme.textMuted
+                    }
+
+                    ColumnLayout {
+                        visible: sidebar.renaming !== row.path || row.quick
+                        Layout.fillWidth: true
+                        spacing: 0
+                        Label {
+                            Layout.fillWidth: true
+                            text: row.name
+                            elide: Text.ElideRight
+                            color: row.isFile ? Theme.textMuted : Theme.text
+                            font.pixelSize: 13
+                            font.weight: (row.isSubject && !row.quick) || row.isCurrent ? Font.DemiBold : Font.Normal
+                        }
+                        Label {
+                            visible: row.subtitle.length > 0
+                            Layout.fillWidth: true
+                            text: row.subtitle
+                            // The nearest folders tell same-named ones apart.
+                            elide: Text.ElideLeft
+                            color: Theme.textMuted
+                            font.pixelSize: 11
+                        }
+                    }
+                    TextField {
+                        id: nameField
+                        objectName: "renameField"
+                        visible: sidebar.renaming === row.path && !row.quick
+                        Layout.fillWidth: true
+                        text: row.name
+                        font.pixelSize: 13
+                        color: Theme.text
+                        selectByMouse: true
+                        background: Rectangle {
+                            radius: 4
+                            color: Theme.popup
+                            border.width: 1
+                            border.color: Theme.accent
+                        }
+                        onVisibleChanged: {
+                            if (visible) {
+                                forceActiveFocus()
+                                selectAll()
+                            } else if (activeFocus) {
+                                // A hidden field must not keep typing and shortcuts (Ctrl+V).
+                                sidebar.forceActiveFocus()
+                            }
+                        }
+                        function commit() {
+                            if (sidebar.renaming !== row.path)
+                                return
+                            sidebar.renaming = ""
+                            if (text.trim() !== row.name)
+                                AppController.rename(row.path, text)
+                        }
+                        onAccepted: commit()
+                        onActiveFocusChanged: if (!activeFocus) commit()
+                        Keys.onEscapePressed: sidebar.renaming = ""
+                    }
+
+                    IconImage {
+                        visible: row.conflict
+                        Layout.preferredWidth: 16
+                        Layout.preferredHeight: 16
+                        source: Qt.resolvedUrl("icons/warning.svg")
+                        sourceSize: Qt.size(16, 16)
+                        color: "#e08a00"
+                        HoverHandler { id: conflictHover }
+                        ToolTip.visible: conflictHover.hovered
+                        ToolTip.text: qsTr("Sync conflict copy")
+                    }
+                    RibbonButton {
+                        objectName: "focus_" + row.path
+                        visible: row.isFolder && !row.quick && hover.hovered
+                        iconName: "folder-open"
+                        tip: qsTr("Show only this folder")
+                        implicitWidth: 26
+                        implicitHeight: 26
+                        padding: 3
+                        onClicked: AppController.treeFocus = row.path
+                    }
+                    RibbonButton {
+                        objectName: "more_" + row.path
+                        visible: hover.hovered || row.isCurrent || rowMenu.visible
+                        iconName: "more"
+                        tip: qsTr("More")
+                        implicitWidth: 26
+                        implicitHeight: 26
+                        padding: 3
+                        onClicked: rowMenu.popup(this, 0, height)
+                    }
+                }
+
+                AppMenu {
+                    id: rowMenu
+                    objectName: "rowMenu"
+
+                    AppMenuItem {
+                        visible: row.isFile
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("Open with its program")
+                        objectName: "menuOpenExternally"
+                        onTriggered: AppController.openExternally(row.path)
+                    }
+                    AppMenuItem {
+                        visible: row.isFolder
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("Show only this folder")
+                        objectName: "menuFocus"
+                        onTriggered: AppController.treeFocus = row.path
+                    }
+                    AppMenuItem {
+                        visible: row.isFolder
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("New page")
+                        objectName: "menuNewPage"
+                        onTriggered: AppController.newPage(row.path)
+                    }
+                    AppMenuItem {
+                        visible: row.isFolder
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("New section")
+                        objectName: "menuNewSection"
+                        onTriggered: AppController.newFolder(row.path)
+                    }
+                    AppMenuItem {
+                        text: row.pinned ? qsTr("Remove from quick access") : qsTr("Add to quick access")
+                        objectName: "menuPin"
+                        onTriggered: AppController.setPinned(row.path, !row.pinned)
+                    }
+                    AppMenuItem {
+                        visible: row.quick
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("Show in tree")
+                        objectName: "menuReveal"
+                        onTriggered: AppController.reveal(row.path)
+                    }
+                    AppMenuItem {
+                        text: qsTr("Show in file manager")
+                        objectName: "menuShowInFolder"
+                        onTriggered: AppController.showInFolder(row.path)
+                    }
+                    AppMenuSeparator {}
+                    AppMenuItem {
+                        visible: !row.quick
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("Rename")
+                        objectName: "menuRename"
+                        onTriggered: sidebar.renaming = row.path
+                    }
+                    MenuItem {
+                        visible: row.isFolder && !row.quick
+                        height: visible ? 40 : 0
+                        objectName: "menuColors"
+                        contentItem: Row {
+                            spacing: 0
+                            leftPadding: 6
+                            Repeater {
+                                model: ["#5a43c0", "#1f4fd1", "#0a8a8a", "#1d8a3b", "#e07b00", "#d12f2f", "#c2185b", "#6a6779"]
+                                delegate: ColorSwatch {
+                                    required property string modelData
+                                    required property int index
+                                    objectName: "folderColor" + index
+                                    swatch: modelData
+                                    selected: Qt.colorEqual(row.mark, modelData)
+                                    onClicked: {
+                                        AppController.setColor(row.path, modelData)
+                                        rowMenu.close()
+                                    }
+                                }
+                            }
+                        }
+                        background: null
+                    }
+                    AppMenuSeparator { visible: !row.quick; height: visible ? implicitHeight : 0 }
+                    AppMenuItem {
+                        visible: !row.quick
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("Move up")
+                        objectName: "menuMoveUp"
+                        onTriggered: AppController.moveBy(row.path, -1)
+                    }
+                    AppMenuItem {
+                        visible: !row.quick
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("Move down")
+                        objectName: "menuMoveDown"
+                        onTriggered: AppController.moveBy(row.path, 1)
+                    }
+                    AppMenuSeparator {}
+                    AppMenuItem {
+                        text: qsTr("Delete…")
+                        objectName: "menuDelete"
+                        onTriggered: sidebar.deleteRequested(row.path, row.name, row.isFolder)
+                    }
+                }
+            }
+
+            Label {
+                anchors.centerIn: parent
+                width: parent.width - 40
+                visible: list.count === 0
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
+                color: Theme.textMuted
+                text: sidebar.focused
+                      ? qsTr("Nothing to show in this folder.\nCreate a section with the + button.")
+                      : AppController.notebookView
+                      ? qsTr("No folder holds notes or PDFs yet.\nCreate a subject with the + button.")
+                      : qsTr("No notebooks yet.\nCreate a subject with the + button.")
+            }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 1
+            color: Theme.sidebarBorder
+        }
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.leftMargin: 14
+            Layout.rightMargin: 6
+            Layout.topMargin: 4
+            Layout.bottomMargin: 4
+            Label {
+                objectName: "libraryLabel"
+                Layout.fillWidth: true
+                text: AppController.libraryPath
+                elide: Text.ElideMiddle
+                color: Theme.textMuted
+                font.pixelSize: 11
+                ToolTip.visible: libraryHover.hovered
+                ToolTip.text: AppController.libraryPath
+                HoverHandler { id: libraryHover }
+            }
+            RibbonButton {
+                objectName: "openLibrary"
+                iconName: "folder-open"
+                tip: qsTr("Open library folder…")
+                implicitHeight: 30
+                implicitWidth: 30
+                onClicked: sidebar.openFolderRequested()
+            }
+        }
+    }
+}
