@@ -250,7 +250,7 @@ Item {
                             onTapped: maths.toggleFavorite(snippet.modelData)
                         }
                         TapHandler {
-                            acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Stylus
+                            acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Mouse
                             onLongPressed: maths.toggleFavorite(snippet.modelData)
                         }
                     }

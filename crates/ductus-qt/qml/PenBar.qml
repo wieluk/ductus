@@ -227,7 +227,7 @@ Rectangle {
                                           : bar.openEditor(item.index, item)
                 }
                 TapHandler {
-                    acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Stylus
+                    acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Mouse
                     onLongPressed: item.isTool ? toolMenu.show(item.index, item)
                                                : bar.openEditor(item.index, item)
                 }

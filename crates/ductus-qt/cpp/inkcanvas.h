@@ -237,8 +237,10 @@ protected:
 
 private:
     bool handleTablet(QTabletEvent *event);
+    void forwardAsMouse(QTabletEvent *event);
     /// False where a control, popup or dialog is on top.
     bool ownsScenePoint(QPointF scenePosition) const;
+    QQuickItem *inputItemAt(QQuickItem *item, QPointF scenePosition) const;
     void afterEdit();
     void trackHold(QPointF position);
     void stopHold();
@@ -299,6 +301,7 @@ private:
     bool m_selectionHasInk = false;
     QRectF m_selectionRect;
 
+    // Only touched in updatePaintNode (render thread, GUI thread blocked).
     struct TileNode {
         QSGImageNode *node = nullptr;
         quint64 generation = 0;
@@ -308,9 +311,12 @@ private:
     QSGNode *m_overlayLayer = nullptr;
     QSGNode *m_tipLayer = nullptr;
     QSGImageNode *m_tipNode = nullptr;
-    /// Only touched in updatePaintNode (render thread, GUI thread blocked).
+    /// A stroke that started on the canvas keeps the pen until release.
     bool m_tabletGrab = false;
+    /// A pen press elsewhere is forwarded as mouse input until release.
+    bool m_tabletForward = false;
+    Qt::MouseButton m_forwardButton = Qt::LeftButton;
     QPointer<QQuickWindow> m_filteredWindow;
 };
 
-#endif // DUCTUS_INKCANVAS_H
+#endif

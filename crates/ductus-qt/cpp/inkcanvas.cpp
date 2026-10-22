@@ -19,6 +19,7 @@
 #include <QTabletEvent>
 #include <QTouchEvent>
 #include <QWheelEvent>
+#include <qpa/qwindowsysteminterface.h>
 
 #include <algorithm>
 #include <cmath>
@@ -760,36 +761,78 @@ bool InkCanvas::ownsScenePoint(QPointF scenePosition) const
 {
     if (!isVisible() || !contains(mapFromScene(scenePosition)))
         return false;
-    // Find the topmost item under the point, then look up its ancestors:
-    // reaching the canvas first means nothing interactive covers it.
-    QQuickItem *item = window()->contentItem();
-    while (QQuickItem *child = item->childAt(item->mapFromScene(scenePosition).x(),
-                                             item->mapFromScene(scenePosition).y())) {
-        item = child;
-    }
-    // The popup overlay spans the window. Hitting it bare (no popup and no
-    // modal dimmer under the pen) means the page is free to write on.
-    if (item->inherits("QQuickOverlay"))
+    const QQuickItem *hit = inputItemAt(window()->contentItem(), scenePosition);
+    if (hit && hit->inherits("QQuickOverlay")) {
+        // The overlay spans the window while popups are open: outside them, and without a
+        // modal dimmer, the page stays free to write on.
+        for (const QQuickItem *child : hit->childItems()) {
+            if (child->isVisible() && child->contains(child->mapFromScene(scenePosition)))
+                return false;
+        }
         return true;
-    for (; item; item = item->parentItem()) {
-        if (item == this)
-            return true;
-        // Disabled items (text boxes not being edited) never take input.
-        if (item->isEnabled()
-            && (item->acceptedMouseButtons() != Qt::NoButton || item->acceptTouchEvents()))
-            return false;
     }
-    return true;
+    return !hit || hit == this;
+}
+
+// The topmost item that takes pointer input at the point, as Qt's delivery picks it:
+// full-size layers without input don't hide what lies beneath them.
+QQuickItem *InkCanvas::inputItemAt(QQuickItem *item, QPointF scenePosition) const
+{
+    if (!item->isVisible() || !item->isEnabled())
+        return nullptr;
+    const bool inside = item->contains(item->mapFromScene(scenePosition));
+    if (item->clip() && !inside)
+        return nullptr;
+    const QList<QQuickItem *> children = item->childItems();
+    for (auto it = children.crbegin(); it != children.crend(); ++it) {
+        if (QQuickItem *hit = inputItemAt(*it, scenePosition))
+            return hit;
+    }
+    if (!inside)
+        return nullptr;
+    if (item == this || item->acceptedMouseButtons() != Qt::NoButton || item->acceptTouchEvents())
+        return item;
+    // Items that only have a TapHandler or DragHandler take input too.
+    for (const QObject *child : item->children()) {
+        if (child->inherits("QQuickPointerHandler") && !child->inherits("QQuickHoverHandler"))
+            return item;
+    }
+    return nullptr;
+}
+
+void InkCanvas::forwardAsMouse(QTabletEvent *event)
+{
+    QEvent::Type type = QEvent::MouseMove;
+    if (event->type() == QEvent::TabletPress) {
+        type = QEvent::MouseButtonPress;
+        // The tip with a barrel button held is a right click.
+        m_forwardButton = event->buttons() & (Qt::RightButton | Qt::MiddleButton) ? Qt::RightButton
+                                                                                  : Qt::LeftButton;
+    } else if (event->type() == QEvent::TabletRelease) {
+        type = QEvent::MouseButtonRelease;
+    }
+    const bool down = m_tabletForward && type != QEvent::MouseButtonRelease;
+    QWindowSystemInterface::handleMouseEvent(window(), event->timestamp(), event->position(),
+                                             event->globalPosition(),
+                                             down ? Qt::MouseButtons(m_forwardButton) : Qt::NoButton,
+                                             type == QEvent::MouseMove ? Qt::NoButton : m_forwardButton,
+                                             type);
 }
 
 bool InkCanvas::handleTablet(QTabletEvent *event)
 {
     const QPointF scenePosition = event->scenePosition();
     const bool press = event->type() == QEvent::TabletPress;
-    const bool owned = m_tabletGrab || ownsScenePoint(scenePosition);
-    if (!owned) {
+    // Outside the page the pen is a mouse: Qt's own fallback loses taps to stylus-aware handlers.
+    if (m_tabletForward || (!m_tabletGrab && !ownsScenePoint(scenePosition))) {
         hidePenTip();
-        return false; // Qt turns it into mouse input for whatever is there.
+        if (press)
+            m_tabletForward = true;
+        forwardAsMouse(event);
+        if (event->type() == QEvent::TabletRelease)
+            m_tabletForward = false;
+        event->accept();
+        return true;
     }
     event->accept();
     m_penSeen.restart();

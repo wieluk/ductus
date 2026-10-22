@@ -101,6 +101,16 @@ public:
             const Qt::MouseButton button = cmd == u"click-item" ? Qt::LeftButton : Qt::RightButton;
             if (!clickItem(rest, button))
                 return fail(QStringLiteral("no visible item named ") + rest);
+        } else if (cmd == u"pen-tap") {
+            QQuickItem *item = findItem(m_window->contentItem(), rest);
+            if (!item)
+                return fail(QStringLiteral("no visible item named ") + rest);
+            const QPointF at = item->mapToScene(QPointF(item->width() / 2, item->height() / 2));
+            const auto *pen = stylus(QPointingDevice::PointerType::Pen);
+            tablet(QEvent::TabletPress, pen, at, 0.5, Qt::LeftButton);
+            QTest::qWait(30);
+            tablet(QEvent::TabletRelease, pen, at, 0, Qt::LeftButton);
+            QTest::qWait(80);
         } else if (cmd == u"type") {
             // A field that just appeared may get focus a moment later.
             for (int i = 0; i < 40; ++i) {
