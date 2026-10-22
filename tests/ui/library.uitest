@@ -1,0 +1,38 @@
+# An existing folder tree: deep PDFs, other files, filters, notebooks, focus folder, quick access.
+size 1280 800
+put-file tests/fixtures/lecture.pdf | Uni/3. Semester/Statik/VO/Slides.PDF
+put-file tests/fixtures/lecture.pdf | Uni/3. Semester/EST 2/VO/Script.pdf
+put-file crates/ductus-qt/qml/icons/chevron.svg | Uni/Peda/template/logo.svg
+wait 600
+click-item row_Uni
+click-item row_Uni/3. Semester
+click-item row_Uni/3. Semester/Statik
+click-item row_Uni/3. Semester/Statik/VO
+click-item row_Uni/3. Semester/Statik/VO/Slides.PDF
+expect-text pageTitle Slides.PDF
+# Notes pages only: the plain SVG logo makes no notebook.
+click-item viewNotebooks
+click-item treeFilter
+click-item filterPdfs
+expect-prop notebookList count 2
+click-item treeFilter
+click-item filterPdfs
+expect-prop notebookList count 5
+click-item viewFolders
+right-click-item row_Uni/3. Semester
+click-item menuFocus
+expect-prop notebookTree focused true
+click-item sidebarNewSubject
+type Biophysik
+key Return
+expect-file Uni/3. Semester/Biophysik/Untitled page.svg
+click-item crumb_
+expect-prop notebookTree focused false
+# Quick access always shows and leaves the focus folder.
+right-click-item row_My Notebook/First page
+click-item menuPin
+right-click-item row_Uni/3. Semester
+click-item menuFocus
+click-item quick_My Notebook/First page
+expect-prop notebookTree focused false
+expect-text pageTitle First page

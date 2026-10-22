@@ -1,0 +1,31 @@
+# Subjects, pages, external changes and deleting, on an empty library.
+size 1280 800
+expect-file My Notebook/First page.svg
+expect-text libraryLabel Notes
+pen p=0.3-0.9 500,300 600,380 700,300 800,380 900,300
+click-item sidebarNewSubject
+type Mathematics
+key Return
+expect-file Mathematics
+right-click-item row_Mathematics
+click-item menuNewPage
+type Limits
+key Return
+expect-file Mathematics/Limits.svg
+click-item tab_page
+click-item page_a4
+click-item pattern_lined
+pen p=0.6 700,250 900,280
+expect-in-file Mathematics/Limits.svg | dx:pattern="lined"
+click-item row_My Notebook/First page
+expect-text pageTitle First page
+# A sync tool adds a page: the tree shows it.
+copy-file Mathematics/Limits.svg | My Notebook/From phone.svg
+wait 800
+click-item row_My Notebook/From phone
+expect-text pageTitle From phone
+right-click-item row_Mathematics/Limits
+click-item menuDelete
+click-item confirmDelete
+expect-no-file Mathematics/Limits.svg
+expect-file .ductus/trash

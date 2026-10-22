@@ -1,0 +1,20 @@
+# Writing on a PDF directly, exporting and printing it, and importing it as pages.
+size 1280 860
+import-pdf annotate tests/fixtures/lecture.pdf
+expect-file My Notebook/lecture.pdf
+pen p=0.3-0.9 450,300 650,330 850,300
+click-item row_My Notebook/First page
+expect-text pageTitle First page
+click-item row_My Notebook/lecture.pdf
+expect-text pageTitle lecture.pdf
+export-pdf lecture-flat.pdf
+expect-file lecture-flat.pdf
+print-pdf printed.pdf
+expect-file printed.pdf
+# Pictures can't go into a PDF written on directly.
+clipboard-image tests/fixtures/screenshot.png
+key Ctrl+V
+expect-prop canvas selectionCount 0
+import-pdf pages tests/fixtures/lecture.pdf
+expect-file My Notebook/lecture 2.svg
+expect-file My Notebook/lecture 2.assets/source.pdf
