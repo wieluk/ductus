@@ -218,8 +218,7 @@ Rectangle {
                 ToolTip.visible: hovered
                 ToolTip.delay: 600
                 ToolTip.text: isTool ? info.label
-                                     : (highlighter ? qsTr("Highlighter") : qsTr("Pen")) + " · "
-                                       + modelData.width + " — " + qsTr("tap again to change")
+                                     : (highlighter ? qsTr("Highlighter") : qsTr("Pen")) + " · " + modelData.width
 
                 TapHandler {
                     acceptedButtons: Qt.RightButton

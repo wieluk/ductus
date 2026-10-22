@@ -21,7 +21,7 @@ ApplicationWindow {
     minimumWidth: 480
     minimumHeight: 320
     visible: true
-    title: AppController.currentTitle + " — Ductus"
+    title: AppController.currentTitle + " - Ductus"
     // Our own OneNote-style title bar holds the ribbon tabs.
     flags: Qt.Window | Qt.FramelessWindowHint
     color: Theme.ribbon
