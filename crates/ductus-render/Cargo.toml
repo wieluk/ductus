@@ -1,0 +1,16 @@
+[package]
+name = "ductus-render"
+description = "CPU rasterization of Ductus pages into tiles and images"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+ductus-core.workspace = true
+ductus-ink.workspace = true
+kurbo.workspace = true
+tiny-skia = "0.12"
+
+[lints]
+workspace = true
