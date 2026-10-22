@@ -18,7 +18,7 @@ serde_json = "1"
 thiserror = "2"
 
 [dev-dependencies]
-resvg = "0.45"
+resvg = "0.48"
 tempfile = "3"
 
 [lints]
