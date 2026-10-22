@@ -25,8 +25,13 @@
     },
     {
       // The bridge's build and runtime halves must be the same release.
-      matchPackageNames: ["cxx", "cxx-qt", "cxx-qt-lib", "cxx-qt-build"],
+      matchPackageNames: ["cxx-qt", "cxx-qt-lib", "cxx-qt-build"],
       groupName: "cxx-qt",
+    },
+    {
+      // Pinned to the cxx-gen that cxx-qt uses; it moves by hand together with cxx-qt.
+      matchPackageNames: ["cxx", "cxx-build", "/^cxxbridge-/"],
+      enabled: false,
     },
     {
       matchPackageNames: ["candle-core", "candle-nn"],
