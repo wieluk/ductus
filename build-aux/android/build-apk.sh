@@ -36,7 +36,7 @@ mkdir -p "$apk_dir/libs/$abi"
 # Android refuses to load a library that needs a symbol Qt for Android doesn't have.
 missing=$(comm -23 \
   <("$toolchain/bin/llvm-nm" -D --undefined-only "$apk_dir/libs/$abi/libductus_$abi.so" \
-    | awk '$2 ~ /^qt_/ {print $2}' | sort -u) \
+    | awk '$2 ~ /^qt_/ {sub(/@.*/, "", $2); print $2}' | sort -u) \
   <("$toolchain/bin/llvm-nm" -D --defined-only "$QT_ANDROID/lib/libQt6Core_$abi.so" \
     | awk '{sub(/@.*/, "", $3); print $3}' | sort -u))
 if [ -n "$missing" ]; then
