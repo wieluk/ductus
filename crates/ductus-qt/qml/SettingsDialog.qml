@@ -447,9 +447,17 @@ Dialog {
                     }
                 }
                 Heading { text: qsTr("Saving") }
-                Described {
-                    label: qsTr("Pages save automatically")
-                    hint: qsTr("1.5 seconds after you stop writing, when you switch pages and when you quit. Earlier versions are kept in .ductus/history, and deleted items in .ductus/trash inside the library.")
+                Choice {
+                    id: autosave
+                    readonly property var delays: [1500, 10000, 60000, 0]
+                    objectName: "settingsAutosave"
+                    label: qsTr("Save automatically")
+                    hint: AppController.autosaveDelay > 0
+                          ? qsTr("After you stop writing, and when you switch pages or quit. Earlier versions are kept in .ductus/history, deleted items in .ductus/trash.")
+                          : qsTr("Only with Ctrl+S, and when you switch pages or quit. The title shows * while changes aren't saved.")
+                    options: [qsTr("1.5 s"), qsTr("10 s"), qsTr("1 min"), qsTr("Off")]
+                    value: Math.max(0, delays.indexOf(AppController.autosaveDelay))
+                    onPicked: (index) => AppController.autosaveDelay = delays[index]
                 }
             }
 
@@ -611,13 +619,6 @@ Dialog {
                     hint: qsTr("When Ductus starts and once a day. Asks GitHub for the newest release; nothing else is sent.")
                     checked: Updater.autoCheck
                     onToggled: (on) => Updater.autoCheck = on
-                }
-                Heading { text: qsTr("Support") }
-                Described {
-                    objectName: "pdfStatus"
-                    label: qsTr("PDF support")
-                    hint: AppController.pdfProblem.length > 0 ? AppController.pdfProblem
-                                                             : qsTr("Ready (pdfium)")
                 }
             }
         }

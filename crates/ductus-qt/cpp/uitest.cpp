@@ -139,18 +139,19 @@ public:
                 QTest::qWait(100);
             if (QFileInfo::exists(path) != want)
                 return fail((want ? QStringLiteral("missing file ") : QStringLiteral("unexpected file ")) + path);
-        } else if (cmd == u"expect-in-file") {
+        } else if (cmd == u"expect-in-file" || cmd == u"expect-not-in-file") {
             const QString path = qEnvironmentVariable("DUCTUS_LIBRARY") + QLatin1Char('/')
                 + rest.section(QLatin1Char('|'), 0, 0).trimmed();
             const QString text = rest.section(QLatin1Char('|'), 1).trimmed();
+            const bool want = cmd == u"expect-in-file";
             auto contains = [&] {
                 QFile file(path);
                 return file.open(QIODevice::ReadOnly) && QString::fromUtf8(file.readAll()).contains(text);
             };
-            for (int i = 0; i < 40 && !contains(); ++i)
+            for (int i = 0; i < 40 && contains() != want; ++i)
                 QTest::qWait(100);
-            if (!contains())
-                return fail(path + QStringLiteral(" doesn't contain ") + text);
+            if (contains() != want)
+                return fail(path + (want ? QStringLiteral(" doesn't contain ") : QStringLiteral(" contains ")) + text);
         } else if (cmd == u"expect-pdf-text") {
             const QString path = qEnvironmentVariable("DUCTUS_LIBRARY") + QLatin1Char('/')
                 + rest.section(QLatin1Char('|'), 0, 0).trimmed();

@@ -175,7 +175,7 @@ AppController::AppController(QObject *parent)
     m_treeFocus = QSettings().value(QStringLiteral("tree/focus")).toString();
 
     m_saveTimer.setSingleShot(true);
-    m_saveTimer.setInterval(1500);
+    m_saveTimer.setInterval(QSettings().value(QStringLiteral("saving/delay"), 1500).toInt());
     connect(&m_saveTimer, &QTimer::timeout, this, &AppController::saveNow);
 
     m_refreshTimer.setSingleShot(true);
@@ -403,7 +403,7 @@ void AppController::openPage(const QString &path)
     m_canvas->documentReplaced();
     m_canvas->setPicturesAllowed((*m_library)->accepts_pictures());
     m_savedRevision = m_canvas->revision();
-    m_dirty = false;
+    setDirty(false);
     QSettings().setValue(QStringLiteral("library/lastPage"), path);
     expandTo(path);
     // The open page is always in the sidebar.
@@ -589,8 +589,28 @@ void AppController::onCanvasEdited()
 {
     if (!m_canvas || m_canvas->revision() == m_savedRevision)
         return;
-    m_dirty = true;
-    m_saveTimer.start();
+    setDirty(true);
+    if (autosaveDelay() > 0)
+        m_saveTimer.start();
+}
+
+void AppController::setDirty(bool dirty)
+{
+    if (dirty == m_dirty)
+        return;
+    m_dirty = dirty;
+    Q_EMIT unsavedChanged();
+}
+
+void AppController::setAutosaveDelay(int ms)
+{
+    if (ms == autosaveDelay())
+        return;
+    m_saveTimer.setInterval(ms);
+    QSettings().setValue(QStringLiteral("saving/delay"), ms);
+    if (ms > 0 && m_dirty)
+        m_saveTimer.start();
+    Q_EMIT autosaveDelayChanged();
 }
 
 void AppController::saveNow()
@@ -600,7 +620,7 @@ void AppController::saveNow()
         return;
     if (attempt([&] { (*m_library)->save_from(m_canvas->engine()); })) {
         m_savedRevision = m_canvas->revision();
-        m_dirty = false;
+        setDirty(false);
         m_lastSavedFile = toQ((*m_library)->page_file(toStd(currentPage())));
         m_lastSavedTime = QFileInfo(m_lastSavedFile).lastModified();
         if (m_search) {
@@ -995,7 +1015,7 @@ void AppController::pollRecognition()
     }
     if (openPageChanged) {
         // The text is stored with the page (and indexed when it is saved).
-        m_dirty = true;
+        setDirty(true);
         saveNow();
     }
     const std::size_t left = (*m_recognizer)->pending();

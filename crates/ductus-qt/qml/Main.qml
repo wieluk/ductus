@@ -21,7 +21,10 @@ ApplicationWindow {
     minimumWidth: 480
     minimumHeight: 320
     visible: true
-    title: AppController.currentTitle + " - Ductus"
+    // Only without autosave: otherwise it would flash after every stroke.
+    readonly property string pageTitle: (AppController.unsaved && AppController.autosaveDelay === 0 ? "* " : "")
+                                        + AppController.currentTitle
+    title: pageTitle + " - Ductus"
     // Our own OneNote-style title bar holds the ribbon tabs.
     flags: Qt.Window | Qt.FramelessWindowHint
     color: Theme.ribbon
@@ -200,7 +203,7 @@ ApplicationWindow {
             Layout.fillWidth: true
             window: window
             canvas: canvas
-            pageTitle: AppController.currentTitle
+            pageTitle: window.pageTitle
             visible: window.visibility !== Window.FullScreen
             onAboutRequested: aboutDialog.open()
             onSettingsRequested: settingsDialog.open()

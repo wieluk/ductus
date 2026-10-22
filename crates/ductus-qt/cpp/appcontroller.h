@@ -105,6 +105,9 @@ class AppController : public QObject
     Q_PROPERTY(bool notebookView READ notebookView WRITE setNotebookView NOTIFY treeViewChanged)
     /// "" for the whole library.
     Q_PROPERTY(QString treeFocus READ treeFocus WRITE setTreeFocus NOTIFY treeViewChanged)
+    /// Milliseconds after the last edit; 0 saves only on Ctrl+S, page switches and quitting.
+    Q_PROPERTY(int autosaveDelay READ autosaveDelay WRITE setAutosaveDelay NOTIFY autosaveDelayChanged)
+    Q_PROPERTY(bool unsaved READ unsaved NOTIFY unsavedChanged)
 
 public:
     explicit AppController(QObject *parent = nullptr);
@@ -126,6 +129,9 @@ public:
     void setNotebookView(bool on);
     QString treeFocus() const { return m_treeFocus; }
     void setTreeFocus(const QString &folder);
+    int autosaveDelay() const { return m_saveTimer.interval(); }
+    void setAutosaveDelay(int ms);
+    bool unsaved() const { return m_dirty; }
     void setCanvas(InkCanvas *canvas);
 
     Q_INVOKABLE void openLibrary(const QString &pathOrUrl);
@@ -171,6 +177,8 @@ Q_SIGNALS:
     void notice(const QString &message);
     void renameRequested(const QString &path);
     void treeViewChanged();
+    void autosaveDelayChanged();
+    void unsavedChanged();
     void revealRequested(const QString &path);
     void screenshotTaken(const QString &file);
     void indexStatusChanged();
@@ -236,6 +244,7 @@ private:
     QString m_treeFocus;
     quint64 m_savedRevision = 0;
     bool m_dirty = false;
+    void setDirty(bool dirty);
     QTimer m_saveTimer;
     QTimer m_refreshTimer;
     QFileSystemWatcher m_watcher;
