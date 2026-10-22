@@ -299,7 +299,7 @@ void AppController::openLibrary(const QString &pathOrUrl)
     saveNow();
     const QUrl url(pathOrUrl);
     const QString path = url.isLocalFile() ? url.toLocalFile() : pathOrUrl;
-    const bool ok = attempt([&] { m_library.emplace(open_library(toStd(path))); });
+    const bool ok = attempt([&] { m_library.emplace(open_library(toStd(path), toStd(dataDir()))); });
     if (!ok)
         return;
     if (!qEnvironmentVariableIsSet("DUCTUS_LIBRARY"))
@@ -311,7 +311,7 @@ void AppController::openLibrary(const QString &pathOrUrl)
     QString cache = qEnvironmentVariable("DUCTUS_CACHE_DIR");
     if (cache.isEmpty())
         cache = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
-    attempt([&] { m_search.emplace(open_search(toStd(cache), toStd(path))); });
+    attempt([&] { m_search.emplace(open_search(toStd(cache), toStd(path), toStd(dataDir()))); });
     refreshIndex();
     Q_EMIT libraryChanged();
 
@@ -460,6 +460,18 @@ QString AppController::newNotebook(const QString &parent)
 QString AppController::newFolder(const QString &parent)
 {
     return createFolder(parent, tr("New folder"), false);
+}
+
+QString AppController::dataDir()
+{
+    const QString dir = qEnvironmentVariable("DUCTUS_DATA_DIR");
+    return dir.isEmpty() ? QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) : dir;
+}
+
+void AppController::showLibraryData()
+{
+    if (m_library)
+        QDesktopServices::openUrl(QUrl::fromLocalFile(toQ((*m_library)->data_dir())));
 }
 
 QString AppController::displayName(const QString &path) const

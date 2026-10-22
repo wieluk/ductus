@@ -453,11 +453,21 @@ Dialog {
                     objectName: "settingsAutosave"
                     label: qsTr("Save automatically")
                     hint: AppController.autosaveDelay > 0
-                          ? qsTr("After you stop writing, and when you switch pages or quit. Earlier versions are kept in .ductus/history, deleted items in .ductus/trash.")
+                          ? qsTr("After you stop writing, and when you switch pages or quit.")
                           : qsTr("Only with Ctrl+S, and when you switch pages or quit. The title shows * while changes aren't saved.")
                     options: [qsTr("1.5 s"), qsTr("10 s"), qsTr("1 min"), qsTr("Off")]
                     value: Math.max(0, delays.indexOf(AppController.autosaveDelay))
                     onPicked: (index) => AppController.autosaveDelay = delays[index]
+                }
+                Described {
+                    label: qsTr("History and trash")
+                    hint: qsTr("Earlier versions of your pages and deleted items stay on this device, in Ductus' own data folder, so the library folder holds only your notes.")
+                }
+                RibbonButton {
+                    objectName: "settingsShowData"
+                    iconName: "folder-open"
+                    text: qsTr("Show history and trash")
+                    onClicked: AppController.showLibraryData()
                 }
             }
 

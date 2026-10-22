@@ -28,4 +28,5 @@ right-click-item row_Mathematics/Limits
 click-item menuDelete
 click-item confirmDelete
 expect-no-file Mathematics/Limits.svg
-expect-file .ductus/trash
+# History and trash live in the app data, not in the library.
+expect-no-file .ductus

@@ -3,7 +3,7 @@ use ductus_core::{Command, History, InkPoint, Stroke, StrokeStyle};
 
 fn lib() -> (tempfile::TempDir, Library) {
     let dir = tempfile::tempdir().unwrap();
-    let lib = Library::open(dir.path().join("Notes")).unwrap();
+    let lib = Library::open(dir.path().join("Notes"), &dir.path().join("app")).unwrap();
     (dir, lib)
 }
 
@@ -112,7 +112,7 @@ fn delete_moves_to_trash() {
         .unwrap();
     lib.delete("Old").unwrap();
     assert!(lib.tree().unwrap().children.is_empty());
-    let trash: Vec<_> = fs::read_dir(lib.root().join(".ductus/trash"))
+    let trash: Vec<_> = fs::read_dir(lib.data_dir().join("trash"))
         .unwrap()
         .collect();
     assert_eq!(trash.len(), 1);
@@ -169,6 +169,7 @@ fn history_keeps_previous_versions_within_limits() {
     let dir = tempfile::tempdir().unwrap();
     let mut lib = Library::with_policy(
         dir.path(),
+        &dir.path().join(".app"),
         HistoryPolicy {
             interval: Duration::ZERO,
             keep: 3,
@@ -185,7 +186,7 @@ fn history_keeps_previous_versions_within_limits() {
     }
     assert_eq!(lib.history("page-id").unwrap().len(), 3);
 
-    let mut lib = Library::open(dir.path()).unwrap();
+    let mut lib = Library::open(dir.path(), &dir.path().join(".app")).unwrap();
     let before = lib.history("page-id").unwrap().len();
     lib.save_page(&rel, &page).unwrap();
     lib.save_page(&rel, &page).unwrap();
@@ -233,8 +234,49 @@ fn saving_a_pdf_keeps_the_previous_version() {
     let rel = lib.add_pdf("", "Doc", b"version 1").unwrap();
     lib.save_pdf(&rel, b"version 2").unwrap();
     assert_eq!(lib.read_pdf(&rel).unwrap(), b"version 2");
-    let history = fs::read_dir(lib.root().join(".ductus/history"))
+    let history = fs::read_dir(lib.data_dir().join("history"))
         .unwrap()
         .count();
     assert_eq!(history, 1);
+}
+
+#[test]
+fn data_lives_outside_the_library_and_old_data_moves_there() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().join("Notes");
+    let app = dir.path().join("app");
+    fs::create_dir_all(root.join(".ductus/history/page-id")).unwrap();
+    fs::write(root.join(".ductus/history/page-id/1.svg"), "old").unwrap();
+    fs::write(
+        root.join(".ductus/quick-access.json"),
+        r#"{"paths":["Math"]}"#,
+    )
+    .unwrap();
+    fs::create_dir_all(root.join("Math")).unwrap();
+
+    let lib = Library::open(&root, &app).unwrap();
+    assert!(!root.join(".ductus").exists());
+    assert!(lib.data_dir().starts_with(&app));
+    assert_eq!(
+        fs::read_to_string(lib.data_dir().join("library.txt")).unwrap(),
+        root.to_string_lossy()
+    );
+    assert_eq!(lib.history("page-id").unwrap().len(), 1);
+    assert_eq!(lib.favorites(), ["Math"]);
+
+    lib.create_folder("", "Old").unwrap();
+    lib.delete("Old").unwrap();
+    assert!(
+        lib.data_dir()
+            .join("trash")
+            .read_dir()
+            .unwrap()
+            .next()
+            .is_some()
+    );
+    assert!(!root.join(".ductus").exists());
+    // Another library has data of its own.
+    let other = Library::open(dir.path().join("Other"), &app).unwrap();
+    assert_ne!(other.data_dir(), lib.data_dir());
+    assert!(other.favorites().is_empty());
 }

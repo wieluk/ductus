@@ -4,7 +4,7 @@ use ductus_format::{PageFile, RecognizedLine};
 
 fn library() -> (tempfile::TempDir, Library) {
     let dir = tempfile::tempdir().unwrap();
-    let lib = Library::open(dir.path().join("Notes")).unwrap();
+    let lib = Library::open(dir.path().join("Notes"), &dir.path().join("app")).unwrap();
     (dir, lib)
 }
 

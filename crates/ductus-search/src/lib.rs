@@ -475,12 +475,10 @@ fn mark(text: &str, words: &[&str]) -> String {
 }
 
 pub fn index_path(cache_dir: &Path, library_root: &Path) -> PathBuf {
-    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
-    for b in library_root.to_string_lossy().as_bytes() {
-        h ^= u64::from(*b);
-        h = h.wrapping_mul(0x0100_0000_01b3);
-    }
-    cache_dir.join(format!("search-{h:016x}.sqlite"))
+    cache_dir.join(format!(
+        "search-{}.sqlite",
+        ductus_format::library_key(library_root)
+    ))
 }
 
 #[cfg(test)]

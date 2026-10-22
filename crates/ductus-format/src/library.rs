@@ -12,7 +12,10 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 pub const META_FILE: &str = ".ductus.json";
-pub const APP_DIR: &str = ".ductus";
+/// Where older versions kept history, trash and favorites inside the library.
+const LEGACY_APP_DIR: &str = ".ductus";
+/// Names the library a data folder belongs to, for people looking at it.
+const LOCATION_FILE: &str = "library.txt";
 pub const PAGE_EXTENSION: &str = "svg";
 pub const PDF_EXTENSION: &str = "pdf";
 pub const ASSETS_SUFFIX: &str = ".assets";
@@ -63,6 +66,8 @@ impl Default for HistoryPolicy {
 
 pub struct Library {
     root: PathBuf,
+    /// History, trash and the sidebar's lists: per device, outside the synced folder.
+    data: PathBuf,
     policy: HistoryPolicy,
     snapshots: HashMap<String, SystemTime>,
     pub(crate) listings: RefCell<HashMap<String, crate::browse::Listing>>,
@@ -165,20 +170,95 @@ pub fn write_atomic(path: &Path, bytes: &[u8]) -> Result<(), Error> {
     Ok(())
 }
 
+/// Stable per library path; the search index uses it too.
+pub fn library_key(root: &Path) -> String {
+    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+    for b in root.to_string_lossy().as_bytes() {
+        h ^= u64::from(*b);
+        h = h.wrapping_mul(0x0100_0000_01b3);
+    }
+    format!("{h:016x}")
+}
+
+/// Rename where possible; across file systems, copy and then delete.
+fn move_path(from: &Path, to: &Path) -> Result<(), Error> {
+    if fs::rename(from, to).is_ok() {
+        return Ok(());
+    }
+    copy_tree(from, to)?;
+    if from.is_dir() {
+        fs::remove_dir_all(from)?;
+    } else {
+        fs::remove_file(from)?;
+    }
+    Ok(())
+}
+
+fn copy_tree(from: &Path, to: &Path) -> Result<(), Error> {
+    if from.is_dir() {
+        fs::create_dir_all(to)?;
+        for entry in fs::read_dir(from)? {
+            let entry = entry?;
+            copy_tree(&entry.path(), &to.join(entry.file_name()))?;
+        }
+    } else {
+        fs::copy(from, to)?;
+    }
+    Ok(())
+}
+
+/// Moves what `old` holds into `new`; entries already in `new` win and stay behind in `old`.
+fn merge_into(old: &Path, new: &Path) -> Result<(), Error> {
+    fs::create_dir_all(new)?;
+    for entry in fs::read_dir(old)? {
+        let entry = entry?;
+        let target = new.join(entry.file_name());
+        if !target.exists() {
+            move_path(&entry.path(), &target)?;
+        } else if entry.path().is_dir() && target.is_dir() {
+            merge_into(&entry.path(), &target)?;
+        }
+    }
+    // Only goes when everything moved.
+    let _ = fs::remove_dir(old);
+    Ok(())
+}
+
 impl Library {
-    pub fn open(root: impl Into<PathBuf>) -> Result<Self, Error> {
-        Self::with_policy(root, HistoryPolicy::default())
+    /// `app_data` is the app's own data folder; each library gets a folder of its own there.
+    pub fn open(root: impl Into<PathBuf>, app_data: &Path) -> Result<Self, Error> {
+        Self::with_policy(root, app_data, HistoryPolicy::default())
     }
 
-    pub fn with_policy(root: impl Into<PathBuf>, policy: HistoryPolicy) -> Result<Self, Error> {
+    pub fn with_policy(
+        root: impl Into<PathBuf>,
+        app_data: &Path,
+        policy: HistoryPolicy,
+    ) -> Result<Self, Error> {
         let root = root.into();
         fs::create_dir_all(&root)?;
+        let data = app_data.join("libraries").join(library_key(&root));
+        fs::create_dir_all(&data)?;
+        let location = data.join(LOCATION_FILE);
+        let named = root.to_string_lossy();
+        if fs::read_to_string(&location).ok().as_deref() != Some(named.as_ref()) {
+            write_atomic(&location, named.as_bytes())?;
+        }
+        let legacy = root.join(LEGACY_APP_DIR);
+        if legacy.is_dir() {
+            merge_into(&legacy, &data)?;
+        }
         Ok(Self {
             root,
+            data,
             policy,
             snapshots: HashMap::new(),
             listings: RefCell::default(),
         })
+    }
+
+    pub fn data_dir(&self) -> &Path {
+        &self.data
     }
 
     pub fn root(&self) -> &Path {
@@ -545,7 +625,7 @@ impl Library {
 
     pub fn delete(&self, rel: &str) -> Result<(), Error> {
         let (from, kind, parent, name) = self.entry(rel)?;
-        let trash = self.root.join(APP_DIR).join("trash");
+        let trash = self.data.join("trash");
         fs::create_dir_all(&trash)?;
         let stamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -554,10 +634,13 @@ impl Library {
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_default();
-        fs::rename(&from, trash.join(format!("{stamp} {file_name}")))?;
+        move_path(&from, &trash.join(format!("{stamp} {file_name}")))?;
         let assets = self.assets_dir(rel);
         if kind == NodeKind::Page && assets.is_dir() {
-            fs::rename(assets, trash.join(format!("{stamp} {name}{ASSETS_SUFFIX}")))?;
+            move_path(
+                &assets,
+                &trash.join(format!("{stamp} {name}{ASSETS_SUFFIX}")),
+            )?;
         }
         self.edit_order(&parent, |order| order.retain(|n| *n != name))?;
         self.path_lists_removed(rel)
@@ -724,7 +807,7 @@ impl Library {
     }
 
     fn history_dir(&self, page_id: &str) -> PathBuf {
-        self.root.join(APP_DIR).join("history").join(page_id)
+        self.data.join("history").join(page_id)
     }
 
     fn snapshot(&self, page_id: &str, current: &Path) -> Result<(), Error> {

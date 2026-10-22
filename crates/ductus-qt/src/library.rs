@@ -40,9 +40,9 @@ fn pdf_error(e: ductus_pdf::Error) -> ductus_format::Error {
     ductus_format::Error::Invalid(e.to_string())
 }
 
-pub fn open_library(root: &str) -> Result<Box<LibraryHandle>> {
+pub fn open_library(root: &str, data_dir: &str) -> Result<Box<LibraryHandle>> {
     Ok(Box::new(LibraryHandle {
-        library: Library::open(root)?,
+        library: Library::open(root, Path::new(data_dir))?,
         open: None,
     }))
 }
@@ -106,6 +106,10 @@ fn open_pdf(bytes: Vec<u8>) -> Result<Rc<PdfFile>> {
 impl LibraryHandle {
     pub fn root(&self) -> String {
         self.library.root().to_string_lossy().into_owned()
+    }
+
+    pub fn data_dir(&self) -> String {
+        self.library.data_dir().to_string_lossy().into_owned()
     }
 
     pub fn is_empty(&self) -> Result<bool> {
@@ -686,7 +690,11 @@ mod tests {
     #[test]
     fn rows_start_at_the_focus_folder() {
         let dir = tempfile::tempdir().unwrap();
-        let mut handle = open_library(dir.path().to_str().unwrap()).unwrap();
+        let mut handle = open_library(
+            dir.path().join("Notes").to_str().unwrap(),
+            dir.path().join("app").to_str().unwrap(),
+        )
+        .unwrap();
         let canvas = crate::engine::new_canvas_engine();
         handle.create_folder("", "Uni").unwrap();
         handle.set_color("Uni", "#1f4fd1").unwrap();
@@ -719,7 +727,11 @@ mod tests {
     #[test]
     fn open_page_survives_rename_and_saves() {
         let dir = tempfile::tempdir().unwrap();
-        let mut handle = open_library(dir.path().to_str().unwrap()).unwrap();
+        let mut handle = open_library(
+            dir.path().join("Notes").to_str().unwrap(),
+            dir.path().join("app").to_str().unwrap(),
+        )
+        .unwrap();
         let mut canvas = crate::engine::new_canvas_engine();
         handle.create_folder("", "Math").unwrap();
         let page = handle.create_page("Math", "Limits", &canvas).unwrap();
@@ -727,7 +739,7 @@ mod tests {
         handle.rename("Math", "Mathematics").unwrap();
         assert_eq!(handle.open_page(), "Mathematics/Limits");
         handle.save_from(&canvas).unwrap();
-        assert!(dir.path().join("Mathematics/Limits.svg").is_file());
+        assert!(dir.path().join("Notes/Mathematics/Limits.svg").is_file());
         handle.remove("Mathematics").unwrap();
         assert_eq!(handle.open_page(), "");
     }

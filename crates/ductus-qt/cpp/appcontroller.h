@@ -146,6 +146,8 @@ public:
     /// The folder's name, or the library's for "".
     Q_INVOKABLE QString displayName(const QString &path) const;
     Q_INVOKABLE void showInNotebooks(const QString &path);
+    /// History and trash of the open library, in the app's data folder.
+    Q_INVOKABLE void showLibraryData();
     Q_INVOKABLE QString newPage(const QString &parent);
     Q_INVOKABLE QString rename(const QString &path, const QString &name);
     Q_INVOKABLE void remove(const QString &path);
@@ -209,6 +211,7 @@ private:
     void storeExpanded();
     void ensureStarterContent();
     QString createFolder(const QString &parent, const QString &baseName, bool withPage);
+    static QString dataDir();
     QString createPage(const QString &parent);
     bool paintPages(QPrinter &printer);
     QByteArray textOverlay();

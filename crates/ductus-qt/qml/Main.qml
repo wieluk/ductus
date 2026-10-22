@@ -446,7 +446,7 @@ ApplicationWindow {
 
         title: isFolder ? qsTr("Delete \u201c%1\u201d and everything in it?").arg(name)
                         : qsTr("Delete \u201c%1\u201d?").arg(name)
-        message: qsTr("It moves to the trash folder inside your library (.ductus/trash), so it can be recovered.")
+        message: qsTr("It moves to Ductus' trash on this device, so it can be recovered (Settings › Library).")
         acceptText: qsTr("Delete")
         destructive: true
         acceptButton.objectName: "confirmDelete"

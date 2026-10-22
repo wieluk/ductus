@@ -182,7 +182,7 @@ pub mod qobject {
 
     extern "Rust" {
         type SearchHandle;
-        fn open_search(cache_dir: &str, root: &str) -> Result<Box<SearchHandle>>;
+        fn open_search(cache_dir: &str, root: &str, data_dir: &str) -> Result<Box<SearchHandle>>;
         fn refresh(self: &SearchHandle);
         fn reindex(self: &SearchHandle, path: &str);
         fn indexing(self: &SearchHandle) -> bool;
@@ -194,7 +194,10 @@ pub mod qobject {
     extern "Rust" {
         type LibraryHandle;
 
-        fn open_library(root: &str) -> Result<Box<LibraryHandle>>;
+        /// `data_dir`: the app's data folder, where each library keeps history and trash.
+        fn open_library(root: &str, data_dir: &str) -> Result<Box<LibraryHandle>>;
+        /// This library's own folder inside the app's data folder.
+        fn data_dir(self: &LibraryHandle) -> String;
         fn root(self: &LibraryHandle) -> String;
         fn is_empty(self: &LibraryHandle) -> Result<bool>;
         /// `flags`: 1 notes, 2 PDFs, 4 other files, 8 hide folders without those; `focus` "" is the whole library.

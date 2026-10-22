@@ -1,7 +1,7 @@
 //! Libraries can be whole existing folder trees, so nothing here reads more than the visible rows need.
 
 use crate::Error;
-use crate::library::{APP_DIR, Library, Node, NodeKind, write_atomic};
+use crate::library::{Library, Node, NodeKind, write_atomic};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::rc::Rc;
@@ -229,7 +229,7 @@ impl Library {
     }
 
     fn stored_paths(&self, file: &str) -> Vec<String> {
-        fs::read_to_string(self.root().join(APP_DIR).join(file))
+        fs::read_to_string(self.data_dir().join(file))
             .ok()
             .and_then(|s| serde_json::from_str::<PathList>(&s).ok())
             .map(|q| q.paths)
@@ -237,11 +237,10 @@ impl Library {
     }
 
     fn set_paths(&self, file: &str, paths: &[String]) -> Result<(), Error> {
-        fs::create_dir_all(self.root().join(APP_DIR))?;
         let json = serde_json::to_string_pretty(&PathList {
             paths: paths.to_vec(),
         })?;
-        write_atomic(&self.root().join(APP_DIR).join(file), json.as_bytes())
+        write_atomic(&self.data_dir().join(file), json.as_bytes())
     }
 
     /// Entries deleted or moved by other programs are left out.
@@ -298,7 +297,7 @@ mod tests {
 
     fn library() -> (tempfile::TempDir, Library) {
         let dir = tempfile::tempdir().unwrap();
-        let lib = Library::open(dir.path()).unwrap();
+        let lib = Library::open(dir.path(), &dir.path().join(".app")).unwrap();
         (dir, lib)
     }
 
@@ -463,8 +462,7 @@ mod tests {
         assert!(svg.contains(r#"href="Limits.assets/img-a.png""#));
         assert!(!lib.abs("Limits.assets/img-b.png").exists());
         assert!(
-            lib.root()
-                .join(APP_DIR)
+            lib.data_dir()
                 .join("history")
                 .join(&page.id)
                 .join("assets/img-b.png")

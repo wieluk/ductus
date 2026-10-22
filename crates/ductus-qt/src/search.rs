@@ -29,7 +29,7 @@ pub struct SearchHandle {
 
 type Result<T> = std::result::Result<T, ductus_search::Error>;
 
-pub fn open_search(cache_dir: &str, root: &str) -> Result<Box<SearchHandle>> {
+pub fn open_search(cache_dir: &str, root: &str, data_dir: &str) -> Result<Box<SearchHandle>> {
     let db = ductus_search::index_path(Path::new(cache_dir), Path::new(root));
     // Opening here first creates the tables before the worker starts.
     let reader = Index::open(&db)?;
@@ -39,6 +39,7 @@ pub fn open_search(cache_dir: &str, root: &str) -> Result<Box<SearchHandle>> {
     let worker_status = Arc::clone(&status);
     let worker_cancel = Arc::clone(&cancel);
     let root = PathBuf::from(root);
+    let data_dir = PathBuf::from(data_dir);
     std::thread::Builder::new()
         .name("search-index".into())
         .spawn(move || {
@@ -47,7 +48,7 @@ pub fn open_search(cache_dir: &str, root: &str) -> Result<Box<SearchHandle>> {
                     f(&mut s);
                 }
             };
-            let (mut index, library) = match (Index::open(&db), Library::open(&root)) {
+            let (mut index, library) = match (Index::open(&db), Library::open(&root, &data_dir)) {
                 (Ok(index), Ok(library)) => (index, library),
                 (Err(e), _) => return set(&|s| s.error = e.to_string()),
                 (_, Err(e)) => return set(&|s| s.error = e.to_string()),
