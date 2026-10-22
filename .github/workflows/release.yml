@@ -110,7 +110,7 @@ jobs:
   windows:
     needs: prepare
     if: github.event_name != 'workflow_dispatch' || inputs.windows
-    runs-on: windows-2022
+    runs-on: windows-2025
     timeout-minutes: 75
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
