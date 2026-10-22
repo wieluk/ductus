@@ -18,8 +18,9 @@ ApplicationWindow {
     property bool sidebarRight: false
     property alias currentTab: titleBar.currentTab
 
-    width: 1280
-    height: 820
+    // Small tablet screens (or large scaling) get a window that fits above the taskbar.
+    width: Math.min(1280, Screen.desktopAvailableWidth)
+    height: Math.min(820, Screen.desktopAvailableHeight)
     minimumWidth: 480
     minimumHeight: 320
     visible: true

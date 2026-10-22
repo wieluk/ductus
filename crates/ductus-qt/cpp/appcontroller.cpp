@@ -648,7 +648,21 @@ QString AppController::notebookOf(const QString &path) const
 QString AppController::dataDir()
 {
     const QString dir = qEnvironmentVariable("DUCTUS_DATA_DIR");
-    return dir.isEmpty() ? QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) : dir;
+    if (!dir.isEmpty())
+        return dir;
+    // Local, not roaming, on Windows: history and models are large and belong to this device.
+    const QString local = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+    const QString roaming = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    if (local != roaming) {
+        // Versions before kept them in the roaming folder.
+        for (const QString name : {QStringLiteral("libraries"), QStringLiteral("models")}) {
+            const QString from = roaming + QLatin1Char('/') + name;
+            const QString to = local + QLatin1Char('/') + name;
+            if (QFileInfo(from).isDir() && !QFileInfo::exists(to) && QDir().mkpath(local))
+                QDir().rename(from, to);
+        }
+    }
+    return local;
 }
 
 void AppController::showLibraryData()

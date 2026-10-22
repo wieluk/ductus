@@ -169,6 +169,8 @@ public:
     Q_INVOKABLE void showInNotebooks(const QString &path);
     /// History and trash of the open library, in the app's data folder.
     Q_INVOKABLE void showLibraryData();
+    /// The app's own data on this device: each library's history and trash, and the models.
+    static QString dataDir();
     Q_INVOKABLE QString rename(const QString &path, const QString &name);
     Q_INVOKABLE void remove(const QString &path);
     Q_INVOKABLE void setColor(const QString &path, const QString &color);
@@ -236,7 +238,6 @@ private:
     void rememberPage(const QString &path);
     QString rememberedPage() const;
     QString inboxFolder() const;
-    static QString dataDir();
     QString createPage(const QString &parent, const QString &baseName = {});
     bool paintPages(QPrinter &printer);
     QByteArray textOverlay();

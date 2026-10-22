@@ -1,7 +1,7 @@
 #include "ductus-qt/cpp/models.h"
+#include "ductus-qt/cpp/appcontroller.h"
 #include "ductus-qt/src/ffi.cxxqt.h"
 
-#include <QStandardPaths>
 #include <QVariantMap>
 
 namespace {
@@ -26,7 +26,7 @@ QString Models::dir()
     const QString custom = qEnvironmentVariable("DUCTUS_MODELS_DIR");
     if (!custom.isEmpty())
         return custom;
-    return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/models");
+    return AppController::dataDir() + QStringLiteral("/models");
 }
 
 bool Models::installed(const QString &id)
