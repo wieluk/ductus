@@ -26,7 +26,7 @@ impl Canvas {
         let added = if math {
             let at_one = crate::math::measured(MathBox {
                 id,
-                source: content.to_owned(),
+                source: ductus_math::strip_delimiters(content).to_owned(),
                 syntax: "latex".into(),
                 x: bounds.x0,
                 y: bounds.y0,

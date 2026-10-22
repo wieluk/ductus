@@ -50,10 +50,21 @@ impl Formula {
     }
 }
 
+/// The formula inside `$…$`, `$$…$$`, `\[…\]` or `\(…\)`: recognizers and pastes bring them along.
+pub fn strip_delimiters(source: &str) -> &str {
+    let s = source.trim();
+    for (open, close) in [("$$", "$$"), ("\\[", "\\]"), ("\\(", "\\)"), ("$", "$")] {
+        if let Some(inner) = s.strip_prefix(open).and_then(|r| r.strip_suffix(close)) {
+            return inner.trim();
+        }
+    }
+    s
+}
+
 pub fn render(source: &str, syntax: Syntax, size: f64) -> Result<Formula, String> {
     let math = match syntax {
-        Syntax::Typst => source.to_owned(),
-        Syntax::Latex => tylax::latex_to_typst(source),
+        Syntax::Typst => strip_delimiters(source).to_owned(),
+        Syntax::Latex => tylax::latex_to_typst(strip_delimiters(source)),
     };
     if math.trim().is_empty() {
         return Err("The formula is empty.".into());
@@ -331,6 +342,23 @@ mod tests {
         let err = render("frac(a, ", Syntax::Typst, 12.0).unwrap_err();
         assert!(!err.is_empty());
         assert!(render("   ", Syntax::Latex, 12.0).is_err());
+    }
+
+    #[test]
+    fn delimiters_are_ignored() {
+        let bare = render(r"\frac{1+5}{5}", Syntax::Latex, 12.0).unwrap();
+        for wrapped in [
+            r"\[\frac{1+5}{5}\]",
+            r"$\frac{1+5}{5}$",
+            r"$$ \frac{1+5}{5} $$",
+        ] {
+            let formula = render(wrapped, Syntax::Latex, 12.0).unwrap();
+            assert_eq!(
+                (formula.width, formula.height),
+                (bare.width, bare.height),
+                "{wrapped}"
+            );
+        }
     }
 }
 
