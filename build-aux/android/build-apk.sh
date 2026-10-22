@@ -24,6 +24,8 @@ export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$CC_aarch64_linux_android
 # Explicit, or cxx-qt picks the build machine's linker.
 export CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="-C link-arg=-fuse-ld=lld"
 export QMAKE=$QT_ANDROID/bin/qmake
+# The desktop rcc compresses with zstd, which Qt for Android lacks: the library would not load.
+export CXX_QT_AUTORCC_OPTIONS=--no-zstd
 
 # Qt's loader opens lib<name>_<abi>.so and calls its `main`.
 cargo rustc --release --locked -p ductus-qt --lib --crate-type cdylib --target $target
@@ -31,6 +33,16 @@ rm -rf "$apk_dir"
 mkdir -p "$apk_dir/libs/$abi"
 "$toolchain/bin/llvm-strip" --strip-unneeded -o "$apk_dir/libs/$abi/libductus_$abi.so" \
   "target/$target/release/libductus_qt.so"
+# Android refuses to load a library that needs a symbol Qt for Android doesn't have.
+missing=$(comm -23 \
+  <("$toolchain/bin/llvm-nm" -D --undefined-only "$apk_dir/libs/$abi/libductus_$abi.so" \
+    | awk '$2 ~ /^qt_/ {print $2}' | sort -u) \
+  <("$toolchain/bin/llvm-nm" -D --defined-only "$QT_ANDROID/lib/libQt6Core_$abi.so" \
+    | awk '{sub(/@.*/, "", $3); print $3}' | sort -u))
+if [ -n "$missing" ]; then
+  echo "Qt for Android lacks: $missing" >&2
+  exit 1
+fi
 
 pdfium=$build/pdfium
 build-aux/fetch-pdfium.sh android-arm64 "$pdfium"

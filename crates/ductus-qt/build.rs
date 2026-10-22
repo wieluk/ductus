@@ -1,6 +1,8 @@
 use cxx_qt_build::{CxxQtBuilder, QResources, QmlFile, QmlModule};
 
 fn main() {
+    // cxx-qt-build reads it but doesn't rebuild when it changes (the Android build sets it).
+    println!("cargo::rerun-if-env-changed=CXX_QT_AUTORCC_OPTIONS");
     let qml = QmlModule::new("Ductus").qml_files([
         QmlFile::from("qml/Main.qml"),
         QmlFile::from("qml/Theme.qml").singleton(true),
