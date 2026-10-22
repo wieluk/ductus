@@ -71,7 +71,10 @@ Rectangle {
                 }
                 AppMenuItem {
                     objectName: "menuNewNotebook"
-                    text: qsTr("New Notebook in %1").arg(AppController.displayName(AppController.treeFocus))
+                    text: {
+                        AppController.libraryPath // displayName() follows it.
+                        return qsTr("New Notebook in %1").arg(AppController.displayName(AppController.treeFocus))
+                    }
                     onTriggered: AppController.newNotebook(AppController.treeFocus)
                 }
                 AppMenuItem {
@@ -182,14 +185,45 @@ Rectangle {
             }
         }
 
-        Label {
-            objectName: "pageTitle"
+        Item {
             Layout.fillWidth: true
-            text: bar.pageTitle
-            color: Theme.titleTextMuted
-            font.pixelSize: 13
-            horizontalAlignment: Text.AlignHCenter
-            elide: Text.ElideRight
+            Layout.fillHeight: true
+
+            RowLayout {
+                anchors.centerIn: parent
+                width: Math.min(implicitWidth, parent.width)
+                spacing: 4
+                Label {
+                    objectName: "pageTitle"
+                    Layout.fillWidth: true
+                    Layout.maximumWidth: implicitWidth
+                    text: bar.pageTitle
+                    color: Theme.titleTextMuted
+                    font.pixelSize: 13
+                    elide: Text.ElideRight
+                }
+                ToolButton {
+                    id: closePage
+                    objectName: "closePage"
+                    visible: AppController.currentPage.length > 0
+                    implicitWidth: 24
+                    implicitHeight: 24
+                    focusPolicy: Qt.NoFocus
+                    display: AbstractButton.IconOnly
+                    icon.source: Qt.resolvedUrl("icons/close.svg")
+                    icon.width: 12
+                    icon.height: 12
+                    icon.color: Theme.titleTextMuted
+                    ToolTip.visible: hovered
+                    ToolTip.delay: 600
+                    ToolTip.text: qsTr("Close page (Ctrl+W)")
+                    onClicked: AppController.closePage()
+                    background: Rectangle {
+                        radius: Theme.radius
+                        color: closePage.hovered ? Theme.titleHover : "transparent"
+                    }
+                }
+            }
         }
 
         RibbonButton {

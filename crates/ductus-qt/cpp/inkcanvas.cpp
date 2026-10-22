@@ -781,7 +781,8 @@ bool InkCanvas::eventFilter(QObject *watched, QEvent *event)
 
 bool InkCanvas::ownsScenePoint(QPointF scenePosition) const
 {
-    if (!isVisible() || !contains(mapFromScene(scenePosition)))
+    // Disabled while no page is open.
+    if (!isVisible() || !isEnabled() || !contains(mapFromScene(scenePosition)))
         return false;
     const QQuickItem *hit = inputItemAt(window()->contentItem(), scenePosition);
     return !hit || hit == this;

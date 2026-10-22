@@ -210,7 +210,6 @@ pub mod qobject {
             focus: &str,
             keep: &str,
         ) -> Result<Vec<TreeRow>>;
-        fn first_page(self: &LibraryHandle) -> String;
         fn set_pinned(self: &LibraryHandle, path: &str, pinned: bool) -> Result<()>;
         /// Reorders the notebook list only; `flags` and `focus` as for `rows`.
         fn move_notebook(
@@ -397,6 +396,7 @@ pub mod qobject {
         fn undo(self: &mut CanvasEngine);
         fn redo(self: &mut CanvasEngine);
         fn clear(self: &mut CanvasEngine);
+        fn unload(self: &mut CanvasEngine);
         fn can_undo(self: &CanvasEngine) -> bool;
         fn can_redo(self: &CanvasEngine) -> bool;
         fn revision(self: &CanvasEngine) -> u64;

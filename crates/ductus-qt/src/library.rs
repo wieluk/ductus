@@ -253,10 +253,6 @@ impl LibraryHandle {
             .unwrap_or_default()
     }
 
-    pub fn first_page(&self) -> String {
-        self.library.first_document().unwrap_or_default()
-    }
-
     pub fn set_pinned(&self, path: &str, pinned: bool) -> Result<()> {
         self.library.set_pinned(path, pinned)
     }

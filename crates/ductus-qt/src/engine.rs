@@ -472,6 +472,11 @@ impl CanvasEngine {
         self.0.clear();
     }
 
+    /// No page open: an empty sheet, without undo.
+    pub fn unload(&mut self) {
+        self.0.load_document(ductus_core::Document::default());
+    }
+
     pub fn can_undo(&self) -> bool {
         self.0.can_undo()
     }

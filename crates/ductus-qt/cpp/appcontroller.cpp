@@ -259,7 +259,7 @@ QString AppController::currentPage() const
 QString AppController::currentTitle() const
 {
     const QString page = currentPage();
-    return page.isEmpty() ? tr("No page open") : page.section(QLatin1Char('/'), -1);
+    return page.section(QLatin1Char('/'), -1);
 }
 
 QString AppController::parentOf(const QString &path) const
@@ -304,7 +304,7 @@ void AppController::openLibrary(const QString &pathOrUrl)
         return;
     if (!qEnvironmentVariableIsSet("DUCTUS_LIBRARY"))
         QSettings().setValue(QStringLiteral("library/path"), path);
-    ensureStarterContent();
+    const QString starter = ensureStarterContent();
     refreshTree();
     // The search index lives in the cache: it can always be rebuilt.
     m_search.reset();
@@ -315,26 +315,70 @@ void AppController::openLibrary(const QString &pathOrUrl)
     refreshIndex();
     Q_EMIT libraryChanged();
 
-    QString last = QSettings().value(QStringLiteral("library/lastPage")).toString();
-    if (last.isEmpty() || !QFileInfo::exists(toQ((*m_library)->page_file(toStd(last)))))
-        last = toQ((*m_library)->first_page());
-    if (!last.isEmpty())
+    // A closed page stays closed; a new library starts on its starter page.
+    QString last = starter.isEmpty() ? rememberedPage() : starter;
+    if (!last.isEmpty() && !QFileInfo::exists(toQ((*m_library)->page_file(toStd(last)))))
+        last.clear();
+    if (!last.isEmpty()) {
         openPage(last);
-    else
+    } else {
+        if (m_canvas) {
+            m_canvas->engine().unload();
+            m_canvas->documentReplaced();
+            m_savedRevision = m_canvas->revision();
+        }
+        setDirty(false);
         Q_EMIT currentPageChanged();
+    }
 }
 
-void AppController::ensureStarterContent()
+QString AppController::ensureStarterContent()
 {
+    QString page;
     attempt([&] {
         if (!(*m_library)->is_empty() || !m_canvas)
             return;
         const rust::String subject = (*m_library)->create_folder("", toStd(tr("My Notebook")));
         (*m_library)->set_color(toStd(toQ(subject)), "#5a43c0");
-        (*m_library)->create_page(toStd(toQ(subject)), toStd(tr("First page")), m_canvas->engine());
+        page = toQ((*m_library)->create_page(toStd(toQ(subject)), toStd(tr("First page")),
+                                             m_canvas->engine()));
         m_expanded.insert(toQ(subject));
         storeExpanded();
     });
+    return page;
+}
+
+void AppController::rememberPage(const QString &path)
+{
+    QSettings settings;
+    QVariantMap pages = settings.value(QStringLiteral("library/lastPages")).toMap();
+    if (path.isEmpty())
+        pages.remove(libraryPath());
+    else
+        pages.insert(libraryPath(), path);
+    settings.setValue(QStringLiteral("library/lastPages"), pages);
+}
+
+QString AppController::rememberedPage() const
+{
+    return QSettings().value(QStringLiteral("library/lastPages")).toMap().value(libraryPath()).toString();
+}
+
+void AppController::closePage()
+{
+    if (!m_library || !m_canvas || currentPage().isEmpty())
+        return;
+    m_canvas->finishTextEditing();
+    saveNow();
+    (*m_library)->close_page();
+    m_canvas->engine().unload();
+    m_canvas->documentReplaced();
+    m_savedRevision = m_canvas->revision();
+    setDirty(false);
+    rememberPage(QString());
+    refreshTree();
+    rewatch();
+    Q_EMIT currentPageChanged();
 }
 
 void AppController::refreshTree()
@@ -410,7 +454,7 @@ void AppController::openPage(const QString &path)
     m_canvas->setPicturesAllowed((*m_library)->accepts_pictures());
     m_savedRevision = m_canvas->revision();
     setDirty(false);
-    QSettings().setValue(QStringLiteral("library/lastPage"), path);
+    rememberPage(path);
     expandTo(path);
     // The open page is always in the sidebar.
     if (!inFocus(path)) {
@@ -571,7 +615,8 @@ QString AppController::rename(const QString &path, const QString &name)
     }
     m_expanded = updated;
     storeExpanded();
-    QSettings().setValue(QStringLiteral("library/lastPage"), currentPage());
+    if (!currentPage().isEmpty())
+        rememberPage(currentPage());
     refreshTree();
     refreshIndex();
     Q_EMIT currentPageChanged();

@@ -26,7 +26,7 @@ ApplicationWindow {
     // Only without autosave: otherwise it would flash after every stroke.
     readonly property string pageTitle: (AppController.unsaved && AppController.autosaveDelay === 0 ? "* " : "")
                                         + AppController.currentTitle
-    title: pageTitle + " - Ductus"
+    title: pageTitle.length > 0 ? pageTitle + " - Ductus" : "Ductus"
     // Our own OneNote-style title bar holds the ribbon tabs.
     flags: Qt.Window | Qt.FramelessWindowHint
     color: Theme.ribbon
@@ -180,6 +180,7 @@ ApplicationWindow {
         onActivatedAmbiguously: titleBar.focusSearch()
     }
     Shortcut { sequences: [StandardKey.Save]; onActivated: AppController.saveNow() }
+    Shortcut { sequence: "Ctrl+W"; onActivated: AppController.closePage() }
     Shortcut { sequences: [StandardKey.Print]; onActivated: AppController.print() }
     // Selection editing; text fields keep these keys while they have focus.
     Shortcut { sequences: [StandardKey.Copy]; onActivated: canvas.copySelection() }
@@ -286,6 +287,50 @@ ApplicationWindow {
                     objectName: "canvas"
                     anchors.fill: parent
                     deskColor: Theme.desk
+                    enabled: AppController.currentPage.length > 0
+                }
+                // Plain desk instead of an empty page that can't be written on.
+                Rectangle {
+                    anchors.fill: parent
+                    color: Theme.desk
+                    visible: !canvas.enabled
+                }
+
+                ColumnLayout {
+                    objectName: "noPage"
+                    anchors.centerIn: parent
+                    width: Math.min(360, parent.width - 40)
+                    visible: !canvas.enabled
+                    spacing: 12
+                    Label {
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                        text: qsTr("No page open")
+                        color: Theme.text
+                        font.pixelSize: 18
+                        font.weight: Font.DemiBold
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                        text: qsTr("Pick a page in the notebook list, or start a new one.")
+                        color: Theme.textMuted
+                        font.pixelSize: 13
+                    }
+                    RibbonButton {
+                        objectName: "noPageNewPage"
+                        Layout.alignment: Qt.AlignHCenter
+                        iconName: "page-add"
+                        text: {
+                            // displayName() and currentFolder() follow these.
+                            AppController.libraryPath
+                            AppController.currentPage
+                            return qsTr("New page in %1").arg(AppController.displayName(AppController.currentFolder()))
+                        }
+                        onClicked: AppController.newPage(AppController.currentFolder())
+                    }
                 }
 
                 TextLayer {
@@ -311,7 +356,7 @@ ApplicationWindow {
                     onRight: window.penBarRight
                     onScreenshotRequested: window.takeScreenshot()
                     onPictureRequested: imageFileDialog.open()
-                    visible: window.penBarVisible
+                    visible: window.penBarVisible && canvas.enabled
                     x: window.penBarRight ? parent.width - width - 10 : 10
                     anchors.verticalCenter: parent.verticalCenter
                     height: Math.min(implicitHeight, parent.height - 20)

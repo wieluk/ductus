@@ -161,21 +161,6 @@ impl Library {
         out
     }
 
-    pub fn first_document(&self) -> Option<String> {
-        fn find(lib: &Library, folder: &str) -> Option<String> {
-            if depth(folder) > MAX_DEPTH {
-                return None;
-            }
-            let nodes = lib.list(folder).ok()?;
-            nodes.iter().find_map(|n| match n.kind {
-                NodeKind::Page | NodeKind::Pdf => Some(n.path.clone()),
-                NodeKind::Folder => find(lib, &n.path),
-                NodeKind::File => None,
-            })
-        }
-        find(self, "")
-    }
-
     /// Notebooks in the user's order; ones not sorted yet follow in folder order.
     pub fn notebooks(&self, under: &str, filter: Filter) -> Vec<String> {
         let mut found = self.notebook_folders(under, filter);

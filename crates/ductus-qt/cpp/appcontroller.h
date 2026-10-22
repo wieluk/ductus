@@ -159,6 +159,7 @@ public:
     Q_INVOKABLE QString currentFolder() const;
     Q_INVOKABLE bool inFocus(const QString &path) const;
     Q_INVOKABLE void saveNow();
+    Q_INVOKABLE void closePage();
     Q_INVOKABLE QString importPdf(const QString &fileOrUrl, bool annotate);
     Q_INVOKABLE bool exportPdf(const QString &fileOrUrl);
     /// Returns "pdf" for a PDF from outside the library, which needs the import choice first.
@@ -209,7 +210,11 @@ private:
     void onFileChanged(const QString &file);
     void expandTo(const QString &path);
     void storeExpanded();
-    void ensureStarterContent();
+    /// The starter page it created in an empty library, else "".
+    QString ensureStarterContent();
+    /// Each library reopens its own last page; "" forgets it.
+    void rememberPage(const QString &path);
+    QString rememberedPage() const;
     QString createFolder(const QString &parent, const QString &baseName, bool withPage);
     static QString dataDir();
     QString createPage(const QString &parent);

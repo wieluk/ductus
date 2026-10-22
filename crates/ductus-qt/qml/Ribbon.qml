@@ -194,6 +194,8 @@ Rectangle {
                 iconName: "page-add"
                 text: qsTr("New page")
                 tip: {
+                    // displayName() and currentFolder() follow these.
+                    AppController.libraryPath
                     AppController.currentPage
                     return qsTr("New page in %1 (Ctrl+N)").arg(AppController.displayName(AppController.currentFolder()))
                 }
@@ -203,8 +205,19 @@ Rectangle {
                 objectName: "fileNewNotebook"
                 iconName: "plus"
                 text: qsTr("New notebook")
-                tip: qsTr("New notebook in %1").arg(AppController.displayName(AppController.treeFocus))
+                tip: {
+                    AppController.libraryPath // displayName() follows it.
+                    return qsTr("New notebook in %1").arg(AppController.displayName(AppController.treeFocus))
+                }
                 onClicked: AppController.newNotebook(AppController.treeFocus)
+            }
+            RibbonButton {
+                objectName: "fileClosePage"
+                iconName: "close"
+                text: qsTr("Close page")
+                tip: qsTr("Close page (Ctrl+W)")
+                enabled: AppController.currentPage.length > 0
+                onClicked: AppController.closePage()
             }
             Separator {}
             RibbonButton {
