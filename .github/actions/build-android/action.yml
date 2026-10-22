@@ -1,0 +1,41 @@
+name: Build for Android
+description: Builds the APK with build-aux/android/build-apk.sh; NDK, Qt and Rust are cached.
+runs:
+  using: composite
+  steps:
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: aarch64-linux-android
+    # Tags can only restore caches saved on main.
+    - uses: Swatinem/rust-cache@v2
+      with:
+        shared-key: android
+        save-if: ${{ github.ref == 'refs/heads/main' }}
+        cache-on-failure: true
+    - uses: actions/cache@v6.1.0
+      with:
+        path: /usr/local/lib/android/sdk/ndk/27.2.12479018 # $ANDROID_HOME on the runner
+        key: android-ndk-27.2.12479018
+    - shell: bash
+      run: |
+        # `yes` dies of SIGPIPE when sdkmanager stops reading.
+        (yes || true) | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+        parts=("platforms;android-35" "build-tools;35.0.0")
+        [ -d "$ANDROID_HOME/ndk/27.2.12479018" ] || parts+=("ndk;27.2.12479018")
+        "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "${parts[@]}" > /dev/null
+    - uses: actions/cache@v6.1.0
+      id: qt
+      with:
+        path: ${{ runner.temp }}/Qt
+        key: qt-android-6.10.3
+    - if: steps.qt.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        pip install aqtinstall==3.3.0
+        aqt install-qt linux desktop 6.10.3 linux_gcc_64 -O "$RUNNER_TEMP/Qt"
+        aqt install-qt all_os android 6.10.3 android_arm64_v8a -O "$RUNNER_TEMP/Qt"
+    - shell: bash
+      run: |
+        ANDROID_SDK_ROOT=$ANDROID_HOME ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/27.2.12479018 \
+        JAVA_HOME=$JAVA_HOME_17_X64 QT_ANDROID=$RUNNER_TEMP/Qt/6.10.3/android_arm64_v8a \
+        QT_HOST=$RUNNER_TEMP/Qt/6.10.3/gcc_64 build-aux/android/build-apk.sh

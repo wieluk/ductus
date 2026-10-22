@@ -1,0 +1,27 @@
+name: Tests
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    name: Core tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo fmt --check
+      - run: build-aux/fetch-pdfium.sh linux-x64 target/pdfium
+      - run: cargo test --locked --workspace --exclude ductus-qt
+        env:
+          DUCTUS_PDFIUM: ${{ github.workspace }}/target/pdfium/lib
+      - run: cargo clippy --locked --workspace --exclude ductus-qt --all-targets -- -D warnings

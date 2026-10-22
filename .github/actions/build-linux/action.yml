@@ -1,0 +1,21 @@
+name: Build for Linux
+description: Builds in the KDE SDK, runs the UI tests and packages the Flatpak (in the flatpak-github-actions container).
+runs:
+  using: composite
+  steps:
+    - uses: dtolnay/rust-toolchain@stable
+    # Tags can only restore caches saved on main.
+    - uses: Swatinem/rust-cache@v2
+      with:
+        shared-key: linux
+        workspaces: ". -> target/sdk-6.10"
+        save-if: ${{ github.ref == 'refs/heads/main' }}
+        cache-on-failure: true
+    - shell: bash
+      run: build-aux/linux/build-flatpak.sh binary
+    - shell: bash
+      run: build-aux/sdk-run.sh build-aux/ui-tests.sh target/sdk-6.10/release/ductus
+    - shell: bash
+      env:
+        FLATPAK_ARGS: --disable-rofiles-fuse
+      run: build-aux/linux/build-flatpak.sh package

@@ -1,0 +1,26 @@
+name: Build for Windows
+description: Builds, tests and packages with build-aux/windows/package.ps1.
+inputs:
+  args:
+    description: Arguments for package.ps1
+    default: ""
+runs:
+  using: composite
+  steps:
+    - uses: dtolnay/rust-toolchain@stable
+    # Tags can only restore caches saved on main.
+    - uses: Swatinem/rust-cache@v2
+      with:
+        shared-key: windows
+        save-if: ${{ github.ref == 'refs/heads/main' }}
+        cache-on-failure: true
+    - uses: jurplel/install-qt-action@v4
+      with:
+        version: "6.10.3"
+        arch: win64_msvc2022_64
+        cache: true
+    - shell: pwsh
+      run: |
+        if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup --no-progress -y }
+    - shell: pwsh
+      run: build-aux\windows\package.ps1 ${{ inputs.args }}
