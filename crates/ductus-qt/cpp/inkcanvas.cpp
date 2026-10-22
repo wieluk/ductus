@@ -96,7 +96,10 @@ InkCanvas::InkCanvas(QQuickItem *parent)
     m_penSeen.invalidate();
 }
 
-InkCanvas::~InkCanvas() = default;
+InkCanvas::~InkCanvas()
+{
+    hideCursor(false);
+}
 
 InkCanvas::Tool InkCanvas::tool() const
 {
@@ -759,6 +762,12 @@ bool InkCanvas::eventFilter(QObject *watched, QEvent *event)
         if (watched == window())
             return handleTablet(static_cast<QTabletEvent *>(event));
         break;
+    case QEvent::MouseMove:
+        // Some systems move the mouse along with the pen; only a mouse on its own counts.
+        if (m_cursorHidden && isMouse(static_cast<QMouseEvent *>(event))
+            && m_penSeen.elapsed() > m_palmRejection)
+            hideCursor(false);
+        break;
     default:
         break;
     }
@@ -770,15 +779,6 @@ bool InkCanvas::ownsScenePoint(QPointF scenePosition) const
     if (!isVisible() || !contains(mapFromScene(scenePosition)))
         return false;
     const QQuickItem *hit = inputItemAt(window()->contentItem(), scenePosition);
-    if (hit && hit->inherits("QQuickOverlay")) {
-        // The overlay spans the window while popups are open: outside them, and without a
-        // modal dimmer, the page stays free to write on.
-        for (const QQuickItem *child : hit->childItems()) {
-            if (child->isVisible() && child->contains(child->mapFromScene(scenePosition)))
-                return false;
-        }
-        return true;
-    }
     return !hit || hit == this;
 }
 
@@ -788,6 +788,15 @@ QQuickItem *InkCanvas::inputItemAt(QQuickItem *item, QPointF scenePosition) cons
 {
     if (!item->isVisible() || !item->isEnabled())
         return nullptr;
+    if (item->inherits("QQuickOverlay")) {
+        // It spans the window while any popup, even a tooltip, is open: only the popups and
+        // a modal dimmer cover what lies beneath.
+        for (const QQuickItem *child : item->childItems()) {
+            if (child->isVisible() && child->contains(child->mapFromScene(scenePosition)))
+                return item;
+        }
+        return nullptr;
+    }
     const bool inside = item->contains(item->mapFromScene(scenePosition));
     if (item->clip() && !inside)
         return nullptr;
@@ -810,6 +819,7 @@ QQuickItem *InkCanvas::inputItemAt(QQuickItem *item, QPointF scenePosition) cons
 
 void InkCanvas::forwardAsMouse(QTabletEvent *event)
 {
+    m_mouseForwarded = true;
     QEvent::Type type = QEvent::MouseMove;
     if (event->type() == QEvent::TabletPress) {
         type = QEvent::MouseButtonPress;
@@ -834,6 +844,7 @@ bool InkCanvas::handleTablet(QTabletEvent *event)
     // Outside the page the pen is a mouse: Qt's own fallback loses taps to stylus-aware handlers.
     if (m_tabletForward || (!m_tabletGrab && !ownsScenePoint(scenePosition))) {
         hidePenTip();
+        hideCursor(false);
         if (press)
             m_tabletForward = true;
         forwardAsMouse(event);
@@ -844,7 +855,12 @@ bool InkCanvas::handleTablet(QTabletEvent *event)
     }
     event->accept();
     m_penSeen.restart();
-    setCursor(Qt::BlankCursor);
+    hideCursor(true);
+    // Otherwise the control the pen last pointed at stays hovered, with its tooltip.
+    if (m_mouseForwarded) {
+        m_mouseForwarded = false;
+        QWindowSystemInterface::handleLeaveEvent(window());
+    }
 
     const QPointF position = mapFromScene(scenePosition);
     const PointerSample sample{position.x(),
@@ -954,11 +970,8 @@ void InkCanvas::mouseReleaseEvent(QMouseEvent *event)
 
 void InkCanvas::hoverMoveEvent(QHoverEvent *event)
 {
-    // A real mouse brings the system cursor back; pens keep it hidden.
-    if (isMouse(event) && (!m_penSeen.isValid() || m_penSeen.elapsed() > m_palmRejection)) {
-        setCursor(Qt::CrossCursor);
+    if (isMouse(event) && (!m_penSeen.isValid() || m_penSeen.elapsed() > m_palmRejection))
         hidePenTip();
-    }
 }
 
 void InkCanvas::hoverLeaveEvent(QHoverEvent *)
@@ -1103,6 +1116,18 @@ void InkCanvas::showPenTip(QPointF position)
     m_tipPosition = position;
     m_tipVisible = true;
     update();
+}
+
+void InkCanvas::hideCursor(bool hide)
+{
+    // Item cursors only follow mouse events, which a pen on the page doesn't send.
+    if (hide == m_cursorHidden)
+        return;
+    m_cursorHidden = hide;
+    if (hide)
+        QGuiApplication::setOverrideCursor(Qt::BlankCursor);
+    else
+        QGuiApplication::restoreOverrideCursor();
 }
 
 void InkCanvas::hidePenTip()

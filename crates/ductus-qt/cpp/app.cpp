@@ -6,6 +6,7 @@
 #include <QQuickStyle>
 #include <QQuickWindow>
 #include <QSettings>
+#include <QStyleHints>
 
 std::int32_t run_app()
 {
@@ -26,6 +27,10 @@ std::int32_t run_app()
     }
     // Our own look on every platform; the controls are restyled in QML.
     QQuickStyle::setStyle(QStringLiteral("Basic"));
+    const QString script = qEnvironmentVariable("DUCTUS_UI_SCRIPT");
+    // The offscreen platform turns hover off; tests need it like a desktop has it.
+    if (!script.isEmpty())
+        QGuiApplication::styleHints()->setUseHoverEffects(true);
 
     QQmlApplicationEngine engine;
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
@@ -34,7 +39,6 @@ std::int32_t run_app()
     if (engine.rootObjects().isEmpty())
         return 1;
 
-    const QString script = qEnvironmentVariable("DUCTUS_UI_SCRIPT");
     if (!script.isEmpty()) {
         auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
         const QString shots = qEnvironmentVariable("DUCTUS_UI_SHOTS", QStringLiteral("ui-shots"));

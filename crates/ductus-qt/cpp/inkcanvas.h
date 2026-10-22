@@ -253,6 +253,7 @@ private:
     void viewMoved();
     void showPenTip(QPointF position);
     void hidePenTip();
+    void hideCursor(bool hide);
 
     rust::Box<CanvasEngine> m_engine;
     QColor m_penColor;
@@ -268,6 +269,7 @@ private:
     bool m_tipVisible = false;
     QColor m_tipColor;
     QElapsedTimer m_penSeen;
+    bool m_cursorHidden = false;
 
     bool m_mousePanning = false;
     QPointF m_lastPanPosition;
@@ -317,6 +319,7 @@ private:
     bool m_tabletGrab = false;
     /// A pen press elsewhere is forwarded as mouse input until release.
     bool m_tabletForward = false;
+    bool m_mouseForwarded = false;
     Qt::MouseButton m_forwardButton = Qt::LeftButton;
     QPointer<QQuickWindow> m_filteredWindow;
 };

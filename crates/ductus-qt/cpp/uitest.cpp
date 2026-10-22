@@ -3,6 +3,7 @@
 
 #include <QClipboard>
 #include <QCoreApplication>
+#include <QCursor>
 #include <QGuiApplication>
 #include <QImage>
 #include <QDir>
@@ -107,6 +108,8 @@ public:
                 return fail(QStringLiteral("no visible item named ") + rest);
             const QPointF at = item->mapToScene(QPointF(item->width() / 2, item->height() / 2));
             const auto *pen = stylus(QPointingDevice::PointerType::Pen);
+            tablet(QEvent::TabletMove, pen, at, 0, Qt::NoButton);
+            QTest::qWait(30);
             tablet(QEvent::TabletPress, pen, at, 0.5, Qt::LeftButton);
             QTest::qWait(30);
             tablet(QEvent::TabletRelease, pen, at, 0, Qt::LeftButton);
@@ -208,6 +211,12 @@ public:
             QMetaObject::invokeMethod(controller(), "printToFile", Q_RETURN_ARG(bool, ok), Q_ARG(QString, file));
             if (!ok)
                 return fail(QStringLiteral("printing failed"));
+        } else if (cmd == u"expect-cursor") {
+            const QCursor *cursor = QGuiApplication::overrideCursor();
+            const QString actual = cursor && cursor->shape() == Qt::BlankCursor ? QStringLiteral("hidden")
+                                                                                : QStringLiteral("shown");
+            if (actual != rest)
+                return fail(QStringLiteral("cursor is ") + actual);
         } else if (cmd == u"expect-prop") {
             QQuickItem *item = findItem(m_window->contentItem(), args.value(0));
             const QString actual = item ? item->property(args.value(1).toUtf8().constData()).toString()
