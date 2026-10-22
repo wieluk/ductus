@@ -39,6 +39,8 @@ pub mod qobject {
         conflict: bool,
         pinned: bool,
         quick: bool,
+        /// A folder with notes or PDFs of its own.
+        is_notebook: bool,
     }
 
     #[derive(Debug, Default)]
@@ -196,15 +198,25 @@ pub mod qobject {
         fn root(self: &LibraryHandle) -> String;
         fn is_empty(self: &LibraryHandle) -> Result<bool>;
         /// `flags`: 1 notes, 2 PDFs, 4 other files, 8 hide folders without those; `focus` "" is the whole library.
+        /// `keep` shows a just created folder (and its parents) whatever the filter.
         fn rows(
             self: &LibraryHandle,
             expanded: &str,
             flags: u8,
             notebooks: bool,
             focus: &str,
+            keep: &str,
         ) -> Result<Vec<TreeRow>>;
         fn first_page(self: &LibraryHandle) -> String;
         fn set_pinned(self: &LibraryHandle, path: &str, pinned: bool) -> Result<()>;
+        /// Reorders the notebook list only; `flags` and `focus` as for `rows`.
+        fn move_notebook(
+            self: &LibraryHandle,
+            path: &str,
+            delta: i32,
+            flags: u8,
+            focus: &str,
+        ) -> Result<()>;
         fn absolute_path(self: &LibraryHandle, path: &str) -> String;
         fn import_page(self: &LibraryHandle, parent: &str, file: &str) -> Result<String>;
         fn unique_name(self: &LibraryHandle, parent: &str, base: &str) -> String;

@@ -539,7 +539,7 @@ impl Library {
             }
         })?;
         self.relocate(rel, &from, kind, &new_rel, &to)?;
-        self.quick_access_moved(rel, &new_rel)?;
+        self.path_lists_moved(rel, &new_rel)?;
         Ok(new_rel)
     }
 
@@ -560,7 +560,7 @@ impl Library {
             fs::rename(assets, trash.join(format!("{stamp} {name}{ASSETS_SUFFIX}")))?;
         }
         self.edit_order(&parent, |order| order.retain(|n| *n != name))?;
-        self.quick_access_removed(rel)
+        self.path_lists_removed(rel)
     }
 
     pub fn move_to(
@@ -588,7 +588,7 @@ impl Library {
             let at = index.unwrap_or(order.len()).min(order.len());
             order.insert(at, name.clone());
         })?;
-        self.quick_access_moved(rel, &new_rel)?;
+        self.path_lists_moved(rel, &new_rel)?;
         Ok(new_rel)
     }
 

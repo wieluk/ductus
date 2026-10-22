@@ -11,7 +11,11 @@ use std::time::{Duration, SystemTime};
 const MAX_DEPTH: usize = 48;
 /// Coarse file timestamps could hide a second change this soon after the first.
 const SETTLE: Duration = Duration::from_secs(2);
-const QUICK_ACCESS_FILE: &str = "quick-access.json";
+/// The old name stays so existing favorites survive.
+const FAVORITES_FILE: &str = "quick-access.json";
+const NOTEBOOK_ORDER_FILE: &str = "notebook-order.json";
+/// Lists of paths that follow renames and deletes.
+const PATH_LISTS: [&str; 2] = [FAVORITES_FILE, NOTEBOOK_ORDER_FILE];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Filter {
@@ -50,7 +54,7 @@ pub(crate) struct Listing {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-struct QuickAccess {
+struct PathList {
     #[serde(default)]
     paths: Vec<String>,
 }
@@ -112,7 +116,7 @@ impl Library {
             .is_ok_and(|nodes| nodes.iter().any(|n| self.is_shown(n, filter)))
     }
 
-    fn is_shown(&self, node: &Node, filter: Filter) -> bool {
+    pub fn is_shown(&self, node: &Node, filter: Filter) -> bool {
         match node.kind {
             NodeKind::Folder => !filter.hide_empty_folders || self.holds_files(&node.path, filter),
             kind => filter.shows(kind),
@@ -172,66 +176,118 @@ impl Library {
         find(self, "")
     }
 
-    fn quick_access_file(&self) -> std::path::PathBuf {
-        self.root().join(APP_DIR).join(QUICK_ACCESS_FILE)
+    /// Notebooks in the user's order; ones not sorted yet follow in folder order.
+    pub fn notebooks(&self, under: &str, filter: Filter) -> Vec<String> {
+        let mut found = self.notebook_folders(under, filter);
+        let order = self.stored_paths(NOTEBOOK_ORDER_FILE);
+        let rank = |p: &String| order.iter().position(|o| o == p).unwrap_or(usize::MAX);
+        found.sort_by_key(rank);
+        found
     }
 
-    fn stored_quick_access(&self) -> Vec<String> {
-        fs::read_to_string(self.quick_access_file())
+    /// Swaps a notebook with its neighbour among those shown; folders on disk stay as they are.
+    pub fn move_notebook(
+        &self,
+        rel: &str,
+        delta: i32,
+        under: &str,
+        filter: Filter,
+    ) -> Result<(), Error> {
+        let shown = self.notebooks(under, filter);
+        let Some(index) = shown.iter().position(|p| p == rel) else {
+            return Ok(());
+        };
+        let Some(other) = index
+            .checked_add_signed(delta as isize)
+            .and_then(|i| shown.get(i))
+        else {
+            return Ok(());
+        };
+        let everything = Filter {
+            pages: true,
+            pdfs: true,
+            other_files: true,
+            hide_empty_folders: false,
+        };
+        let mut all = self.notebooks("", everything);
+        let a = all.iter().position(|p| p == rel);
+        let b = all.iter().position(|p| p == other);
+        if let (Some(a), Some(b)) = (a, b) {
+            all.swap(a, b);
+            self.set_paths(NOTEBOOK_ORDER_FILE, &all)?;
+        }
+        Ok(())
+    }
+
+    /// A folder with notes or PDFs of its own.
+    pub fn is_notebook(&self, folder: &str) -> bool {
+        self.list(folder).is_ok_and(|nodes| {
+            nodes
+                .iter()
+                .any(|n| matches!(n.kind, NodeKind::Page | NodeKind::Pdf))
+        })
+    }
+
+    fn stored_paths(&self, file: &str) -> Vec<String> {
+        fs::read_to_string(self.root().join(APP_DIR).join(file))
             .ok()
-            .and_then(|s| serde_json::from_str::<QuickAccess>(&s).ok())
+            .and_then(|s| serde_json::from_str::<PathList>(&s).ok())
             .map(|q| q.paths)
             .unwrap_or_default()
     }
 
+    fn set_paths(&self, file: &str, paths: &[String]) -> Result<(), Error> {
+        fs::create_dir_all(self.root().join(APP_DIR))?;
+        let json = serde_json::to_string_pretty(&PathList {
+            paths: paths.to_vec(),
+        })?;
+        write_atomic(&self.root().join(APP_DIR).join(file), json.as_bytes())
+    }
+
     /// Entries deleted or moved by other programs are left out.
-    pub fn quick_access(&self) -> Vec<String> {
-        self.stored_quick_access()
+    pub fn favorites(&self) -> Vec<String> {
+        self.stored_paths(FAVORITES_FILE)
             .into_iter()
             .filter(|p| self.exists(p))
             .collect()
     }
 
-    pub fn set_quick_access(&self, paths: &[String]) -> Result<(), Error> {
-        fs::create_dir_all(self.root().join(APP_DIR))?;
-        let json = serde_json::to_string_pretty(&QuickAccess {
-            paths: paths.to_vec(),
-        })?;
-        write_atomic(&self.quick_access_file(), json.as_bytes())
-    }
-
     pub fn set_pinned(&self, rel: &str, pinned: bool) -> Result<(), Error> {
-        let mut paths = self.stored_quick_access();
+        let mut paths = self.stored_paths(FAVORITES_FILE);
         paths.retain(|p| p != rel);
         if pinned {
             paths.push(rel.to_owned());
         }
-        self.set_quick_access(&paths)
+        self.set_paths(FAVORITES_FILE, &paths)
     }
 
-    pub(crate) fn quick_access_moved(&self, from: &str, to: &str) -> Result<(), Error> {
-        let paths = self.stored_quick_access();
-        if !paths.iter().any(|p| moved(p, from, to).is_some()) {
-            return Ok(());
+    pub(crate) fn path_lists_moved(&self, from: &str, to: &str) -> Result<(), Error> {
+        for file in PATH_LISTS {
+            let paths = self.stored_paths(file);
+            if paths.iter().any(|p| moved(p, from, to).is_some()) {
+                let paths: Vec<String> = paths
+                    .iter()
+                    .map(|p| moved(p, from, to).unwrap_or_else(|| p.clone()))
+                    .collect();
+                self.set_paths(file, &paths)?;
+            }
         }
-        let paths: Vec<String> = paths
-            .iter()
-            .map(|p| moved(p, from, to).unwrap_or_else(|| p.clone()))
-            .collect();
-        self.set_quick_access(&paths)
+        Ok(())
     }
 
-    pub(crate) fn quick_access_removed(&self, rel: &str) -> Result<(), Error> {
-        let paths = self.stored_quick_access();
-        let kept: Vec<String> = paths
-            .iter()
-            .filter(|p| moved(p, rel, "").is_none())
-            .cloned()
-            .collect();
-        if kept.len() == paths.len() {
-            return Ok(());
+    pub(crate) fn path_lists_removed(&self, rel: &str) -> Result<(), Error> {
+        for file in PATH_LISTS {
+            let paths = self.stored_paths(file);
+            let kept: Vec<String> = paths
+                .iter()
+                .filter(|p| moved(p, rel, "").is_none())
+                .cloned()
+                .collect();
+            if kept.len() != paths.len() {
+                self.set_paths(file, &kept)?;
+            }
         }
-        self.set_quick_access(&kept)
+        Ok(())
     }
 }
 
@@ -327,7 +383,7 @@ mod tests {
     }
 
     #[test]
-    fn quick_access_follows_renames_and_deletes() {
+    fn favorites_follow_renames_and_deletes() {
         let (_dir, mut lib) = library();
         lib.create_folder("", "Math").unwrap();
         let page = lib
@@ -335,13 +391,53 @@ mod tests {
             .unwrap();
         lib.set_pinned(&page, true).unwrap();
         lib.set_pinned("Math", true).unwrap();
-        assert_eq!(lib.quick_access(), ["Math/Limits", "Math"]);
+        assert_eq!(lib.favorites(), ["Math/Limits", "Math"]);
         lib.rename("Math", "Analysis").unwrap();
-        assert_eq!(lib.quick_access(), ["Analysis/Limits", "Analysis"]);
+        assert_eq!(lib.favorites(), ["Analysis/Limits", "Analysis"]);
         lib.delete("Analysis/Limits").unwrap();
-        assert_eq!(lib.quick_access(), ["Analysis"]);
+        assert_eq!(lib.favorites(), ["Analysis"]);
         lib.set_pinned("Analysis", false).unwrap();
-        assert!(lib.quick_access().is_empty());
+        assert!(lib.favorites().is_empty());
+    }
+
+    #[test]
+    fn notebooks_keep_their_own_order() {
+        let (_dir, mut lib) = library();
+        for folder in ["Uni/Math", "Uni/Physics", "Work", "Art"] {
+            fs::create_dir_all(lib.abs(folder)).unwrap();
+        }
+        for folder in ["Uni/Math", "Uni/Physics", "Work"] {
+            lib.create_page(folder, "Notes", PageSettings::default())
+                .unwrap();
+        }
+        let notes = Filter::default();
+        assert_eq!(
+            lib.notebooks("", notes),
+            ["Uni/Math", "Uni/Physics", "Work"]
+        );
+        lib.move_notebook("Work", -1, "", notes).unwrap();
+        lib.move_notebook("Work", -1, "", notes).unwrap();
+        assert_eq!(
+            lib.notebooks("", notes),
+            ["Work", "Uni/Math", "Uni/Physics"]
+        );
+        lib.rename("Uni", "Study").unwrap();
+        assert_eq!(
+            lib.notebooks("", notes),
+            ["Work", "Study/Math", "Study/Physics"]
+        );
+        lib.create_page("Art", "Sketch", PageSettings::default())
+            .unwrap();
+        assert_eq!(lib.notebooks("", notes).last().unwrap(), "Art");
+        assert!(lib.is_notebook("Study/Math") && !lib.is_notebook("Study"));
+        assert_eq!(
+            lib.list("")
+                .unwrap()
+                .iter()
+                .map(|n| n.name.as_str())
+                .collect::<Vec<_>>(),
+            ["Art", "Study", "Work"]
+        );
     }
 
     #[test]

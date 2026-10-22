@@ -27,6 +27,13 @@ Rectangle {
     function hasFilter(bit) { return (AppController.treeFilter & bit) !== 0 }
     function toggleFilter(bit) { AppController.treeFilter = AppController.treeFilter ^ bit }
     function lastName(path) { return path.split(/[\\/]/).pop() }
+    function shownKinds() {
+        const kinds = []
+        if (hasFilter(1)) kinds.push(qsTr("notes pages"))
+        if (hasFilter(2)) kinds.push(qsTr("PDFs"))
+        if (hasFilter(4)) kinds.push(qsTr("other files"))
+        return kinds.join(", ")
+    }
 
     readonly property bool focused: AppController.treeFocus.length > 0
     readonly property var crumbs: {
@@ -74,8 +81,8 @@ Rectangle {
                     ToolTip.visible: hovered
                     ToolTip.delay: 600
                     ToolTip.text: modelData.notebooks
-                                  ? qsTr("Every folder with notes or PDFs, however deep")
-                                  : qsTr("The library's folder tree")
+                                  ? qsTr("All notebooks in your own order, with your favorites")
+                                  : qsTr("The folders on disk, with PDFs and other files")
                     contentItem: Label {
                         id: viewLabel
                         text: viewButton.modelData.label
@@ -98,7 +105,7 @@ Rectangle {
                 tip: qsTr("Show…")
                 implicitHeight: 32
                 implicitWidth: 32
-                checked: AppController.treeFilter !== 3
+                checked: AppController.treeFilter !== AppController.defaultTreeFilter
                 onClicked: filterMenu.popup(this, 0, height)
 
                 AppMenu {
@@ -124,8 +131,10 @@ Rectangle {
                         checked: sidebar.hasFilter(4)
                         onTriggered: sidebar.toggleFilter(4)
                     }
-                    AppMenuSeparator {}
+                    AppMenuSeparator { visible: !AppController.notebookView }
                     AppMenuItem {
+                        visible: !AppController.notebookView
+                        height: visible ? implicitHeight : 0
                         objectName: "filterHideEmpty"
                         text: qsTr("Hide folders without these")
                         checkable: true
@@ -150,14 +159,12 @@ Rectangle {
                 onClicked: AppController.newPage(AppController.currentFolder())
             }
             RibbonButton {
-                objectName: "sidebarNewSubject"
+                objectName: "sidebarNewNotebook"
                 iconName: "plus"
-                tip: sidebar.focused
-                     ? qsTr("New section in %1").arg(sidebar.lastName(AppController.treeFocus))
-                     : qsTr("New subject")
+                tip: qsTr("New notebook in %1").arg(AppController.displayName(AppController.treeFocus))
                 implicitHeight: 32
                 implicitWidth: 32
-                onClicked: AppController.newSubject()
+                onClicked: AppController.newNotebook(AppController.treeFocus)
             }
         }
 
@@ -235,8 +242,7 @@ Rectangle {
                 height: 26
                 leftPadding: 14
                 topPadding: 6
-                text: section === "true" ? qsTr("Quick access")
-                      : AppController.notebookView ? qsTr("Notebooks") : qsTr("Folders")
+                text: section === "true" ? qsTr("Favorites") : qsTr("Notebooks")
                 color: Theme.textMuted
                 font.pixelSize: 11
                 font.weight: Font.DemiBold
@@ -261,6 +267,7 @@ Rectangle {
                 required property string subtitle
                 required property bool pinned
                 required property bool quick
+                required property bool isNotebook
 
                 readonly property bool isSubject: isFolder && depth === 0
                 readonly property color mark: color.length > 0 ? color : Theme.accent
@@ -462,21 +469,35 @@ Rectangle {
                     AppMenuItem {
                         visible: row.isFolder
                         height: visible ? implicitHeight : 0
-                        text: qsTr("New section")
-                        objectName: "menuNewSection"
+                        text: qsTr("New notebook inside")
+                        objectName: "menuNewNotebook"
+                        onTriggered: AppController.newNotebook(row.path)
+                    }
+                    AppMenuItem {
+                        visible: row.isFolder && !AppController.notebookView
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("New folder inside")
+                        objectName: "menuNewFolder"
                         onTriggered: AppController.newFolder(row.path)
                     }
                     AppMenuItem {
-                        text: row.pinned ? qsTr("Remove from quick access") : qsTr("Add to quick access")
+                        text: row.pinned ? qsTr("Remove from favorites") : qsTr("Add to favorites")
                         objectName: "menuPin"
                         onTriggered: AppController.setPinned(row.path, !row.pinned)
                     }
                     AppMenuItem {
-                        visible: row.quick
+                        visible: AppController.notebookView && (row.quick || row.depth === 0)
                         height: visible ? implicitHeight : 0
-                        text: qsTr("Show in tree")
+                        text: qsTr("Show in folders")
                         objectName: "menuReveal"
                         onTriggered: AppController.reveal(row.path)
+                    }
+                    AppMenuItem {
+                        visible: !AppController.notebookView && row.isNotebook
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("Show in notebooks")
+                        objectName: "menuShowNotebook"
+                        onTriggered: AppController.showInNotebooks(row.path)
                     }
                     AppMenuItem {
                         text: qsTr("Show in file manager")
@@ -539,18 +560,34 @@ Rectangle {
                 }
             }
 
-            Label {
+            ColumnLayout {
+                readonly property int flags: AppController.treeFilter
+                readonly property bool filtered: (flags & 7) !== 7
+                                                 && (AppController.notebookView || flags !== AppController.defaultTreeFilter)
+                                                 || (!AppController.notebookView && (flags & 8) !== 0)
                 anchors.centerIn: parent
                 width: parent.width - 40
                 visible: list.count === 0
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
-                color: Theme.textMuted
-                text: sidebar.focused
-                      ? qsTr("Nothing to show in this folder.\nCreate a section with the + button.")
-                      : AppController.notebookView
-                      ? qsTr("No folder holds notes or PDFs yet.\nCreate a subject with the + button.")
-                      : qsTr("No notebooks yet.\nCreate a subject with the + button.")
+                spacing: 8
+                Label {
+                    objectName: "emptyHint"
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.WordWrap
+                    color: Theme.textMuted
+                    text: parent.filtered
+                          ? qsTr("Nothing matches the filter: only %1 are shown.").arg(sidebar.shownKinds())
+                          : (sidebar.focused ? qsTr("Nothing to show in this folder.") : qsTr("No notebooks yet."))
+                            + "\n" + qsTr("Create a notebook with the + button.")
+                }
+                RibbonButton {
+                    objectName: "showEverything"
+                    visible: parent.filtered
+                    Layout.alignment: Qt.AlignHCenter
+                    iconName: "filter"
+                    text: qsTr("Show all files")
+                    onClicked: AppController.treeFilter = 7
+                }
             }
         }
 

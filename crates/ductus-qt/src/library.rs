@@ -22,6 +22,13 @@ struct OpenPage {
     kind: OpenKind,
 }
 
+struct TreeView<'a> {
+    filter: Filter,
+    expanded: &'a HashSet<&'a str>,
+    pinned: &'a HashSet<String>,
+    keep: &'a str,
+}
+
 pub struct LibraryHandle {
     library: Library,
     open: Option<OpenPage>,
@@ -111,21 +118,22 @@ impl LibraryHandle {
         flags: u8,
         notebooks: bool,
         focus: &str,
+        keep: &str,
     ) -> Result<Vec<TreeRow>> {
         let expanded: HashSet<&str> = expanded.lines().collect();
         let filter = filter(flags);
-        let pinned: HashSet<String> = self.library.quick_access().into_iter().collect();
+        let pinned: HashSet<String> = self.library.favorites().into_iter().collect();
         let mut out = Vec::new();
-        for path in self.library.quick_access() {
-            if let Some(node) = self.node(&path) {
-                let mut row = self.row(&node, 0, self.inherited_color(&path), &pinned);
-                row.quick = true;
-                row.subtitle = parent_of(&path).replace('/', " › ");
-                out.push(row);
-            }
-        }
         if notebooks {
-            for folder in self.library.notebook_folders(focus, filter) {
+            for path in self.library.favorites() {
+                if let Some(node) = self.node(&path) {
+                    let mut row = self.row(&node, 0, self.inherited_color(&path), &pinned);
+                    row.quick = true;
+                    row.subtitle = parent_of(&path).replace('/', " › ");
+                    out.push(row);
+                }
+            }
+            for folder in self.library.notebooks(focus, filter) {
                 let color = self.inherited_color(&folder);
                 let mut row = match self.node(&folder) {
                     Some(node) => self.row(&node, 0, color, &pinned),
@@ -137,6 +145,7 @@ impl LibraryHandle {
                 };
                 row.subtitle = relative(parent_of(&folder), focus).replace('/', " › ");
                 row.has_children = true;
+                row.is_notebook = true;
                 row.expanded = expanded.contains(folder.as_str());
                 out.push(row);
                 if expanded.contains(folder.as_str()) {
@@ -149,36 +158,48 @@ impl LibraryHandle {
             }
         } else {
             let color = self.inherited_color(focus);
-            self.tree_rows(focus, 0, color, filter, &expanded, &pinned, &mut out);
+            let view = TreeView {
+                filter,
+                expanded: &expanded,
+                pinned: &pinned,
+                keep,
+            };
+            self.tree_rows(focus, 0, color, &view, &mut out);
         }
         Ok(out)
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn tree_rows(
         &self,
         folder: &str,
         depth: u32,
         inherited: Option<Rgba>,
-        filter: Filter,
-        expanded: &HashSet<&str>,
-        pinned: &HashSet<String>,
+        view: &TreeView,
         out: &mut Vec<TreeRow>,
     ) {
-        for node in self.library.visible(folder, filter) {
+        let Ok(nodes) = self.library.list(folder) else {
+            return;
+        };
+        for node in nodes.iter() {
+            if !self.library.is_shown(node, view.filter)
+                && moved(view.keep, &node.path, "").is_none()
+            {
+                continue;
+            }
             let color = match node.kind {
                 NodeKind::Folder => self.library.folder_color(&node.path).or(inherited),
                 _ => inherited,
             };
-            let mut row = self.row(&node, depth, color, pinned);
+            let mut row = self.row(node, depth, color, view.pinned);
             if node.kind == NodeKind::Folder {
-                row.has_children = self.library.has_visible(&node.path, filter);
-                row.expanded = expanded.contains(node.path.as_str());
+                row.has_children = self.library.has_visible(&node.path, view.filter);
+                row.expanded = view.expanded.contains(node.path.as_str());
+                row.is_notebook = self.library.is_notebook(&node.path);
             }
             let open = row.expanded;
             out.push(row);
             if open && depth < 64 {
-                self.tree_rows(&node.path, depth + 1, color, filter, expanded, pinned, out);
+                self.tree_rows(&node.path, depth + 1, color, view, out);
             }
         }
     }
@@ -234,6 +255,11 @@ impl LibraryHandle {
 
     pub fn set_pinned(&self, path: &str, pinned: bool) -> Result<()> {
         self.library.set_pinned(path, pinned)
+    }
+
+    pub fn move_notebook(&self, path: &str, delta: i32, flags: u8, focus: &str) -> Result<()> {
+        self.library
+            .move_notebook(path, delta, focus, filter(flags))
     }
 
     pub fn absolute_path(&self, path: &str) -> String {
@@ -674,13 +700,13 @@ mod tests {
         handle.create_page("Other", "Note", &canvas).unwrap();
 
         let rows = handle
-            .rows("Uni/Sem 3/Statik", 3, false, "Uni/Sem 3")
+            .rows("Uni/Sem 3/Statik", 3, false, "Uni/Sem 3", "")
             .unwrap();
         let names: Vec<_> = rows.iter().map(|r| (r.depth, r.name.as_str())).collect();
         assert_eq!(names, [(0, "Statik"), (1, "VO")]);
         assert!(rows.iter().all(|r| r.color == "#1f4fd1"));
 
-        let rows = handle.rows("", 3, true, "Uni/Sem 3").unwrap();
+        let rows = handle.rows("", 3, true, "Uni/Sem 3", "").unwrap();
         let summary: Vec<_> = rows
             .iter()
             .map(|r| (r.name.as_str(), r.subtitle.as_str()))

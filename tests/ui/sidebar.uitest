@@ -1,0 +1,38 @@
+# Notebooks have their own order apart from the folders; filters say when they hide everything.
+size 1280 800
+# The pen drags the sidebar's edge like a mouse.
+pen 262,400 400,400
+expect-prop notebookTree width 402
+click-item sidebarNewNotebook
+type Physics
+key Return
+expect-file Physics/Untitled page.svg
+click-item viewNotebooks
+expect-prop row_Physics index 2
+right-click-item row_Physics
+click-item menuMoveUp
+expect-prop row_Physics index 0
+click-item viewFolders
+expect-prop row_Physics index 2
+right-click-item row_Physics
+click-item menuShowNotebook
+expect-prop viewNotebooks active true
+# Only other files: no notebook has any.
+click-item treeFilter
+click-item filterOther
+click-item treeFilter
+click-item filterNotes
+expect-prop notebookList count 0
+expect-prop emptyHint visible true
+click-item showEverything
+expect-prop row_Physics visible true
+# A new empty folder shows even while empty folders are hidden.
+click-item viewFolders
+click-item treeFilter
+click-item filterHideEmpty
+right-click-item row_Physics
+click-item menuNewFolder
+type Drafts
+key Return
+expect-file Physics/Drafts
+expect-prop row_Physics/Drafts visible true

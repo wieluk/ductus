@@ -70,9 +70,9 @@ Rectangle {
                     onTriggered: AppController.newPage(AppController.currentFolder())
                 }
                 AppMenuItem {
-                    objectName: "menuNewSubject"
-                    text: qsTr("New Subject")
-                    onTriggered: AppController.newSubject()
+                    objectName: "menuNewNotebook"
+                    text: qsTr("New Notebook in %1").arg(AppController.displayName(AppController.treeFocus))
+                    onTriggered: AppController.newNotebook(AppController.treeFocus)
                 }
                 AppMenuItem {
                     objectName: "menuOpenFile"

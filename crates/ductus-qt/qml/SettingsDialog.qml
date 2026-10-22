@@ -403,7 +403,7 @@ Dialog {
                 Toggle {
                     objectName: "sidebar"
                     label: qsTr("Notebook list")
-                    hint: qsTr("The sidebar with subjects and pages (Ctrl+\\).")
+                    hint: qsTr("The sidebar with folders and notebooks (Ctrl+\\).")
                     checked: dialog.window.sidebarVisible
                     onToggled: (on) => dialog.window.sidebarVisible = on
                 }

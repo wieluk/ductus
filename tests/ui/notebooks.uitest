@@ -1,9 +1,9 @@
-# Subjects, pages, external changes and deleting, on an empty library.
+# Notebooks, pages, external changes and deleting, on an empty library.
 size 1280 800
 expect-file My Notebook/First page.svg
 expect-text libraryLabel Notes
 pen p=0.3-0.9 500,300 600,380 700,300 800,380 900,300
-click-item sidebarNewSubject
+click-item sidebarNewNotebook
 type Mathematics
 key Return
 expect-file Mathematics

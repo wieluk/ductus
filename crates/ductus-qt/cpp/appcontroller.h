@@ -45,6 +45,7 @@ public:
         SubtitleRole,
         PinnedRole,
         QuickRole,
+        IsNotebookRole,
     };
 
     struct Row {
@@ -61,6 +62,7 @@ public:
         QString subtitle;
         bool pinned = false;
         bool quick = false;
+        bool isNotebook = false;
     };
 
     using QAbstractListModel::QAbstractListModel;
@@ -95,8 +97,9 @@ class AppController : public QObject
     Q_PROPERTY(QString currentTitle READ currentTitle NOTIFY currentPageChanged)
     Q_PROPERTY(InkCanvas *canvas READ canvas WRITE setCanvas NOTIFY canvasChanged)
     Q_PROPERTY(QString pdfProblem READ pdfProblem CONSTANT)
-    /// 1 notes, 2 PDFs, 4 other files, 8 hide folders without those.
+    /// The shown view's: 1 notes, 2 PDFs, 4 other files, 8 hide folders without those.
     Q_PROPERTY(int treeFilter READ treeFilter WRITE setTreeFilter NOTIFY treeViewChanged)
+    Q_PROPERTY(int defaultTreeFilter READ defaultTreeFilter NOTIFY treeViewChanged)
     Q_PROPERTY(bool indexing READ indexing NOTIFY indexStatusChanged)
     Q_PROPERTY(QString indexStatus READ indexStatus NOTIFY indexStatusChanged)
     Q_PROPERTY(QString recognitionStatus READ recognitionStatus NOTIFY recognitionStatusChanged)
@@ -123,7 +126,8 @@ public:
     QString recognitionStatus() const { return m_recognitionStatus; }
     bool converting() const { return m_converting; }
     QString indexStatus() const { return m_indexStatus; }
-    int treeFilter() const { return m_treeFilter; }
+    int treeFilter() const { return m_notebookView ? m_notebookFilter : m_treeFilter; }
+    int defaultTreeFilter() const { return m_notebookView ? 1 : 3; }
     void setTreeFilter(int flags);
     bool notebookView() const { return m_notebookView; }
     void setNotebookView(bool on);
@@ -136,9 +140,12 @@ public:
 
     Q_INVOKABLE void openLibrary(const QString &pathOrUrl);
     Q_INVOKABLE void openPage(const QString &path);
-    Q_INVOKABLE QString newSubject();
-    /// With a first page: an empty folder is no notebook.
+    /// A folder with a first page: an empty folder is no notebook.
+    Q_INVOKABLE QString newNotebook(const QString &parent);
     Q_INVOKABLE QString newFolder(const QString &parent);
+    /// The folder's name, or the library's for "".
+    Q_INVOKABLE QString displayName(const QString &path) const;
+    Q_INVOKABLE void showInNotebooks(const QString &path);
     Q_INVOKABLE QString newPage(const QString &parent);
     Q_INVOKABLE QString rename(const QString &path, const QString &name);
     Q_INVOKABLE void remove(const QString &path);
@@ -201,7 +208,7 @@ private:
     void expandTo(const QString &path);
     void storeExpanded();
     void ensureStarterContent();
-    QString createFolder(const QString &parent, const QString &baseName);
+    QString createFolder(const QString &parent, const QString &baseName, bool withPage);
     QString createPage(const QString &parent);
     bool paintPages(QPrinter &printer);
     QByteArray textOverlay();
@@ -238,6 +245,9 @@ private:
     QPointer<InkCanvas> m_canvas;
     QSet<QString> m_expanded;
     int m_treeFilter = 3;
+    int m_notebookFilter = 1;
+    /// Shown whatever the filter, until it changes.
+    QString m_keepVisible;
     bool m_awaitingSnip = false;
     QString m_screenshotRequest;
     bool m_notebookView = false;

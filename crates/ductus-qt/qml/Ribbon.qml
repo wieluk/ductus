@@ -185,14 +185,18 @@ Rectangle {
                 objectName: "fileNewPage"
                 iconName: "page-add"
                 text: qsTr("New page")
-                tip: qsTr("New page in the current section (Ctrl+N)")
+                tip: {
+                    AppController.currentPage
+                    return qsTr("New page in %1 (Ctrl+N)").arg(AppController.displayName(AppController.currentFolder()))
+                }
                 onClicked: AppController.newPage(AppController.currentFolder())
             }
             RibbonButton {
-                objectName: "fileNewSubject"
+                objectName: "fileNewNotebook"
                 iconName: "plus"
-                text: qsTr("New subject")
-                onClicked: AppController.newSubject()
+                text: qsTr("New notebook")
+                tip: qsTr("New notebook in %1").arg(AppController.displayName(AppController.treeFocus))
+                onClicked: AppController.newNotebook(AppController.treeFocus)
             }
             Separator {}
             RibbonButton {
