@@ -23,6 +23,8 @@ QtObject {
     readonly property color checked: dark ? "#4a4463" : "#ddd6f7"
     readonly property color separator: dark ? "#45414f" : "#d6d2e2"
     readonly property color popup: dark ? "#2f2c3a" : "#ffffff"
+    /// Text fields and lists inside popups.
+    readonly property color field: dark ? "#25232d" : "#ffffff"
     readonly property color overlayBg: "#d0181620"
     readonly property color sidebar: dark ? "#24222c" : "#efedf5"
     readonly property color sidebarBorder: dark ? "#34313f" : "#dedbe8"

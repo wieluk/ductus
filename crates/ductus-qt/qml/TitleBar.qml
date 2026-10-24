@@ -219,7 +219,11 @@ Rectangle {
                     icon.width: 12
                     icon.height: 12
                     icon.color: Theme.titleTextMuted
-                    ToolTip.visible: hovered
+                    // Hidden once pressed, until the pointer leaves.
+                    property bool tipDismissed: false
+                    onPressed: tipDismissed = true
+                    onHoveredChanged: if (!hovered) tipDismissed = false
+                    ToolTip.visible: hovered && !tipDismissed
                     ToolTip.delay: 600
                     ToolTip.text: qsTr("Close page (Ctrl+W)")
                     onClicked: AppController.closePage()

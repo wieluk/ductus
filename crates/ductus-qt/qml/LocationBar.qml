@@ -70,7 +70,11 @@ Rectangle {
             enabled: !last
             onClicked: modelData.notebook ? AppController.showInNotebooks(modelData.path)
                                           : AppController.reveal(modelData.path)
-            ToolTip.visible: hovered && modelData.notebook && modelData.folder !== modelData.name
+            // Hidden once pressed, until the pointer leaves.
+            property bool tipDismissed: false
+            onPressed: tipDismissed = true
+            onHoveredChanged: if (!hovered) tipDismissed = false
+            ToolTip.visible: hovered && !tipDismissed && modelData.notebook && modelData.folder !== modelData.name
             ToolTip.delay: 600
             ToolTip.text: qsTr("Notebook in the folder “%1”").arg(modelData.folder)
             contentItem: Row {

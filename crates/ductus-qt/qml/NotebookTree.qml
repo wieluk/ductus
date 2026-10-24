@@ -94,7 +94,11 @@ Rectangle {
                     implicitWidth: viewLabel.implicitWidth + 16
                     focusPolicy: Qt.NoFocus
                     onClicked: AppController.notebookView = modelData.notebooks
-                    ToolTip.visible: hovered
+                    // Hidden once pressed, until the pointer leaves.
+                    property bool tipDismissed: false
+                    onPressed: tipDismissed = true
+                    onHoveredChanged: if (!hovered) tipDismissed = false
+                    ToolTip.visible: hovered && !tipDismissed
                     ToolTip.delay: 600
                     ToolTip.text: modelData.notebooks
                                   ? qsTr("All notebooks in your own order, with your favorites")

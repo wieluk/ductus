@@ -31,6 +31,23 @@ ApplicationWindow {
     // Our own OneNote-style title bar holds the ribbon tabs.
     flags: Qt.Window | Qt.FramelessWindowHint
     color: Theme.ribbon
+    // Standard controls (fields, lists, check boxes, tooltips) follow the theme, light or dark.
+    palette.window: Theme.popup
+    palette.windowText: Theme.text
+    palette.base: Theme.field
+    palette.alternateBase: Theme.hover
+    palette.text: Theme.text
+    palette.placeholderText: Theme.textMuted
+    palette.button: Theme.hover
+    palette.buttonText: Theme.text
+    palette.highlight: Theme.accent
+    palette.highlightedText: Theme.dark ? Theme.titleBar : "#ffffff"
+    palette.light: Theme.popup
+    palette.midlight: Theme.hover
+    palette.mid: Theme.separator
+    palette.dark: Theme.textMuted
+    palette.toolTipBase: Theme.popup
+    palette.toolTipText: Theme.text
 
     function updateTheme() {
         darkMode = themeMode === "dark"

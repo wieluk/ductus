@@ -12,7 +12,11 @@ AbstractButton {
     implicitHeight: 28
     focusPolicy: Qt.NoFocus
 
-    ToolTip.visible: hovered
+    // Hidden once pressed, until the pointer leaves.
+    property bool tipDismissed: false
+    onPressed: tipDismissed = true
+    onHoveredChanged: if (!hovered) tipDismissed = false
+    ToolTip.visible: hovered && !tipDismissed
     ToolTip.delay: 600
     ToolTip.text: swatch.toString()
 
