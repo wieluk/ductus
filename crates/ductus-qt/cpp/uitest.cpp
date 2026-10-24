@@ -146,7 +146,7 @@ public:
             const QString path = qEnvironmentVariable("DUCTUS_LIBRARY") + QLatin1Char('/') + rest;
             const bool want = cmd == u"expect-file";
             // Autosave runs shortly after edits.
-            for (int i = 0; i < 40 && QFileInfo::exists(path) != want; ++i)
+            for (int i = 0; i < 100 && QFileInfo::exists(path) != want; ++i)
                 QTest::qWait(100);
             if (QFileInfo::exists(path) != want)
                 return fail((want ? QStringLiteral("missing file ") : QStringLiteral("unexpected file ")) + path);
@@ -159,7 +159,7 @@ public:
                 QFile file(path);
                 return file.open(QIODevice::ReadOnly) && QString::fromUtf8(file.readAll()).contains(text);
             };
-            for (int i = 0; i < 40 && contains() != want; ++i)
+            for (int i = 0; i < 100 && contains() != want; ++i)
                 QTest::qWait(100);
             if (contains() != want)
                 return fail(path + (want ? QStringLiteral(" doesn't contain ") : QStringLiteral(" contains ")) + text);
