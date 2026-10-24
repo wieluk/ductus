@@ -11,6 +11,7 @@ AbstractButton {
     implicitWidth: 28
     implicitHeight: 28
     focusPolicy: Qt.NoFocus
+    opacity: enabled ? 1 : 0.35
 
     // Hidden once pressed, until the pointer leaves.
     property bool tipDismissed: false

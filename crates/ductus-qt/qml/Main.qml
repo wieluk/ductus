@@ -201,7 +201,8 @@ ApplicationWindow {
     }
     Shortcut { sequences: [StandardKey.Save]; onActivated: AppController.saveNow() }
     Shortcut { sequence: "Ctrl+W"; onActivated: AppController.closePage() }
-    Shortcut { sequences: [StandardKey.Quit, "Ctrl+Q"]; onActivated: Qt.quit() }
+    // Not StandardKey.Quit: on Linux it is Ctrl+Q too, and a key listed twice never fires.
+    Shortcut { sequence: "Ctrl+Q"; onActivated: Qt.quit() }
     Shortcut { sequences: [StandardKey.Print]; onActivated: AppController.print() }
     // Selection editing; text fields keep these keys while they have focus.
     Shortcut { sequences: [StandardKey.Copy]; onActivated: canvas.copySelection() }
