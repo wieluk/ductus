@@ -191,17 +191,18 @@ Rectangle {
         }
 
         Item {
+            id: titleArea
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            RowLayout {
+            Row {
                 anchors.centerIn: parent
-                width: Math.min(implicitWidth, parent.width)
                 spacing: 4
                 Label {
                     objectName: "pageTitle"
-                    Layout.fillWidth: true
-                    Layout.maximumWidth: implicitWidth
+                    anchors.verticalCenter: parent.verticalCenter
+                    // Shortened only when the space between tabs and search runs out.
+                    width: Math.min(implicitWidth, titleArea.width - closePage.width - 4)
                     text: bar.pageTitle
                     color: Theme.titleTextMuted
                     font.pixelSize: 13
@@ -210,6 +211,7 @@ Rectangle {
                 ToolButton {
                     id: closePage
                     objectName: "closePage"
+                    anchors.verticalCenter: parent.verticalCenter
                     visible: AppController.currentPage.length > 0
                     implicitWidth: 24
                     implicitHeight: 24
