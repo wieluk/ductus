@@ -129,7 +129,9 @@ ApplicationWindow {
         function onModelsNeeded(id) {
             settingsDialog.section = 4
             settingsDialog.open()
-            toast.show(qsTr("Download the recognizer for this first."), false)
+            const model = Models.entries.find(e => e.id === id)
+            toast.show(model ? qsTr("Download \u201c%1\u201d first, then try again.").arg(model.title)
+                             : qsTr("Download the recognizer for this first."), false)
         }
     }
     Connections {

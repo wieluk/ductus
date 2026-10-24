@@ -8,6 +8,13 @@ Rectangle {
     id: sidebar
 
     property string renaming: ""
+    /// The row just shown from elsewhere (location bar, a new folder), highlighted briefly.
+    property string flashPath: ""
+    Timer {
+        id: flashTimer
+        interval: 1500
+        onTriggered: sidebar.flashPath = ""
+    }
     property bool onRight: false
 
     signal deleteRequested(string path, string name, bool isFolder)
@@ -26,6 +33,8 @@ Rectangle {
             const i = AppController.tree.treeIndexOf(path)
             if (i >= 0)
                 list.positionViewAtIndex(i, ListView.Contain)
+            sidebar.flashPath = path
+            flashTimer.restart()
         }
     }
 
@@ -315,7 +324,10 @@ Rectangle {
                     anchors.leftMargin: 6
                     anchors.rightMargin: 6
                     radius: Theme.radius
-                    color: row.isCurrent ? Theme.checked : (hover.hovered ? Theme.hover : "transparent")
+                    color: row.isCurrent ? Theme.checked
+                         : row.path === sidebar.flashPath && !row.quick && !row.placeholder ? Theme.checked
+                         : hover.hovered ? Theme.hover : "transparent"
+                    Behavior on color { ColorAnimation { duration: 250 } }
                 }
                 Rectangle {
                     visible: row.isCurrent

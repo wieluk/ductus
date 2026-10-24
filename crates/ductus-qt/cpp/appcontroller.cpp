@@ -1060,10 +1060,20 @@ QVariantList AppController::search(const QString &query, int limit)
     for (const SearchHit &h : hits) {
         QString snippet = toQ(h.snippet).toHtmlEscaped();
         snippet.replace(QChar(1), QStringLiteral("<b>")).replace(QChar(2), QStringLiteral("</b>"));
+        // A notebook's own name tells more than the folders it is kept in.
+        const QString path = toQ(h.path);
+        QString location = toQ(h.location);
+        const QString notebook = notebookOf(path);
+        if (!notebook.isEmpty() && notebook != path) {
+            const QString section = parentOf(path).mid(notebook.size() + 1);
+            location = notebookName(notebook);
+            if (!section.isEmpty())
+                location += QStringLiteral(" › ") + QString(section).replace(QLatin1Char('/'), QStringLiteral(" › "));
+        }
         out.append(QVariantMap{
-            {QStringLiteral("path"), toQ(h.path)},
+            {QStringLiteral("path"), path},
             {QStringLiteral("title"), toQ(h.title)},
-            {QStringLiteral("location"), toQ(h.location)},
+            {QStringLiteral("location"), location},
             {QStringLiteral("kind"), toQ(h.kind)},
             {QStringLiteral("page"), static_cast<qint64>(h.page)},
             {QStringLiteral("x"), h.x},
