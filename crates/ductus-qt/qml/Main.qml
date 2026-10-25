@@ -17,6 +17,16 @@ ApplicationWindow {
     property bool penBarRight: false
     property bool sidebarRight: false
     property alias currentTab: titleBar.currentTab
+    /// A phone or a narrow window: the notebooks open as a drawer over the page.
+    readonly property bool compact: width < 720
+    property bool drawerOpen: false
+
+    function toggleSidebar() {
+        if (compact)
+            drawerOpen = !drawerOpen
+        else
+            sidebarVisible = !sidebarVisible
+    }
 
     // Small tablet screens (or large scaling) get a window that fits above the taskbar.
     width: Math.min(1280, Screen.desktopAvailableWidth)
@@ -60,6 +70,8 @@ ApplicationWindow {
         updateTheme()
         Theme.dark = darkMode
         AppController.canvas = canvas
+        if (AppController.storageQuestionPending())
+            storageDialog.open()
     }
 
     Connections {
@@ -145,6 +157,14 @@ ApplicationWindow {
         target: canvas
         function onNotice(message, error) { toast.show(message, error) }
     }
+    // The drawer makes way for the page that was picked in it.
+    Connections {
+        target: AppController
+        function onCurrentPageChanged() {
+            if (window.compact && AppController.currentPage.length > 0)
+                window.drawerOpen = false
+        }
+    }
     Connections {
         target: AppController
         function onModelsNeeded(id) {
@@ -196,7 +216,7 @@ ApplicationWindow {
     Shortcut { sequences: [StandardKey.ZoomOut]; onActivated: canvas.zoomBy(0.8) }
     Shortcut { sequence: "F11"; onActivated: window.toggleFullScreen() }
     Shortcut { sequence: "Ctrl+N"; onActivated: newPageDialog.show("") }
-    Shortcut { sequence: "Ctrl+\\"; onActivated: window.sidebarVisible = !window.sidebarVisible }
+    Shortcut { sequence: "Ctrl+\\"; onActivated: window.toggleSidebar() }
     Shortcut { sequences: [StandardKey.Open]; onActivated: openFileDialog.open() }
     Shortcut {
         sequences: [StandardKey.Find, "Ctrl+K"]
@@ -235,6 +255,7 @@ ApplicationWindow {
             window: window
             canvas: canvas
             pageTitle: window.pageTitle
+            compact: window.compact
             visible: window.visibility !== Window.FullScreen
             onAboutRequested: aboutDialog.open()
             onNewPageRequested: newPageDialog.show("")
@@ -246,7 +267,7 @@ ApplicationWindow {
             onOpenFolderRequested: folderDialog.open()
             onOpenFileRequested: openFileDialog.open()
             onPrintRequested: AppController.print()
-            onSidebarToggled: window.sidebarVisible = !window.sidebarVisible
+            onSidebarToggled: window.toggleSidebar()
             onUpdateRequested: updateDialog.open()
         }
 
@@ -269,18 +290,35 @@ ApplicationWindow {
             onTrashRequested: trashDialog.show()
         }
 
-        RowLayout {
+        // The notebooks beside the page, or on a narrow screen a drawer over it.
+        Item {
+            id: body
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 0
-            layoutDirection: window.sidebarRight ? Qt.RightToLeft : Qt.LeftToRight
+            readonly property bool besidePage: !window.compact && tree.visible
+
+            Rectangle {
+                objectName: "drawerScrim"
+                anchors.fill: parent
+                z: 1
+                visible: window.compact && window.drawerOpen
+                color: "#66000000"
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: window.drawerOpen = false
+                }
+            }
 
             NotebookTree {
                 id: tree
                 objectName: "notebookTree"
-                Layout.fillHeight: true
-                Layout.preferredWidth: Math.min(window.sidebarWidth, window.width * 0.6)
-                visible: window.sidebarVisible && window.visibility !== Window.FullScreen
+                z: 2
+                height: parent.height
+                width: window.compact ? Math.min(340, parent.width - 48)
+                                      : Math.min(window.sidebarWidth, window.width * 0.6)
+                x: window.sidebarRight ? parent.width - width : 0
+                visible: window.compact ? window.drawerOpen
+                                        : window.sidebarVisible && window.visibility !== Window.FullScreen
                 onRight: window.sidebarRight
 
                 MouseArea {
@@ -317,8 +355,9 @@ ApplicationWindow {
             }
 
             ColumnLayout {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+                x: body.besidePage && !window.sidebarRight ? tree.width : 0
+                width: parent.width - (body.besidePage ? tree.width : 0)
+                height: parent.height
                 spacing: 0
 
                 LocationBar {
@@ -496,7 +535,7 @@ ApplicationWindow {
                     required property var modelData
                     readonly property bool chosen: pdfModeDialog.annotate === modelData.annotate
                     objectName: modelData.annotate ? "pdfModeAnnotate" : "pdfModePages"
-                    width: 400
+                    width: pdfModeDialog.availableWidth
                     height: optionText.implicitHeight + 20
                     onClicked: pdfModeDialog.annotate = modelData.annotate
                     background: Rectangle {
@@ -516,7 +555,7 @@ ApplicationWindow {
                             font.weight: Font.DemiBold
                         }
                         Label {
-                            width: 380
+                            width: option.width - 20
                             text: option.modelData.hint
                             color: Theme.textMuted
                             font.pixelSize: 12
@@ -551,6 +590,21 @@ ApplicationWindow {
             exportFolder = currentFolder.toString()
             AppController.exportPdf(selectedFile.toString())
         }
+    }
+
+    // Android, once: notes inside the app are lost with it and out of reach of sync apps.
+    AppDialog {
+        id: storageDialog
+        objectName: "storageDialog"
+        title: qsTr("Keep your notes in Documents?")
+        message: qsTr("In Documents/Ductus your notebooks stay when the app is removed, and backups and sync apps such as Nextcloud or Syncthing find them. Ductus needs access to your files for that (\u201cAll files access\u201d).")
+        acceptText: qsTr("Allow access")
+        rejectText: qsTr("Keep them in the app")
+        onAccepted: {
+            AppController.storageQuestionAnswered()
+            AppController.useSharedStorage()
+        }
+        onRejected: AppController.storageQuestionAnswered()
     }
 
     TrashDialog {

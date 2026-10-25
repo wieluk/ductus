@@ -13,7 +13,7 @@ AppDialog {
 
     title: Updater.restartNeeded ? qsTr("Ductus %1 is installed").arg(Updater.latestVersion)
                                  : qsTr("Ductus %1 is available").arg(Updater.latestVersion)
-    width: 500
+    preferredWidth: 500
     rejectText: Updater.busy ? qsTr("Cancel") : qsTr("Later")
     acceptText: ({ restart: qsTr("Restart now"), install: qsTr("Install"),
                    download: qsTr("Download"), page: qsTr("Open download page") })[action]

@@ -8,6 +8,8 @@ Item {
     id: box
 
     property var results: []
+    /// In use: a compact title bar widens the field only then.
+    readonly property bool active: field.activeFocus || field.text.length > 0
 
     function focusSearch() {
         field.forceActiveFocus()
@@ -70,6 +72,10 @@ Item {
         sourceSize: Qt.size(16, 16)
         source: Qt.resolvedUrl("icons/search.svg")
         color: field.activeFocus ? Theme.textMuted : Theme.titleTextMuted
+        // A narrow field is little more than this icon.
+        TapHandler {
+            onTapped: box.focusSearch()
+        }
     }
 
     TextField {
@@ -101,8 +107,9 @@ Item {
         id: popup
         objectName: "searchResults"
         y: box.height + 6
-        x: Math.min(0, box.width - width)
-        width: 480
+        // Right-aligned with the field, but never off the window's left edge.
+        x: Math.max(8 - box.mapToItem(null, 0, 0).x, Math.min(0, box.width - width))
+        width: Math.min(480, (Overlay.overlay ? Overlay.overlay.width : 496) - 16)
         height: Math.min(440, column.implicitHeight + 16)
         padding: 8
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent

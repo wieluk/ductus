@@ -15,8 +15,10 @@ Dialog {
     modal: true
     padding: 20
     topPadding: 8
-    // Fixed width: binding to the parent (the overlay while open) loops through the implicit height.
-    width: 440
+    // Fixed width, or the window's on a phone: binding to the parent (the overlay while open)
+    // loops through the implicit height.
+    property real preferredWidth: 440
+    width: Math.min(preferredWidth, (Overlay.overlay ? Overlay.overlay.width : preferredWidth + 24) - 24)
 
     Overlay.modal: Rectangle { color: Theme.dark ? "#99000000" : "#55000000" }
 
