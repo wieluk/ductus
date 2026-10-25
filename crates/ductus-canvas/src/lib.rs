@@ -586,7 +586,8 @@ impl Canvas {
                 self.redraw_overlay();
             }
             Some(Gesture::MovingSelection { start }) => {
-                self.selection_transform = Affine::translate(pen - *start);
+                let delta = pen - *start;
+                self.selection_transform = Affine::translate(self.clamp_move(delta));
                 self.redraw_overlay();
             }
             Some(Gesture::ScalingSelection { anchor, start }) => {

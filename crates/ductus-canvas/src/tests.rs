@@ -411,3 +411,32 @@ fn recognized_ink_becomes_text_or_a_formula_in_one_undo_step() {
     assert!(c.replace_ink("Grenzwert", false));
     assert_eq!(c.document().texts()[0].markdown, "Grenzwert");
 }
+
+#[test]
+fn moves_stay_on_the_sheets_of_paper_pages() {
+    let mut c = canvas();
+    c.set_page_settings(PageSettings {
+        kind: ductus_core::PageKind::Paper {
+            size: ductus_core::PaperSize::A5,
+            orientation: ductus_core::Orientation::Portrait,
+        },
+        ..PageSettings::default()
+    });
+    c.add_text(40.0, 40.0, 120.0, 30.0, "Limits").unwrap();
+    c.set_tool(ToolMode::Hand);
+    let grab = c.view.to_screen(Point::new(100.0, 55.0));
+    drag(&mut c, (grab.x, grab.y), (grab.x - 200.0, grab.y - 200.0));
+    let text = &c.document().texts()[0];
+    assert_eq!((text.x, text.y), (0.0, 0.0), "the sheet's top left corner");
+
+    let sheet = c.document().sheets(0)[0];
+    let grab = c.view.to_screen(Point::new(60.0, 15.0));
+    drag(&mut c, (grab.x, grab.y), (grab.x + 2000.0, grab.y));
+    let text = &c.document().texts()[0];
+    assert!(
+        (text.x + text.width - (sheet.0 + sheet.2)).abs() < 1.0,
+        "its right edge stops at the sheet's: {} + {}",
+        text.x,
+        text.width
+    );
+}

@@ -8,9 +8,12 @@ Rectangle {
 
     required property InkCanvas canvas
     readonly property rect frame: canvas.selectionRect
+    /// Room kept free at the sides, such as for the pen bar.
+    property real leftInset: 8
+    property real rightInset: 8
 
     visible: canvas.selectionCount > 0
-    x: Math.max(8, Math.min(frame.x + frame.width / 2 - width / 2, parent.width - width - 8))
+    x: Math.max(leftInset, Math.min(frame.x + frame.width / 2 - width / 2, parent.width - width - rightInset))
     y: frame.y - height - 14 >= 8 ? frame.y - height - 14
                                  : Math.min(frame.y + frame.height + 14, parent.height - height - 8)
     width: row.implicitWidth + 12

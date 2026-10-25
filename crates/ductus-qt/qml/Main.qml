@@ -411,6 +411,9 @@ ApplicationWindow {
                     SelectionBar {
                         objectName: "selectionBar"
                         canvas: canvas
+                        // Beside the pen bar, never over it.
+                        leftInset: penBar.visible && !window.penBarRight ? penBar.x + penBar.width + 8 : 8
+                        rightInset: penBar.visible && window.penBarRight ? parent.width - penBar.x + 8 : 8
                     }
 
                     Toast {

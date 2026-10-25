@@ -164,6 +164,39 @@ impl Canvas {
             .reduce(|a, b| a.union(b))
     }
 
+    /// A move that stays on the sheets of a paper or PDF page: content beside a sheet would be
+    /// cut off in exports and prints. Paper grows downwards, so only PDF pages end at the bottom.
+    pub(crate) fn clamp_move(&self, delta: Vec2) -> Vec2 {
+        let Some(bounds) = self.selection_bounds() else {
+            return delta;
+        };
+        let sheets = self.doc.sheets(1);
+        if sheets.is_empty() {
+            return delta;
+        }
+        let left = sheets.iter().map(|s| s.0).fold(f64::INFINITY, f64::min);
+        let right = sheets
+            .iter()
+            .map(|s| s.0 + s.2)
+            .fold(f64::NEG_INFINITY, f64::max);
+        let bottom = sheets.last().map_or(f64::INFINITY, |s| s.1 + s.3);
+        let fit = |delta: f64, low: f64, high: f64, min: f64, max: f64| {
+            // Something wider than the sheets can't fit: it keeps its own way.
+            if high - low > max - min {
+                delta
+            } else {
+                delta.clamp(min - low, max - high)
+            }
+        };
+        let x = fit(delta.x, bounds.x0, bounds.x1, left, right);
+        let y = if matches!(self.doc.settings().kind, PageKind::Pdf) {
+            fit(delta.y, bounds.y0, bounds.y1, 0.0, bottom)
+        } else {
+            delta.y.max(-bounds.y0.max(0.0))
+        };
+        Vec2::new(x, y)
+    }
+
     fn selection_frame(&self) -> Option<Rect> {
         let pad = FRAME_PAD / self.view.zoom;
         let b = self
