@@ -20,6 +20,11 @@ on:
       android:
         type: boolean
         default: true
+      android_abi:
+        description: "Android: arm64-v8a for devices, x86_64 for emulators"
+        type: choice
+        options: [arm64-v8a, x86_64]
+        default: arm64-v8a
       create_release:
         description: "Make a draft release"
         type: boolean
@@ -148,6 +153,8 @@ jobs:
             echo "ANDROID_KEYSTORE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
           fi
       - uses: ./.github/actions/build-android
+        with:
+          abi: ${{ inputs.android_abi || 'arm64-v8a' }}
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Builds dist/Ductus-<version>-android-arm64.apk.
-# Needs Rust (aarch64-linux-android), JDK 17, Android SDK 35 + NDK r27c and Qt 6.10 for Android
-# plus the same desktop Qt: ANDROID_SDK_ROOT, ANDROID_NDK_ROOT, QT_ANDROID, QT_HOST.
+# Builds dist/Ductus-<version>-android-arm64.apk (ABI=x86_64: -android-x86_64.apk, for emulators).
+# Needs Rust (aarch64- or x86_64-linux-android), JDK 17, Android SDK 35 + NDK r27c and Qt 6.10
+# for Android plus the same desktop Qt: ANDROID_SDK_ROOT, ANDROID_NDK_ROOT, QT_ANDROID, QT_HOST.
 # Without ANDROID_KEYSTORE (+ _PASSWORD, ANDROID_KEY_ALIAS) a throwaway key signs it.
 set -euo pipefail
 
@@ -10,19 +10,25 @@ cd "$root"
 : "${ANDROID_SDK_ROOT:?}" "${ANDROID_NDK_ROOT:?}" "${QT_ANDROID:?}" "${QT_HOST:?}"
 version=${VERSION:-$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -1)}
 api=28
-target=aarch64-linux-android
-abi=arm64-v8a
+abi=${ABI:-arm64-v8a}
+case $abi in
+  arm64-v8a) target=aarch64-linux-android; pdfium_platform=android-arm64; arch=arm64 ;;
+  x86_64) target=x86_64-linux-android; pdfium_platform=android-x64; arch=x86_64 ;;
+  *) echo "unknown ABI $abi" >&2; exit 1 ;;
+esac
+target_env=${target//-/_}
 build=$root/target/android
 apk_dir=$build/apk
 mkdir -p "$build" dist
 
 toolchain=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64
-export CC_aarch64_linux_android=$toolchain/bin/$target$api-clang
-export CXX_aarch64_linux_android=$toolchain/bin/$target$api-clang++
-export AR_aarch64_linux_android=$toolchain/bin/llvm-ar
-export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$CC_aarch64_linux_android
+export "CC_$target_env=$toolchain/bin/$target$api-clang"
+export "CXX_$target_env=$toolchain/bin/$target$api-clang++"
+export "AR_$target_env=$toolchain/bin/llvm-ar"
+cargo_target=CARGO_TARGET_${target_env^^}
+export "${cargo_target}_LINKER=$toolchain/bin/$target$api-clang"
 # Explicit, or cxx-qt picks the build machine's linker.
-export CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="-C link-arg=-fuse-ld=lld"
+export "${cargo_target}_RUSTFLAGS=-C link-arg=-fuse-ld=lld"
 export QMAKE=$QT_ANDROID/bin/qmake
 # The desktop rcc compresses with zstd, which Qt for Android lacks: the library would not load.
 export CXX_QT_AUTORCC_OPTIONS=--no-zstd
@@ -44,8 +50,8 @@ if [ -n "$missing" ]; then
   exit 1
 fi
 
-pdfium=$build/pdfium
-build-aux/fetch-pdfium.sh android-arm64 "$pdfium"
+pdfium=$build/pdfium-$arch
+build-aux/fetch-pdfium.sh "$pdfium_platform" "$pdfium"
 
 # Android counts versions with one number: 1.2.3 becomes 10203.
 IFS=. read -r major minor patch <<<"${version%%[-+]*}"
@@ -110,5 +116,5 @@ fi
 
 apk=$(find "$apk_dir/build/outputs/apk/release" -name '*-signed.apk' | head -1)
 [ -n "$apk" ] || { echo "no signed APK was produced" >&2; exit 1; }
-cp "$apk" "dist/Ductus-$version-android-arm64.apk"
-echo "dist/Ductus-$version-android-arm64.apk"
+cp "$apk" "dist/Ductus-$version-android-$arch.apk"
+echo "dist/Ductus-$version-android-$arch.apk"
