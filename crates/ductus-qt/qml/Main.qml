@@ -136,6 +136,10 @@ ApplicationWindow {
         target: AppController
         function onErrorOccurred(message) { toast.show(message, true) }
         function onNotice(message) { toast.show(message, false) }
+        function onTrashed(name, trashId) {
+            toast.show(qsTr("\u201c%1\u201d is in the trash.").arg(name), false, qsTr("Undo"),
+                       () => AppController.restoreFromTrash(trashId))
+        }
     }
     Connections {
         target: canvas
@@ -235,6 +239,8 @@ ApplicationWindow {
             onAboutRequested: aboutDialog.open()
             onNewPageRequested: newPageDialog.show("")
             onNewNotebookRequested: newNotebookDialog.show(AppController.treeFocus)
+            onHistoryRequested: historyDialog.show(AppController.currentPage)
+            onTrashRequested: trashDialog.show()
             onSettingsRequested: settingsDialog.open()
             onExportRequested: exportDialog.show()
             onOpenFolderRequested: folderDialog.open()
@@ -259,6 +265,8 @@ ApplicationWindow {
             onAboutRequested: aboutDialog.open()
             onNewPageRequested: newPageDialog.show("")
             onNewNotebookRequested: newNotebookDialog.show(AppController.treeFocus)
+            onHistoryRequested: historyDialog.show(AppController.currentPage)
+            onTrashRequested: trashDialog.show()
         }
 
         RowLayout {
@@ -304,6 +312,8 @@ ApplicationWindow {
                 onNewPageRequested: (folder) => newPageDialog.show(folder)
                 onNewNotebookRequested: (location) => newNotebookDialog.show(location)
                 onMakeNotebookRequested: (folder) => newNotebookDialog.showForFolder(folder)
+                onMoveRequested: (path, name, isFolder) => moveDialog.show(path, name, isFolder)
+                onHistoryRequested: (path) => historyDialog.show(path)
             }
 
             ColumnLayout {
@@ -540,6 +550,18 @@ ApplicationWindow {
         }
     }
 
+    TrashDialog {
+        id: trashDialog
+    }
+
+    HistoryDialog {
+        id: historyDialog
+    }
+
+    MoveDialog {
+        id: moveDialog
+    }
+
     AppDialog {
         id: deleteDialog
         objectName: "deleteDialog"
@@ -550,7 +572,7 @@ ApplicationWindow {
 
         title: isFolder ? qsTr("Delete \u201c%1\u201d and everything in it?").arg(name)
                         : qsTr("Delete \u201c%1\u201d?").arg(name)
-        message: qsTr("It moves to Ductus' trash on this device, so it can be recovered (Settings › Library).")
+        message: qsTr("It moves to the trash on this device. Undo it right away, or restore it later from File › Trash.")
         acceptText: qsTr("Delete")
         destructive: true
         acceptButton.objectName: "confirmDelete"
@@ -565,6 +587,10 @@ ApplicationWindow {
         onUpdateRequested: {
             close()
             updateDialog.open()
+        }
+        onTrashRequested: {
+            close()
+            trashDialog.show()
         }
     }
 

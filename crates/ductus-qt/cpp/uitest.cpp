@@ -237,6 +237,11 @@ public:
             if (actual != expected)
                 return fail(QStringLiteral("%1.%2 is %3, expected %4")
                                 .arg(args.value(0), args.value(1), actual, expected));
+        } else if (cmd == u"shot") {
+            // `shot name`: a screenshot for looking at, in the shots folder.
+            QTest::qWait(50);
+            QDir().mkpath(m_shotDir);
+            m_window->grabWindow().save(m_shotDir + QLatin1Char('/') + rest + QStringLiteral(".png"));
         } else if (cmd == u"expect-hidden") {
             if (findItem(m_window->contentItem(), rest))
                 return fail(rest + QStringLiteral(" is visible"));

@@ -172,11 +172,26 @@ public:
     /// The app's own data on this device: each library's history and trash, and the models.
     static QString dataDir();
     Q_INVOKABLE QString rename(const QString &path, const QString &name);
+    /// Into another folder, at its end; returns the new path ("" when nothing moved).
+    Q_INVOKABLE QString moveTo(const QString &path, const QString &parent);
+    /// Moves it to the trash; `trashed` follows so the change can be undone.
     Q_INVOKABLE void remove(const QString &path);
+    /// Newest first: id, name, location, kind, deleted (a date).
+    Q_INVOKABLE QVariantList trashRows();
+    Q_INVOKABLE QString restoreFromTrash(const QString &id);
+    Q_INVOKABLE void purgeFromTrash(const QString &id);
+    Q_INVOKABLE void emptyTrash();
+    /// Earlier versions of a page or PDF, newest first: saved (ms), date.
+    Q_INVOKABLE QVariantList pageVersions(const QString &path);
+    Q_INVOKABLE bool restoreVersion(const QString &path, double saved);
+    /// The version as a page of its own beside the original; it opens.
+    Q_INVOKABLE QString copyVersion(const QString &path, double saved);
     Q_INVOKABLE void setColor(const QString &path, const QString &color);
     Q_INVOKABLE void toggleExpanded(const QString &path);
     /// `delta`: -1 up, +1 down.
     Q_INVOKABLE void moveBy(const QString &path, int delta);
+    /// 1: it can move up, 2: down (both: 3).
+    Q_INVOKABLE int moveOptions(const QString &path) const;
     Q_INVOKABLE QString parentOf(const QString &path) const;
     Q_INVOKABLE QString currentFolder() const;
     Q_INVOKABLE bool inFocus(const QString &path) const;
@@ -207,6 +222,8 @@ Q_SIGNALS:
     void canvasChanged();
     void errorOccurred(const QString &message);
     void notice(const QString &message);
+    /// Something went to the trash; `trashId` brings it back.
+    void trashed(const QString &name, const QString &trashId);
     void renameRequested(const QString &path);
     void treeViewChanged();
     void autosaveDelayChanged();
@@ -226,6 +243,10 @@ private Q_SLOTS:
 
 private:
     bool attempt(const std::function<void()> &action);
+    /// Empties the canvas after the open page went away.
+    void unloadPage();
+    /// What `path` moves among; `notebookList` is set when that is the list of notebooks.
+    QStringList moveSiblings(const QString &path, bool *notebookList) const;
     void refreshTree();
     void rewatch();
     void onCanvasEdited();

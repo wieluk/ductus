@@ -32,6 +32,7 @@ QtObject {
     readonly property color danger: dark ? "#ff6b6b" : "#c62828"
     readonly property color toast: dark ? "#f2f1f7" : "#2a2733"
     readonly property color toastText: dark ? "#1f1d26" : "#ffffff"
+    readonly property color toastAction: dark ? "#5a43c0" : "#b8a9ff"
 
     readonly property int titleHeight: 36
     readonly property int ribbonHeight: 48

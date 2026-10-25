@@ -49,6 +49,18 @@ pub mod qobject {
         placeholder: bool,
     }
 
+    /// Something deleted; `deleted` is in milliseconds since the epoch.
+    #[derive(Debug, Default)]
+    struct TrashRow {
+        id: String,
+        name: String,
+        /// The folder it was in, as "Math › Analysis"; "" for the top level.
+        location: String,
+        /// "page", "pdf", "folder" or "file".
+        kind: String,
+        deleted: u64,
+    }
+
     #[derive(Debug, Default)]
     struct TextRow {
         id: u64,
@@ -255,7 +267,19 @@ pub mod qobject {
             parent: &str,
             index: i32,
         ) -> Result<String>;
-        fn remove(self: &mut LibraryHandle, path: &str) -> Result<()>;
+        /// Moves it to the trash; returns the trash id that `restore` takes.
+        fn remove(self: &mut LibraryHandle, path: &str) -> Result<String>;
+        /// Newest first.
+        fn trash_rows(self: &LibraryHandle) -> Result<Vec<TrashRow>>;
+        /// Returns where it is now.
+        fn restore(self: &mut LibraryHandle, id: &str) -> Result<String>;
+        fn purge(self: &LibraryHandle, id: &str) -> Result<()>;
+        fn empty_trash(self: &LibraryHandle) -> Result<()>;
+        /// Earlier versions of a page or PDF, newest first, in milliseconds since the epoch.
+        fn versions(self: &LibraryHandle, path: &str) -> Result<Vec<u64>>;
+        fn restore_version(self: &mut LibraryHandle, path: &str, saved: u64) -> Result<()>;
+        fn copy_version(self: &LibraryHandle, path: &str, saved: u64, name: &str)
+        -> Result<String>;
         fn set_color(self: &LibraryHandle, path: &str, color: &str) -> Result<()>;
         fn open_page(self: &LibraryHandle) -> String;
         fn page_file(self: &LibraryHandle, path: &str) -> String;

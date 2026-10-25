@@ -1,5 +1,5 @@
 use crate::engine::CanvasEngine;
-use crate::ffi::qobject::{LineJob, TreeRow};
+use crate::ffi::qobject::{LineJob, TrashRow, TreeRow};
 use ductus_core::{Document, PageKind, PageSettings, Rgba};
 use ductus_format::library::pdf_stem;
 use ductus_format::{Filter, Library, Node, NodeKind, PageFile};
@@ -288,14 +288,6 @@ impl LibraryHandle {
         None
     }
 
-    fn library_name(&self) -> String {
-        self.library
-            .root()
-            .file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_default()
-    }
-
     pub fn set_pinned(&self, path: &str, pinned: bool) -> Result<()> {
         self.library.set_pinned(path, pinned)
     }
@@ -424,8 +416,8 @@ impl LibraryHandle {
         }
     }
 
-    pub fn remove(&mut self, path: &str) -> Result<()> {
-        self.library.delete(path)?;
+    pub fn remove(&mut self, path: &str) -> Result<String> {
+        let id = self.library.delete(path)?;
         if self
             .open
             .as_ref()
@@ -433,7 +425,63 @@ impl LibraryHandle {
         {
             self.open = None;
         }
-        Ok(())
+        Ok(id)
+    }
+
+    pub fn trash_rows(&self) -> Result<Vec<TrashRow>> {
+        Ok(self
+            .library
+            .trash()?
+            .into_iter()
+            .map(|entry| {
+                let (parent, name) = entry
+                    .original
+                    .rsplit_once('/')
+                    .unwrap_or(("", entry.original.as_str()));
+                TrashRow {
+                    id: entry.id,
+                    name: name.to_owned(),
+                    location: parent.split('/').collect::<Vec<_>>().join(" \u{203a} "),
+                    kind: match entry.kind {
+                        NodeKind::Page => "page",
+                        NodeKind::Pdf => "pdf",
+                        NodeKind::Folder => "folder",
+                        NodeKind::File => "file",
+                    }
+                    .into(),
+                    deleted: entry.deleted,
+                }
+            })
+            .collect())
+    }
+
+    pub fn restore(&mut self, id: &str) -> Result<String> {
+        self.library.restore(id)
+    }
+
+    pub fn purge(&self, id: &str) -> Result<()> {
+        self.library.purge(id)
+    }
+
+    pub fn empty_trash(&self) -> Result<()> {
+        self.library.empty_trash()
+    }
+
+    pub fn versions(&self, path: &str) -> Result<Vec<u64>> {
+        Ok(self
+            .library
+            .versions(path)?
+            .into_iter()
+            .map(|v| v.saved)
+            .collect())
+    }
+
+    pub fn restore_version(&mut self, path: &str, saved: u64) -> Result<()> {
+        self.library.restore_version(path, saved)
+    }
+
+    pub fn copy_version(&self, path: &str, saved: u64, name: &str) -> Result<String> {
+        self.library.copy_version(path, saved, name)
     }
 
     pub fn set_color(&self, path: &str, color: &str) -> Result<()> {

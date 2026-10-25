@@ -24,6 +24,8 @@ Rectangle {
     signal updateRequested()
     signal newPageRequested()
     signal newNotebookRequested()
+    signal historyRequested()
+    signal trashRequested()
 
     implicitHeight: Theme.titleHeight
     color: Theme.titleBar
@@ -96,6 +98,17 @@ Rectangle {
                     text: qsTr("Close Page")
                     enabled: AppController.currentPage.length > 0
                     onTriggered: AppController.closePage()
+                }
+                AppMenuItem {
+                    objectName: "menuHistory"
+                    text: qsTr("Earlier Versions…")
+                    enabled: AppController.currentPage.length > 0
+                    onTriggered: bar.historyRequested()
+                }
+                AppMenuItem {
+                    objectName: "menuTrash"
+                    text: qsTr("Trash…")
+                    onTriggered: bar.trashRequested()
                 }
                 AppMenuSeparator {}
                 AppMenuItem {

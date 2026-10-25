@@ -732,29 +732,6 @@ impl Library {
         Ok(new_rel)
     }
 
-    pub fn delete(&self, rel: &str) -> Result<(), Error> {
-        let (from, kind, parent, name) = self.entry(rel)?;
-        let trash = self.data.join("trash");
-        fs::create_dir_all(&trash)?;
-        let stamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_or(0, |d| d.as_secs());
-        let file_name = from
-            .file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_default();
-        move_path(&from, &trash.join(format!("{stamp} {file_name}")))?;
-        let assets = self.assets_dir(rel);
-        if kind == NodeKind::Page && assets.is_dir() {
-            move_path(
-                &assets,
-                &trash.join(format!("{stamp} {name}{ASSETS_SUFFIX}")),
-            )?;
-        }
-        self.edit_order(&parent, |order| order.retain(|n| *n != name))?;
-        self.path_lists_removed(rel)
-    }
-
     pub fn move_to(
         &self,
         rel: &str,
@@ -953,6 +930,11 @@ impl Library {
         Ok(files.into_iter().map(|(_, p)| p).collect())
     }
 }
+
+mod trash;
+mod versions;
+pub use trash::TrashEntry;
+pub use versions::Version;
 
 #[cfg(test)]
 mod tests;

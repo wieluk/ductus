@@ -29,6 +29,9 @@ fn main() {
         QmlFile::from("qml/LocationBar.qml"),
         QmlFile::from("qml/NewPageDialog.qml"),
         QmlFile::from("qml/NewNotebookDialog.qml"),
+        QmlFile::from("qml/TrashDialog.qml"),
+        QmlFile::from("qml/HistoryDialog.qml"),
+        QmlFile::from("qml/MoveDialog.qml"),
     ]);
     let mut builder = CxxQtBuilder::new_qml_module(qml)
         .qt_module("Quick")

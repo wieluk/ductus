@@ -13,6 +13,7 @@ Dialog {
 
     signal openFolderRequested()
     signal updateRequested()
+    signal trashRequested()
 
     objectName: "settingsDialog"
     title: qsTr("Settings")
@@ -469,14 +470,24 @@ Dialog {
                     onPicked: (index) => AppController.autosaveDelay = delays[index]
                 }
                 Described {
-                    label: qsTr("History and trash")
-                    hint: qsTr("Earlier versions of your pages and deleted items stay on this device, in Ductus' own data folder, so the library folder holds only your notes.")
+                    label: qsTr("Versions and trash")
+                    hint: qsTr("Earlier versions of your pages and deleted items stay on this device, in Ductus' own data folder, so the library folder holds only your notes. Restore them with File › Versions and File › Trash.")
                 }
-                RibbonButton {
-                    objectName: "settingsShowData"
-                    iconName: "folder-open"
-                    text: qsTr("Show history and trash")
-                    onClicked: AppController.showLibraryData()
+                RowLayout {
+                    spacing: 6
+                    RibbonButton {
+                        objectName: "settingsTrash"
+                        iconName: "delete"
+                        text: qsTr("Trash…")
+                        onClicked: dialog.trashRequested()
+                    }
+                    RibbonButton {
+                        objectName: "settingsShowData"
+                        visible: Qt.platform.os !== "android"
+                        iconName: "folder-open"
+                        text: qsTr("Show data folder")
+                        onClicked: AppController.showLibraryData()
+                    }
                 }
             }
 

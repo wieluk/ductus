@@ -1,0 +1,60 @@
+# Deleting goes to the trash: Undo, restoring, earlier versions and moving between notebooks.
+size 1280 800
+expect-file My Notebook/First page.svg
+# An earlier version comes back, and the state it replaces is kept too.
+pen p=0.6 500,300 700,340
+key Ctrl+S
+expect-in-file My Notebook/First page.svg | dx:ink
+click-item tab_file
+click-item fileHistory
+shot history
+click-item historyRestore0
+expect-not-in-file My Notebook/First page.svg | dx:ink
+click-item sidebarNewNotebook
+type Physics
+key Return
+expect-file Physics
+right-click-item row_Physics
+click-item menuNewPage
+type Optics
+key Return
+expect-file Physics/Optics.svg
+right-click-item row_Physics
+click-item menuNewPage
+type Waves
+key Return
+expect-text pageTitle Waves
+# Move up and down only where there is room.
+right-click-item row_Physics/Waves
+expect-prop menuMoveDown enabled false
+expect-prop menuMoveUp enabled true
+key Escape
+# Deleting the open page opens the one beside it; Undo brings it back.
+right-click-item row_Physics/Waves
+click-item menuDelete
+click-item confirmDelete
+expect-no-file Physics/Waves.svg
+expect-text pageTitle Optics
+shot undo
+click-item toastAction
+expect-file Physics/Waves.svg
+expect-text pageTitle Waves
+# The trash restores what was deleted a while ago.
+right-click-item row_Physics/Optics
+click-item menuDelete
+click-item confirmDelete
+expect-no-file Physics/Optics.svg
+click-item fileTrash
+shot trash
+click-item trashRestore0
+expect-file Physics/Optics.svg
+click-item trashClose
+# Into another notebook.
+right-click-item row_Physics/Optics
+click-item menuMoveTo
+click-item moveUp
+shot move
+click-item moveFolder_My Notebook
+click-item moveConfirm
+expect-file My Notebook/Optics.svg
+expect-no-file Physics/Optics.svg

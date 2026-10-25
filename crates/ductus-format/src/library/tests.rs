@@ -318,3 +318,107 @@ fn folder_colors_and_order_live_outside_the_library() {
         "the library holds only notes: {leftovers:?}"
     );
 }
+
+#[test]
+fn trash_restores_entries_where_they_were() {
+    let (_d, mut lib) = lib();
+    lib.create_folder("", "Math").unwrap();
+    lib.create_page("Math", "Limits", PageSettings::default())
+        .unwrap();
+    lib.create_page("Math", "Series", PageSettings::default())
+        .unwrap();
+    lib.save_asset("Math/Limits", "img-1.png", b"png").unwrap();
+
+    let id = lib.delete("Math/Limits").unwrap();
+    let trash = lib.trash().unwrap();
+    assert_eq!(
+        trash.len(),
+        1,
+        "the pictures folder isn't an entry of its own"
+    );
+    assert_eq!(trash[0].id, id);
+    assert_eq!(trash[0].original, "Math/Limits");
+    assert_eq!(trash[0].kind, NodeKind::Page);
+
+    assert_eq!(lib.restore(&id).unwrap(), "Math/Limits");
+    assert!(lib.exists("Math/Limits"));
+    assert_eq!(lib.read_asset("Math/Limits", "img-1.png").unwrap(), b"png");
+    assert!(lib.trash().unwrap().is_empty());
+
+    // Its folder is gone and its name is taken again: both are dealt with.
+    let id = lib.delete("Math/Limits").unwrap();
+    lib.delete("Math").unwrap();
+    lib.create_folder("", "Math").unwrap();
+    lib.create_page("Math", "Limits", PageSettings::default())
+        .unwrap();
+    assert_eq!(lib.restore(&id).unwrap(), "Math/Limits 2");
+}
+
+#[test]
+fn trash_purges_and_reads_entries_from_before_the_index() {
+    let (_d, mut lib) = lib();
+    lib.create_page("", "Gone", PageSettings::default())
+        .unwrap();
+    let id = lib.delete("Gone").unwrap();
+    lib.purge(&id).unwrap();
+    assert!(lib.trash().unwrap().is_empty());
+
+    let trash = lib.data_dir().join("trash");
+    fs::write(
+        trash.join("1700000000 Old notes.svg"),
+        write_page(&page_with_stroke("x")),
+    )
+    .unwrap();
+    let entries = lib.trash().unwrap();
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0].original, "Old notes");
+    assert_eq!(entries[0].deleted, 1_700_000_000_000);
+    assert_eq!(lib.restore(&entries[0].id).unwrap(), "Old notes");
+
+    lib.delete("Old notes").unwrap();
+    lib.empty_trash().unwrap();
+    assert!(lib.trash().unwrap().is_empty());
+}
+
+#[test]
+fn earlier_versions_can_be_restored_or_copied() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut lib = Library::with_policy(
+        dir.path().join("Notes"),
+        &dir.path().join("app"),
+        HistoryPolicy {
+            interval: Duration::ZERO,
+            keep: 10,
+        },
+    )
+    .unwrap();
+    let rel = lib
+        .create_page("", "Page", PageSettings::default())
+        .unwrap();
+    let first = page_with_stroke("page-id");
+    lib.save_page(&rel, &first).unwrap();
+    std::thread::sleep(Duration::from_millis(2));
+    let mut second = page_with_stroke("page-id");
+    second.document = Document::new();
+    lib.save_page(&rel, &second).unwrap();
+
+    let versions = lib.versions(&rel).unwrap();
+    assert!(versions.len() >= 2, "versions: {versions:?}");
+    assert!(versions[0].saved >= versions[1].saved, "newest first");
+    // The newest version is the page with the stroke.
+    lib.restore_version(&rel, versions[0].saved).unwrap();
+    assert_eq!(lib.load_page(&rel).unwrap().document.strokes().len(), 1);
+    assert_eq!(
+        lib.versions(&rel).unwrap().len(),
+        versions.len() + 1,
+        "undo is a version"
+    );
+
+    let copy = lib
+        .copy_version(&rel, versions[0].saved, "Page (earlier)")
+        .unwrap();
+    assert_eq!(copy, "Page (earlier)");
+    let copied = lib.load_page(&copy).unwrap();
+    assert_eq!(copied.document.strokes().len(), 1);
+    assert_ne!(copied.id, "page-id");
+}

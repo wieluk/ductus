@@ -655,7 +655,7 @@ QString AppController::dataDir()
     const QString roaming = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     if (local != roaming) {
         // Versions before kept them in the roaming folder.
-        for (const QString name : {QStringLiteral("libraries"), QStringLiteral("models")}) {
+        for (const QString &name : {QStringLiteral("libraries"), QStringLiteral("models")}) {
             const QString from = roaming + QLatin1Char('/') + name;
             const QString to = local + QLatin1Char('/') + name;
             if (QFileInfo(from).isDir() && !QFileInfo::exists(to) && QDir().mkpath(local))
@@ -741,6 +741,39 @@ QString AppController::rename(const QString &path, const QString &name)
     return renamed;
 }
 
+QString AppController::moveTo(const QString &path, const QString &parent)
+{
+    if (!m_library || parentOf(path) == parent)
+        return {};
+    saveNow();
+    QString moved;
+    if (!attempt([&] { moved = toQ((*m_library)->move_to(toStd(path), toStd(parent), -1)); }))
+        return {};
+    // Expansion follows the moved folder and everything inside it; its new place opens.
+    QSet<QString> updated;
+    for (const QString &e : std::as_const(m_expanded)) {
+        if (e == path)
+            updated.insert(moved);
+        else if (e.startsWith(path + QLatin1Char('/')))
+            updated.insert(moved + e.mid(path.size()));
+        else
+            updated.insert(e);
+    }
+    for (QString folder = parent; !folder.isEmpty(); folder = parentOf(folder))
+        updated.insert(folder);
+    m_expanded = updated;
+    storeExpanded();
+    m_keepVisible = moved;
+    if (!currentPage().isEmpty())
+        rememberPage(currentPage());
+    refreshTree();
+    refreshIndex();
+    Q_EMIT currentPageChanged();
+    const QString notebook = notebookName(notebookOf(moved));
+    Q_EMIT notice(tr("Moved to %1.").arg(notebook.isEmpty() ? displayName(parent) : notebook));
+    return moved;
+}
+
 void AppController::remove(const QString &path)
 {
     if (!m_library)
@@ -749,20 +782,158 @@ void AppController::remove(const QString &path)
     const bool openInside = open == path || open.startsWith(path + QLatin1Char('/'));
     if (openInside)
         saveNow();
-    if (!attempt([&] { (*m_library)->remove(toStd(path)); }))
+    // Where to go instead: the next page beside it, else the one before.
+    QString neighbour;
+    if (openInside) {
+        const QString parent = parentOf(path);
+        QStringList pages;
+        for (const NotebookModel::Row &row : m_tree.rows()) {
+            if (!row.quick && !row.placeholder && !row.isFolder && !row.isFile
+                && (row.path == path || parentOf(row.path) == parent) && !pages.contains(row.path))
+                pages << row.path;
+        }
+        const qsizetype at = pages.indexOf(path);
+        if (at >= 0 && at + 1 < pages.size())
+            neighbour = pages.at(at + 1);
+        else if (at > 0)
+            neighbour = pages.at(at - 1);
+    }
+    QString name;
+    for (const NotebookModel::Row &row : m_tree.rows())
+        if (row.path == path)
+            name = row.isNotebook && !row.notebookName.isEmpty() ? row.notebookName : row.name;
+    if (name.isEmpty())
+        name = path.section(QLatin1Char('/'), -1);
+    QString id;
+    if (!attempt([&] { id = toQ((*m_library)->remove(toStd(path))); }))
         return;
     refreshTree();
     refreshIndex();
     if (openInside) {
-        // Show a neighbouring page rather than an orphaned document.
-        for (const NotebookModel::Row &row : m_tree.rows()) {
-            if (!row.isFolder && !row.isFile && !row.quick) {
-                openPage(row.path);
-                return;
-            }
+        if (!neighbour.isEmpty()) {
+            openPage(neighbour);
+        } else {
+            unloadPage();
         }
-        Q_EMIT currentPageChanged();
     }
+    Q_EMIT trashed(name, id);
+}
+
+void AppController::unloadPage()
+{
+    m_canvas->engine().unload();
+    m_canvas->documentReplaced();
+    m_savedRevision = m_canvas->revision();
+    setDirty(false);
+    rememberPage(QString());
+    refreshTree();
+    rewatch();
+    Q_EMIT currentPageChanged();
+}
+
+QVariantList AppController::trashRows()
+{
+    QVariantList out;
+    if (!m_library)
+        return out;
+    rust::Vec<TrashRow> rows;
+    if (!attempt([&] { rows = (*m_library)->trash_rows(); }))
+        return out;
+    for (const TrashRow &row : rows) {
+        out << QVariantMap{
+            {QStringLiteral("id"), toQ(row.id)},
+            {QStringLiteral("name"), toQ(row.name)},
+            {QStringLiteral("location"), toQ(row.location)},
+            {QStringLiteral("kind"), toQ(row.kind)},
+            {QStringLiteral("deleted"), QDateTime::fromMSecsSinceEpoch(qint64(row.deleted))},
+        };
+    }
+    return out;
+}
+
+QString AppController::restoreFromTrash(const QString &id)
+{
+    if (!m_library)
+        return {};
+    QString rel;
+    if (!attempt([&] { rel = toQ((*m_library)->restore(toStd(id))); }))
+        return {};
+    m_keepVisible = rel;
+    refreshTree();
+    refreshIndex();
+    // A page that comes back opens; a folder shows where it is.
+    if (QFileInfo(libraryPath() + QLatin1Char('/') + rel).isDir())
+        reveal(rel);
+    else
+        openPage(rel);
+    Q_EMIT notice(tr("\u201c%1\u201d is back.").arg(rel.section(QLatin1Char('/'), -1)));
+    return rel;
+}
+
+void AppController::purgeFromTrash(const QString &id)
+{
+    if (m_library)
+        attempt([&] { (*m_library)->purge(toStd(id)); });
+}
+
+void AppController::emptyTrash()
+{
+    if (m_library && attempt([&] { (*m_library)->empty_trash(); }))
+        Q_EMIT notice(tr("The trash is empty."));
+}
+
+QVariantList AppController::pageVersions(const QString &path)
+{
+    QVariantList out;
+    if (!m_library || path.isEmpty())
+        return out;
+    rust::Vec<std::uint64_t> saved;
+    if (!attempt([&] { saved = (*m_library)->versions(toStd(path)); }))
+        return out;
+    for (const std::uint64_t ms : saved) {
+        out << QVariantMap{
+            {QStringLiteral("saved"), double(ms)},
+            {QStringLiteral("date"), QDateTime::fromMSecsSinceEpoch(qint64(ms))},
+        };
+    }
+    return out;
+}
+
+bool AppController::restoreVersion(const QString &path, double saved)
+{
+    if (!m_library)
+        return false;
+    const bool isOpen = path == currentPage();
+    if (isOpen) {
+        m_canvas->finishTextEditing();
+        saveNow();
+    }
+    if (!attempt([&] { (*m_library)->restore_version(toStd(path), std::uint64_t(saved)); }))
+        return false;
+    if (isOpen)
+        openPage(path);
+    refreshIndex();
+    Q_EMIT notice(tr("The earlier version is back. The one it replaced is kept as a version too."));
+    return true;
+}
+
+QString AppController::copyVersion(const QString &path, double saved)
+{
+    if (!m_library)
+        return {};
+    const QDateTime when = QDateTime::fromMSecsSinceEpoch(qint64(saved));
+    QString stem = path.section(QLatin1Char('/'), -1);
+    if (stem.endsWith(QStringLiteral(".pdf"), Qt::CaseInsensitive))
+        stem.chop(4);
+    const QString name = tr("%1 (%2)").arg(stem, when.toString(QStringLiteral("yyyy-MM-dd HH.mm")));
+    QString rel;
+    if (!attempt([&] { rel = toQ((*m_library)->copy_version(toStd(path), std::uint64_t(saved), toStd(name))); }))
+        return {};
+    m_keepVisible = rel;
+    refreshTree();
+    refreshIndex();
+    openPage(rel);
+    return rel;
 }
 
 void AppController::setColor(const QString &path, const QString &color)
@@ -771,29 +942,54 @@ void AppController::setColor(const QString &path, const QString &color)
         refreshTree();
 }
 
+QStringList AppController::moveSiblings(const QString &path, bool *notebookList) const
+{
+    const auto notebook = std::find_if(m_tree.rows().cbegin(), m_tree.rows().cend(), [&](const auto &row) {
+        return !row.quick && row.path == path && row.isNotebook && row.depth == 0;
+    });
+    *notebookList = m_notebookView && notebook != m_tree.rows().cend();
+    QStringList siblings;
+    if (*notebookList) {
+        for (const NotebookModel::Row &row : m_tree.rows())
+            if (!row.quick && row.isNotebook && row.depth == 0 && !siblings.contains(row.path))
+                siblings << row.path;
+        return siblings;
+    }
+    const QString parent = parentOf(path);
+    for (const NotebookModel::Row &row : m_tree.rows())
+        if (!row.quick && !row.placeholder && parentOf(row.path) == parent && !siblings.contains(row.path))
+            siblings << row.path;
+    return siblings;
+}
+
+int AppController::moveOptions(const QString &path) const
+{
+    bool notebookList = false;
+    const QStringList siblings = moveSiblings(path, &notebookList);
+    const qsizetype index = siblings.indexOf(path);
+    if (index < 0)
+        return 0;
+    return (index > 0 ? 1 : 0) | (index + 1 < siblings.size() ? 2 : 0);
+}
+
 void AppController::moveBy(const QString &path, int delta)
 {
     if (!m_library)
         return;
-    const auto notebook = std::find_if(m_tree.rows().cbegin(), m_tree.rows().cend(), [&](const auto &row) {
-        return !row.quick && row.path == path && row.isNotebook && row.depth == 0;
-    });
-    if (m_notebookView && notebook != m_tree.rows().cend()) {
+    bool notebookList = false;
+    const QStringList siblings = moveSiblings(path, &notebookList);
+    if (notebookList) {
         if (attempt([&] {
                 (*m_library)->move_notebook(toStd(path), delta, toStd(m_treeFocus));
             }))
             refreshTree();
         return;
     }
-    const QString parent = parentOf(path);
-    QStringList siblings;
-    for (const NotebookModel::Row &row : m_tree.rows())
-        if (!row.quick && parentOf(row.path) == parent)
-            siblings << row.path;
     const qsizetype index = siblings.indexOf(path);
     const qsizetype target = index + delta;
     if (index < 0 || target < 0 || target >= siblings.size())
         return;
+    const QString parent = parentOf(path);
     if (attempt([&] { (*m_library)->move_to(toStd(path), toStd(parent), int(target)); }))
         refreshTree();
 }

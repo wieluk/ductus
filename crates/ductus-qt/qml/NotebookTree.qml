@@ -23,6 +23,8 @@ Rectangle {
     signal newPageRequested(string folder)
     signal newNotebookRequested(string location)
     signal makeNotebookRequested(string folder)
+    signal moveRequested(string path, string name, bool isFolder)
+    signal historyRequested(string path)
 
     color: Theme.sidebar
 
@@ -478,6 +480,10 @@ Rectangle {
                     id: rowMenu
                     objectName: "rowMenu"
 
+                    // 1: it can move up, 2: down.
+                    property int moves: 0
+                    onAboutToShow: moves = AppController.moveOptions(row.path)
+
                     AppMenuItem {
                         visible: row.isFile
                         height: visible ? implicitHeight : 0
@@ -589,6 +595,7 @@ Rectangle {
                         height: visible ? implicitHeight : 0
                         text: qsTr("Move up")
                         objectName: "menuMoveUp"
+                        enabled: (rowMenu.moves & 1) !== 0
                         onTriggered: AppController.moveBy(row.path, -1)
                     }
                     AppMenuItem {
@@ -596,7 +603,23 @@ Rectangle {
                         height: visible ? implicitHeight : 0
                         text: qsTr("Move down")
                         objectName: "menuMoveDown"
+                        enabled: (rowMenu.moves & 2) !== 0
                         onTriggered: AppController.moveBy(row.path, 1)
+                    }
+                    AppMenuItem {
+                        visible: !row.quick
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("Move to…")
+                        objectName: "menuMoveTo"
+                        onTriggered: sidebar.moveRequested(row.path, row.isNotebook && row.notebookName.length > 0
+                                                                     ? row.notebookName : row.name, row.isFolder)
+                    }
+                    AppMenuItem {
+                        visible: !row.isFolder && !row.isFile
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("Earlier versions…")
+                        objectName: "menuHistory"
+                        onTriggered: sidebar.historyRequested(row.path)
                     }
                     AppMenuSeparator {}
                     AppMenuItem {

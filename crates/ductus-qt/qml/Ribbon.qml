@@ -21,6 +21,8 @@ Rectangle {
     signal aboutRequested()
     signal newPageRequested()
     signal newNotebookRequested()
+    signal historyRequested()
+    signal trashRequested()
 
     implicitHeight: Theme.ribbonHeight
     color: Theme.ribbon
@@ -237,6 +239,21 @@ Rectangle {
                     AppController.saveNow()
                     AppController.notice(qsTr("Saved."))
                 }
+            }
+            RibbonButton {
+                objectName: "fileHistory"
+                iconName: "history"
+                text: qsTr("Versions…")
+                tip: qsTr("Earlier versions of this page")
+                enabled: AppController.currentPage.length > 0
+                onClicked: ribbon.historyRequested()
+            }
+            RibbonButton {
+                objectName: "fileTrash"
+                iconName: "delete"
+                text: qsTr("Trash…")
+                tip: qsTr("Deleted pages and notebooks, to restore them")
+                onClicked: ribbon.trashRequested()
             }
             Separator {}
             RibbonButton {
