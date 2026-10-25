@@ -27,3 +27,12 @@ expect-prop canvas selectionCount 1
 key Escape
 export-pdf math.pdf
 expect-file math.pdf
+# The click that closes a menu doesn't also start a formula.
+click-item tab_insert
+click-item insertMath
+right-click-item row_My Notebook/First page
+click 800,600
+expect-hidden mathEditor
+click 800,600
+expect-prop mathEditor visible true
+click-item mathCancel

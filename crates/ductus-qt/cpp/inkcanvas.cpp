@@ -797,8 +797,14 @@ QQuickItem *InkCanvas::inputItemAt(QQuickItem *item, QPointF scenePosition) cons
     if (item->inherits("QQuickOverlay")) {
         // It spans the window while any popup, even a tooltip, is open: only the popups and
         // a modal dimmer cover what lies beneath.
+        // An open menu takes the press that closes it, so the pen doesn't write with it; the
+        // pen editor stays open to writing on purpose.
         for (const QQuickItem *child : item->childItems()) {
-            if (child->isVisible() && child->contains(child->mapFromScene(scenePosition)))
+            if (!child->isVisible())
+                continue;
+            const QObject *popup = child->parent();
+            if ((popup && popup->inherits("QQuickMenu"))
+                || child->contains(child->mapFromScene(scenePosition)))
                 return item;
         }
         return nullptr;

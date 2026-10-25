@@ -5,6 +5,9 @@ import Ductus
 Menu {
     id: menu
 
+    // The press that closes a menu shouldn't also draw or place something on the page.
+    modal: true
+    dim: false
     topPadding: 6
     bottomPadding: 6
 

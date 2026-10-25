@@ -237,6 +237,9 @@ public:
             if (actual != expected)
                 return fail(QStringLiteral("%1.%2 is %3, expected %4")
                                 .arg(args.value(0), args.value(1), actual, expected));
+        } else if (cmd == u"expect-hidden") {
+            if (findItem(m_window->contentItem(), rest))
+                return fail(rest + QStringLiteral(" is visible"));
         } else if (cmd == u"expect-text") {
             const QString name = args.value(0);
             const QString text = rest.section(QLatin1Char(' '), 1);
