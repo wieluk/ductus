@@ -1448,9 +1448,12 @@ void AppController::print()
     saveNow();
     QPrinter printer(QPrinter::HighResolution);
     printer.setDocName(currentTitle());
+    // Four numbers per printed page; the range starts at page 1, not 0.
+    const int pages = qMax(1, static_cast<int>((*m_library)->export_areas(m_canvas->engine()).size() / 4));
     QPrintDialog dialog(&printer);
-    dialog.setWindowTitle(tr("Print \u201c%1\u201d").arg(currentTitle()));
     dialog.setOption(QAbstractPrintDialog::PrintPageRange);
+    dialog.setMinMax(1, pages);
+    printer.setFromTo(1, pages);
     if (dialog.exec() == QDialog::Accepted && paintPages(printer))
         Q_EMIT notice(tr("Sent to the printer."));
 }

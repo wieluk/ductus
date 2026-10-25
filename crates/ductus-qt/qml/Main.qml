@@ -236,7 +236,7 @@ ApplicationWindow {
             onNewPageRequested: newPageDialog.show("")
             onNewNotebookRequested: newNotebookDialog.show(AppController.treeFocus)
             onSettingsRequested: settingsDialog.open()
-            onExportRequested: exportDialog.open()
+            onExportRequested: exportDialog.show()
             onOpenFolderRequested: folderDialog.open()
             onOpenFileRequested: openFileDialog.open()
             onPrintRequested: AppController.print()
@@ -253,7 +253,7 @@ ApplicationWindow {
             onImageInsertRequested: imageFileDialog.open()
             onOpenFileRequested: openFileDialog.open()
             onOpenFolderRequested: folderDialog.open()
-            onExportRequested: exportDialog.open()
+            onExportRequested: exportDialog.show()
             onPrintRequested: AppController.print()
             onSettingsRequested: settingsDialog.open()
             onAboutRequested: aboutDialog.open()
@@ -517,11 +517,27 @@ ApplicationWindow {
 
     FileDialog {
         id: exportDialog
+
+        property string exportFolder
+
+        // Named after the page, in Documents unless an export went elsewhere before.
+        function show() {
+            const name = AppController.currentTitle.replace(/[\\/:*?"<>|]/g, "_").trim() || qsTr("Page")
+            const folder = exportFolder.length > 0 ? exportFolder
+                         : StandardPaths.writableLocation(StandardPaths.DocumentsLocation).toString()
+            currentFolder = folder
+            selectedFile = folder + "/" + encodeURIComponent(name) + ".pdf"
+            open()
+        }
+
         title: qsTr("Export as PDF")
         fileMode: FileDialog.SaveFile
         nameFilters: [qsTr("PDF documents (*.pdf)")]
         defaultSuffix: "pdf"
-        onAccepted: AppController.exportPdf(selectedFile.toString())
+        onAccepted: {
+            exportFolder = currentFolder.toString()
+            AppController.exportPdf(selectedFile.toString())
+        }
     }
 
     AppDialog {
