@@ -8,11 +8,14 @@
 #include <QSettings>
 #include <QStyleHints>
 
-std::int32_t run_app()
+#include <string>
+
+std::int32_t run_app(rust::Str program)
 {
+    // Qt for Android looks for its plugins next to argv[0], the app's library.
+    static std::string arg0 = program.empty() ? std::string("ductus") : std::string(program);
     static int argc = 1;
-    static char arg0[] = "ductus";
-    static char *argv[] = {arg0, nullptr};
+    static char *argv[] = {arg0.data(), nullptr};
     // A widgets application only for the native print dialog.
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("Ductus"));

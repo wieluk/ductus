@@ -424,7 +424,8 @@ pub mod qobject {
     unsafe extern "C++" {
         include!("ductus-qt/cpp/app.h");
 
-        fn run_app() -> i32;
+        /// `program` is argv[0]: on Android, the path Qt finds its plugins next to.
+        fn run_app(program: &str) -> i32;
     }
 }
 

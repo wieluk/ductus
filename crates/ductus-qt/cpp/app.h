@@ -4,6 +4,8 @@
 
 #include <cstdint>
 
-std::int32_t run_app();
+#include "rust/cxx.h"
+
+std::int32_t run_app(rust::Str program);
 
 #endif

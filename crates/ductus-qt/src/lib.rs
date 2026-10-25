@@ -15,13 +15,21 @@ mod search;
 mod update;
 
 pub fn run() -> i32 {
-    ffi::qobject::run_app()
+    ffi::qobject::run_app("")
 }
 
-/// Qt's Android loader calls this.
+/// Qt's Android loader calls this with the path of this library as argv[0].
 #[cfg(target_os = "android")]
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub extern "C" fn main(_argc: i32, _argv: *const *const std::ffi::c_char) -> i32 {
-    run()
+pub extern "C" fn main(argc: i32, argv: *const *const std::ffi::c_char) -> i32 {
+    let program = if argc > 0 && !argv.is_null() {
+        // SAFETY: the loader passes argc valid C strings that outlive this call.
+        unsafe { std::ffi::CStr::from_ptr(*argv) }
+            .to_string_lossy()
+            .into_owned()
+    } else {
+        String::new()
+    };
+    ffi::qobject::run_app(&program)
 }
