@@ -246,3 +246,42 @@ fn overlay_pages_land_where_they_are_shown_on_rotated_pages() {
         );
     }
 }
+
+fn blank_pdf(w: f64, h: f64) -> Vec<u8> {
+    use lopdf::{Dictionary, Object, dictionary};
+    let mut doc = lopdf::Document::with_version("1.5");
+    let pages_id = doc.new_object_id();
+    let page = doc.add_object(dictionary! {
+        "Type" => "Page",
+        "Parent" => pages_id,
+        "MediaBox" => vec![0.into(), 0.into(), w.into(), h.into()],
+        "Resources" => Dictionary::new(),
+    });
+    doc.objects.insert(
+        pages_id,
+        Object::Dictionary(
+            dictionary! { "Type" => "Pages", "Kids" => vec![page.into()], "Count" => 1 },
+        ),
+    );
+    let catalog = doc.add_object(dictionary! { "Type" => "Catalog", "Pages" => pages_id });
+    doc.trailer.set("Root", catalog);
+    let mut out = Vec::new();
+    doc.save_to(&mut out).unwrap();
+    out
+}
+
+#[test]
+fn a_second_overlay_keeps_the_first() {
+    if !pdfium_or_skip() {
+        return;
+    }
+    // Formulas go on first, then the text boxes: both have to stay.
+    let base = blank_pdf(595.0, 842.0);
+    let formulas = crate::overlay_pages(&base, &make_pdf(&[(595.0, 842.0, 0)])).unwrap();
+    let both = crate::overlay_pages(&formulas, &blank_pdf(595.0, 842.0)).unwrap();
+    let (r, g, b) = rgb(&render(&both, 0), 80, 80);
+    assert!(
+        r > 200 && g < 60 && b < 60,
+        "the first overlay is still drawn"
+    );
+}

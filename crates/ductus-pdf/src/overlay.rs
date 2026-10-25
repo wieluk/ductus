@@ -2,7 +2,7 @@
 
 use crate::Error;
 use crate::annot::PageGeometry;
-use crate::pictures::{draw_on_page, draw_ops, own_resources};
+use crate::pictures::{draw_on_page, draw_ops, fresh_xobject_name, own_resources};
 use ductus_core::UNITS_PER_POINT;
 use kurbo::Point;
 use lopdf::{Object, ObjectId, Stream, dictionary};
@@ -45,7 +45,7 @@ pub fn overlay_pages(base: &[u8], overlay: &[u8]) -> Result<Vec<u8>, Error> {
         let origin = shown(0.0, 0.0);
         let x_axis = (shown(1.0, 0.0) - origin).to_point();
         let y_axis = (shown(0.0, 1.0) - origin).to_point();
-        let name = "DxText".to_owned();
+        let name = fresh_xobject_name(&pdf, page, "DxText", &mut Vec::new());
         let ops = draw_ops(&name, origin, x_axis, y_axis);
         draw_on_page(&mut pdf, page, vec![(name, form)], ops)?;
     }

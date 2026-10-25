@@ -170,6 +170,28 @@ pub(crate) fn own_resources(pdf: &lopdf::Document, page: ObjectId) -> Dictionary
     }
 }
 
+/// A name for a new XObject that the page's resources don't use yet, so drawing twice on a page
+/// (pictures, then formulas, then text) never replaces what was drawn before.
+pub(crate) fn fresh_xobject_name(
+    pdf: &lopdf::Document,
+    page: ObjectId,
+    base: &str,
+    taken: &mut Vec<String>,
+) -> String {
+    let resources = own_resources(pdf, page);
+    let existing = match resources.get(b"XObject") {
+        Ok(Object::Reference(r)) => pdf.get_dictionary(*r).cloned().unwrap_or_default(),
+        Ok(Object::Dictionary(d)) => d.clone(),
+        _ => Dictionary::new(),
+    };
+    let name = (0..)
+        .map(|i| format!("{base}{i}"))
+        .find(|name| !existing.has(name.as_bytes()) && !taken.contains(name))
+        .expect("an unused name");
+    taken.push(name.clone());
+    name
+}
+
 pub(crate) fn draw_on_page(
     pdf: &mut lopdf::Document,
     page: ObjectId,
@@ -225,8 +247,9 @@ pub(crate) fn add_to_pdf(bytes: &[u8], pictures: &[PagePicture]) -> Result<Vec<u
         let geometry = PageGeometry::of(&pdf, page);
         let mut xobjects = Vec::new();
         let mut ops = Vec::new();
-        for (i, picture) in on_page.iter().enumerate() {
-            let name = format!("DxIm{i}");
+        let mut taken = Vec::new();
+        for picture in &on_page {
+            let name = fresh_xobject_name(&pdf, page, "DxIm", &mut taken);
             xobjects.push((name.clone(), picture.image.add_to(&mut pdf)));
             let r = picture.rect;
             let origin = geometry.to_user(Point::new(r.x0, r.y1));
