@@ -214,6 +214,8 @@ pub mod qobject {
 
         /// `data_dir`: the app's data folder, where each library keeps history and trash.
         fn open_library(root: &str, data_dir: &str) -> Result<Box<LibraryHandle>>;
+        /// Moves a library's notes to another folder, with their history and trash.
+        fn relocate_library(from: &str, to: &str, data_dir: &str) -> Result<()>;
         /// This library's own folder inside the app's data folder.
         fn data_dir(self: &LibraryHandle) -> String;
         fn root(self: &LibraryHandle) -> String;
@@ -455,7 +457,9 @@ pub mod qobject {
 
 pub use crate::convert::{ConvertHandle, open_converter};
 pub use crate::engine::{CanvasEngine, new_canvas_engine};
-pub use crate::library::{LibraryHandle, PrintJob, open_library, pdf_support_problem, pdf_text};
+pub use crate::library::{
+    LibraryHandle, PrintJob, open_library, pdf_support_problem, pdf_text, relocate_library,
+};
 pub use crate::models::{ModelsHandle, model_rows, open_models, remove_model};
 pub use crate::recognize::{RecognitionHandle, open_recognizer};
 pub use crate::search::{SearchHandle, open_search};

@@ -1,4 +1,5 @@
 #include "ductus-qt/cpp/inkcanvas.h"
+#include "ductus-qt/cpp/platformfiles.h"
 #include "ductus-qt/src/ffi.cxxqt.h"
 
 #include <QBuffer>
@@ -542,13 +543,12 @@ bool InkCanvas::insertImage(const QImage &image, QPointF at)
 
 bool InkCanvas::insertImageFile(const QString &fileOrUrl, QPointF at)
 {
-    const QUrl url(fileOrUrl);
-    const QString file = url.isLocalFile() ? url.toLocalFile() : fileOrUrl;
+    const QString file = PlatformFiles::readable(fileOrUrl);
     QImageReader reader(file);
     reader.setAutoTransform(true); // Photos taken sideways.
     const QImage image = reader.read();
     if (image.isNull()) {
-        Q_EMIT notice(tr("%1 isn't a picture Ductus can read.").arg(QFileInfo(file).fileName()), true);
+        Q_EMIT notice(tr("%1 isn't a picture Ductus can read.").arg(PlatformFiles::displayName(fileOrUrl)), true);
         return false;
     }
     return insertImage(image, at);

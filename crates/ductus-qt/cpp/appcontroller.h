@@ -99,6 +99,8 @@ class AppController : public QObject
     QML_SINGLETON
 
     Q_PROPERTY(QString libraryPath READ libraryPath NOTIFY libraryChanged)
+    /// Android: the notes are in the app's own folder, which uninstalling removes.
+    Q_PROPERTY(bool notesInsideApp READ notesInsideApp NOTIFY libraryChanged)
     Q_PROPERTY(NotebookModel *tree READ tree CONSTANT)
     Q_PROPERTY(QString currentPage READ currentPage NOTIFY currentPageChanged)
     Q_PROPERTY(QString currentTitle READ currentTitle NOTIFY currentPageChanged)
@@ -146,6 +148,12 @@ public:
     void setCanvas(InkCanvas *canvas);
 
     Q_INVOKABLE void openLibrary(const QString &pathOrUrl);
+    bool notesInsideApp() const;
+    /// Asked once on Android: may the notes live in Documents, outside the app?
+    Q_INVOKABLE bool storageQuestionPending() const;
+    Q_INVOKABLE void storageQuestionAnswered();
+    /// Moves the notes to Documents/Ductus, asking for access first where needed.
+    Q_INVOKABLE void useSharedStorage();
     Q_INVOKABLE void openPage(const QString &path);
     /// A notebook called `name` in `location`: in a new folder of that name, or `location` itself.
     /// A new folder gets a first page, which opens.
@@ -245,6 +253,7 @@ private:
     bool attempt(const std::function<void()> &action);
     /// Empties the canvas after the open page went away.
     void unloadPage();
+    void moveToSharedStorage();
     /// What `path` moves among; `notebookList` is set when that is the list of notebooks.
     QStringList moveSiblings(const QString &path, bool *notebookList) const;
     void refreshTree();
@@ -299,6 +308,7 @@ private:
     /// Shown whatever the filter, until it changes.
     QString m_keepVisible;
     bool m_awaitingSnip = false;
+    bool m_awaitingShared = false;
     QString m_screenshotRequest;
     bool m_notebookView = false;
     QString m_treeFocus;

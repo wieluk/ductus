@@ -233,6 +233,22 @@ fn merge_into(old: &Path, new: &Path) -> Result<(), Error> {
     Ok(())
 }
 
+/// Moves a library's notes into another folder, merging with what is there already (which wins),
+/// and takes its history, trash and notebook settings along.
+pub fn relocate_library(from: &Path, to: &Path, app_data: &Path) -> Result<(), Error> {
+    if from.is_dir() {
+        merge_into(from, to)?;
+    } else {
+        fs::create_dir_all(to)?;
+    }
+    let libraries = app_data.join("libraries");
+    let old = libraries.join(library_key(from));
+    if old.is_dir() {
+        merge_into(&old, &libraries.join(library_key(to)))?;
+    }
+    Ok(())
+}
+
 impl Library {
     /// `app_data` is the app's own data folder; each library gets a folder of its own there.
     pub fn open(root: impl Into<PathBuf>, app_data: &Path) -> Result<Self, Error> {

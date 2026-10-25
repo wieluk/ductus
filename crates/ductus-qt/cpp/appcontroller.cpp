@@ -1,4 +1,5 @@
 #include "ductus-qt/cpp/appcontroller.h"
+#include "ductus-qt/cpp/platformfiles.h"
 #include "ductus-qt/cpp/inkcanvas.h"
 #include "ductus-qt/cpp/models.h"
 #include "ductus-qt/src/ffi.cxxqt.h"
@@ -45,12 +46,6 @@ std::string toStd(const QString &s)
     return s.toStdString();
 }
 
-QString localPath(const QString &pathOrUrl)
-{
-    const QUrl url(pathOrUrl);
-    return url.isLocalFile() ? url.toLocalFile() : pathOrUrl;
-}
-
 QString defaultLibraryPath()
 {
     // Tests and portable setups can point the app elsewhere.
@@ -60,8 +55,9 @@ QString defaultLibraryPath()
     const QString saved = QSettings().value(QStringLiteral("library/path")).toString();
     if (!saved.isEmpty())
         return saved;
-    return QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
-        + QStringLiteral("/Ductus");
+    // On Android, notes stay inside the app until it may use shared storage.
+    return PlatformFiles::hasSharedAccess() ? PlatformFiles::sharedLibraryPath()
+                                            : PlatformFiles::privateLibraryPath();
 }
 
 }
@@ -238,6 +234,11 @@ AppController::AppController(QObject *parent)
     // Only open folders are watched; catch up on the rest when we come back.
     connect(qApp, &QGuiApplication::applicationStateChanged, this, [this](Qt::ApplicationState state) {
         if (state == Qt::ApplicationActive) {
+            // Back from the system page that gives access to shared storage.
+            if (m_awaitingShared && PlatformFiles::hasSharedAccess()) {
+                m_awaitingShared = false;
+                moveToSharedStorage();
+            }
             m_refreshTimer.start();
             refreshIndex();
         }
@@ -308,8 +309,16 @@ void AppController::setCanvas(InkCanvas *canvas)
 void AppController::openLibrary(const QString &pathOrUrl)
 {
     saveNow();
-    const QUrl url(pathOrUrl);
-    const QString path = url.isLocalFile() ? url.toLocalFile() : pathOrUrl;
+    const QString path = PlatformFiles::folderPath(pathOrUrl);
+    if (path.isEmpty()) {
+        Q_EMIT errorOccurred(tr("Ductus can only keep notes in a folder on this device's storage."));
+        return;
+    }
+    if (!PlatformFiles::insideApp(path) && !PlatformFiles::hasSharedAccess()) {
+        Q_EMIT errorOccurred(tr("Allow Ductus to use your files first, then choose the folder again."));
+        PlatformFiles::requestSharedAccess();
+        return;
+    }
     const bool ok = attempt([&] { m_library.emplace(open_library(toStd(path), toStd(dataDir()))); });
     if (!ok)
         return;
@@ -341,6 +350,54 @@ void AppController::openLibrary(const QString &pathOrUrl)
         setDirty(false);
         Q_EMIT currentPageChanged();
     }
+}
+
+bool AppController::notesInsideApp() const
+{
+    return PlatformFiles::insideApp(libraryPath());
+}
+
+bool AppController::storageQuestionPending() const
+{
+    return notesInsideApp() && !qEnvironmentVariableIsSet("DUCTUS_LIBRARY")
+           && !QSettings().value(QStringLiteral("library/storageAsked"), false).toBool();
+}
+
+void AppController::storageQuestionAnswered()
+{
+    QSettings().setValue(QStringLiteral("library/storageAsked"), true);
+}
+
+void AppController::useSharedStorage()
+{
+    if (PlatformFiles::hasSharedAccess()) {
+        moveToSharedStorage();
+        return;
+    }
+    m_awaitingShared = true;
+    PlatformFiles::requestSharedAccess();
+}
+
+void AppController::moveToSharedStorage()
+{
+    const QString from = libraryPath();
+    const QString to = PlatformFiles::sharedLibraryPath();
+    if (!m_library || from == to || !notesInsideApp())
+        return;
+    if (m_canvas)
+        m_canvas->finishTextEditing();
+    saveNow();
+    const QString page = currentPage();
+    m_search.reset();
+    m_library.reset();
+    if (!attempt([&] { relocate_library(toStd(from), toStd(to), toStd(dataDir())); })) {
+        openLibrary(from);
+        return;
+    }
+    openLibrary(to);
+    if (!page.isEmpty())
+        openPage(page);
+    Q_EMIT notice(tr("Your notes are now in Documents/Ductus, where backups and sync apps find them."));
 }
 
 QString AppController::ensureStarterContent()
@@ -1082,11 +1139,14 @@ QString AppController::importPdf(const QString &fileOrUrl, bool annotate)
 {
     if (!m_library)
         return {};
+    const QString file = PlatformFiles::readable(fileOrUrl);
+    if (file.isEmpty()) {
+        Q_EMIT errorOccurred(tr("%1 can't be read.").arg(PlatformFiles::displayName(fileOrUrl)));
+        return {};
+    }
     QString path;
     const QString parent = currentFolder();
-    attempt([&] {
-        path = toQ((*m_library)->import_pdf(toStd(parent), toStd(localPath(fileOrUrl)), annotate));
-    });
+    attempt([&] { path = toQ((*m_library)->import_pdf(toStd(parent), toStd(file), annotate)); });
     if (path.isEmpty())
         return {};
     openPage(path);
@@ -1100,14 +1160,18 @@ bool AppController::exportPdf(const QString &fileOrUrl)
 {
     if (!m_library || !m_canvas)
         return false;
-    const QString target = localPath(fileOrUrl);
+    const QString target = PlatformFiles::writable(fileOrUrl);
     m_canvas->finishTextEditing();
     const QByteArray overlay = textOverlay();
-    const bool ok = attempt([&] {
+    bool ok = attempt([&] {
         (*m_library)->export_pdf(toStd(target), m_canvas->engine(), bytes(overlay));
     });
+    if (ok && !PlatformFiles::deliver(target, fileOrUrl)) {
+        Q_EMIT errorOccurred(tr("The PDF couldn't be saved there."));
+        ok = false;
+    }
     if (ok)
-        Q_EMIT notice(tr("Exported to %1").arg(QFileInfo(target).fileName()));
+        Q_EMIT notice(tr("Exported to %1").arg(PlatformFiles::displayName(fileOrUrl)));
     return ok;
 }
 
@@ -1189,7 +1253,12 @@ QString AppController::openFile(const QString &fileOrUrl)
 {
     if (!m_library)
         return {};
-    const QFileInfo info(localPath(fileOrUrl));
+    const QString readable = PlatformFiles::readable(fileOrUrl);
+    if (readable.isEmpty()) {
+        Q_EMIT errorOccurred(tr("%1 can't be read.").arg(PlatformFiles::displayName(fileOrUrl)));
+        return {};
+    }
+    const QFileInfo info(readable);
     const QString suffix = info.suffix().toLower();
     if (suffix != u"pdf" && suffix != u"svg") {
         Q_EMIT errorOccurred(tr("Ductus opens notes pages (.svg) and PDFs."));
@@ -1660,8 +1729,9 @@ bool AppController::printToFile(const QString &fileOrUrl)
         return false;
     QPrinter printer(QPrinter::HighResolution);
     printer.setOutputFormat(QPrinter::PdfFormat);
-    printer.setOutputFileName(localPath(fileOrUrl));
-    return paintPages(printer);
+    const QString target = PlatformFiles::writable(fileOrUrl);
+    printer.setOutputFileName(target);
+    return paintPages(printer) && PlatformFiles::deliver(target, fileOrUrl);
 }
 #else
 void AppController::print()

@@ -52,6 +52,11 @@ pub fn open_library(root: &str, data_dir: &str) -> Result<Box<LibraryHandle>> {
     }))
 }
 
+/// Moves the notes of the library at `from` to `to`, with their history and trash.
+pub fn relocate_library(from: &str, to: &str, data_dir: &str) -> Result<()> {
+    ductus_format::relocate_library(Path::new(from), Path::new(to), Path::new(data_dir))
+}
+
 fn hex(c: Rgba) -> String {
     let b = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
     format!("#{:02x}{:02x}{:02x}", b(c.r), b(c.g), b(c.b))

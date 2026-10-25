@@ -3,7 +3,7 @@ pub mod library;
 pub mod page;
 
 pub use browse::Filter;
-pub use library::{Library, Node, NodeKind, library_key};
+pub use library::{Library, Node, NodeKind, library_key, relocate_library};
 pub use page::{PageFile, RecognizedLine, read_page, write_page, write_page_in};
 
 use std::sync::atomic::{AtomicU64, Ordering};

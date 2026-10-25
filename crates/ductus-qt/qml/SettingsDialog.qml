@@ -451,10 +451,24 @@ Dialog {
                     }
                     RibbonButton {
                         objectName: "settingsShowLibrary"
+                        visible: Qt.platform.os !== "android"
                         iconName: "export"
                         text: qsTr("Show in file manager")
                         onClicked: AppController.showInFolder("")
                     }
+                }
+                // Android: inside the app the notes go with it when it is uninstalled.
+                Described {
+                    visible: AppController.notesInsideApp
+                    label: qsTr("These notes are inside Ductus")
+                    hint: qsTr("Uninstalling the app removes them, and backups and sync apps can't reach them. Documents/Ductus keeps them safe; Ductus needs access to your files for it.")
+                }
+                RibbonButton {
+                    objectName: "settingsSharedStorage"
+                    visible: AppController.notesInsideApp
+                    iconName: "folder"
+                    text: qsTr("Move them to Documents")
+                    onClicked: AppController.useSharedStorage()
                 }
                 Heading { text: qsTr("Saving") }
                 Choice {

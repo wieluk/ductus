@@ -53,6 +53,8 @@ fn main() {
             "cpp/updater.cpp",
             "cpp/models.h",
             "cpp/models.cpp",
+            "cpp/platformfiles.h",
+            "cpp/platformfiles.cpp",
         ])
         .qrc_resources(QResources::from(icons()));
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();

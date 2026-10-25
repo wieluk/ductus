@@ -422,3 +422,27 @@ fn earlier_versions_can_be_restored_or_copied() {
     assert_eq!(copied.document.strokes().len(), 1);
     assert_ne!(copied.id, "page-id");
 }
+
+#[test]
+fn a_library_moves_with_its_history_and_notebooks() {
+    let dir = tempfile::tempdir().unwrap();
+    let app = dir.path().join("app");
+    let from = dir.path().join("Private/Ductus");
+    let to = dir.path().join("Documents/Ductus");
+    let mut lib = Library::open(&from, &app).unwrap();
+    lib.create_folder("", "Physics").unwrap();
+    lib.set_notebook("Physics", Some("Physik")).unwrap();
+    lib.create_page("Physics", "Optics", PageSettings::default())
+        .unwrap();
+    lib.save_page("Physics/Optics", &page_with_stroke("page-id"))
+        .unwrap();
+    let trashed = lib.delete("Physics/Optics").unwrap();
+    drop(lib);
+
+    relocate_library(&from, &to, &app).unwrap();
+    assert!(!from.exists(), "nothing is left behind");
+    let lib = Library::open(&to, &app).unwrap();
+    assert_eq!(lib.notebook_name("Physics").as_deref(), Some("Physik"));
+    assert_eq!(lib.trash().unwrap()[0].id, trashed);
+    assert_eq!(lib.restore(&trashed).unwrap(), "Physics/Optics");
+}
