@@ -1,0 +1,24 @@
+[package]
+name = "ductus-hwr"
+description = "Handwriting recognition for Ductus: ink lines, line images and pluggable recognizers"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+ductus-core.workspace = true
+ductus-ink.workspace = true
+ductus-render.workspace = true
+ductus-update.workspace = true
+kurbo.workspace = true
+tiny-skia = "0.12"
+base64 = "0.23"
+candle-core = "0.11"
+candle-nn = "0.11"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ureq = { version = "3.5", features = ["json"] }
+
+[lints]
+workspace = true
