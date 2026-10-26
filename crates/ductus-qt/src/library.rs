@@ -1,5 +1,6 @@
 use crate::engine::CanvasEngine;
-use crate::ffi::qobject::{LineJob, TrashRow, TreeRow};
+use crate::ffi::qobject::{ImportResult, LineJob, TrashRow, TreeRow};
+use crate::import::ImportHandle;
 use ductus_core::{Document, PageKind, PageSettings, Rgba};
 use ductus_format::library::pdf_stem;
 use ductus_format::{Filter, Library, Node, NodeKind, PageFile};
@@ -759,6 +760,31 @@ impl LibraryHandle {
 
     pub fn close_page(&mut self) {
         self.open = None;
+    }
+
+    pub fn finish_import(
+        &mut self,
+        importer: &ImportHandle,
+        parent: &str,
+        notebooks: &str,
+    ) -> Result<ImportResult> {
+        let import = importer
+            .take()
+            .ok_or_else(|| ductus_format::Error::Invalid("Nothing was imported.".into()))?
+            .map_err(ductus_format::Error::Invalid)?;
+        // A section goes into the notebook, not into the section of the open page.
+        let in_notebook = self.library.notebook_of(parent);
+        let parent = match import.entry {
+            ductus_import::Entry::Folder { notebook: true, .. } => notebooks,
+            ductus_import::Entry::Folder { .. } => in_notebook.as_deref().unwrap_or(notebooks),
+            _ => parent,
+        };
+        let saved = ductus_import::save(&mut self.library, parent, &import)?;
+        Ok(ImportResult {
+            root: saved.root,
+            page: saved.first_page.unwrap_or_default(),
+            warnings: import.warnings.join("\n"),
+        })
     }
 
     pub fn import_pdf(&mut self, parent: &str, file: &str, annotate: bool) -> Result<String> {

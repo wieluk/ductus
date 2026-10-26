@@ -14,7 +14,7 @@ pub use blank::insert_blank_page;
 pub use engine::{engine, pdfium_status};
 pub use export::{document_strokes, export_notes, ink_by_page, math_overlay, page_areas};
 pub use file::{PdfFile, PdfPainter};
-pub use merge::merge;
+pub use merge::{SheetSource, compose, merge};
 pub use overlay::overlay_pages;
 pub use pictures::{PagePicture, PdfImage, pictures_by_page};
 

@@ -20,6 +20,7 @@ struct LibraryHandle;
 struct SearchHandle;
 struct RecognitionHandle;
 struct ConvertHandle;
+struct ImportHandle;
 struct TreeRow;
 class QPrinter;
 
@@ -116,6 +117,7 @@ class AppController : public QObject
     Q_PROPERTY(QString recognitionStatus READ recognitionStatus NOTIFY recognitionStatusChanged)
     /// Selected handwriting is being turned into text or a formula.
     Q_PROPERTY(bool converting READ converting NOTIFY convertingChanged)
+    Q_PROPERTY(bool importing READ importing NOTIFY importingChanged)
     Q_PROPERTY(bool notebookView READ notebookView WRITE setNotebookView NOTIFY treeViewChanged)
     /// "" for the whole library.
     Q_PROPERTY(QString treeFocus READ treeFocus WRITE setTreeFocus NOTIFY treeViewChanged)
@@ -136,6 +138,7 @@ public:
     bool indexing() const { return m_indexing; }
     QString recognitionStatus() const { return m_recognitionStatus; }
     bool converting() const { return m_converting; }
+    bool importing() const { return m_importing; }
     QString indexStatus() const { return m_indexStatus; }
     int treeFilter() const { return m_notebookView ? m_notebookFilter : m_treeFilter; }
     int defaultTreeFilter() const { return m_notebookView ? 1 : 3; }
@@ -213,6 +216,8 @@ public:
     /// A blank page after the PDF page in the middle of the view.
     Q_INVOKABLE void insertBlankPage();
     Q_INVOKABLE QString importPdf(const QString &fileOrUrl, bool annotate);
+    /// Xournal++, Rnote and OneNote files, read in the background.
+    Q_INVOKABLE void importNotes(const QString &fileOrUrl);
     Q_INVOKABLE bool exportPdf(const QString &fileOrUrl);
     /// Every page of a notebook, section or folder in one PDF.
     Q_INVOKABLE bool exportFolder(const QString &folder, const QString &fileOrUrl);
@@ -250,6 +255,7 @@ Q_SIGNALS:
     void indexStatusChanged();
     void recognitionStatusChanged();
     void convertingChanged();
+    void importingChanged();
     /// A built-in model has to be downloaded first.
     void modelsNeeded(const QString &id);
     void screenshotCancelled();
@@ -302,6 +308,10 @@ private:
     QString recognizerKind() const;
     QString textModel() const;
     void pollConversion();
+    void pollImport();
+    std::optional<rust::Box<ImportHandle>> m_importer;
+    QTimer m_importPoll;
+    bool m_importing = false;
     std::optional<rust::Box<ConvertHandle>> m_converter;
     QTimer m_convertPoll;
     bool m_converting = false;

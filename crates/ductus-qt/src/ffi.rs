@@ -146,6 +146,14 @@ pub mod qobject {
         file: String,
     }
 
+    /// `root` is the page or folder created; `page` the first page in it, if any.
+    #[derive(Debug, Default)]
+    struct ImportResult {
+        root: String,
+        page: String,
+        warnings: String,
+    }
+
     #[derive(Debug, Default)]
     struct ConvertState {
         busy: bool,
@@ -185,6 +193,12 @@ pub mod qobject {
             jobs: Vec<LineJob>,
         );
         fn state(self: &ConvertHandle) -> ConvertState;
+
+        type ImportHandle;
+        fn open_importer() -> Box<ImportHandle>;
+        fn can_import(file: &str) -> bool;
+        fn start(self: &ImportHandle, file: &str);
+        fn busy(self: &ImportHandle) -> bool;
 
         type ModelsHandle;
         fn open_models() -> Box<ModelsHandle>;
@@ -321,6 +335,13 @@ pub mod qobject {
             h: f64,
             lang: &str,
         ) -> Result<bool>;
+        /// Pages go into `parent`, sections into its notebook, notebooks into `notebooks`.
+        fn finish_import(
+            self: &mut LibraryHandle,
+            importer: &ImportHandle,
+            parent: &str,
+            notebooks: &str,
+        ) -> Result<ImportResult>;
         fn import_pdf(
             self: &mut LibraryHandle,
             parent: &str,
@@ -477,6 +498,7 @@ pub mod qobject {
 
 pub use crate::convert::{ConvertHandle, open_converter};
 pub use crate::engine::{CanvasEngine, new_canvas_engine};
+pub use crate::import::{ImportHandle, can_import, open_importer};
 pub use crate::library::{
     LibraryHandle, PrintJob, merge_pdf_files, open_library, pdf_support_problem, pdf_text,
     relocate_library,

@@ -14,6 +14,7 @@ ductus-ink = { path = "crates/ductus-ink" }
 ductus-render = { path = "crates/ductus-render" }
 ductus-canvas = { path = "crates/ductus-canvas" }
 ductus-format = { path = "crates/ductus-format" }
+ductus-import = { path = "crates/ductus-import" }
 ductus-pdf = { path = "crates/ductus-pdf" }
 ductus-math = { path = "crates/ductus-math" }
 ductus-search = { path = "crates/ductus-search" }

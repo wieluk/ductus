@@ -8,6 +8,7 @@ mod convert;
 mod engine;
 #[allow(unsafe_code)]
 mod ffi;
+mod import;
 mod library;
 mod models;
 mod recognize;

@@ -202,6 +202,9 @@ AppController::AppController(QObject *parent)
     m_converter.emplace(open_converter());
     m_convertPoll.setInterval(200);
     connect(&m_convertPoll, &QTimer::timeout, this, &AppController::pollConversion);
+    m_importer.emplace(open_importer());
+    m_importPoll.setInterval(100);
+    connect(&m_importPoll, &QTimer::timeout, this, &AppController::pollImport);
     m_recognizeTimer.setSingleShot(true);
     m_recognizeTimer.setInterval(2000);
     connect(&m_recognizeTimer, &QTimer::timeout, this, &AppController::recognizeOpenPage);
@@ -1189,6 +1192,46 @@ QString AppController::importPdf(const QString &fileOrUrl, bool annotate)
     return path;
 }
 
+void AppController::importNotes(const QString &fileOrUrl)
+{
+    if (!m_library || m_importing)
+        return;
+    const QString file = PlatformFiles::readable(fileOrUrl);
+    if (file.isEmpty()) {
+        Q_EMIT errorOccurred(tr("%1 can't be read.").arg(PlatformFiles::displayName(fileOrUrl)));
+        return;
+    }
+    m_importing = true;
+    Q_EMIT importingChanged();
+    Q_EMIT notice(tr("Importing %1…").arg(PlatformFiles::displayName(fileOrUrl)));
+    (*m_importer)->start(toStd(file));
+    m_importPoll.start();
+}
+
+void AppController::pollImport()
+{
+    if ((*m_importer)->busy())
+        return;
+    m_importPoll.stop();
+    m_importing = false;
+    Q_EMIT importingChanged();
+    if (!m_library)
+        return;
+    ImportResult result;
+    if (!attempt([&] {
+            result = (*m_library)->finish_import(**m_importer, toStd(currentFolder()),
+                                                 toStd(m_treeFocus));
+        }))
+        return;
+    refreshTree();
+    refreshIndex();
+    if (!result.page.empty())
+        openPage(toQ(result.page));
+    const QString warnings = toQ(result.warnings);
+    Q_EMIT notice(warnings.isEmpty() ? tr("Imported into your library.")
+                                     : tr("Imported. %1").arg(warnings));
+}
+
 bool AppController::exportPdf(const QString &fileOrUrl)
 {
     if (!m_library || !m_canvas)
@@ -1338,8 +1381,13 @@ QString AppController::openFile(const QString &fileOrUrl)
     }
     const QFileInfo info(readable);
     const QString suffix = info.suffix().toLower();
+    if (can_import(toStd(readable))) {
+        importNotes(fileOrUrl);
+        return {};
+    }
     if (suffix != u"pdf" && suffix != u"svg") {
-        Q_EMIT errorOccurred(tr("Ductus opens notes pages (.svg) and PDFs."));
+        Q_EMIT errorOccurred(
+            tr("Ductus opens notes pages (.svg), PDFs, and Xournal++, Rnote and OneNote files."));
         return {};
     }
     const QString root = QFileInfo(libraryPath()).canonicalFilePath() + QLatin1Char('/');

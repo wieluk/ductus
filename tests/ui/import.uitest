@@ -1,0 +1,12 @@
+# Notes from Xournal++ and Rnote become ordinary pages next to the open one.
+size 1280 860
+import-notes tests/fixtures/annotated.xopp
+expect-file My Notebook/annotated.svg
+expect-file My Notebook/annotated.assets/source.pdf
+expect-text pageTitle annotated
+shot import-xopp
+import-notes tests/fixtures/sketch.rnote
+expect-file My Notebook/sketch.svg
+expect-in-file My Notebook/sketch.svg | Sketched in Rnote
+expect-text pageTitle sketch
+shot import-rnote
