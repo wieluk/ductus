@@ -8,15 +8,14 @@ AppDialog {
     objectName: "updateDialog"
 
     readonly property string action: Updater.restartNeeded ? "restart"
-        : Updater.channel === "flatpak" || Updater.channel === "installer" ? "install"
-        : Updater.channel === "android" ? "download" : "page"
+        : ["flatpak", "installer", "android"].includes(Updater.channel) ? "install" : "page"
 
     title: Updater.restartNeeded ? qsTr("Ductus %1 is installed").arg(Updater.latestVersion)
                                  : qsTr("Ductus %1 is available").arg(Updater.latestVersion)
     preferredWidth: 500
     rejectText: Updater.busy ? qsTr("Cancel") : qsTr("Later")
     acceptText: ({ restart: qsTr("Restart now"), install: qsTr("Install"),
-                   download: qsTr("Download"), page: qsTr("Open download page") })[action]
+                   page: qsTr("Open download page") })[action]
     acceptButton.objectName: "updateAccept"
     acceptButton.enabled: !Updater.busy
     // Installing runs in the background; the dialog stays to show it.
@@ -37,7 +36,7 @@ AppDialog {
             Qt.callLater(() => dialog.acted = true)
         }
     }
-    onRejected: if (Updater.busy) Updater.cancel()
+    onRejected: Updater.busy ? Updater.cancel() : Updater.dismiss()
 
     contentItem: ColumnLayout {
         spacing: 10

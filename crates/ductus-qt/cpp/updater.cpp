@@ -8,6 +8,7 @@
 #include <QRegularExpression>
 #include <QSettings>
 #include <QStandardPaths>
+#include <QSysInfo>
 #include <QUrl>
 
 namespace {
@@ -26,8 +27,43 @@ QString flatpakId()
     return qEnvironmentVariable("FLATPAK_ID", QStringLiteral("app.ductus.Ductus"));
 }
 
-/// Installs Ductus from its Flatpak repository, which installs then follow for updates.
-const char *const kFlatpakRef = "https://wieluk.github.io/ductus/repo/ductus.flatpakref";
+/// The Flatpak repository that installs follow for updates.
+const char *const kFlatpakRepo = "https://wieluk.github.io/ductus/repo/ductus.flatpakrepo";
+
+/// Runs flatpak on the host, outside the sandbox. Empty when it fails.
+QString hostFlatpak(const QStringList &args)
+{
+    QProcess process;
+    process.start(QStringLiteral("flatpak-spawn"), QStringList{QStringLiteral("--host"), QStringLiteral("flatpak")} + args);
+    if (!process.waitForFinished(15000) || process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0)
+        return {};
+    return QString::fromUtf8(process.readAllStandardOutput()).trimmed();
+}
+
+/// Bundles without a repository get a remote with no URL or a file:// one, which never updates.
+bool followsOnlineRepository(const QString &origin)
+{
+    const QStringList lines = hostFlatpak({QStringLiteral("remotes"), QStringLiteral("--columns=name,url")})
+                                  .split(QLatin1Char('\n'));
+    for (const QString &line : lines) {
+        const QStringList columns = line.simplified().split(QLatin1Char(' '));
+        if (columns.size() >= 2 && columns[0] == origin
+            && (columns[1].startsWith(u"https://") || columns[1].startsWith(u"http://")))
+            return true;
+    }
+    return false;
+}
+
+QString installedCommit()
+{
+    return hostFlatpak({QStringLiteral("info"), QStringLiteral("--show-commit"), flatpakId()});
+}
+
+/// The APK built for this device's processor.
+QString apkSuffix()
+{
+    return QStringLiteral("-android-%1.apk").arg(QSysInfo::buildCpuArchitecture());
+}
 }
 
 Updater::Updater(QObject *parent)
@@ -184,7 +220,7 @@ void Updater::finishCheck(const QString &error)
     m_page = toQ(state.page);
     if (available()) {
         setStatus(tr("Version %1 is available.").arg(m_latest));
-        if (automatic)
+        if (automatic && QSettings().value(QStringLiteral("updates/dismissed")).toString() != m_latest)
             Q_EMIT updateFound();
     } else {
         setStatus(tr("Ductus is up to date."));
@@ -197,17 +233,25 @@ void Updater::install()
         return;
     if (m_channel == u"flatpak") {
         flatpakUpdate();
-    } else if (m_channel == u"installer") {
+    } else if (m_channel == u"installer" || m_channel == u"android") {
+        const bool android = m_channel == u"android";
+        const QString suffix = android ? apkSuffix() : QStringLiteral("-windows-x64-setup.exe");
+        if (toQ((*m_handle)->asset_url(toStd(suffix))).isEmpty()) {
+            openReleasePage();
+            setStatus(tr("Version %1 has no package for this device; its release page is open.").arg(m_latest));
+            return;
+        }
+        // The package installer only reads files our FileProvider shares, which covers the app's files.
+        const QString dir = QStandardPaths::writableLocation(android ? QStandardPaths::AppDataLocation
+                                                                     : QStandardPaths::TempLocation)
+                            + QStringLiteral("/ductus-update");
+        // Earlier downloads are done with.
+        QDir(dir).removeRecursively();
         m_busy = true;
         m_task = Task::Download;
         setStatus(tr("Downloading version %1…").arg(m_latest), 0);
-        const QString dir = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + QStringLiteral("/ductus-update");
-        (*m_handle)->download("-windows-x64-setup.exe", toStd(dir));
+        (*m_handle)->download(toStd(suffix), toStd(dir));
         m_poll.start();
-    } else if (m_channel == u"android") {
-        const QString apk = toQ((*m_handle)->asset_url("-android-arm64.apk"));
-        QDesktopServices::openUrl(QUrl(apk.isEmpty() ? m_page : apk));
-        setStatus(tr("Your browser downloads version %1. Open the download to install it.").arg(m_latest));
     } else {
         openReleasePage();
     }
@@ -233,7 +277,25 @@ void Updater::finishDownload(const QString &file, const QString &error)
         setStatus(tr("The update couldn't be downloaded: %1.").arg(error.isEmpty() ? tr("no file") : error));
         return;
     }
-    runInstaller(file);
+    if (m_channel == u"android")
+        openApk(file);
+    else
+        runInstaller(file);
+}
+
+void Updater::openApk(const QString &file)
+{
+    if (qEnvironmentVariableIsSet("DUCTUS_UPDATE_NO_INSTALL")) {
+        setStatus(tr("Version %1 is downloaded.").arg(m_latest), 1);
+        return;
+    }
+    // Android replaces the app in place, since the release key signed both; it asks first.
+    if (!QDesktopServices::openUrl(QUrl::fromLocalFile(file))) {
+        setStatus(tr("Android's installer didn't open. Download version %1 from its release page instead.").arg(m_latest));
+        openReleasePage();
+        return;
+    }
+    setStatus(tr("Confirm the update in Android's installer. Ductus closes while it installs."));
 }
 
 void Updater::runInstaller(const QString &file)
@@ -261,6 +323,18 @@ void Updater::runInstaller(const QString &file)
 
 void Updater::flatpakUpdate()
 {
+    // Without an online repository flatpak succeeds with nothing to do, forever.
+    const QString origin = hostFlatpak({QStringLiteral("info"), QStringLiteral("--show-origin"), flatpakId()});
+    if (!origin.isEmpty() && !followsOnlineRepository(origin)) {
+        // Uninstalling keeps settings, and unlike --reinstall it accepts a repository build older than this one.
+        setStatus(tr("This copy was installed from a file that doesn't follow the Ductus repository, so it can't "
+                     "update. Install it from the repository once (notes and settings stay):\n"
+                     "flatpak remote-add --user --if-not-exists ductus %1 && flatpak uninstall -y %2 && "
+                     "flatpak install --user -y ductus %2")
+                      .arg(QString::fromLatin1(kFlatpakRepo), flatpakId()));
+        return;
+    }
+    m_flatpakCommit = installedCommit();
     m_busy = true;
     m_task = Task::Flatpak;
     m_flatpakOutput.clear();
@@ -277,31 +351,42 @@ void Updater::flatpakFinished(int exitCode)
         return;
     m_task = Task::None;
     m_busy = false;
-    // An install from a file has no repository, and flatpak then reports nothing to do.
-    QProcess info;
-    info.start(QStringLiteral("flatpak-spawn"),
-               {QStringLiteral("--host"), QStringLiteral("flatpak"), QStringLiteral("info"), flatpakId()});
-    info.waitForFinished(15000);
-    static const QRegularExpression versionLine(QStringLiteral("^\\s*Version:\\s*(\\S+)"),
-                                                QRegularExpression::MultilineOption);
-    const QString installed = versionLine.match(QString::fromUtf8(info.readAllStandardOutput())).captured(1);
-    if (exitCode == 0 && installed == m_latest) {
+    const QString commit = installedCommit();
+    if (exitCode == 0 && !commit.isEmpty() && commit != m_flatpakCommit) {
         m_restartNeeded = true;
         setStatus(tr("Version %1 is installed. Restart Ductus to use it.").arg(m_latest));
         return;
     }
-    const QString detail = m_flatpakOutput.trimmed().section(QLatin1Char('\n'), -1);
-    setStatus(tr("Flatpak didn't install version %1%2. Updates come from the Ductus repository; "
-                 "install Ductus from it once:\nflatpak install --user %3")
-                  .arg(m_latest, detail.isEmpty() ? QString() : QStringLiteral(" (%1)").arg(detail),
-                       QString::fromLatin1(kFlatpakRef)));
+    // flatpak prints an unreachable repository as a warning and then says there's nothing to do.
+    static const QRegularExpression lineBreak(QStringLiteral("[\\r\\n]"));
+    const QStringList lines = m_flatpakOutput.split(lineBreak, Qt::SkipEmptyParts);
+    QString detail = lines.isEmpty() ? QString() : lines.last().trimmed();
+    for (const QString &line : lines) {
+        if (line.contains(u"error", Qt::CaseInsensitive) || line.contains(u"warning", Qt::CaseInsensitive)) {
+            detail = line.trimmed();
+            break;
+        }
+    }
+    const QString reason = detail.isEmpty() ? QString() : QStringLiteral(" (%1)").arg(detail);
+    if (exitCode == 0)
+        setStatus(tr("The Ductus repository doesn't offer version %1 yet%2. Try again later.").arg(m_latest, reason));
+    else
+        setStatus(tr("Flatpak couldn't install version %1%2.").arg(m_latest, reason));
+}
+
+void Updater::dismiss()
+{
+    if (!m_latest.isEmpty())
+        QSettings().setValue(QStringLiteral("updates/dismissed"), m_latest);
 }
 
 void Updater::restart()
 {
+    // Backgrounded on the host, so flatpak-spawn returns and this sandbox can end with us.
     if (m_channel == u"flatpak")
         QProcess::startDetached(QStringLiteral("flatpak-spawn"),
-                                {QStringLiteral("--host"), QStringLiteral("flatpak"), QStringLiteral("run"), flatpakId()});
+                                {QStringLiteral("--host"), QStringLiteral("sh"), QStringLiteral("-c"),
+                                 QStringLiteral("flatpak run '%1' >/dev/null 2>&1 &").arg(flatpakId())});
     else
         QProcess::startDetached(QCoreApplication::applicationFilePath(), {});
     QCoreApplication::quit();

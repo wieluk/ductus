@@ -666,7 +666,7 @@ Dialog {
                          : qsTr("Not checked yet")
                     hint: ({ flatpak: qsTr("Installed with Flatpak: updates come from the Ductus repository."),
                              installer: qsTr("Updates download and install themselves after you agree."),
-                             android: qsTr("New versions download in your browser; open them to install."),
+                             android: qsTr("Updates download after you agree; Android asks before installing them."),
                              manual: qsTr("New versions are on the download page."),
                              none: "" })[Updater.channel]
                 }
@@ -691,7 +691,7 @@ Dialog {
                     objectName: "settingsAutoUpdate"
                     visible: Updater.channel !== "none"
                     label: qsTr("Look for updates automatically")
-                    hint: qsTr("When Ductus starts and once a day. Asks GitHub for the newest release; nothing else is sent.")
+                    hint: qsTr("When Ductus starts and once a day, offering each new version once. Asks GitHub for the newest release; nothing else is sent.")
                     checked: Updater.autoCheck
                     onToggled: (on) => Updater.autoCheck = on
                 }
