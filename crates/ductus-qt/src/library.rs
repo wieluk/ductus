@@ -97,6 +97,15 @@ fn parent_of(rel: &str) -> &str {
     rel.rsplit_once('/').map_or("", |(parent, _)| parent)
 }
 
+/// Where a notebook is on disk, down to its own folder when that is named differently.
+fn notebook_location<'a>(folder: &'a str, name: &str) -> &'a str {
+    match folder.rsplit_once('/') {
+        Some((parent, own)) if own == name => parent,
+        None if folder == name => "",
+        _ => folder,
+    }
+}
+
 fn relative<'a>(path: &'a str, folder: &str) -> &'a str {
     if folder.is_empty() {
         return path;
@@ -190,13 +199,8 @@ impl LibraryHandle {
             if let Some(name) = self.library.notebook_name(&folder) {
                 row.name = name;
             }
-            // Where it is on disk, down to its own folder when that is named differently.
-            let location = if row.name == node.name {
-                parent_of(&folder)
-            } else {
-                &folder
-            };
-            row.subtitle = relative(location, focus).replace('/', " › ");
+            row.subtitle =
+                relative(notebook_location(&folder, &row.name), focus).replace('/', " › ");
             row.has_children = true;
             row.expanded = expanded.contains(folder.as_str());
             out.push(row);
@@ -357,15 +361,19 @@ impl LibraryHandle {
             .join("\n")
     }
 
-    /// Notebook and section a shortcut leads to, else its folders.
+    /// Where a shortcut leads: the notebook's folders, then the notebook and section, which eliding keeps.
     fn place(&self, path: &str) -> String {
         let parent = parent_of(path);
         match self.library.notebook_of(path) {
             Some(notebook) if notebook != path => {
                 let name = self.notebook_name(&notebook);
-                match relative(parent, &notebook) {
-                    "" => name,
+                let inside = match relative(parent, &notebook) {
+                    "" => name.clone(),
                     section => format!("{name} › {}", section.replace('/', " › ")),
+                };
+                match notebook_location(&notebook, &name) {
+                    "" => inside,
+                    location => format!("{} · {inside}", location.replace('/', " › ")),
                 }
             }
             _ => parent.replace('/', " › "),
@@ -943,7 +951,7 @@ mod tests {
         assert_eq!(
             summary,
             [
-                ("recent", "Week 1", "Statik"),
+                ("recent", "Week 1", "Uni › Sem 3 › Statik › VO · Statik"),
                 ("notebooks", "Statik", "Statik › VO")
             ]
         );
