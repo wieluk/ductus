@@ -1,0 +1,26 @@
+# The hand drags a text box to a new place and scrolls the page over empty paper.
+size 1280 800
+click-item tab_insert
+click-item insertText
+click 480,240
+type Limits of sequences
+key Escape
+click-item tab_draw
+pen-tap preset1
+expect-prop canvas tool Hand
+pen 520,250 520,450
+expect-prop canvas selectionCount 1
+key Escape
+click-item toolLasso
+click 520,250
+expect-prop canvas selectionCount 0
+click 520,450
+expect-prop canvas selectionCount 1
+key Escape
+click-item toolHand
+pen 1000,650 1000,550
+click-item toolLasso
+click 520,450
+expect-prop canvas selectionCount 0
+click 520,350
+expect-prop canvas selectionCount 1

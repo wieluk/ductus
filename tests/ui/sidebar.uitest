@@ -1,0 +1,80 @@
+# Notebooks are folders marked with a name of their own; Folders shows the disk as it is.
+size 1280 800
+# The pen drags the sidebar's edge like a mouse.
+pen 262,400 400,400
+expect-prop notebookTree width 402
+# A new notebook gets a folder and a first page; the location bar shows where.
+click-item sidebarNewNotebook
+type Physics
+key Return
+expect-file Physics/Untitled page.svg
+expect-text location_Physics Physics
+# Any folder deep down becomes a notebook under another name.
+put-file tests/fixtures/lecture.pdf | Uni/Mech/notebook/slides.pdf
+wait 600
+click-item viewFolders
+click-item row_Uni
+click-item row_Uni/Mech
+right-click-item row_Uni/Mech/notebook
+click-item menuMakeNotebook
+type Mechanics
+key Return
+click-item viewNotebooks
+# An empty notebook offers to add its first page.
+click-item empty_Uni/Mech/notebook
+type Week1
+key Return
+expect-file Uni/Mech/notebook/Week1.svg
+expect-text location_Uni/Mech/notebook Mechanics
+expect-prop recent_Uni/Mech/notebook/Week1 visible true
+# Renaming it under Notebooks leaves the folder as it is.
+right-click-item row_Uni/Mech/notebook
+click-item menuRename
+type Statics
+key Return
+expect-file Uni/Mech/notebook
+expect-text location_Uni/Mech/notebook Statics
+# Its own order, apart from the folders.
+expect-prop row_Uni/Mech/notebook index 7
+right-click-item row_Uni/Mech/notebook
+click-item menuMoveUp
+expect-prop row_Uni/Mech/notebook index 5
+# Pages without a notebook at hand go to the Inbox.
+key Ctrl+W
+key Ctrl+N
+type Idea
+key Return
+expect-file Inbox/Idea.svg
+expect-text location_Inbox Inbox
+# Folders: with only other files shown and empty folders hidden, the list says why it is empty.
+click-item viewFolders
+click-item treeFilter
+click-item filterOther
+click-item treeFilter
+click-item filterNotes
+click-item treeFilter
+click-item filterPdfs
+click-item treeFilter
+click-item filterHideEmpty
+expect-prop notebookList count 0
+expect-prop emptyHint visible true
+click-item showEverything
+expect-prop row_Physics visible true
+# A new empty folder shows even while empty folders are hidden.
+click-item treeFilter
+click-item filterHideEmpty
+right-click-item row_Physics
+click-item menuNewFolder
+type Drafts
+key Return
+expect-file Physics/Drafts
+expect-prop row_Physics/Drafts visible true
+# On the right, the list resizes from its left edge.
+click-item appMenuButton
+click-item menuSettings
+click-item settingsSection2
+click-item sidebarSide1
+click-item settingsClose
+expect-prop notebookTree x 878
+pen 880,400 780,400
+expect-prop notebookTree width 502

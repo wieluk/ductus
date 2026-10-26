@@ -1,0 +1,49 @@
+# Text boxes: typing, Markdown formatting, editing, moving, saving, export.
+size 1280 800
+click-item tab_insert
+click-item insertText
+click 480,240
+type Limits of sequences
+key Return
+type - first item
+key Return
+type second item
+key Ctrl+Home
+click-item formatH1
+click-item formatDone
+expect-in-file My Notebook/First page.svg | <h1>Limits of sequences</h1>
+expect-in-file My Notebook/First page.svg | dx:text="# Limits of sequences
+expect-in-file My Notebook/First page.svg | <li>second item</li>
+click 600,276
+key End
+type  Fast.
+key Escape
+expect-in-file My Notebook/First page.svg | Fast.
+click-item tab_draw
+click-item toolLasso
+click 520,250
+expect-prop canvas selectionCount 1
+key Escape
+export-pdf text.pdf
+expect-pdf-text text.pdf | Limits of
+expect-pdf-text text.pdf | second item
+# Underline, color and size, which Markdown lacks, are kept too.
+click-item tab_insert
+click-item insertText
+click 480,520
+type Watch out: special *chars* stay
+key Ctrl+A
+click-item formatUnderline
+click-item formatColor
+click-item textColor1
+click-item formatSize
+click-item formatSize2
+shot formatted
+click-item formatDone
+expect-in-file My Notebook/First page.svg | <span style="color:#d12f2f;font-size:1.375em"><u>Watch out: special *chars* stay</u></span>
+# Opening the box again keeps the formatting.
+click 520,530
+key End
+type !
+key Escape
+expect-in-file My Notebook/First page.svg | <u>Watch out: special *chars* stay!</u>

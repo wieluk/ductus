@@ -1,0 +1,12 @@
+{
+  "tag_name": "v99.0.0",
+  "html_url": "https://github.com/wieluk/ductus/releases/tag/v99.0.0",
+  "draft": false,
+  "prerelease": false,
+  "body": "### New\n\n- A test release for the update check.\n\n### Fixed\n\n- Nothing, really.",
+  "assets": [
+    { "name": "Ductus-99.0.0-windows-x64-setup.exe", "browser_download_url": "tests/fixtures/update/Ductus-99.0.0-windows-x64-setup.exe", "size": 0 },
+    { "name": "SHA256SUMS.txt", "browser_download_url": "tests/fixtures/update/SHA256SUMS.txt", "size": 0 },
+    { "name": "SHA256SUMS.txt.sig", "browser_download_url": "tests/fixtures/update/SHA256SUMS.txt.sig", "size": 0 }
+  ]
+}

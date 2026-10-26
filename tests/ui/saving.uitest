@@ -1,0 +1,14 @@
+# Without autosave, changes wait for Ctrl+S and the title marks them.
+size 1280 800
+click-item appMenuButton
+click-item menuSettings
+click-item settingsSection3
+click-item settingsAutosave3
+click-item settingsClose
+pen p=0.6 500,300 700,320
+wait 2500
+expect-not-in-file My Notebook/First page.svg | dx:ink
+expect-text pageTitle * First page
+key Ctrl+S
+expect-in-file My Notebook/First page.svg | dx:ink
+expect-text pageTitle First page
