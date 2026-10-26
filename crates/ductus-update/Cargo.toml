@@ -1,0 +1,21 @@
+[package]
+name = "ductus-update"
+description = "Release checks and verified downloads for Ductus updates"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+base64 = "0.23"
+ed25519-dalek = "3"
+semver = "1"
+serde_json = "1"
+sha2 = "0.11"
+ureq = { version = "3.5", features = ["json"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true
