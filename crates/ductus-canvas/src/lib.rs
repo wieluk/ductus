@@ -23,6 +23,8 @@ const MIN_SHAPE_SIZE: f64 = 28.0;
 /// Pasted strokes are offset so they don't hide the originals.
 const PASTE_OFFSET: f64 = 24.0;
 const SELECTION_COLOR: Rgba = Rgba::rgb(0.35, 0.26, 0.75);
+/// Tiles kept around the visible ones, so short scrolls back don't re-render.
+const TILE_MARGIN: i32 = 2;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ToolMode {
@@ -151,11 +153,13 @@ pub struct Canvas {
     erased: HashSet<StrokeId>,
     paths: HashMap<StrokeId, StrokePath>,
     active: Option<StrokePath>,
+    /// Pens report faster than the screen refreshes, so the live outline is built per frame.
+    active_stale: bool,
     tiles: TileCache,
     painter: Option<Box<dyn SheetPainter>>,
     /// Cached so ink edits don't repaint PDF pages.
     backgrounds: HashMap<(i32, i32), Pixmap>,
-    selection: Vec<StrokeId>,
+    selection: HashSet<StrokeId>,
     selection_transform: Affine,
     clipboard: selection::Clipboard,
     mark: Option<Rect>,
@@ -197,7 +201,7 @@ impl Canvas {
             layout: PageLayout::for_document(&Document::new(), 1),
             painter: None,
             backgrounds: HashMap::new(),
-            selection: Vec::new(),
+            selection: HashSet::new(),
             selection_transform: Affine::IDENTITY,
             clipboard: selection::Clipboard::default(),
             pictures: HashMap::new(),
@@ -207,6 +211,7 @@ impl Canvas {
             erased: HashSet::new(),
             paths: HashMap::new(),
             active: None,
+            active_stale: false,
             tiles: TileCache::new(1.0),
         }
     }
@@ -531,7 +536,7 @@ impl Canvas {
                     (a, b) => a.or(b),
                 };
                 *tail = new_tail;
-                self.active = StrokePath::from_points(builder.points(), builder.style());
+                self.active_stale = true;
                 if let Some(dirty) = dirty {
                     self.tiles.invalidate(TileLayer::Overlay, dirty);
                 }
@@ -591,7 +596,9 @@ impl Canvas {
             Some(Gesture::MovingSelection { start }) => {
                 let delta = pen - *start;
                 self.selection_transform = Affine::translate(self.clamp_move(delta));
-                self.redraw_overlay();
+                if self.overlay_shift().is_none() {
+                    self.redraw_overlay();
+                }
             }
             Some(Gesture::RotatingSelection { center, start }) => {
                 let mut angle = (pen - *center).atan2() - (*start - *center).atan2();
@@ -740,6 +747,7 @@ impl Canvas {
 
     fn end_live_layer(&mut self) {
         self.active = None;
+        self.active_stale = false;
         self.tiles.drop_layer(TileLayer::Overlay);
     }
 
@@ -800,6 +808,16 @@ impl Canvas {
             self.tiles.rescale(self.target_scale());
             self.backgrounds.clear();
         }
+        if std::mem::take(&mut self.active_stale) {
+            if let Some(Gesture::Drawing {
+                builder,
+                shape: None,
+                ..
+            }) = &self.gesture
+            {
+                self.active = StrokePath::from_points(builder.points(), builder.style());
+            }
+        }
         for stroke in self.doc.strokes() {
             if let std::collections::hash_map::Entry::Vacant(slot) = self.paths.entry(stroke.id) {
                 if let Some(path) = StrokePath::new(stroke) {
@@ -820,9 +838,17 @@ impl Canvas {
                 }));
             }
         }
-        self.tiles.evict_outside(range, 2);
+        self.tiles
+            .evict_outside(TileLayer::Base, range, TILE_MARGIN);
+        // Otherwise every PDF page scrolled past would stay in memory.
+        self.backgrounds
+            .retain(|&(x, y), _| tiles::within(range, TILE_MARGIN, x, y));
 
         if let Some(bounds) = self.overlay_bounds() {
+            let visible = visible - self.overlay_offset();
+            let range = self.tiles.range(visible);
+            self.tiles
+                .evict_outside(TileLayer::Overlay, range, TILE_MARGIN);
             let area = bounds.intersect(visible);
             if ductus_render::overlaps(bounds, visible) {
                 let r = self.tiles.range(area);
@@ -871,11 +897,24 @@ impl Canvas {
                 },
             );
         }
+        let shown = match key.layer {
+            TileLayer::Base => doc_rect,
+            TileLayer::Overlay => doc_rect + self.overlay_offset(),
+        };
         TileView {
             key,
             generation: self.tiles.tiles[&key].generation,
-            rect: self.display_view().to_screen_rect(doc_rect),
+            rect: self.display_view().to_screen_rect(shown),
         }
+    }
+
+    /// Whole device pixels, so shifted tiles stay sharp.
+    fn overlay_offset(&self) -> Vec2 {
+        let Some(shift) = self.overlay_shift() else {
+            return Vec2::ZERO;
+        };
+        let px = self.target_scale();
+        Vec2::new((shift.x * px).round() / px, (shift.y * px).round() / px)
     }
 
     /// The offset snaps to whole device pixels so settled tiles show 1:1, without blur.

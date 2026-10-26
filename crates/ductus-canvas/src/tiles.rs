@@ -100,12 +100,12 @@ impl TileCache {
         self.tiles.clear();
     }
 
-    pub fn evict_outside(&mut self, (x0, y0, x1, y1): (i32, i32, i32, i32), margin: i32) {
-        self.tiles.retain(|key, _| {
-            key.x >= x0 - margin
-                && key.x <= x1 + margin
-                && key.y >= y0 - margin
-                && key.y <= y1 + margin
-        });
+    pub fn evict_outside(&mut self, layer: TileLayer, range: (i32, i32, i32, i32), margin: i32) {
+        self.tiles
+            .retain(|key, _| key.layer != layer || within(range, margin, key.x, key.y));
     }
+}
+
+pub(crate) fn within((x0, y0, x1, y1): (i32, i32, i32, i32), margin: i32, x: i32, y: i32) -> bool {
+    x >= x0 - margin && x <= x1 + margin && y >= y0 - margin && y <= y1 + margin
 }
