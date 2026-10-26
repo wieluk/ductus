@@ -98,6 +98,15 @@ pub struct Progress {
 
 pub struct Index {
     conn: Connection,
+    /// The PDF text read last: a page being written on is saved again and again.
+    pdf_memo: Option<PdfMemo>,
+}
+
+struct PdfMemo {
+    file: PathBuf,
+    stamp: i64,
+    pages: usize,
+    entries: Vec<Entry>,
 }
 
 pub fn markdown_text(markdown: &str) -> String {
@@ -121,48 +130,7 @@ fn modified(path: &Path) -> i64 {
         .map_or(0, |d| d.as_millis() as i64)
 }
 
-pub fn page_entries(library: &Library, rel: &str) -> Vec<Entry> {
-    let Ok(page) = library.load_page(rel) else {
-        return Vec::new();
-    };
-    let doc = &page.document;
-    let mut out = Vec::new();
-    for text in doc.texts() {
-        out.push(Entry {
-            kind: Kind::Text,
-            text: markdown_text(&text.markdown),
-            page: None,
-            rect: Some((text.x, text.y, text.width, text.height)),
-        });
-    }
-    for math in doc.maths() {
-        out.push(Entry {
-            kind: Kind::Math,
-            text: math.source.clone(),
-            page: None,
-            rect: Some((math.x, math.y, math.width, math.height)),
-        });
-    }
-    for line in &page.recognized {
-        out.push(Entry {
-            kind: Kind::Ink,
-            text: line.text.clone(),
-            page: None,
-            rect: Some(line.rect),
-        });
-    }
-    if let Some(name) = &page.pdf {
-        if let Ok(bytes) = library.read_page_pdf(rel, name) {
-            out.extend(pdf_entries(bytes));
-        }
-    }
-    out
-}
-
-pub fn pdf_entries(bytes: Vec<u8>) -> Vec<Entry> {
-    let Ok(file) = ductus_pdf::PdfFile::open(bytes) else {
-        return Vec::new();
-    };
+fn pdf_entries(file: &ductus_pdf::PdfFile) -> Vec<Entry> {
     (0..file.page_count())
         .filter_map(|i| {
             let text = file.page_text(i).ok()?;
@@ -195,7 +163,10 @@ impl Index {
         conn.pragma_update(None, "journal_mode", "WAL")?;
         conn.pragma_update(None, "synchronous", "NORMAL")?;
         conn.busy_timeout(std::time::Duration::from_secs(5))?;
-        let index = Self { conn };
+        let index = Self {
+            conn,
+            pdf_memo: None,
+        };
         index.ensure_schema()?;
         Ok(index)
     }
@@ -278,7 +249,73 @@ impl Index {
             .optional()?)
     }
 
-    pub fn index_file(&mut self, library: &Library, path: &str, force: bool) -> Result<()> {
+    fn page_entries(&mut self, library: &Library, rel: &str, saved: bool) -> Vec<Entry> {
+        let Ok(page) = library.load_page(rel) else {
+            return Vec::new();
+        };
+        let doc = &page.document;
+        let mut out = Vec::new();
+        for text in doc.texts() {
+            out.push(Entry {
+                kind: Kind::Text,
+                text: markdown_text(&text.markdown),
+                page: None,
+                rect: Some((text.x, text.y, text.width, text.height)),
+            });
+        }
+        for math in doc.maths() {
+            out.push(Entry {
+                kind: Kind::Math,
+                text: math.source.clone(),
+                page: None,
+                rect: Some((math.x, math.y, math.width, math.height)),
+            });
+        }
+        for line in &page.recognized {
+            out.push(Entry {
+                kind: Kind::Ink,
+                text: line.text.clone(),
+                page: None,
+                rect: Some(line.rect),
+            });
+        }
+        if let Some(name) = &page.pdf {
+            out.extend(self.pdf_text(&library.assets_dir(rel).join(name), saved));
+        }
+        out
+    }
+
+    /// `saved`: Ductus wrote the file, which changes ink but not text, unless pages were added.
+    fn pdf_text(&mut self, path: &Path, saved: bool) -> Vec<Entry> {
+        let stamp = modified(path);
+        if let Some(memo) = &self.pdf_memo {
+            if memo.file == path && memo.stamp == stamp {
+                return memo.entries.clone();
+            }
+        }
+        let Ok(file) = std::fs::read(path)
+            .map_err(|_| ())
+            .and_then(|bytes| ductus_pdf::PdfFile::open(bytes).map_err(|_| ()))
+        else {
+            return Vec::new();
+        };
+        let entries = match self.pdf_memo.take() {
+            Some(memo) if saved && memo.file == path && memo.pages == file.page_count() => {
+                memo.entries
+            }
+            _ => pdf_entries(&file),
+        };
+        self.pdf_memo = Some(PdfMemo {
+            file: path.to_owned(),
+            stamp,
+            pages: file.page_count(),
+            entries: entries.clone(),
+        });
+        entries
+    }
+
+    /// `saved`: just saved by Ductus, so indexed again even if the timestamp looks unchanged.
+    pub fn index_file(&mut self, library: &Library, path: &str, saved: bool) -> Result<()> {
         let is_pdf =
             ductus_format::library::pdf_stem(path.rsplit('/').next().unwrap_or(path)).is_some();
         let file = if is_pdf {
@@ -293,7 +330,7 @@ impl Index {
             return self.remove(path);
         }
         let stamp = modified(&file);
-        if !force && self.stamp_of(path)? == Some(stamp) {
+        if !saved && self.stamp_of(path)? == Some(stamp) {
             return Ok(());
         }
         let name = path.rsplit('/').next().unwrap_or(path);
@@ -309,11 +346,9 @@ impl Index {
             rect: None,
         }];
         if is_pdf {
-            if let Ok(bytes) = library.read_pdf(path) {
-                entries.extend(pdf_entries(bytes));
-            }
+            entries.extend(self.pdf_text(&file, saved));
         } else {
-            entries.extend(page_entries(library, path));
+            entries.extend(self.page_entries(library, path, saved));
         }
         self.set_entries(path, stamp, &entries)
     }
