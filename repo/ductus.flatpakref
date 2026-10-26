@@ -1,0 +1,9 @@
+[Flatpak Ref]
+Name=app.ductus.Ductus
+Branch=master
+Title=Ductus
+Url=https://wieluk.github.io/ductus/repo/
+SuggestRemoteName=ductus
+RuntimeRepo=https://dl.flathub.org/repo/flathub.flatpakrepo
+IsRuntime=false
+GPGKey=mDMEatkhlxYJKwYBBAHaRw8BAQdAckuAV+7xlPIEEPsgMU1zFAk2bmASJWm+8qAhutOJIzK0GUR1Y3R1cyBGbGF0cGFrIHJlcG9zaXRvcnmIkwQTFgoAOxYhBJQEIKqEpgpU3vKZUvNtM5E/5VqPBQJq2SGXAhsDBQsJCAcCAiICBhUKCQgLAgQWAgMBAh4HAheAAAoJEPNtM5E/5VqPhvwA/3LHMAmS3TafYwA0JGbSowc85XQGtgff6saVNeFL95TAAQCTVHgUy/m0q1XjNTTN2qGVRJprzj00pF8X9wOq/FJvCQ==
