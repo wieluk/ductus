@@ -1,0 +1,36 @@
+# Search: typed text, formulas, PDF text and recognized handwriting, opening at the match.
+size 1280 800
+setenv DUCTUS_TEST_RECOGNIZER Grenzwert einer Folge
+click-item tab_insert
+click-item insertText
+click 600,600
+type Konvergenz einer Folge
+key Escape
+click-item tab_draw
+click-item toolPen
+pen p=0.6 420,300 440,280 460,310 480,285 500,305 520,282 540,300
+wait 5000
+expect-in-file My Notebook/First page.svg | Grenzwert einer Folge
+import-pdf annotate tests/fixtures/lecture.pdf
+click-item sidebarNewPage
+key Escape
+wait 1500
+key Ctrl+F
+type vergenz
+wait 400
+key Return
+wait 300
+expect-text pageTitle First page
+key Ctrl+F
+key Ctrl+A
+type lecture 3
+wait 400
+click-item searchResult0
+wait 300
+expect-text pageTitle lecture.pdf
+key Ctrl+F
+key Ctrl+A
+type grenzwert
+wait 400
+expect-prop searchResult0 visible true
+key Escape
