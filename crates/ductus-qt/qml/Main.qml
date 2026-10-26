@@ -178,9 +178,7 @@ ApplicationWindow {
     }
     Connections {
         target: Updater
-        function onUpdateFound() {
-            toast.show(qsTr("Ductus %1 is available: Update is in the title bar.").arg(Updater.latestVersion), false)
-        }
+        function onUpdateFound() { updateDialog.open() }
     }
 
     UpdateDialog {

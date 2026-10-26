@@ -299,14 +299,28 @@ pub fn render_strokes<'a>(
     strokes: impl IntoIterator<Item = &'a StrokePath>,
     clip: Option<&Mask>,
 ) {
+    render_strokes_moved(pixmap, vp, strokes, kurbo::Affine::IDENTITY, clip);
+}
+
+/// Draws outlines moved by `t` (a selection being dragged) without building new ones.
+pub fn render_strokes_moved<'a>(
+    pixmap: &mut Pixmap,
+    vp: &Viewport,
+    strokes: impl IntoIterator<Item = &'a StrokePath>,
+    t: kurbo::Affine,
+    clip: Option<&Mask>,
+) {
     let area = vp.doc_rect(pixmap.width(), pixmap.height());
-    let transform = vp.transform();
+    let [a, b, c, d, e, f] = t.as_coeffs().map(|v| v as f32);
+    let transform = vp
+        .transform()
+        .pre_concat(Transform::from_row(a, b, c, d, e, f));
     let mut paint = Paint {
         anti_alias: true,
         ..Paint::default()
     };
     for stroke in strokes {
-        if !overlaps(stroke.bounds, area) {
+        if !overlaps(t.transform_rect_bbox(stroke.bounds), area) {
             continue;
         }
         paint.shader = Shader::SolidColor(stroke.color);

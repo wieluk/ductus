@@ -14,13 +14,15 @@ pub struct PdfFile {
 impl PdfFile {
     pub fn open(bytes: Vec<u8>) -> Result<Self, Error> {
         let document = engine()?.load_pdf_from_byte_vec(bytes, None)?;
+        // Sizes without loading each page: loading parses its content, slow for scans.
         let sizes = document
             .pages()
+            .page_sizes()?
             .iter()
-            .map(|page| {
+            .map(|size| {
                 (
-                    f64::from(page.width().value) * UNITS_PER_POINT,
-                    f64::from(page.height().value) * UNITS_PER_POINT,
+                    f64::from(size.width().value) * UNITS_PER_POINT,
+                    f64::from(size.height().value) * UNITS_PER_POINT,
                 )
             })
             .collect();

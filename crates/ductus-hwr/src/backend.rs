@@ -1,5 +1,7 @@
 use base64::Engine;
-use std::time::Duration;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 pub trait Recognizer: Send {
     fn recognize(&self, png: &[u8], lang: &str) -> Result<String, String>;
@@ -82,17 +84,86 @@ impl Recognizer for Server {
 pub struct Builtin {
     dir: std::path::PathBuf,
     id: String,
-    model: std::sync::Mutex<Option<crate::builtin::Model>>,
+}
+
+/// Unused this long, a model is unloaded: each takes 1–2 GB of memory.
+pub const IDLE_UNLOAD: Duration = Duration::from_secs(5 * 60);
+
+struct Loaded {
+    model: crate::builtin::Model,
+    used: Instant,
+}
+
+type Slot = Arc<Mutex<Option<Loaded>>>;
+
+/// One copy of each model, shared by background recognition and conversions.
+static SLOTS: Mutex<Vec<(PathBuf, Slot)>> = Mutex::new(Vec::new());
+
+fn slot(path: &Path) -> Slot {
+    let mut slots = SLOTS.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some((_, slot)) = slots.iter().find(|(p, _)| p == path) {
+        return Arc::clone(slot);
+    }
+    let slot = Slot::default();
+    slots.push((path.to_owned(), Arc::clone(&slot)));
+    slot
+}
+
+/// Unloads models unused for `idle`; a model in use stays.
+pub fn unload_idle(idle: Duration) {
+    let slots: Vec<Slot> = SLOTS
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .iter()
+        .map(|(_, slot)| Arc::clone(slot))
+        .collect();
+    let mut unloaded = false;
+    for slot in slots {
+        if let Ok(mut loaded) = slot.try_lock() {
+            if loaded.as_ref().is_some_and(|l| l.used.elapsed() >= idle) {
+                *loaded = None;
+                unloaded = true;
+            }
+        }
+    }
+    if unloaded {
+        ductus_core::release_freed_memory();
+    }
+}
+
+fn start_unloading() {
+    static STARTED: std::sync::Once = std::sync::Once::new();
+    STARTED.call_once(|| {
+        let _ = std::thread::Builder::new()
+            .name("hwr-unload".into())
+            .spawn(|| {
+                loop {
+                    std::thread::sleep(Duration::from_secs(30));
+                    unload_idle(IDLE_UNLOAD);
+                }
+            });
+    });
 }
 
 impl Recognizer for Builtin {
     fn recognize(&self, png: &[u8], _lang: &str) -> Result<String, String> {
         let image = tiny_skia::Pixmap::decode_png(png).map_err(|e| e.to_string())?;
-        let mut model = self.model.lock().map_err(|_| "recognizer failed before")?;
-        if model.is_none() {
-            *model = Some(crate::builtin::Model::load(&self.dir.join(&self.id))?);
-        }
-        model.as_mut().expect("loaded").recognize(&image)
+        let path = self.dir.join(&self.id);
+        let slot = slot(&path);
+        let mut loaded = slot.lock().map_err(|_| "recognizer failed before")?;
+        let loaded = match &mut *loaded {
+            Some(loaded) => loaded,
+            empty => {
+                start_unloading();
+                empty.insert(Loaded {
+                    model: crate::builtin::Model::load(&path)?,
+                    used: Instant::now(),
+                })
+            }
+        };
+        let text = loaded.model.recognize(&image);
+        loaded.used = Instant::now();
+        text
     }
 }
 
@@ -123,7 +194,6 @@ pub fn from_settings(
         "builtin" => Some(Box::new(Builtin {
             dir: url.into(),
             id: model.into(),
-            model: Default::default(),
         })),
         k => k
             .strip_prefix("fixed:")

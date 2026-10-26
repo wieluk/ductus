@@ -265,6 +265,39 @@ fn lasso_selects_moves_and_undoes() {
 }
 
 #[test]
+fn a_moved_selection_shifts_its_tiles_without_redrawing_them() {
+    let mut c = canvas();
+    draw_wave(&mut c, 40.0, 160.0, 80.0);
+    c.set_tool(ToolMode::Lasso);
+    lasso(&mut c, (20.0, 40.0, 180.0, 130.0));
+    let overlay = |c: &mut Canvas| -> HashMap<TileKey, u64> {
+        c.frame()
+            .into_iter()
+            .filter(|t| t.key.layer == TileLayer::Overlay)
+            .map(|t| (t.key, t.generation))
+            .collect()
+    };
+    assert!(c.pointer_down(Device::Pen, pen_sample(100.0, 80.0, 0, 0.5), false));
+    c.pointer_move(&[pen_sample(100.0, 90.0, 10, 0.5)]);
+    let before = overlay(&mut c);
+    c.pointer_move(&[pen_sample(100.0, 230.0, 20, 0.5)]);
+    let after = overlay(&mut c);
+    assert!(after.iter().any(|(key, g)| before.get(key) == Some(g)));
+    assert!(
+        after
+            .iter()
+            .all(|(key, g)| before.get(key).is_none_or(|b| b == g))
+    );
+    let p = shot(&mut c);
+    assert!(ink_in(&p, 40, 210, 160, 250) > 50);
+    assert_eq!(ink_in(&p, 40, 60, 160, 100), 0);
+    c.pointer_up();
+    let p = shot(&mut c);
+    assert!(ink_in(&p, 40, 210, 160, 250) > 50);
+    assert_eq!(ink_in(&p, 40, 60, 160, 100), 0);
+}
+
+#[test]
 fn hand_moves_and_resizes_text_but_pans_over_ink() {
     let mut c = canvas();
     draw_wave(&mut c, 40.0, 160.0, 220.0);
@@ -307,7 +340,7 @@ fn copy_paste_and_delete_selection() {
     c.paste();
     assert_eq!(c.document().strokes().len(), 2);
     assert_eq!(c.selection_count(), 1);
-    let pasted = c.selection[0];
+    let pasted = *c.selection.iter().next().unwrap();
     assert_ne!(pasted, c.document().strokes()[0].id);
     c.delete_selection();
     assert_eq!(c.document().strokes().len(), 1);

@@ -3,6 +3,7 @@ use crate::{Canvas, Gesture, PASTE_OFFSET, SELECTION_COLOR, TileLayer, ToolMode}
 use ductus_core::{Command, Image, MathBox, PageKind, Rgba, Stroke, StrokeId, TextBox, Tool};
 use ductus_render::{Layer, Picture, StrokePath, Viewport};
 use kurbo::{Affine, Point, Rect, Vec2};
+use std::collections::HashSet;
 use std::rc::Rc;
 use tiny_skia::Pixmap;
 
@@ -215,11 +216,33 @@ impl Canvas {
     }
 
     fn selection_frame(&self) -> Option<Rect> {
+        self.frame_moved(self.selection_transform)
+    }
+
+    fn frame_moved(&self, t: Affine) -> Option<Rect> {
         let pad = FRAME_PAD / self.view.zoom;
-        let b = self
-            .selection_transform
-            .transform_rect_bbox(self.selection_bounds()?);
+        let b = t.transform_rect_bbox(self.selection_bounds()?);
         Some(b.inflate(pad, pad))
+    }
+
+    /// A plain move shifts the overlay tiles drawn when it began instead of drawing new ones.
+    pub(crate) fn overlay_shift(&self) -> Option<Vec2> {
+        match self.gesture {
+            Some(Gesture::MovingSelection { .. })
+                if self.mark.is_none() && self.math_draft.is_none() =>
+            {
+                Some(self.selection_transform.translation())
+            }
+            _ => None,
+        }
+    }
+
+    /// What the overlay is drawn with; a shifted overlay is drawn unmoved.
+    fn overlay_transform(&self) -> Affine {
+        match self.overlay_shift() {
+            Some(_) => Affine::IDENTITY,
+            None => self.selection_transform,
+        }
     }
 
     pub fn selection_count(&self) -> usize {
@@ -270,7 +293,7 @@ impl Canvas {
         }
         self.clear_selection();
         let id = self.object_at(at)?;
-        self.selection = vec![id];
+        self.selection = HashSet::from([id]);
         if let Some(bounds) = self.selection_bounds() {
             self.tiles.invalidate(TileLayer::Base, bounds);
         }
@@ -368,7 +391,7 @@ impl Canvas {
 
     pub(crate) fn select_inside(&mut self, lasso: &[Point]) {
         self.selection = if lasso.len() < 3 {
-            Vec::new()
+            HashSet::new()
         } else {
             let strokes = self.doc.strokes().iter().filter(|s| {
                 let hits = s
@@ -466,11 +489,12 @@ impl Canvas {
         if let Some(b) = self.selection_bounds() {
             self.tiles.invalidate(TileLayer::Base, b);
         }
+        let ids: Vec<StrokeId> = self.selection.iter().copied().collect();
         let cmd = Command::batch([
-            Command::remove(&self.doc, &self.selection),
-            Command::remove_images(&self.doc, &self.selection),
-            Command::remove_texts(&self.doc, &self.selection),
-            Command::remove_maths(&self.doc, &self.selection),
+            Command::remove(&self.doc, &ids),
+            Command::remove_images(&self.doc, &ids),
+            Command::remove_texts(&self.doc, &ids),
+            Command::remove_maths(&self.doc, &ids),
         ]);
         if let Some(cmd) = cmd {
             self.history.apply(&mut self.doc, cmd);
@@ -645,7 +669,7 @@ impl Canvas {
             height,
         };
         self.tiles.invalidate(TileLayer::Base, image_rect(&image));
-        self.selection = vec![image.id];
+        self.selection = HashSet::from([image.id]);
         self.history
             .apply(&mut self.doc, Command::AddImages(vec![image]));
         self.sync_layout();
@@ -690,7 +714,7 @@ impl Canvas {
         if let Some(draft) = self.math_draft_bounds() {
             bounds = Some(bounds.map_or(draft, |b| b.union(draft)));
         }
-        if let Some(frame) = self.selection_frame() {
+        if let Some(frame) = self.frame_moved(self.overlay_transform()) {
             let grips = frame.inflate(10.0 / self.view.zoom, 10.0 / self.view.zoom);
             bounds = Some(bounds.map_or(grips, |b| b.union(grips)));
         }
@@ -701,8 +725,8 @@ impl Canvas {
         pixmap.fill(tiny_skia::Color::TRANSPARENT);
         self.render_mark(pixmap, vp);
         let clip = ductus_render::ink_clip(pixmap, vp, &self.layout);
+        let t = self.overlay_transform();
         if self.transforming() {
-            let t = self.selection_transform;
             for image in self.selected_images() {
                 if let Some(data) = self.pictures.get(&image.source) {
                     let r = transform_image(image, t);
@@ -719,15 +743,17 @@ impl Canvas {
                 let paths = math_paths(&transform_math(math, t));
                 ductus_render::render_strokes(pixmap, vp, paths.iter(), clip.as_ref());
             }
-            let paths: Vec<StrokePath> = self
+            // The cached outlines, moved: outlining every selected stroke per tile was too slow.
+            let paths: Vec<&StrokePath> = self
                 .selected_strokes()
-                .filter_map(|s| StrokePath::new(&transform_stroke(s, t)))
+                .filter_map(|s| self.paths.get(&s.id))
                 .collect();
             for layer in [Layer::Highlight, Layer::Ink] {
-                ductus_render::render_strokes(
+                ductus_render::render_strokes_moved(
                     pixmap,
                     vp,
-                    paths.iter().filter(|p| p.layer == layer),
+                    paths.iter().copied().filter(|p| p.layer == layer),
+                    t,
                     clip.as_ref(),
                 );
             }
@@ -737,7 +763,7 @@ impl Canvas {
         if let Some(Gesture::Lasso { points }) = &self.gesture {
             ductus_render::render_guide(pixmap, vp, points, false, SELECTION_COLOR);
         }
-        if let Some(b) = self.selection_frame() {
+        if let Some(b) = self.frame_moved(t) {
             let corners = [
                 Point::new(b.x0, b.y0),
                 Point::new(b.x1, b.y0),

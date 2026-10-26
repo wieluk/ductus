@@ -59,6 +59,8 @@ struct FolderMeta {
 pub struct HistoryPolicy {
     pub interval: Duration,
     pub keep: usize,
+    /// Above this, older versions go (but never the newest few): PDFs written on are large.
+    pub max_bytes: u64,
 }
 
 impl Default for HistoryPolicy {
@@ -66,9 +68,13 @@ impl Default for HistoryPolicy {
         Self {
             interval: Duration::from_secs(10 * 60),
             keep: 30,
+            max_bytes: 256 << 20,
         }
     }
 }
+
+/// Versions kept whatever their size.
+const MIN_VERSIONS: usize = 5;
 
 pub struct Library {
     root: PathBuf,
@@ -944,9 +950,15 @@ impl Library {
             .duration_since(UNIX_EPOCH)
             .map_or(0, |d| d.as_millis());
         fs::copy(current, dir.join(format!("{stamp}.{extension}")))?;
+        let size = |p: &PathBuf| fs::metadata(p).map_or(0, |m| m.len());
         let mut versions = self.history(key)?;
-        while versions.len() > self.policy.keep {
-            fs::remove_file(versions.remove(0))?;
+        let mut total: u64 = versions.iter().map(size).sum();
+        while versions.len() > self.policy.keep
+            || (total > self.policy.max_bytes && versions.len() > MIN_VERSIONS)
+        {
+            let oldest = versions.remove(0);
+            total -= size(&oldest);
+            fs::remove_file(oldest)?;
         }
         Ok(())
     }

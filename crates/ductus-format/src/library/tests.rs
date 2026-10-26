@@ -173,6 +173,7 @@ fn history_keeps_previous_versions_within_limits() {
         HistoryPolicy {
             interval: Duration::ZERO,
             keep: 3,
+            ..HistoryPolicy::default()
         },
     )
     .unwrap();
@@ -191,6 +192,30 @@ fn history_keeps_previous_versions_within_limits() {
     lib.save_page(&rel, &page).unwrap();
     lib.save_page(&rel, &page).unwrap();
     assert_eq!(lib.history("page-id").unwrap().len(), before + 1);
+}
+
+#[test]
+fn large_histories_keep_only_the_newest_versions() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut lib = Library::with_policy(
+        dir.path(),
+        &dir.path().join(".app"),
+        HistoryPolicy {
+            interval: Duration::ZERO,
+            keep: 30,
+            max_bytes: 1,
+        },
+    )
+    .unwrap();
+    let rel = lib
+        .create_page("", "Page", PageSettings::default())
+        .unwrap();
+    let page = page_with_stroke("page-id");
+    for _ in 0..8 {
+        lib.save_page(&rel, &page).unwrap();
+        std::thread::sleep(Duration::from_millis(2));
+    }
+    assert_eq!(lib.history("page-id").unwrap().len(), MIN_VERSIONS);
 }
 
 #[test]
@@ -389,6 +414,7 @@ fn earlier_versions_can_be_restored_or_copied() {
         HistoryPolicy {
             interval: Duration::ZERO,
             keep: 10,
+            ..HistoryPolicy::default()
         },
     )
     .unwrap();

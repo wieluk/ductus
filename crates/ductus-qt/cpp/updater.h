@@ -12,7 +12,7 @@
 
 struct UpdateHandle;
 
-/// Channels: flatpak (host flatpak update), installer (signed Windows installer), android (APK via browser), manual (release page), none (development builds).
+/// Channels: flatpak (host flatpak update), installer (signed Windows installer), android (signed APK handed to the package installer), manual (release page), none (development builds).
 class Updater : public QObject
 {
     Q_OBJECT
@@ -51,6 +51,8 @@ public:
     Q_INVOKABLE void cancel();
     Q_INVOKABLE void openReleasePage();
     Q_INVOKABLE void restart();
+    /// "Later": the automatic check stops offering this version.
+    Q_INVOKABLE void dismiss();
 
 Q_SIGNALS:
     void changed();
@@ -64,6 +66,7 @@ private:
     void finishCheck(const QString &error);
     void finishDownload(const QString &file, const QString &error);
     void runInstaller(const QString &file);
+    void openApk(const QString &file);
     void flatpakUpdate();
     void flatpakFinished(int exitCode);
 
@@ -83,6 +86,7 @@ private:
     QTimer m_daily;
     QProcess m_flatpak;
     QString m_flatpakOutput;
+    QString m_flatpakCommit;
 };
 
 #endif
