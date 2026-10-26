@@ -1,0 +1,19 @@
+[package]
+name = "ductus-math"
+description = "Math boxes for Ductus: LaTeX or Typst laid out by Typst, as vector outlines"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+ductus-core.workspace = true
+kurbo.workspace = true
+typst = "0.15.1"
+typst-layout = "0.15.1"
+typst-assets = { version = "0.15.1", features = ["fonts"] }
+ttf-parser = "0.25.1"
+tylax = { version = "0.3.8", default-features = false }
+
+[lints]
+workspace = true

@@ -1,0 +1,19 @@
+# Updates: a newer release is found and its installer downloaded and verified
+# (tests/fixtures/update is a release signed with a test key).
+# env: DUCTUS_UPDATE_CHANNEL=installer
+# env: DUCTUS_UPDATE_FEED=tests/fixtures/update/release.json
+# env: DUCTUS_UPDATE_KEY=Hw+4USV0OwUNerAgWEIXU3fpKj3s5qBRWdqT/NQ0SP0=
+# env: DUCTUS_UPDATE_NO_INSTALL=1
+size 1280 800
+click-item tab_file
+click-item fileSettings
+click-item settingsSection5
+click-item settingsCheckUpdates
+wait 800
+expect-prop updateInfo label Version 99.0.0 is available.
+expect-prop updateButton visible true
+click-item settingsInstallUpdate
+wait 300
+click-item updateAccept
+wait 1200
+expect-text updateStatus Version 99.0.0 is downloaded.

@@ -1,0 +1,63 @@
+# Builds on main also keep the caches release.yml starts from.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml
+
+  linux:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+      options: --privileged
+      # build-linux deletes these unused runner toolchains: the build needs their disk space.
+      volumes:
+        - /usr/share/dotnet:/runner-tools/dotnet
+        - /usr/local/lib/android:/runner-tools/android
+        - /usr/local/.ghcup:/runner-tools/ghcup
+        - /opt/hostedtoolcache:/runner-tools/toolcache
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/build-linux
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: ui-shots-linux
+          path: target/ui-shots
+
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/build-windows
+        with:
+          args: -NoInstaller
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: ui-shots-windows
+          path: target/ui-shots
+
+  # Only on main, to keep its cache warm for releases.
+  android:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/build-android

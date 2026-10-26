@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>app.ductus.Ductus</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Ductus</name>
+  <summary>Handwritten notebooks with stylus support</summary>
+  <description>
+    <p>
+      Ductus organizes handwritten notes by subject, like a paper binder.
+      Notes are stored as plain SVG files in ordinary folders, and PDFs can be
+      annotated with real PDF annotations.
+    </p>
+  </description>
+  <launchable type="desktop-id">app.ductus.Ductus.desktop</launchable>
+  <supports>
+    <control>pointing</control>
+    <control>touch</control>
+    <control>tablet</control>
+  </supports>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-10-21">
+      <description>
+        <p>Development preview: ink canvas for stylus testing.</p>
+      </description>
+    </release>
+  </releases>
+</component>

@@ -1,0 +1,18 @@
+[package]
+name = "ductus-canvas"
+description = "Toolkit-independent interactive canvas: input, view, undo and tiled rendering"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+ductus-core.workspace = true
+ductus-ink.workspace = true
+ductus-render.workspace = true
+ductus-math.workspace = true
+kurbo.workspace = true
+tiny-skia = "0.12"
+
+[lints]
+workspace = true

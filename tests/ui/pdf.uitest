@@ -1,0 +1,34 @@
+# Writing on a PDF directly, exporting and printing it, and importing it as pages.
+size 1280 860
+import-pdf annotate tests/fixtures/lecture.pdf
+expect-file My Notebook/lecture.pdf
+pen p=0.3-0.9 450,300 650,330 850,300
+click-item row_My Notebook/First page
+expect-text pageTitle First page
+click-item row_My Notebook/lecture.pdf
+expect-text pageTitle lecture.pdf
+export-pdf lecture-flat.pdf
+expect-file lecture-flat.pdf
+print-pdf printed.pdf
+expect-file printed.pdf
+# Pictures can't go into a PDF written on directly.
+clipboard-image tests/fixtures/screenshot.png
+key Ctrl+V
+expect-prop canvas selectionCount 0
+import-pdf pages tests/fixtures/lecture.pdf
+expect-file My Notebook/lecture 2.svg
+expect-file My Notebook/lecture 2.assets/source.pdf
+# Blank pages for notes go into the PDF, after the page in view.
+click-item row_My Notebook/lecture.pdf
+click-item tab_page
+click-item insertBlankPage
+expect-pdf-pages My Notebook/lecture.pdf | 4
+click-item row_My Notebook/lecture 2
+click-item tab_page
+click-item insertBlankPage
+expect-pdf-pages My Notebook/lecture 2.assets/source.pdf | 4
+# A whole notebook in one PDF: the notes page and both lectures (4 pages each now); the open
+# page stays open.
+export-folder My Notebook | notebook.pdf
+expect-pdf-pages notebook.pdf | 9
+expect-text pageTitle lecture 2

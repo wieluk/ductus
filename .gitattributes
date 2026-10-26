@@ -1,0 +1,2 @@
+# Signed test release: the bytes must stay exactly as committed.
+tests/fixtures/update/** -text

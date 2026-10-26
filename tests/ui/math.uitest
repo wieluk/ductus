@@ -1,0 +1,38 @@
+# Formulas: LaTeX and Typst, mistakes, editing, selecting, export.
+size 1280 800
+click-item tab_insert
+click-item insertMath
+click 480,220
+type \frac{a+b}{2} \geq \sqrt{ab}
+key Return
+expect-in-file My Notebook/First page.svg | dx:math="latex"
+click 480,360
+click-item mathSyntax_typst
+type a/b + sqrt(x)
+click-item mathDone
+expect-in-file My Notebook/First page.svg | dx:math="typst"
+click 480,480
+type \frac{a}{
+expect-prop mathProblem visible true
+click-item mathCancel
+click 500,235
+key Ctrl+A
+type e^{i\pi} + 1 = 0
+key Return
+expect-in-file My Notebook/First page.svg | e^{i\pi} + 1 = 0
+click-item tab_draw
+click-item toolLasso
+click 500,235
+expect-prop canvas selectionCount 1
+key Escape
+export-pdf math.pdf
+expect-file math.pdf
+# The click that closes a menu doesn't also start a formula.
+click-item tab_insert
+click-item insertMath
+right-click-item row_My Notebook/First page
+click 800,600
+expect-hidden mathEditor
+click 800,600
+expect-prop mathEditor visible true
+click-item mathCancel

@@ -1,0 +1,14 @@
+[package]
+name = "ductus-ink"
+description = "Stylus input to stroke pipeline: smoothing, pressure outline, hit-testing"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+ductus-core.workspace = true
+kurbo.workspace = true
+
+[lints]
+workspace = true

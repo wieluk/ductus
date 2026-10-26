@@ -1,0 +1,47 @@
+# Pen, highlighter, eraser, line styles, lasso, shortcuts and touch.
+size 1280 800
+pen p=0.15-1.0 400,250 500,200 600,300 700,200 800,300 900,200
+pen p=0.6 400,350 900,350
+click-item toolHighlighter
+pen 380,352 920,352
+click-item toolPen
+eraser 650,170 650,330
+expect-in-file My Notebook/First page.svg | dx:ink=
+# Shortcuts with several key combinations.
+key Ctrl+Z
+key Ctrl+Z
+key Ctrl+Y
+expect-prop canvas canRedo true
+key Ctrl+Y
+expect-prop canvas canRedo false
+key Ctrl+A
+key Backspace
+expect-prop canvas selectionCount 0
+expect-prop canvas canUndo true
+# Eraser size from the pen bar.
+right-click-item preset2
+click-item barEraserSize30
+expect-prop canvas eraserSize 30
+expect-prop canvas tool Eraser
+# Line styles are saved with the stroke.
+click-item tab_draw
+click-item toolPen
+click-item patterndotted
+pen p=0.6 400,320 900,330
+click-item patternsolid
+expect-in-file My Notebook/First page.svg | dx:line="dotted"
+# Lasso, copy and paste.
+click-item toolLasso
+pen 380,300 920,300 920,350 380,350 380,300
+expect-prop canvas selectionCount 1
+key Ctrl+C
+key Ctrl+V
+expect-prop canvas selectionCount 1
+key Escape
+# Zoom and touch.
+key Ctrl+=
+click-item tab_view
+expect-text zoomLabel 125
+key Ctrl+0
+touch 600,500 500,400
+pinch 600,450 100 300

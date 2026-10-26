@@ -1,0 +1,25 @@
+# A page closes; without one the pen writes nowhere and the hint starts a new page in the Inbox.
+size 1280 800
+expect-text pageTitle First page
+click-item closePage
+expect-prop canvas enabled false
+expect-prop noPage visible true
+expect-prop toolLasso enabled false
+click-item tab_insert
+expect-prop insertText enabled false
+expect-prop insertPdf enabled true
+click-item tab_draw
+expect-text pageTitle 
+pen p=0.6 600,400 700,420
+key Ctrl+S
+expect-not-in-file My Notebook/First page.svg | dx:ink
+click-item row_My Notebook/First page
+expect-prop canvas enabled true
+expect-prop toolLasso enabled true
+key Ctrl+W
+expect-prop noPage visible true
+click-item noPageNewPage
+type Fresh start
+key Return
+expect-file Inbox/Fresh start.svg
+expect-text pageTitle Fresh start

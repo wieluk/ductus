@@ -1,0 +1,37 @@
+# An existing folder tree: deep PDFs, other files, filters, notebooks, focus folder, favorites.
+size 1280 800
+put-file tests/fixtures/lecture.pdf | Uni/3. Semester/Statik/VO/Slides.PDF
+put-file tests/fixtures/lecture.pdf | Uni/3. Semester/EST 2/VO/Script.pdf
+put-file crates/ductus-qt/qml/icons/chevron.svg | Uni/Peda/template/logo.svg
+wait 600
+click-item row_Uni
+click-item row_Uni/3. Semester
+click-item row_Uni/3. Semester/Statik
+click-item row_Uni/3. Semester/Statik/VO
+click-item row_Uni/3. Semester/Statik/VO/Slides.PDF
+expect-text pageTitle Slides.PDF
+# The filter hides kinds of files in Folders.
+click-item treeFilter
+click-item filterPdfs
+expect-prop notebookList count 8
+click-item treeFilter
+click-item filterPdfs
+expect-prop notebookList count 9
+right-click-item row_Uni/3. Semester
+click-item menuFocus
+expect-prop notebookTree focused true
+click-item sidebarNewNotebook
+type Biophysik
+key Return
+expect-file Uni/3. Semester/Biophysik/Untitled page.svg
+click-item crumb_
+expect-prop notebookTree focused false
+# Favorites head the notebooks and leave the focus folder.
+right-click-item row_My Notebook/First page
+click-item menuPin
+right-click-item row_Uni/3. Semester
+click-item menuFocus
+click-item viewNotebooks
+click-item quick_My Notebook/First page
+expect-prop notebookTree focused false
+expect-text pageTitle First page

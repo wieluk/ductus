@@ -1,0 +1,12 @@
+[package]
+name = "ductus-core"
+description = "Document model and undo history for Ductus"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true

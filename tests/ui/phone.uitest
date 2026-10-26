@@ -1,0 +1,18 @@
+# A phone-sized window: the notebooks are a drawer, the bars scroll, dialogs fit.
+size 360 740
+expect-hidden notebookTree
+shot start
+click-item sidebarToggle
+expect-prop notebookTree visible true
+shot drawer
+click-item row_My Notebook/First page
+expect-hidden notebookTree
+click-item tab_file
+shot file
+key Ctrl+N
+expect-prop newPageName visible true
+shot newpage
+key Escape
+click-item tab_draw
+pen p=0.6 120,400 260,430
+expect-in-file My Notebook/First page.svg | dx:ink

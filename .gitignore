@@ -1,0 +1,5 @@
+/target
+/dist
+/docs
+/.flatpak-builder
+/crates/ductus-qt/.qmlls.ini
