@@ -545,6 +545,8 @@ impl LibraryHandle {
                 path: path.to_owned(),
                 kind: OpenKind::Pdf,
             });
+            // Parsing the PDF and dropping the previous page freed a lot.
+            ductus_core::release_freed_memory();
             return Ok(());
         }
 
@@ -576,6 +578,7 @@ impl LibraryHandle {
                 recognized: page.recognized,
             },
         });
+        ductus_core::release_freed_memory();
         Ok(())
     }
 
@@ -617,7 +620,11 @@ impl LibraryHandle {
                 let current = self.library.read_pdf(&path)?;
                 let updated = ductus_pdf::write_ink(&current, &ductus_pdf::ink_by_page(doc))
                     .map_err(pdf_error)?;
-                self.library.save_pdf(&path, &updated)
+                self.library.save_pdf(&path, &updated)?;
+                // Rewriting the PDF parsed all of it.
+                drop((current, updated));
+                ductus_core::release_freed_memory();
+                Ok(())
             }
         }
     }
