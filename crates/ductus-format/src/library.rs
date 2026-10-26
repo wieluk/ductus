@@ -979,9 +979,13 @@ impl Library {
     fn snapshot_as(&self, key: &str, current: &Path, extension: &str) -> Result<(), Error> {
         let dir = self.history_dir(key);
         fs::create_dir_all(&dir)?;
-        let stamp = SystemTime::now()
+        let mut stamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_or(0, |d| d.as_millis());
+        // Two snapshots in one millisecond would overwrite each other.
+        while dir.join(format!("{stamp}.{extension}")).exists() {
+            stamp += 1;
+        }
         fs::copy(current, dir.join(format!("{stamp}.{extension}")))?;
         let size = |p: &PathBuf| fs::metadata(p).map_or(0, |m| m.len());
         let mut versions = self.history(key)?;
