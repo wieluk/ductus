@@ -26,12 +26,25 @@ key Return
 expect-file Uni/3. Semester/Biophysik/Untitled page.svg
 click-item crumb_
 expect-prop notebookTree focused false
-# Favorites head the notebooks and leave the focus folder.
+# Favorites head the notebooks; the focus under Folders stays there.
 right-click-item row_My Notebook/First page
 click-item menuPin
 right-click-item row_Uni/3. Semester
 click-item menuFocus
 click-item viewNotebooks
-click-item quick_My Notebook/First page
 expect-prop notebookTree focused false
+expect-text notebookSwitcherLabel All notebooks
+# Notebooks shows one notebook at a time, picked from the switcher.
+click-item notebookSwitcher
+click-item switchNotebook_Uni/3. Semester/Biophysik
+expect-prop notebookTree focused true
+expect-text notebookSwitcherLabel Biophysik
+expect-prop notebookList count 1
+expect-hidden quick_My Notebook/First page
+click-item focusClear
+expect-prop notebookTree focused false
+click-item quick_My Notebook/First page
 expect-text pageTitle First page
+# The open page is always in view, so the folder focus outside it ends.
+click-item viewFolders
+expect-prop notebookTree focused false

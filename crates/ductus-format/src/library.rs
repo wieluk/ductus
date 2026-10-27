@@ -1,6 +1,6 @@
 //! A plain folder tree of notes; colors, order, history and trash live in the app's data folder.
 
-use crate::page::{DX_NS, PageFile, escape_attr, read_page, write_page, write_page_in};
+use crate::page::{DX_NS, PageFile, read_page, write_page};
 use crate::{Error, new_id};
 use ductus_core::{Document, PageSettings, Rgba};
 use serde::{Deserialize, Serialize};
@@ -18,10 +18,9 @@ const LOCATION_FILE: &str = "library.txt";
 pub const PAGE_EXTENSION: &str = "svg";
 pub const PDF_EXTENSION: &str = "pdf";
 pub const ASSETS_SUFFIX: &str = ".assets";
-/// Other files in an attachments folder are never moved away.
+/// How picture names start, in the canvas and imports alike.
 pub const IMAGE_PREFIX: &str = "img-";
 const PAGE_PDF: &str = "source.pdf";
-const ASSETS_HISTORY: &str = "assets";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NodeKind {
@@ -637,7 +636,7 @@ impl Library {
         name: &str,
         document: Document,
         pdf: Option<&[u8]>,
-        assets: &[(String, Vec<u8>)],
+        pictures: &[(String, Vec<u8>)],
     ) -> Result<String, Error> {
         let name = validate_name(name)?;
         self.ensure_free(parent, &name)?;
@@ -647,14 +646,12 @@ impl Library {
             fs::create_dir_all(&dir)?;
             write_atomic(&dir.join(PAGE_PDF), bytes)?;
         }
-        for (file, bytes) in assets {
-            self.save_asset(&rel, file, bytes)?;
-        }
         let page = PageFile {
             id: new_id(),
             document,
             pdf: pdf.map(|_| PAGE_PDF.to_owned()),
             recognized: Vec::new(),
+            pictures: pictures.iter().cloned().collect(),
         };
         write_atomic(&self.page_file(&rel), write_page(&page).as_bytes())?;
         self.edit_order(parent, |order| {
@@ -699,58 +696,6 @@ impl Library {
             let assets = self.assets_dir(from_rel);
             if assets.is_dir() {
                 fs::rename(assets, self.assets_dir(to_rel))?;
-                // Picture links in the page name its attachments folder.
-                let (old, new) = (
-                    Self::assets_dir_name(from_rel),
-                    Self::assets_dir_name(to_rel),
-                );
-                if old != new {
-                    let svg = fs::read_to_string(to)?;
-                    let link = |dir: &str| format!(r#"href="{}/"#, escape_attr(dir));
-                    if svg.contains(&link(&old)) {
-                        write_atomic(to, svg.replace(&link(&old), &link(&new)).as_bytes())?;
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-
-    fn assets_dir_name(rel: &str) -> String {
-        format!("{}{ASSETS_SUFFIX}", Self::split(rel).1)
-    }
-
-    pub fn save_asset(&self, rel: &str, name: &str, bytes: &[u8]) -> Result<(), Error> {
-        let dir = self.assets_dir(rel);
-        let path = dir.join(name);
-        if !path.is_file() {
-            fs::create_dir_all(&dir)?;
-            write_atomic(&path, bytes)?;
-        }
-        Ok(())
-    }
-
-    pub fn read_asset(&self, rel: &str, name: &str) -> Result<Vec<u8>, Error> {
-        Ok(fs::read(self.assets_dir(rel).join(name))?)
-    }
-
-    /// Older versions keep their pictures while the attachments folder stays tidy.
-    fn retire_unused_images(&self, rel: &str, page: &PageFile) -> Result<(), Error> {
-        let Ok(entries) = fs::read_dir(self.assets_dir(rel)) else {
-            return Ok(());
-        };
-        let used: std::collections::HashSet<&str> = page
-            .document
-            .images()
-            .iter()
-            .map(|i| i.source.as_str())
-            .collect();
-        for entry in entries.flatten() {
-            let name = entry.file_name().to_string_lossy().into_owned();
-            if name.starts_with(IMAGE_PREFIX) && !used.contains(name.as_str()) {
-                let keep = self.history_dir(&page.id).join(ASSETS_HISTORY);
-                fs::create_dir_all(&keep)?;
-                fs::rename(entry.path(), keep.join(&name))?;
             }
         }
         Ok(())
@@ -945,11 +890,7 @@ impl Library {
                 self.snapshots.insert(page.id.clone(), now);
             }
         }
-        write_atomic(
-            &path,
-            write_page_in(page, &Self::assets_dir_name(rel)).as_bytes(),
-        )?;
-        self.retire_unused_images(rel, page)
+        write_atomic(&path, write_page(page).as_bytes())
     }
 
     fn history_dir(&self, page_id: &str) -> PathBuf {

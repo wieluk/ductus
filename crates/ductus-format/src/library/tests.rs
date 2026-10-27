@@ -43,6 +43,7 @@ fn page_with_stroke(id: &str) -> PageFile {
         document: doc,
         pdf: None,
         recognized: Vec::new(),
+        pictures: Default::default(),
     }
 }
 
@@ -338,14 +339,15 @@ fn trash_restores_entries_where_they_were() {
         .unwrap();
     lib.create_page("Math", "Series", PageSettings::default())
         .unwrap();
-    lib.save_asset("Math/Limits", "img-1.png", b"png").unwrap();
+    lib.save_page_pdf("Math/Limits", "source.pdf", b"pdf")
+        .unwrap();
 
     let id = lib.delete("Math/Limits").unwrap();
     let trash = lib.trash().unwrap();
     assert_eq!(
         trash.len(),
         1,
-        "the pictures folder isn't an entry of its own"
+        "the attachments folder isn't an entry of its own"
     );
     assert_eq!(trash[0].id, id);
     assert_eq!(trash[0].original, "Math/Limits");
@@ -353,7 +355,10 @@ fn trash_restores_entries_where_they_were() {
 
     assert_eq!(lib.restore(&id).unwrap(), "Math/Limits");
     assert!(lib.exists("Math/Limits"));
-    assert_eq!(lib.read_asset("Math/Limits", "img-1.png").unwrap(), b"png");
+    assert_eq!(
+        lib.read_page_pdf("Math/Limits", "source.pdf").unwrap(),
+        b"pdf"
+    );
     assert!(lib.trash().unwrap().is_empty());
 
     // Its folder is gone and its name is taken again: both are dealt with.

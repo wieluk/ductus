@@ -230,8 +230,8 @@ fn reading_order(text: &str) -> String {
     parts.into_iter().rev().collect()
 }
 
-/// Both line recognizers: German goes to DE·HTR, "auto" to whichever is more confident,
-/// every other language to PP-OCRv6.
+/// Both line recognizers: DE·HTR when German is among the languages, PP-OCRv6 for the others;
+/// with both, the more confident reading wins.
 pub struct TextModel {
     german: Ctc,
     latin: Ctc,
@@ -245,19 +245,23 @@ impl TextModel {
         })
     }
 
-    pub fn recognize(&mut self, image: &Pixmap, lang: &str) -> Result<String, String> {
-        Ok(match lang {
-            "de" => self.german.read(image)?.0,
-            "auto" | "" => {
-                let german = self.german.read(image)?;
-                let latin = self.latin.read(image)?;
-                match latin.1 > german.1 {
-                    true => latin.0,
-                    false => german.0,
-                }
-            }
-            _ => self.latin.read(image)?.0,
-        })
+    pub fn recognize(&mut self, image: &Pixmap, langs: &str) -> Result<(String, f64), String> {
+        let langs = crate::builtin::languages_in(langs);
+        let german = langs.iter().any(|l| l.code == "de");
+        let latin = langs.iter().any(|l| l.model == "text" && l.code != "de");
+        let german = match german {
+            true => Some(self.german.read(image)?),
+            false => None,
+        };
+        let latin = match latin || german.is_none() {
+            true => Some(self.latin.read(image)?),
+            false => None,
+        };
+        Ok([german, latin]
+            .into_iter()
+            .flatten()
+            .max_by(|a, b| a.1.total_cmp(&b.1))
+            .unwrap_or_default())
     }
 }
 

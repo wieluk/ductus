@@ -90,8 +90,8 @@ fn a4_notebook_becomes_paper_with_ink_text_and_pictures() {
     assert_eq!(doc.texts()[0].scale, 12.0 * K / TextBox::FONT_SIZE);
     let image = &doc.images()[0];
     assert_eq!((image.x, image.width), (10.0 * K, 40.0 * K));
-    assert_eq!(page.assets.len(), 1);
-    assert_eq!(page.assets[0].0, image.source);
+    assert_eq!(page.pictures.len(), 1);
+    assert_eq!(page.pictures[0].0, image.source);
 }
 
 #[test]

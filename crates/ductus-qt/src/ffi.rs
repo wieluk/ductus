@@ -154,6 +154,17 @@ pub mod qobject {
         warnings: String,
     }
 
+    /// An import that has been read; `kind` is "notebook", "section", "page" or "file".
+    #[derive(Debug, Default)]
+    struct ImportSummary {
+        ready: bool,
+        error: String,
+        kind: String,
+        name: String,
+        pages: u32,
+        sections: u32,
+    }
+
     #[derive(Debug, Default)]
     struct ConvertState {
         busy: bool,
@@ -171,11 +182,12 @@ pub mod qobject {
         installed: bool,
     }
 
-    /// A handwriting language: its `hwr/lang` code, its name for the settings, the model reading it.
+    /// A handwriting language: its `hwr/lang` code, English and own name, the model reading it.
     #[derive(Debug, Default)]
     struct LanguageRow {
         code: String,
-        name: String,
+        english: String,
+        native: String,
         model: String,
     }
 
@@ -207,13 +219,16 @@ pub mod qobject {
         fn can_import(file: &str) -> bool;
         fn start(self: &ImportHandle, file: &str);
         fn busy(self: &ImportHandle) -> bool;
+        fn summary(self: &ImportHandle) -> ImportSummary;
+        fn discard(self: &ImportHandle);
 
         type ModelsHandle;
         fn open_models() -> Box<ModelsHandle>;
         fn model_rows(dir: &str) -> Vec<ModelRow>;
         fn remove_model(dir: &str, id: &str) -> String;
         fn languages() -> Vec<LanguageRow>;
-        fn text_model(lang: &str) -> String;
+        fn text_models(langs: &str) -> Vec<String>;
+        fn locale_language(locale: &str) -> String;
         fn install(self: &ModelsHandle, dir: &str, id: &str);
         fn cancel(self: &ModelsHandle);
         fn state(self: &ModelsHandle) -> ModelsState;
@@ -275,6 +290,8 @@ pub mod qobject {
         fn add_recent(self: &LibraryHandle, page: &str) -> Result<()>;
         /// Where a new page can go: notebooks and their sections, as "path\tlabel" lines.
         fn page_targets(self: &LibraryHandle) -> String;
+        /// Every notebook, as "path\tname" lines in the user's order.
+        fn notebook_list(self: &LibraryHandle) -> String;
         /// The subfolders of `folder`, as "name\tnotebook name" lines.
         fn subfolders(self: &LibraryHandle, folder: &str) -> String;
         fn absolute_path(self: &LibraryHandle, path: &str) -> String;
@@ -345,12 +362,12 @@ pub mod qobject {
             h: f64,
             lang: &str,
         ) -> Result<bool>;
-        /// Pages go into `parent`, sections into its notebook, notebooks into `notebooks`.
+        /// Saves what was read into `parent` as `name`; a taken name gets a number.
         fn finish_import(
             self: &mut LibraryHandle,
             importer: &ImportHandle,
             parent: &str,
-            notebooks: &str,
+            name: &str,
         ) -> Result<ImportResult>;
         fn import_pdf(
             self: &mut LibraryHandle,
@@ -514,7 +531,7 @@ pub use crate::library::{
     relocate_library,
 };
 pub use crate::models::{
-    ModelsHandle, languages, model_rows, open_models, remove_model, text_model,
+    ModelsHandle, languages, locale_language, model_rows, open_models, remove_model, text_models,
 };
 pub use crate::recognize::{RecognitionHandle, open_recognizer};
 pub use crate::search::{SearchHandle, open_search};

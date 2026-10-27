@@ -29,3 +29,8 @@ setenv DUCTUS_TEST_RECOGNIZER
 click-item pageToText
 expect-prop model_text visible true
 expect-prop hwrSearchSwitch checked false
+# Each chosen language brings the reader for its script into the downloads.
+click-item hwrLangSearch
+type rus
+click-item hwrLang_ru
+expect-prop model_text-eslav visible true

@@ -237,8 +237,10 @@ public:
             if (cmd == u"import-pdf") {
                 const bool annotate = args.value(0) == u"annotate";
                 const QString file = QFileInfo(rest.section(QLatin1Char(' '), 1)).absoluteFilePath();
+                QString folder;
+                QMetaObject::invokeMethod(controller(), "defaultPageFolder", Q_RETURN_ARG(QString, folder));
                 QMetaObject::invokeMethod(controller(), "importPdf", Q_RETURN_ARG(QString, result),
-                                          Q_ARG(QString, file), Q_ARG(bool, annotate));
+                                          Q_ARG(QString, file), Q_ARG(bool, annotate), Q_ARG(QString, folder));
                 ok = !result.isEmpty();
             } else {
                 const QString file = qEnvironmentVariable("DUCTUS_LIBRARY") + QLatin1Char('/') + rest;
@@ -249,7 +251,7 @@ public:
                 return fail(cmd + QStringLiteral(" failed"));
             QTest::qWait(300);
         } else if (cmd == u"import-notes") {
-            // Read on a worker thread: waits until the pages are in the library.
+            // Read on a worker thread: waits until it asks where to save.
             const QString file = QFileInfo(rest).absoluteFilePath();
             QMetaObject::invokeMethod(controller(), "importNotes", Q_ARG(QString, file));
             for (int i = 0; i < 300 && controller()->property("importing").toBool(); ++i)

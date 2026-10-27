@@ -1,11 +1,12 @@
-# Pictures: paste, screenshot, move, save beside the page, export, undo.
+# Pictures: paste, screenshot, move, saved inside the page, export, undo.
 size 1280 800
 clipboard-image tests/fixtures/screenshot.png
 key Ctrl+V
 expect-prop canvas selectionCount 1
 pen 772,442 700,400
 key Escape
-expect-file My Notebook/First page.assets
+expect-in-file My Notebook/First page.svg | href="data:image/png;base64,
+expect-no-file My Notebook/First page.assets
 setenv DUCTUS_TEST_SCREENSHOT tests/fixtures/screenshot.png
 click-item tab_insert
 click-item insertScreenshot

@@ -280,11 +280,7 @@ const fn lang(
     }
 }
 
-/// "auto" reads German and English (and the other Latin-script languages) with both text readers.
 pub const LANGUAGES: &[Language] = &[
-    lang("auto", "German or English", "", "text"),
-    lang("de", "German", "Deutsch", "text"),
-    lang("en", "English", "", "text"),
     lang("ar", "Arabic", "العربية", "text-arabic"),
     lang("be", "Belarusian", "Беларуская", "text-eslav"),
     lang("bg", "Bulgarian", "Български", "text-cyrillic"),
@@ -294,9 +290,11 @@ pub const LANGUAGES: &[Language] = &[
     lang("cs", "Czech", "Čeština", "text"),
     lang("da", "Danish", "Dansk", "text"),
     lang("nl", "Dutch", "Nederlands", "text"),
+    lang("en", "English", "", "text"),
     lang("et", "Estonian", "Eesti", "text"),
     lang("fi", "Finnish", "Suomi", "text"),
     lang("fr", "French", "Français", "text"),
+    lang("de", "German", "Deutsch", "text"),
     lang("el", "Greek", "Ελληνικά", "text-greek"),
     lang("hi", "Hindi", "हिन्दी", "text-devanagari"),
     lang("hu", "Hungarian", "Magyar", "text"),
@@ -331,16 +329,36 @@ pub const LANGUAGES: &[Language] = &[
     lang("ur", "Urdu", "اردو", "text-arabic"),
 ];
 
-pub fn language(code: &str) -> &'static Language {
-    LANGUAGES
-        .iter()
-        .find(|l| l.code == code)
-        .unwrap_or(&LANGUAGES[0])
+pub fn language(code: &str) -> Option<&'static Language> {
+    LANGUAGES.iter().find(|l| l.code == code)
 }
 
-/// The model that reads handwriting in `lang` (a code from [`LANGUAGES`]).
-pub fn text_model(lang: &str) -> &'static str {
-    language(lang).model
+/// The languages in a comma-separated list of codes (`hwr/lang`); English when none is known.
+pub fn languages_in(list: &str) -> Vec<&'static Language> {
+    let found: Vec<_> = list.split(',').filter_map(|c| language(c.trim())).collect();
+    match found.is_empty() {
+        true => language("en").into_iter().collect(),
+        false => found,
+    }
+}
+
+/// The models that read handwriting in the languages of `list`, each once.
+pub fn text_models(list: &str) -> Vec<&'static str> {
+    let mut models = Vec::new();
+    for l in languages_in(list) {
+        if !models.contains(&l.model) {
+            models.push(l.model);
+        }
+    }
+    models
+}
+
+/// The language of a locale name such as "de_AT", when handwriting in it can be read.
+pub fn locale_language(locale: &str) -> &'static str {
+    let code = locale.split(['_', '-', '.']).next().unwrap_or("");
+    // Norwegian Bokmål and plain Norwegian read alike.
+    let code = if code == "no" { "nb" } else { code };
+    language(code).map_or("en", |l| l.code)
 }
 
 pub fn model_info(id: &str) -> Option<&'static ModelInfo> {
@@ -421,12 +439,13 @@ impl Model {
         }
     }
 
-    /// Reads the ink in `image` (dark on white); `lang` is a code from [`LANGUAGES`].
-    pub fn recognize(&mut self, image: &Pixmap, lang: &str) -> Result<String, String> {
+    /// Reads the ink in `image` (dark on white), with how sure it is (0–1); `langs` lists
+    /// codes from [`LANGUAGES`].
+    pub fn recognize(&mut self, image: &Pixmap, langs: &str) -> Result<(String, f64), String> {
         match self {
-            Self::Text(m) => m.recognize(image, lang),
-            Self::Script(m) => Ok(m.read(image)?.0),
-            Self::Formula(m) => m.recognize(image),
+            Self::Text(m) => m.recognize(image, langs),
+            Self::Script(m) => m.read(image),
+            Self::Formula(m) => Ok((m.recognize(image)?, 1.0)),
         }
     }
 }
@@ -441,8 +460,10 @@ mod tests {
             let model = model_info(l.model).unwrap_or_else(|| panic!("{} has no model", l.code));
             assert!(model.id.starts_with("text"));
         }
-        assert_eq!(text_model("ru"), "text-eslav");
-        assert_eq!(text_model("unknown"), "text");
+        assert_eq!(text_models("de, ru,en,uk"), ["text", "text-eslav"]);
+        assert_eq!(text_models("unknown"), ["text"]);
+        assert_eq!(locale_language("de_AT.UTF-8"), "de");
+        assert_eq!(locale_language("C"), "en");
         let codes: std::collections::HashSet<_> = LANGUAGES.iter().map(|l| l.code).collect();
         assert_eq!(codes.len(), LANGUAGES.len());
     }

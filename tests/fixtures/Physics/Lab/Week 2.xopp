@@ -1,0 +1,10 @@
+<?xml version="1.0" standalone="no"?>
+<xournal creator="Xournal++ 1.2.3" fileversion="4">
+<page width="595.27559" height="841.88976">
+<background type="solid" color="#ffffffff" style="graph"/>
+<layer>
+<text font="Sans" size="14" x="80" y="80" color="#000000ff">Lab notes</text>
+<stroke tool="pen" color="#000000ff" width="1.41">80 140 200 160 320 140</stroke>
+</layer>
+</page>
+</xournal>

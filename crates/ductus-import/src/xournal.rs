@@ -64,7 +64,7 @@ struct Parser<'a> {
     missing_pdf: Option<String>,
     /// Pixmap backgrounds by page, for pages that clone one.
     backdrops: HashMap<usize, Image>,
-    assets: Vec<(String, Vec<u8>)>,
+    pictures: Vec<(String, Vec<u8>)>,
     warnings: Vec<String>,
 }
 
@@ -84,7 +84,7 @@ fn parse(
         current_pdf: None,
         missing_pdf: None,
         backdrops: HashMap::new(),
-        assets: Vec::new(),
+        pictures: Vec::new(),
         warnings: Vec::new(),
     };
     let mut saw_root = false;
@@ -194,7 +194,7 @@ fn parse(
             "{skipped_maths} LaTeX formula(s) couldn't be brought over."
         ));
     }
-    let page = assemble(name, p.sheets, &p.pdfs, p.assets)?;
+    let page = assemble(name, p.sheets, &p.pdfs, p.pictures)?;
     Ok(Import {
         entry: Entry::Page(page),
         warnings: p.warnings,
@@ -324,8 +324,8 @@ impl Parser<'_> {
 
     fn store(&mut self, bytes: &[u8]) -> Option<String> {
         let (name, png) = picture(bytes)?;
-        if !self.assets.iter().any(|(n, _)| *n == name) {
-            self.assets.push((name.clone(), png));
+        if !self.pictures.iter().any(|(n, _)| *n == name) {
+            self.pictures.push((name.clone(), png));
         }
         Some(name)
     }

@@ -36,6 +36,8 @@ tempfile = "3"
 
 [build-dependencies]
 cxx-qt-build = "0.10"
+# Its QResourceFile names a compiled translation inside the resources.
+qt-build-utils = "0.10"
 
 # The program icon in ductus.exe.
 [target.'cfg(windows)'.build-dependencies]

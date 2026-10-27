@@ -28,6 +28,8 @@ class Updater : public QObject
     Q_PROPERTY(QString status READ status NOTIFY changed)
     /// 0 to 1 while a download runs, -1 when there's nothing to count.
     Q_PROPERTY(double progress READ progress NOTIFY changed)
+    /// A download or Flatpak update runs, which cancel() stops.
+    Q_PROPERTY(bool downloading READ downloading NOTIFY changed)
     Q_PROPERTY(bool restartNeeded READ restartNeeded NOTIFY changed)
 
 public:
@@ -44,6 +46,7 @@ public:
     QString notes() const { return m_notes; }
     QString status() const { return m_status; }
     double progress() const { return m_progress; }
+    bool downloading() const { return m_task == Task::Download || m_task == Task::Flatpak; }
     bool restartNeeded() const { return m_restartNeeded; }
 
     Q_INVOKABLE void check();
@@ -81,6 +84,7 @@ private:
     bool m_busy = false;
     bool m_automatic = false;
     bool m_restartNeeded = false;
+    bool m_cancelled = false;
     Task m_task = Task::None;
     QTimer m_poll;
     QTimer m_daily;

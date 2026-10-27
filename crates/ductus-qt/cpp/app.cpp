@@ -1,4 +1,5 @@
 #include "ductus-qt/cpp/app.h"
+#include "ductus-qt/cpp/translations.h"
 #include "ductus-qt/cpp/uitest.h"
 
 #include <QApplication>
@@ -49,6 +50,7 @@ std::int32_t run_app(rust::Str program)
     if (!script.isEmpty())
         QGuiApplication::styleHints()->setUseHoverEffects(true);
 
+    Translations::apply();
     QQmlApplicationEngine engine;
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
                      [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);

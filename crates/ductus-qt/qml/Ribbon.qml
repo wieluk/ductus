@@ -15,6 +15,7 @@ Rectangle {
     signal imageInsertRequested()
     signal openFileRequested()
     signal importRequested()
+    signal importFolderRequested()
     signal openFolderRequested()
     signal exportRequested()
     signal printRequested()
@@ -139,6 +140,20 @@ Rectangle {
     }
 
     AppMenu {
+        id: importMenu
+        AppMenuItem {
+            objectName: "importFile"
+            text: qsTr("Notes file…")
+            onTriggered: ribbon.importRequested()
+        }
+        AppMenuItem {
+            objectName: "importFolder"
+            text: qsTr("Notebook folder…")
+            onTriggered: ribbon.importFolderRequested()
+        }
+    }
+
+    AppMenu {
         id: eraserMenu
         AppMenuItem {
             objectName: "eraserPartial"
@@ -245,9 +260,9 @@ Rectangle {
                     objectName: "fileImport"
                     iconName: "import"
                     text: AppController.importing ? qsTr("Importing…") : qsTr("Import…")
-                    tip: qsTr("Bring in notes from Xournal++, Rnote or OneNote")
+                    tip: qsTr("Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder")
                     enabled: !AppController.importing
-                    onClicked: ribbon.importRequested()
+                    onClicked: importMenu.popup(this, 0, height)
                 }
                 RibbonButton {
                     objectName: "fileOpenLibrary"
@@ -527,9 +542,9 @@ Rectangle {
                 }
                 Separator {}
                 Repeater {
-                    model: [{ level: 0, label: qsTr("Narrow") },
+                    model: [{ level: 0, label: qsTr("Narrow", "line spacing") },
                             { level: 1, label: qsTr("Normal") },
-                            { level: 2, label: qsTr("Wide") }]
+                            { level: 2, label: qsTr("Wide", "line spacing") }]
                     delegate: RibbonButton {
                         required property var modelData
                         objectName: "spacing" + modelData.level
@@ -593,7 +608,7 @@ Rectangle {
                     objectName: "viewSidebar"
                     iconName: "sidebar"
                     text: qsTr("Notebooks")
-                    tip: qsTr("Show the notebook list (Ctrl+\\)")
+                    tip: qsTr("Show the notebook list (%1)").arg("Ctrl+\\")
                     checkable: true
                     checked: ribbon.window.compact ? ribbon.window.drawerOpen : ribbon.window.sidebarVisible
                     onClicked: ribbon.window.toggleSidebar()

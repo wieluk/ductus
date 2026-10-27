@@ -4,7 +4,7 @@ pub mod page;
 
 pub use browse::Filter;
 pub use library::{Library, Node, NodeKind, library_key, relocate_library};
-pub use page::{PageFile, RecognizedLine, read_page, write_page, write_page_in};
+pub use page::{PageFile, RecognizedLine, read_page, write_page};
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};

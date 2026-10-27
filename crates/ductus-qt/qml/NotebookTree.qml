@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Controls.impl
 import QtQuick.Layouts
+import QtQml.Models
 import Ductus
 
 Rectangle {
@@ -195,6 +196,12 @@ Rectangle {
                         checked: sidebar.hasFilter(8)
                         onTriggered: sidebar.toggleFilter(8)
                     }
+                    AppMenuSeparator {}
+                    AppMenuItem {
+                        objectName: "collapseAll"
+                        text: qsTr("Collapse all")
+                        onTriggered: AppController.collapseAll()
+                    }
                 }
             }
             RibbonButton {
@@ -211,62 +218,155 @@ Rectangle {
                 tip: qsTr("New notebook…")
                 implicitHeight: 32
                 implicitWidth: 32
-                onClicked: sidebar.newNotebookRequested(AppController.treeFocus)
+                onClicked: sidebar.newNotebookRequested(AppController.defaultNotebookLocation())
             }
         }
 
-        RowLayout {
-            objectName: "breadcrumbs"
-            visible: sidebar.focused
+        // What the list is narrowed to: a folder under Folders, one notebook under Notebooks.
+        Rectangle {
+            objectName: "focusBar"
+            visible: AppController.notebookView || sidebar.focused
             Layout.fillWidth: true
-            Layout.leftMargin: 8
+            Layout.leftMargin: 6
             Layout.rightMargin: 6
             Layout.bottomMargin: 2
-            spacing: 2
+            implicitHeight: 32
+            radius: Theme.radius
+            color: sidebar.focused ? Theme.checked : "transparent"
 
-            RibbonButton {
-                objectName: "focusUp"
-                iconName: "arrow-up"
-                tip: qsTr("Up one folder")
-                implicitHeight: 28
-                implicitWidth: 28
-                padding: 4
-                onClicked: AppController.treeFocus = AppController.parentOf(AppController.treeFocus)
-            }
-            ListView {
-                id: crumbList
-                Layout.fillWidth: true
-                Layout.preferredHeight: 28
-                orientation: ListView.Horizontal
-                clip: true
-                boundsBehavior: Flickable.StopAtBounds
-                model: sidebar.crumbs
-                // The deepest folder is the one that matters.
-                onCountChanged: positionViewAtEnd()
-                onWidthChanged: positionViewAtEnd()
-                delegate: AbstractButton {
-                    id: crumb
-                    required property var modelData
-                    required property int index
-                    readonly property bool last: index === crumbList.count - 1
-                    objectName: "crumb_" + modelData.path
-                    height: 28
-                    implicitWidth: crumbLabel.implicitWidth + 8
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 2
+                anchors.rightMargin: 2
+                spacing: 2
+
+                RibbonButton {
+                    objectName: "focusUp"
+                    visible: !AppController.notebookView
+                    iconName: "arrow-up"
+                    tip: qsTr("Up one folder")
+                    implicitHeight: 28
+                    implicitWidth: 28
+                    padding: 4
+                    onClicked: AppController.treeFocus = AppController.parentOf(AppController.treeFocus)
+                }
+                ListView {
+                    id: crumbList
+                    visible: !AppController.notebookView
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 28
+                    orientation: ListView.Horizontal
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    model: sidebar.crumbs
+                    // The deepest folder is the one that matters.
+                    onCountChanged: positionViewAtEnd()
+                    onWidthChanged: positionViewAtEnd()
+                    delegate: AbstractButton {
+                        id: crumb
+                        required property var modelData
+                        required property int index
+                        readonly property bool last: index === crumbList.count - 1
+                        objectName: "crumb_" + modelData.path
+                        height: 28
+                        implicitWidth: crumbLabel.implicitWidth + 8
+                        focusPolicy: Qt.NoFocus
+                        enabled: !last
+                        onClicked: AppController.treeFocus = modelData.path
+                        contentItem: Label {
+                            id: crumbLabel
+                            text: (crumb.index > 0 ? "› " : "") + crumb.modelData.name
+                            verticalAlignment: Text.AlignVCenter
+                            color: crumb.last ? Theme.text : crumb.hovered ? Theme.accent : Theme.textMuted
+                            font.pixelSize: 12
+                            font.weight: crumb.last ? Font.DemiBold : Font.Normal
+                        }
+                        background: Rectangle {
+                            radius: Theme.radius
+                            color: crumb.hovered && !crumb.last ? Theme.hover : "transparent"
+                        }
+                    }
+                }
+
+                AbstractButton {
+                    id: switcher
+                    objectName: "notebookSwitcher"
+                    visible: AppController.notebookView
+                    Layout.fillWidth: true
+                    implicitHeight: 28
                     focusPolicy: Qt.NoFocus
-                    enabled: !last
-                    onClicked: AppController.treeFocus = modelData.path
-                    contentItem: Label {
-                        id: crumbLabel
-                        text: (crumb.index > 0 ? "› " : "") + crumb.modelData.name
-                        verticalAlignment: Text.AlignVCenter
-                        color: crumb.last ? Theme.text : crumb.hovered ? Theme.accent : Theme.textMuted
-                        font.pixelSize: 12
-                        font.weight: crumb.last ? Font.DemiBold : Font.Normal
+                    onClicked: switcherMenu.popup(this, 0, height)
+                    contentItem: RowLayout {
+                        spacing: 6
+                        IconImage {
+                            Layout.leftMargin: 6
+                            Layout.preferredWidth: 16
+                            Layout.preferredHeight: 16
+                            source: Qt.resolvedUrl("icons/notebooks.svg")
+                            sourceSize: Qt.size(16, 16)
+                            color: Theme.accent
+                        }
+                        Label {
+                            objectName: "notebookSwitcherLabel"
+                            Layout.fillWidth: true
+                            text: sidebar.focused ? AppController.notebookName(AppController.treeFocus)
+                                                  : qsTr("All notebooks")
+                            elide: Text.ElideRight
+                            color: Theme.text
+                            font.pixelSize: 13
+                            font.weight: Font.DemiBold
+                        }
+                        IconImage {
+                            Layout.preferredWidth: 14
+                            Layout.preferredHeight: 14
+                            source: Qt.resolvedUrl("icons/chevron.svg")
+                            sourceSize: Qt.size(14, 14)
+                            color: Theme.textMuted
+                            rotation: 90
+                        }
                     }
                     background: Rectangle {
                         radius: Theme.radius
-                        color: crumb.hovered && !crumb.last ? Theme.hover : "transparent"
+                        color: switcher.hovered ? Theme.hover : "transparent"
                     }
+
+                    AppMenu {
+                        id: switcherMenu
+                        property var notebooks: []
+                        onAboutToShow: notebooks = AppController.notebookList()
+                        AppMenuItem {
+                            objectName: "switchAllNotebooks"
+                            text: qsTr("All notebooks")
+                            checkable: true
+                            checked: !sidebar.focused
+                            onTriggered: AppController.treeFocus = ""
+                        }
+                        AppMenuSeparator {}
+                        Instantiator {
+                            model: switcherMenu.notebooks
+                            delegate: AppMenuItem {
+                                required property var modelData
+                                objectName: "switchNotebook_" + modelData.path
+                                text: modelData.name
+                                checkable: true
+                                checked: AppController.treeFocus === modelData.path
+                                onTriggered: AppController.treeFocus = modelData.path
+                            }
+                            onObjectAdded: (index, item) => switcherMenu.insertItem(index + 2, item)
+                            onObjectRemoved: (index, item) => switcherMenu.removeItem(item)
+                        }
+                    }
+                }
+
+                RibbonButton {
+                    objectName: "focusClear"
+                    visible: sidebar.focused
+                    iconName: "close"
+                    tip: qsTr("Show everything")
+                    implicitHeight: 28
+                    implicitWidth: 28
+                    padding: 6
+                    onClicked: AppController.treeFocus = ""
                 }
             }
         }
@@ -324,6 +424,9 @@ Rectangle {
                       ? qsTr("Notebook \u201c%1\u201d").arg(notebookName) : ""
 
                 readonly property bool isSubject: isFolder && depth === 0
+                // Folders narrows to any folder, Notebooks to one notebook.
+                readonly property bool canFocus: !quick && !placeholder
+                    && (AppController.notebookView ? isNotebook && depth === 0 : isFolder)
                 readonly property color mark: color.length > 0 ? color : Theme.accent
 
                 objectName: (placeholder ? "empty_" : section === "recent" ? "recent_" : quick ? "quick_" : "row_") + path
@@ -503,9 +606,9 @@ Rectangle {
                     }
                     RibbonButton {
                         objectName: "focus_" + row.path
-                        visible: row.isFolder && !row.quick && hover.hovered
-                        iconName: "folder-open"
-                        tip: qsTr("Show only this folder")
+                        visible: row.canFocus && hover.hovered && AppController.treeFocus !== row.path
+                        iconName: AppController.notebookView ? "notebooks" : "folder-open"
+                        tip: AppController.notebookView ? qsTr("Show only this notebook") : qsTr("Show only this folder")
                         implicitWidth: 26
                         implicitHeight: 26
                         padding: 3
@@ -538,9 +641,9 @@ Rectangle {
                         onTriggered: AppController.openExternally(row.path)
                     }
                     AppMenuItem {
-                        visible: row.isFolder
+                        visible: row.canFocus && AppController.treeFocus !== row.path
                         height: visible ? implicitHeight : 0
-                        text: qsTr("Show only this folder")
+                        text: AppController.notebookView ? qsTr("Show only this notebook") : qsTr("Show only this folder")
                         objectName: "menuFocus"
                         onTriggered: AppController.treeFocus = row.path
                     }

@@ -58,6 +58,7 @@ fn sample_page(settings: PageSettings) -> PageFile {
         document: doc,
         pdf: None,
         recognized: Vec::new(),
+        pictures: BTreeMap::new(),
     }
 }
 
@@ -207,7 +208,10 @@ fn pdf_backed_pages_keep_their_sheets_and_source() {
 }
 
 #[test]
-fn images_round_trip_with_links_into_the_assets_folder() {
+fn pictures_are_inside_the_page_and_other_renderers_show_them() {
+    let mut red = resvg::tiny_skia::Pixmap::new(4, 4).unwrap();
+    red.fill(resvg::tiny_skia::Color::from_rgba8(220, 20, 20, 255));
+    let png = red.encode_png().unwrap();
     let mut page = sample_page(PageSettings::default());
     page.document = page.document.clone().with_images([Image {
         id: StrokeId(0),
@@ -217,17 +221,40 @@ fn images_round_trip_with_links_into_the_assets_folder() {
         width: 320.5,
         height: 180.0,
     }]);
-    let svg = write_page_in(&page, "Limits & more.assets");
-    assert!(svg.contains(r#"href="Limits &amp; more.assets/img-0123.png""#));
+    page.pictures.insert("img-0123.png".into(), png.clone());
+    let svg = write_page(&page);
+    assert!(svg.contains(r#"href="data:image/png;base64,"#));
     assert!(svg.find("<image").unwrap() < svg.find(r#"dx:layer="highlight""#).unwrap());
     let back = read_page(&svg).unwrap();
     let image = &back.document.images()[0];
     assert_eq!(image.source, "img-0123.png");
+    assert_eq!(back.pictures["img-0123.png"], png);
     assert_eq!(
         (image.x, image.y, image.width, image.height),
         (50.0, 400.0, 320.5, 180.0)
     );
     assert_eq!(back.document.strokes().len(), 2);
+
+    let tree = resvg::usvg::Tree::from_str(&svg, &resvg::usvg::Options::default()).unwrap();
+    let size = tree.size().to_int_size();
+    let mut pixmap = resvg::tiny_skia::Pixmap::new(size.width(), size.height()).unwrap();
+    resvg::render(
+        &tree,
+        resvg::tiny_skia::Transform::identity(),
+        &mut pixmap.as_mut(),
+    );
+    let bounds = page_area(&svg);
+    let c = pixmap
+        .pixel((200.0 - bounds.0) as u32, (500.0 - bounds.1) as u32)
+        .unwrap()
+        .demultiply();
+    assert!(
+        c.red() > 200 && c.green() < 60,
+        "the picture expected, got {} {} {}",
+        c.red(),
+        c.green(),
+        c.blue()
+    );
 }
 
 #[test]

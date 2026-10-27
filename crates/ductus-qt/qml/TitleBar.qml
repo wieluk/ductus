@@ -23,6 +23,7 @@ Rectangle {
     signal openFolderRequested()
     signal openFileRequested()
     signal importRequested()
+    signal importFolderRequested()
     signal printRequested()
     signal sidebarToggled()
     signal updateRequested()
@@ -106,6 +107,12 @@ Rectangle {
                         onTriggered: bar.importRequested()
                     }
                     AppMenuItem {
+                        objectName: "menuImportFolder"
+                        text: qsTr("Import Folder…")
+                        enabled: !AppController.importing
+                        onTriggered: bar.importFolderRequested()
+                    }
+                    AppMenuItem {
                         objectName: "menuOpenLibrary"
                         text: qsTr("Open Library Folder…")
                         onTriggered: bar.openFolderRequested()
@@ -169,7 +176,7 @@ Rectangle {
             RibbonButton {
                 objectName: "sidebarToggle"
                 iconName: "sidebar"
-                tip: qsTr("Show or hide notebooks (Ctrl+\\)")
+                tip: qsTr("Show or hide notebooks (%1)").arg("Ctrl+\\")
                 onTitleBar: true
                 implicitHeight: Theme.titleHeight - 4
                 onClicked: bar.sidebarToggled()
@@ -279,7 +286,9 @@ Rectangle {
                 objectName: "updateButton"
                 visible: Updater.available
                 iconName: "update"
-                text: Updater.restartNeeded ? qsTr("Restart to update") : qsTr("Update")
+                text: Updater.restartNeeded ? qsTr("Restart to update")
+                    : Updater.downloading && Updater.progress >= 0
+                      ? qsTr("Updating %1%").arg(Math.floor(Updater.progress * 100)) : qsTr("Update")
                 tip: qsTr("Ductus %1 is available").arg(Updater.latestVersion)
                 onTitleBar: true
                 checked: true

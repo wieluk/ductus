@@ -1,5 +1,6 @@
 //! Notes from other apps, turned into ordinary Ductus pages: the originals are only read.
 
+mod folder;
 mod onenote;
 mod rnote;
 mod sheets;
@@ -17,8 +18,8 @@ pub struct ImportedPage {
     pub document: Document,
     /// The PDF the page is written over.
     pub pdf: Option<Vec<u8>>,
-    /// Pictures by file name, as the document's images name them.
-    pub assets: Vec<(String, Vec<u8>)>,
+    /// PNG pictures by the names the document's images use; saved inside the page.
+    pub pictures: Vec<(String, Vec<u8>)>,
 }
 
 pub enum Entry {
@@ -58,7 +59,11 @@ fn extension(path: &Path) -> Option<String> {
     Some(name.rsplit_once('.')?.1.to_ascii_lowercase())
 }
 
+/// A file, or a folder that becomes a notebook.
 pub fn read(path: &Path) -> Result<Import, Error> {
+    if path.is_dir() {
+        return folder::read(path);
+    }
     match extension(path).as_deref() {
         Some("xopp" | "xoj") => xournal::read(path),
         Some("rnote") => rnote::read(path),
@@ -90,7 +95,7 @@ fn save_entry(
                 &name,
                 page.document.clone(),
                 page.pdf.as_deref(),
-                &page.assets,
+                &page.pictures,
             )?;
             first_page.get_or_insert_with(|| rel.clone());
             Ok(rel)

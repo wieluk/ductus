@@ -13,11 +13,13 @@ AppDialog {
     title: Updater.restartNeeded ? qsTr("Ductus %1 is installed").arg(Updater.latestVersion)
                                  : qsTr("Ductus %1 is available").arg(Updater.latestVersion)
     preferredWidth: 500
-    rejectText: Updater.busy ? qsTr("Cancel") : qsTr("Later")
+    // The bar has Cancel; hiding the dialog lets the download go on.
+    rejectText: Updater.downloading ? qsTr("Hide") : qsTr("Later")
     acceptText: ({ restart: qsTr("Restart now"), install: qsTr("Install"),
                    page: qsTr("Open download page") })[action]
     acceptButton.objectName: "updateAccept"
     acceptButton.enabled: !Updater.busy
+    acceptButton.visible: !Updater.downloading
     // Installing runs in the background; the dialog stays to show it.
     closePolicy: Popup.CloseOnEscape
 
@@ -36,7 +38,7 @@ AppDialog {
             Qt.callLater(() => dialog.acted = true)
         }
     }
-    onRejected: Updater.busy ? Updater.cancel() : Updater.dismiss()
+    onRejected: if (!Updater.busy) Updater.dismiss()
 
     contentItem: ColumnLayout {
         spacing: 10
@@ -64,17 +66,19 @@ AppDialog {
                 font.pixelSize: 13
             }
         }
-        ProgressBar {
+        TransferProgress {
+            objectName: "updateProgress"
             Layout.fillWidth: true
-            visible: Updater.busy
-            indeterminate: Updater.progress < 0
-            value: Math.max(0, Updater.progress)
+            visible: Updater.downloading
+            label: Updater.status
+            value: Updater.progress
+            onCancelled: Updater.cancel()
         }
         Label {
             objectName: "updateStatus"
             Layout.fillWidth: true
             Layout.preferredWidth: dialog.width - dialog.leftPadding - dialog.rightPadding
-            visible: dialog.acted && text.length > 0
+            visible: dialog.acted && text.length > 0 && !Updater.downloading
             text: Updater.status
             color: Theme.textMuted
             font.pixelSize: 12

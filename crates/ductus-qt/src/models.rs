@@ -42,17 +42,22 @@ pub fn languages() -> Vec<LanguageRow> {
         .iter()
         .map(|l| LanguageRow {
             code: l.code.into(),
-            name: match l.native {
-                "" => l.english.into(),
-                native => format!("{} ({native})", l.english),
-            },
+            english: l.english.into(),
+            native: l.native.into(),
             model: l.model.into(),
         })
         .collect()
 }
 
-pub fn text_model(lang: &str) -> String {
-    ductus_hwr::builtin::text_model(lang).into()
+pub fn text_models(langs: &str) -> Vec<String> {
+    ductus_hwr::builtin::text_models(langs)
+        .into_iter()
+        .map(String::from)
+        .collect()
+}
+
+pub fn locale_language(locale: &str) -> String {
+    ductus_hwr::builtin::locale_language(locale).into()
 }
 
 pub fn remove_model(dir: &str, id: &str) -> String {

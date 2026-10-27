@@ -1,6 +1,8 @@
 //! Pages are plain SVG: the ink is ordinary paths; the raw pen samples live in the Ductus namespace.
 
 use crate::Error;
+use base64::Engine as _;
+use base64::engine::general_purpose::STANDARD as BASE64;
 use ductus_core::{
     Document, Image, InkPoint, LinePattern, MathBox, Orientation, PageBackground, PageKind,
     PageSettings, PaperSize, PatternStyle, Rgba, Stroke, StrokeId, StrokeStyle, TextBox, Tool,
@@ -10,6 +12,7 @@ use kurbo::{BezPath, PathEl, Rect};
 use quick_xml::NsReader;
 use quick_xml::events::Event;
 use quick_xml::name::{Namespace, ResolveResult};
+use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
 pub const SVG_NS: &str = "http://www.w3.org/2000/svg";
@@ -23,6 +26,8 @@ pub struct PageFile {
     pub pdf: Option<String>,
     /// A cache: it can always be recognized again from the ink.
     pub recognized: Vec<RecognizedLine>,
+    /// PNG bytes by the name the document's images use; written into the page itself.
+    pub pictures: BTreeMap<String, Vec<u8>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -295,11 +300,10 @@ fn text_element(text: &TextBox) -> String {
     )
 }
 
-pub fn write_page(page: &PageFile) -> String {
-    write_page_in(page, "")
-}
+/// The data URL a picture is written as, so other programs show it without extra files.
+const PNG_DATA: &str = "data:image/png;base64,";
 
-pub fn write_page_in(page: &PageFile, assets_dir: &str) -> String {
+pub fn write_page(page: &PageFile) -> String {
     let doc = &page.document;
     let settings = doc.settings();
     let area = canvas_rect(doc);
@@ -425,10 +429,9 @@ pub fn write_page_in(page: &PageFile, assets_dir: &str) -> String {
     if !doc.images().is_empty() {
         svg.push_str(r#"<g dx:layer="images">"#);
         for image in doc.images() {
-            let href = if assets_dir.is_empty() {
-                image.source.clone()
-            } else {
-                format!("{assets_dir}/{}", image.source)
+            let href = match page.pictures.get(&image.source) {
+                Some(png) => format!("{PNG_DATA}{}", BASE64.encode(png)),
+                None => image.source.clone(),
             };
             write!(
                 svg,
@@ -564,6 +567,7 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
     let mut texts = Vec::new();
     let mut maths = Vec::new();
     let mut recognized = Vec::new();
+    let mut pictures = BTreeMap::new();
     let mut saw_root = false;
     let mut pdf = None;
     let mut pdf_sheets = Vec::new();
@@ -740,11 +744,18 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
                 }
             }
             "image" => {
-                // Only the file name: the folder part goes stale when another program renames the page.
-                let source = dx.get("src").cloned().or_else(|| {
-                    dx.get("svg:href")
-                        .map(|h| h.rsplit('/').next().unwrap_or(h).to_owned())
-                });
+                let href = dx.get("svg:href");
+                let source = dx
+                    .get("src")
+                    .cloned()
+                    .or_else(|| href.filter(|h| !h.starts_with("data:")).cloned());
+                if let (Some(source), Some(png)) = (
+                    &source,
+                    href.and_then(|h| h.strip_prefix(PNG_DATA))
+                        .and_then(|b| BASE64.decode(b).ok()),
+                ) {
+                    pictures.insert(source.clone(), png);
+                }
                 let number = |key: &str| dx.get(key).and_then(|v| v.parse::<f64>().ok());
                 if let (Some(source), Some(x), Some(y), Some(width), Some(height)) = (
                     source,
@@ -787,6 +798,7 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
         document,
         pdf: pdf.filter(|_| kind == PageKind::Pdf),
         recognized,
+        pictures,
     })
 }
 

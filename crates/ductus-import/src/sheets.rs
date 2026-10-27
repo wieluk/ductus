@@ -27,7 +27,7 @@ pub(crate) fn assemble(
     name: String,
     sheets: Vec<Sheet>,
     pdfs: &[Vec<u8>],
-    assets: Vec<(String, Vec<u8>)>,
+    pictures: Vec<(String, Vec<u8>)>,
 ) -> Result<ImportedPage, Error> {
     let mut sizes: Vec<(f64, f64)> = sheets.iter().map(|s| (s.width, s.height)).collect();
     let paper = match sizes.first() {
@@ -107,7 +107,7 @@ pub(crate) fn assemble(
         name,
         document,
         pdf,
-        assets,
+        pictures,
     })
 }
 
