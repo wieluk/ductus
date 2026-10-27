@@ -20,8 +20,10 @@ Dialog {
     anchors.centerIn: parent
     modal: true
     padding: 0
-    width: Math.min(780, window.width - 40)
-    height: Math.min(580, window.height - 60)
+    /// Phones: sections in a strip on top, labels above their controls.
+    readonly property bool narrow: window.width < 600
+    width: narrow ? window.width - 16 : Math.min(780, window.width - 40)
+    height: narrow ? window.height - 24 : Math.min(580, window.height - 60)
 
     Overlay.modal: Rectangle { color: Theme.dark ? "#99000000" : "#55000000" }
 
@@ -105,7 +107,7 @@ Dialog {
         }
     }
 
-    component Choice: RowLayout {
+    component Choice: GridLayout {
         id: choice
         property string label
         property string hint
@@ -113,22 +115,26 @@ Dialog {
         property int value
         signal picked(int index)
         Layout.fillWidth: true
-        spacing: 2
+        columns: dialog.narrow ? 1 : 2
+        rowSpacing: 6
+        columnSpacing: 12
         Described {
             label: choice.label
             hint: choice.hint
-            Layout.rightMargin: 12
         }
-        Repeater {
-            model: choice.options
-            delegate: RibbonButton {
-                required property string modelData
-                required property int index
-                objectName: choice.objectName + index
-                text: modelData
-                checkable: true
-                checked: choice.value === index
-                onClicked: choice.picked(index)
+        RowLayout {
+            spacing: 2
+            Repeater {
+                model: choice.options
+                delegate: RibbonButton {
+                    required property string modelData
+                    required property int index
+                    objectName: choice.objectName + index
+                    text: modelData
+                    checkable: true
+                    checked: choice.value === index
+                    onClicked: choice.picked(index)
+                }
             }
         }
     }
@@ -170,7 +176,7 @@ Dialog {
         }
     }
 
-    component Field: RowLayout {
+    component Field: GridLayout {
         id: fieldRow
         property string label
         property string hint
@@ -179,7 +185,9 @@ Dialog {
         property bool secret: false
         signal edited(string text)
         Layout.fillWidth: true
-        spacing: 12
+        columns: dialog.narrow ? 1 : 2
+        rowSpacing: 6
+        columnSpacing: 12
         Described {
             label: fieldRow.label
             hint: fieldRow.hint
@@ -188,6 +196,7 @@ Dialog {
             id: input
             objectName: fieldRow.objectName + "Input"
             Layout.preferredWidth: 240
+            Layout.fillWidth: dialog.narrow
             echoMode: fieldRow.secret ? TextInput.Password : TextInput.Normal
             color: Theme.text
             placeholderTextColor: Theme.textDisabled
@@ -217,17 +226,28 @@ Dialog {
         }
     }
 
-    contentItem: RowLayout {
-        spacing: 0
+    contentItem: GridLayout {
+        columns: dialog.narrow ? 1 : 3
+        rowSpacing: 0
+        columnSpacing: 0
 
         ListView {
             id: sections
             objectName: "settingsSections"
-            Layout.preferredWidth: 190
-            Layout.fillHeight: true
+            Layout.preferredWidth: dialog.narrow ? -1 : 190
+            Layout.preferredHeight: dialog.narrow ? 40 : -1
+            Layout.fillWidth: dialog.narrow
+            Layout.fillHeight: !dialog.narrow
             Layout.leftMargin: 10
-            Layout.bottomMargin: 12
-            interactive: false
+            Layout.rightMargin: dialog.narrow ? 10 : 0
+            Layout.bottomMargin: dialog.narrow ? 4 : 12
+            orientation: dialog.narrow ? ListView.Horizontal : ListView.Vertical
+            interactive: dialog.narrow
+            clip: dialog.narrow
+            currentIndex: dialog.section
+            // The strip shows the open section, also when the app opens one far along.
+            onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
+            onWidthChanged: positionViewAtIndex(currentIndex, ListView.Contain)
             spacing: 2
             model: [qsTr("Pen & input"), qsTr("New pages"), qsTr("Appearance"),
                     qsTr("Library"), qsTr("Handwriting"), qsTr("About")]
@@ -236,11 +256,12 @@ Dialog {
                 required property string modelData
                 required property int index
                 objectName: "settingsSection" + index
-                width: ListView.view.width
+                width: dialog.narrow ? implicitContentWidth : ListView.view.width
                 height: 36
                 onClicked: dialog.section = index
                 contentItem: Label {
                     leftPadding: 12
+                    rightPadding: dialog.narrow ? 12 : 0
                     text: entry.modelData
                     verticalAlignment: Text.AlignVCenter
                     color: dialog.section === entry.index ? Theme.accent : Theme.text
@@ -256,8 +277,10 @@ Dialog {
         }
 
         Rectangle {
-            Layout.preferredWidth: 1
-            Layout.fillHeight: true
+            Layout.preferredWidth: dialog.narrow ? -1 : 1
+            Layout.preferredHeight: dialog.narrow ? 1 : -1
+            Layout.fillWidth: dialog.narrow
+            Layout.fillHeight: !dialog.narrow
             Layout.bottomMargin: 12
             color: Theme.separator
         }
@@ -265,8 +288,8 @@ Dialog {
         StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.leftMargin: 20
-            Layout.rightMargin: 20
+            Layout.leftMargin: dialog.narrow ? 16 : 20
+            Layout.rightMargin: dialog.narrow ? 16 : 20
             Layout.bottomMargin: 16
             currentIndex: dialog.section
 
@@ -463,7 +486,8 @@ Dialog {
                     label: AppController.libraryPath
                     hint: qsTr("Your notebooks are ordinary folders and files here. Sync this folder with Nextcloud, Syncthing or similar to use it on several devices.")
                 }
-                RowLayout {
+                Flow {
+                    Layout.fillWidth: true
                     spacing: 6
                     RibbonButton {
                         objectName: "settingsChangeLibrary"
@@ -509,7 +533,8 @@ Dialog {
                     label: qsTr("Versions and trash")
                     hint: qsTr("Earlier versions of your pages and deleted items stay on this device, in Ductus' own data folder, so the library folder holds only your notes. Restore them with File › Versions and File › Trash.")
                 }
-                RowLayout {
+                Flow {
+                    Layout.fillWidth: true
                     spacing: 6
                     RibbonButton {
                         objectName: "settingsTrash"
@@ -541,9 +566,11 @@ Dialog {
                     value: Math.max(0, kinds.indexOf(hwr.backend))
                     onPicked: (index) => hwr.backend = kinds[index]
                 }
-                RowLayout {
+                GridLayout {
                     Layout.fillWidth: true
-                    spacing: 12
+                    columns: dialog.narrow ? 1 : 2
+                    rowSpacing: 6
+                    columnSpacing: 12
                     Described {
                         label: qsTr("Language")
                         hint: hwr.lang === "auto"
@@ -553,7 +580,7 @@ Dialog {
                     ComboBox {
                         objectName: "hwrLang"
                         Layout.preferredWidth: 240
-                        Layout.minimumWidth: 140
+                        Layout.fillWidth: dialog.narrow
                         model: Models.languages
                         textRole: "name"
                         valueRole: "code"
@@ -685,8 +712,9 @@ Dialog {
                              manual: qsTr("New versions are on the download page."),
                              none: "" })[Updater.channel]
                 }
-                RowLayout {
+                Flow {
                     visible: Updater.channel !== "none"
+                    Layout.fillWidth: true
                     spacing: 6
                     RibbonButton {
                         objectName: "settingsCheckUpdates"
