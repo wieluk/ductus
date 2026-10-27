@@ -43,8 +43,8 @@ Dialog {
         property string url: ""
         property string model: ""
         property string key: ""
-        /// The handwriting languages, as codes: "de,en".
-        property string lang: Models.defaultLanguages()
+        /// The handwriting languages, as codes: "de,en"; "" follows the system.
+        property string lang: ""
     }
 
     Settings {
@@ -592,7 +592,7 @@ Dialog {
                     id: langs
                     Layout.fillWidth: true
                     spacing: 6
-                    readonly property var chosen: hwr.lang.split(",").filter(c => Models.languages.some(l => l.code === c))
+                    readonly property var chosen: Models.chosenLanguages(hwr.lang).split(",")
                     readonly property string query: langSearch.text.trim().toLowerCase()
 
                     function toggle(code) {
@@ -694,7 +694,7 @@ Dialog {
                         // The readers for the chosen languages, formulas, and whatever is already here.
                         visible: hwr.backend !== "server"
                                  && (modelData.id === "math" || modelData.installed
-                                     || Models.textModels(hwr.lang).includes(modelData.id))
+                                     || Models.textModels(langs.chosen.join(",")).includes(modelData.id))
                         Layout.fillWidth: true
                         spacing: 12
                         Described {

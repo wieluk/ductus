@@ -2487,8 +2487,8 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
 <context>
     <name>Translations</name>
     <message>
-        <source>System</source>
-        <translation>System</translation>
+        <source>System (%1)</source>
+        <translation>System (%1)</translation>
     </message>
 </context>
 <context>

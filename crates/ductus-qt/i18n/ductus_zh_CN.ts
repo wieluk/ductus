@@ -2482,8 +2482,8 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>Translations</name>
     <message>
-        <source>System</source>
-        <translation>跟随系统</translation>
+        <source>System (%1)</source>
+        <translation>跟随系统（%1）</translation>
     </message>
 </context>
 <context>
