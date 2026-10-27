@@ -11,12 +11,8 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-/// Where older versions kept a folder's color and order, inside the folder.
-const LEGACY_META_FILE: &str = ".ductus.json";
 /// Every folder's color and order, by path.
 const FOLDERS_FILE: &str = "folders.json";
-/// Where older versions kept history, trash and favorites inside the library.
-const LEGACY_APP_DIR: &str = ".ductus";
 /// Names the library a data folder belongs to, for people looking at it.
 const LOCATION_FILE: &str = "library.txt";
 pub const PAGE_EXTENSION: &str = "svg";
@@ -24,6 +20,7 @@ pub const PDF_EXTENSION: &str = "pdf";
 pub const ASSETS_SUFFIX: &str = ".assets";
 /// Other files in an attachments folder are never moved away.
 pub const IMAGE_PREFIX: &str = "img-";
+const PAGE_PDF: &str = "source.pdf";
 const ASSETS_HISTORY: &str = "assets";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -274,10 +271,6 @@ impl Library {
         if fs::read_to_string(&location).ok().as_deref() != Some(named.as_ref()) {
             write_atomic(&location, named.as_bytes())?;
         }
-        let legacy = root.join(LEGACY_APP_DIR);
-        if legacy.is_dir() {
-            merge_into(&legacy, &data)?;
-        }
         let library = Self {
             root,
             data,
@@ -387,19 +380,11 @@ impl Library {
             return meta.clone();
         }
         self.reload_folders();
-        if let Some(meta) = self.folders.borrow().get(folder) {
-            return meta.clone();
-        }
-        // Older versions kept this file in the folder.
-        let legacy = self.abs(folder).join(LEGACY_META_FILE);
-        let Ok(text) = fs::read_to_string(&legacy) else {
-            return FolderMeta::default();
-        };
-        let meta: FolderMeta = serde_json::from_str(&text).unwrap_or_default();
-        if self.write_meta(folder, &meta).is_ok() {
-            let _ = fs::remove_file(legacy);
-        }
-        meta
+        self.folders
+            .borrow()
+            .get(folder)
+            .cloned()
+            .unwrap_or_default()
     }
 
     fn write_meta(&self, folder: &str, meta: &FolderMeta) -> Result<(), Error> {
@@ -636,13 +621,39 @@ impl Library {
         name: &str,
         settings: PageSettings,
     ) -> Result<String, Error> {
+        self.add_page(
+            parent,
+            name,
+            Document::with_contents(settings, []),
+            None,
+            &[],
+        )
+    }
+
+    /// A new page holding `document`, with its pictures and the PDF it is written over.
+    pub fn add_page(
+        &mut self,
+        parent: &str,
+        name: &str,
+        document: Document,
+        pdf: Option<&[u8]>,
+        assets: &[(String, Vec<u8>)],
+    ) -> Result<String, Error> {
         let name = validate_name(name)?;
         self.ensure_free(parent, &name)?;
         let rel = Self::join(parent, &name);
+        if let Some(bytes) = pdf {
+            let dir = self.assets_dir(&rel);
+            fs::create_dir_all(&dir)?;
+            write_atomic(&dir.join(PAGE_PDF), bytes)?;
+        }
+        for (file, bytes) in assets {
+            self.save_asset(&rel, file, bytes)?;
+        }
         let page = PageFile {
             id: new_id(),
-            document: Document::with_contents(settings, []),
-            pdf: None,
+            document,
+            pdf: pdf.map(|_| PAGE_PDF.to_owned()),
             recognized: Vec::new(),
         };
         write_atomic(&self.page_file(&rel), write_page(&page).as_bytes())?;
@@ -827,6 +838,29 @@ impl Library {
         Ok(rel)
     }
 
+    /// Any other file, such as an attachment brought along by an import; a free name is picked.
+    pub fn add_file(&self, parent: &str, file_name: &str, bytes: &[u8]) -> Result<String, Error> {
+        let file_name = validate_name(file_name)?;
+        let (stem, ext) = match file_name.rsplit_once('.') {
+            Some((stem, ext)) if !stem.is_empty() => (stem, format!(".{ext}")),
+            _ => (file_name.as_str(), String::new()),
+        };
+        let name = (1..)
+            .map(|n| match n {
+                1 => format!("{stem}{ext}"),
+                n => format!("{stem} {n}{ext}"),
+            })
+            .find(|n| self.ensure_free(parent, n).is_ok())
+            .expect("some number is free");
+        let rel = Self::join(parent, &name);
+        write_atomic(&self.abs(&rel), bytes)?;
+        self.edit_order(parent, |order| {
+            order.retain(|n| *n != name);
+            order.push(name.clone());
+        })?;
+        Ok(rel)
+    }
+
     pub fn add_pdf(&self, parent: &str, name: &str, bytes: &[u8]) -> Result<String, Error> {
         let name = validate_name(name)?;
         self.ensure_free(parent, &name)?;
@@ -846,12 +880,6 @@ impl Library {
         pdf: &[u8],
         page_sizes: Vec<(f64, f64)>,
     ) -> Result<String, Error> {
-        let name = validate_name(name)?;
-        self.ensure_free(parent, &name)?;
-        let rel = Self::join(parent, &name);
-        let assets = self.assets_dir(&rel);
-        fs::create_dir_all(&assets)?;
-        write_atomic(&assets.join("source.pdf"), pdf)?;
         let mut document = Document::with_contents(
             PageSettings {
                 kind: ductus_core::PageKind::Pdf,
@@ -860,18 +888,7 @@ impl Library {
             [],
         );
         document.set_pdf_sheets(page_sizes);
-        let page = PageFile {
-            id: new_id(),
-            document,
-            pdf: Some("source.pdf".into()),
-            recognized: Vec::new(),
-        };
-        write_atomic(&self.page_file(&rel), write_page(&page).as_bytes())?;
-        self.edit_order(parent, |order| {
-            order.retain(|n| *n != name);
-            order.push(name.clone());
-        })?;
-        Ok(rel)
+        self.add_page(parent, name, document, Some(pdf), &[])
     }
 
     /// Replaces the PDF a notes page is written over.
@@ -946,9 +963,13 @@ impl Library {
     fn snapshot_as(&self, key: &str, current: &Path, extension: &str) -> Result<(), Error> {
         let dir = self.history_dir(key);
         fs::create_dir_all(&dir)?;
-        let stamp = SystemTime::now()
+        let mut stamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_or(0, |d| d.as_millis());
+        // Two snapshots in one millisecond would overwrite each other.
+        while dir.join(format!("{stamp}.{extension}")).exists() {
+            stamp += 1;
+        }
         fs::copy(current, dir.join(format!("{stamp}.{extension}")))?;
         let size = |p: &PathBuf| fs::metadata(p).map_or(0, |m| m.len());
         let mut versions = self.history(key)?;

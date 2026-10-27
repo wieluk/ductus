@@ -1,4 +1,5 @@
 # A phone-sized window: the notebooks are a drawer, the bars scroll, dialogs fit.
+# env: DUCTUS_MODELS_DIR=target/ui-no-models
 size 360 740
 expect-hidden notebookTree
 shot start
@@ -16,3 +17,10 @@ key Escape
 click-item tab_draw
 pen p=0.6 120,400 260,430
 expect-in-file My Notebook/First page.svg | dx:ink
+# The selection bar wraps instead of hiding Text and Formula off the edge.
+click-item toolLasso
+pen 100,380 280,380 280,450 100,450 100,380
+click-item selectionToText
+# Settings opens at the download, its section shown in the strip on top.
+expect-prop model_text visible true
+shot settings

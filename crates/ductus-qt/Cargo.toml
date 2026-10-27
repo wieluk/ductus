@@ -17,6 +17,7 @@ path = "src/main.rs"
 ductus-core.workspace = true
 ductus-canvas.workspace = true
 ductus-format.workspace = true
+ductus-import.workspace = true
 ductus-pdf.workspace = true
 ductus-search.workspace = true
 ductus-hwr.workspace = true

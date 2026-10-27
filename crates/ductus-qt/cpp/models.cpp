@@ -38,6 +38,22 @@ bool Models::installed(const QString &id)
     return false;
 }
 
+QString Models::textModel(const QString &lang)
+{
+    return toQ(text_model(lang.toStdString()));
+}
+
+QVariantList Models::languages() const
+{
+    QVariantList out;
+    for (const LanguageRow &row : ::languages()) {
+        out.append(QVariantMap{{QStringLiteral("code"), toQ(row.code)},
+                               {QStringLiteral("name"), toQ(row.name)},
+                               {QStringLiteral("model"), toQ(row.model)}});
+    }
+    return out;
+}
+
 QVariantList Models::entries() const
 {
     QVariantList out;

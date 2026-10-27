@@ -14,6 +14,7 @@ ductus-ink = { path = "crates/ductus-ink" }
 ductus-render = { path = "crates/ductus-render" }
 ductus-canvas = { path = "crates/ductus-canvas" }
 ductus-format = { path = "crates/ductus-format" }
+ductus-import = { path = "crates/ductus-import" }
 ductus-pdf = { path = "crates/ductus-pdf" }
 ductus-math = { path = "crates/ductus-math" }
 ductus-search = { path = "crates/ductus-search" }
@@ -30,11 +31,6 @@ all = { level = "warn", priority = -1 }
 [profile.release]
 lto = "thin"
 
-# Recognition models are unusably slow without optimizations, even in development builds.
+# Preparing line images pixel by pixel is slow without optimizations, even in development builds.
 [profile.dev.package]
-candle-core = { opt-level = 3 }
-candle-nn = { opt-level = 3 }
-gemm = { opt-level = 3 }
-gemm-common = { opt-level = 3 }
-gemm-f32 = { opt-level = 3 }
 ductus-hwr = { opt-level = 3 }

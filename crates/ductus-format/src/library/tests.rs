@@ -1,5 +1,5 @@
 use super::*;
-use ductus_core::{Command, History, InkPoint, Stroke, StrokeStyle};
+use ductus_core::{Command, History, InkPoint, Rgba, Stroke, StrokeStyle};
 
 fn lib() -> (tempfile::TempDir, Library) {
     let dir = tempfile::tempdir().unwrap();
@@ -266,28 +266,17 @@ fn saving_a_pdf_keeps_the_previous_version() {
 }
 
 #[test]
-fn data_lives_outside_the_library_and_old_data_moves_there() {
+fn data_lives_outside_the_library() {
     let dir = tempfile::tempdir().unwrap();
     let root = dir.path().join("Notes");
     let app = dir.path().join("app");
-    fs::create_dir_all(root.join(".ductus/history/page-id")).unwrap();
-    fs::write(root.join(".ductus/history/page-id/1.svg"), "old").unwrap();
-    fs::write(
-        root.join(".ductus/quick-access.json"),
-        r#"{"paths":["Math"]}"#,
-    )
-    .unwrap();
-    fs::create_dir_all(root.join("Math")).unwrap();
 
     let lib = Library::open(&root, &app).unwrap();
-    assert!(!root.join(".ductus").exists());
     assert!(lib.data_dir().starts_with(&app));
     assert_eq!(
         fs::read_to_string(lib.data_dir().join("library.txt")).unwrap(),
         root.to_string_lossy()
     );
-    assert_eq!(lib.history("page-id").unwrap().len(), 1);
-    assert_eq!(lib.favorites(), ["Math"]);
 
     lib.create_folder("", "Old").unwrap();
     lib.delete("Old").unwrap();
@@ -312,17 +301,14 @@ fn folder_colors_and_order_live_outside_the_library() {
     let root = dir.path().join("Notes");
     let app = dir.path().join("app");
     fs::create_dir_all(root.join("Uni/Math")).unwrap();
-    fs::write(
-        root.join("Uni/.ductus.json"),
-        r##"{"color":"#1f4fd1","order":["Math"]}"##,
-    )
-    .unwrap();
     let lib = Library::open(&root, &app).unwrap();
+    lib.set_color("Uni", Some(Rgba::rgb(0.1, 0.3, 0.8)))
+        .unwrap();
     assert!(lib.folder_color("Uni").is_some());
-    assert!(
-        !root.join("Uni/.ductus.json").exists(),
-        "an old file moves out"
-    );
+    assert!(fs::read_dir(root.join("Uni")).unwrap().all(|e| {
+        let name = e.unwrap().file_name();
+        !name.to_string_lossy().starts_with('.')
+    }));
 
     lib.create_folder("Uni", "Art").unwrap();
     lib.rename("Uni", "Study").unwrap();

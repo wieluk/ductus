@@ -26,6 +26,9 @@ Copy-Item target\release\ductus.exe $app\
 & $bash build-aux/fetch-pdfium.sh win-x64 target/pdfium
 if ($LASTEXITCODE -ne 0) { throw "pdfium download failed" }
 Copy-Item target\pdfium\bin\pdfium.dll $app\
+& $bash build-aux/fetch-onnxruntime.sh win-x64 target/onnxruntime
+if ($LASTEXITCODE -ne 0) { throw "ONNX Runtime download failed" }
+Copy-Item target\onnxruntime\lib\onnxruntime.dll $app\
 Copy-Item LICENSE $app\LICENSE.txt
 & "$env:QT_ROOT_DIR\bin\windeployqt.exe" --release --no-translations --qmldir crates\ductus-qt\qml $app\ductus.exe
 if ($LASTEXITCODE -ne 0) { throw "windeployqt failed" }

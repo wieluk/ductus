@@ -248,6 +248,15 @@ public:
             if (!ok)
                 return fail(cmd + QStringLiteral(" failed"));
             QTest::qWait(300);
+        } else if (cmd == u"import-notes") {
+            // Read on a worker thread: waits until the pages are in the library.
+            const QString file = QFileInfo(rest).absoluteFilePath();
+            QMetaObject::invokeMethod(controller(), "importNotes", Q_ARG(QString, file));
+            for (int i = 0; i < 300 && controller()->property("importing").toBool(); ++i)
+                QTest::qWait(100);
+            if (controller()->property("importing").toBool())
+                return fail(QStringLiteral("import-notes timed out"));
+            QTest::qWait(300);
         } else if (cmd == u"print-pdf") {
             bool ok = false;
             const QString file = qEnvironmentVariable("DUCTUS_LIBRARY") + QLatin1Char('/') + rest;

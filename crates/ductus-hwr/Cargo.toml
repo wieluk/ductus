@@ -14,10 +14,12 @@ ductus-update.workspace = true
 kurbo.workspace = true
 tiny-skia = "0.12"
 base64 = "0.23"
-candle-core = "0.11"
-candle-nn = "0.11"
+ndarray = "0.17"
+# Loads the ONNX Runtime library the app ships (build-aux/fetch-onnxruntime.sh) instead of linking it.
+ort = { version = "=2.0.0-rc.15", default-features = false, features = ["std", "ndarray", "load-dynamic"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+serde_yaml = "0.9"
 ureq = { version = "3.5", features = ["json"] }
 
 [lints]

@@ -24,6 +24,8 @@ modules:
       - install -Dm755 -s ductus /app/bin/ductus
       - install -Dm755 libpdfium.so /app/lib/libpdfium.so
       - install -Dm644 LICENSE /app/share/licenses/pdfium/LICENSE
+      - install -Dm755 libonnxruntime.so /app/lib/libonnxruntime.so
+      - install -Dm644 onnxruntime-LICENSE /app/share/licenses/onnxruntime/LICENSE
       - install -Dm644 app.ductus.Ductus.desktop -t /app/share/applications
       - install -Dm644 app.ductus.Ductus.metainfo.xml -t /app/share/metainfo
       - install -Dm644 app.ductus.Ductus.svg -t /app/share/icons/hicolor/scalable/apps
@@ -34,6 +36,11 @@ modules:
         path: ../target/pdfium/lib/libpdfium.so
       - type: file
         path: ../target/pdfium/LICENSE
+      - type: file
+        path: ../target/onnxruntime/lib/libonnxruntime.so
+      - type: file
+        path: ../target/onnxruntime/LICENSE
+        dest-filename: onnxruntime-LICENSE
       - type: file
         path: ../data/app.ductus.Ductus.desktop
       - type: file

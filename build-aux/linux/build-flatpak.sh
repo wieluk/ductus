@@ -25,6 +25,7 @@ fi
 if [ "$step" != package ]; then
   build-aux/sdk-run.sh cargo build --release --locked -p ductus-qt
   build-aux/fetch-pdfium.sh linux-x64 target/pdfium
+  build-aux/fetch-onnxruntime.sh linux-x64 target/onnxruntime
 fi
 [ "$step" = binary ] && exit 0
 

@@ -9,9 +9,13 @@
   lockFileMaintenance: { enabled: true, schedule: ["before 6am on monday"] },
   customManagers: [
     {
-      // Qt, aqtinstall and the pdfium builds, marked with a `renovate:` comment above them.
+      // Qt, aqtinstall, pdfium and ONNX Runtime builds, marked with a `renovate:` comment above them.
       customType: "regex",
-      managerFilePatterns: ["/^\\.github/actions/.+\\.yml$/", "/^build-aux/fetch-pdfium\\.sh$/"],
+      managerFilePatterns: [
+        "/^\\.github/actions/.+\\.yml$/",
+        "/^build-aux/fetch-pdfium\\.sh$/",
+        "/^build-aux/fetch-onnxruntime\\.sh$/",
+      ],
       matchStrings: [
         '# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n[^\\n]*?[:=]\\s*"?(?<currentValue>[0-9][^"\\s]*)"?',
       ],
@@ -34,8 +38,16 @@
       enabled: false,
     },
     {
-      matchPackageNames: ["candle-core", "candle-nn"],
-      groupName: "candle",
+      matchPackageNames: ["microsoft/onnxruntime"],
+      extractVersion: "^v(?<version>\\d+\\.\\d+\\.\\d+)$",
+    },
+    {
+      // ort loads the ONNX Runtime library at runtime and needs at least the release it binds.
+      matchPackageNames: ["ort", "microsoft/onnxruntime"],
+      groupName: "onnxruntime",
+      prBodyNotes: [
+        "The checksums in `build-aux/fetch-onnxruntime.sh` need updating by hand: download each platform's archive for the new release and put its SHA-256 in. CI fails until then.",
+      ],
     },
     {
       // tylax writes Typst for the typst version it was built against.

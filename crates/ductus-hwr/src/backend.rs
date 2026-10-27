@@ -8,10 +8,9 @@ pub trait Recognizer: Send {
 }
 
 fn prompt(lang: &str) -> String {
-    let language = match lang {
-        "de" => "The text is German.",
-        "en" => "The text is English.",
-        _ => "The text may be German or English.",
+    let language = match crate::builtin::language(lang) {
+        l if l.code == "auto" => "The text may be German or English.".to_owned(),
+        l => format!("The text is {}.", l.english),
     };
     format!(
         "This image shows one line of handwritten notes. {language} Transcribe it exactly, \
@@ -86,7 +85,7 @@ pub struct Builtin {
     id: String,
 }
 
-/// Unused this long, a model is unloaded: each takes 1–2 GB of memory.
+/// Unused this long, a model is unloaded: the text models take about 300 MB, the formula one 600 MB.
 pub const IDLE_UNLOAD: Duration = Duration::from_secs(5 * 60);
 
 struct Loaded {
@@ -146,7 +145,7 @@ fn start_unloading() {
 }
 
 impl Recognizer for Builtin {
-    fn recognize(&self, png: &[u8], _lang: &str) -> Result<String, String> {
+    fn recognize(&self, png: &[u8], lang: &str) -> Result<String, String> {
         let image = tiny_skia::Pixmap::decode_png(png).map_err(|e| e.to_string())?;
         let path = self.dir.join(&self.id);
         let slot = slot(&path);
@@ -161,7 +160,7 @@ impl Recognizer for Builtin {
                 })
             }
         };
-        let text = loaded.model.recognize(&image);
+        let text = loaded.model.recognize(&image, lang);
         loaded.used = Instant::now();
         text
     }

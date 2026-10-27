@@ -264,6 +264,7 @@ ApplicationWindow {
             onExportRequested: exportDialog.show()
             onOpenFolderRequested: folderDialog.open()
             onOpenFileRequested: openFileDialog.open()
+            onImportRequested: importFileDialog.open()
             onPrintRequested: AppController.print()
             onSidebarToggled: window.toggleSidebar()
             onUpdateRequested: updateDialog.open()
@@ -277,6 +278,7 @@ ApplicationWindow {
             onPdfImportRequested: pdfFileDialog.open()
             onImageInsertRequested: imageFileDialog.open()
             onOpenFileRequested: openFileDialog.open()
+            onImportRequested: importFileDialog.open()
             onOpenFolderRequested: folderDialog.open()
             onExportRequested: exportDialog.show()
             onPrintRequested: AppController.print()
@@ -490,13 +492,24 @@ ApplicationWindow {
     FileDialog {
         id: openFileDialog
         title: qsTr("Open")
-        nameFilters: [qsTr("Notes pages and PDFs (*.svg *.pdf *.PDF)"), qsTr("All files (*)")]
+        nameFilters: [qsTr("Notes pages and PDFs (*.svg *.pdf *.PDF)"),
+                      importFileDialog.notesFilter, qsTr("All files (*)")]
         onAccepted: {
             if (AppController.openFile(selectedFile.toString()) === "pdf") {
                 pdfModeDialog.file = selectedFile.toString()
                 pdfModeDialog.open()
             }
         }
+    }
+
+    FileDialog {
+        id: importFileDialog
+        readonly property string notesFilter:
+            qsTr("Notes from other apps (*.xopp *.xoj *.rnote *.one *.onetoc2 *.onepkg)")
+        title: qsTr("Import notes")
+        nameFilters: [notesFilter, qsTr("Xournal++ (*.xopp *.xoj)"), qsTr("Rnote (*.rnote)"),
+                      qsTr("OneNote (*.one *.onetoc2 *.onepkg)"), qsTr("All files (*)")]
+        onAccepted: AppController.importNotes(selectedFile.toString())
     }
 
     FileDialog {

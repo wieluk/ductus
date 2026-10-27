@@ -14,6 +14,7 @@ Rectangle {
     signal pdfImportRequested()
     signal imageInsertRequested()
     signal openFileRequested()
+    signal importRequested()
     signal openFolderRequested()
     signal exportRequested()
     signal printRequested()
@@ -239,6 +240,14 @@ Rectangle {
                     text: qsTr("Open…")
                     tip: qsTr("Open a notes page or PDF (Ctrl+O)")
                     onClicked: ribbon.openFileRequested()
+                }
+                RibbonButton {
+                    objectName: "fileImport"
+                    iconName: "import"
+                    text: AppController.importing ? qsTr("Importing…") : qsTr("Import…")
+                    tip: qsTr("Bring in notes from Xournal++, Rnote or OneNote")
+                    enabled: !AppController.importing
+                    onClicked: ribbon.importRequested()
                 }
                 RibbonButton {
                     objectName: "fileOpenLibrary"

@@ -1,6 +1,6 @@
 //! Downloading and removing the built-in recognition models, on a worker thread.
 
-use crate::ffi::qobject::{ModelRow, ModelsState};
+use crate::ffi::qobject::{LanguageRow, ModelRow, ModelsState};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -35,6 +35,24 @@ pub fn model_rows(dir: &str) -> Vec<ModelRow> {
             installed: ductus_hwr::builtin::installed(dir.as_ref(), m.id),
         })
         .collect()
+}
+
+pub fn languages() -> Vec<LanguageRow> {
+    ductus_hwr::builtin::LANGUAGES
+        .iter()
+        .map(|l| LanguageRow {
+            code: l.code.into(),
+            name: match l.native {
+                "" => l.english.into(),
+                native => format!("{} ({native})", l.english),
+            },
+            model: l.model.into(),
+        })
+        .collect()
+}
+
+pub fn text_model(lang: &str) -> String {
+    ductus_hwr::builtin::text_model(lang).into()
 }
 
 pub fn remove_model(dir: &str, id: &str) -> String {
