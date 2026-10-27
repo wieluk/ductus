@@ -134,9 +134,8 @@ Updater::Updater(QObject *parent)
     if (m_channel != u"none") {
         m_daily.start();
         // A moment after start, so it doesn't compete with opening the library.
-        // UI test runs stay offline unless they bring a feed.
-        const bool offlineTest = qEnvironmentVariableIsSet("DUCTUS_UI_SCRIPT") && m_feed.isEmpty();
-        if (autoCheck() && !offlineTest) {
+        // UI test runs check only when their script asks, so a check never races the script.
+        if (autoCheck() && !qEnvironmentVariableIsSet("DUCTUS_UI_SCRIPT")) {
             QTimer::singleShot(5000, this, [this] {
                 m_automatic = true;
                 check();
