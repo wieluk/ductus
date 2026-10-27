@@ -1652,6 +1652,7 @@ void AppController::recognizeOpenPage()
             return;
         }
     }
+    set_processor_share(settings.value(QStringLiteral("hwr/processor"), 80).toUInt());
     (*m_recognizer)->configure(toStd(kind), toStd(url), toStd(model),
                                toStd(settings.value(QStringLiteral("hwr/key")).toString()));
     const QString lang = Models::languages();
@@ -1700,6 +1701,7 @@ void AppController::convertSelection(const QString &kind)
         Q_EMIT modelsNeeded(missing);
         return;
     }
+    set_processor_share(settings.value(QStringLiteral("hwr/processor"), 80).toUInt());
     rust::Vec<LineJob> jobs = m_canvas->engine().selection_jobs(math);
     if (jobs.empty()) {
         Q_EMIT notice(tr("Select some handwriting first."));

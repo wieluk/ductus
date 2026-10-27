@@ -2147,6 +2147,18 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Serveur de modèle de vision</translation>
     </message>
     <message>
+        <source>Processor use</source>
+        <translation>Utilisation du processeur</translation>
+    </message>
+    <message>
+        <source>How much of the processor reading handwriting may take. Less keeps the device cool and quiet; more reads faster.</source>
+        <translation>La part du processeur que la lecture de l’écriture manuscrite peut utiliser. Moins garde l’appareil frais et silencieux ; plus lit plus vite.</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
         <source>Languages</source>
         <translation>Langues</translation>
     </message>

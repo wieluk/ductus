@@ -2147,6 +2147,18 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
         <translation>Server con modello di visione</translation>
     </message>
     <message>
+        <source>Processor use</source>
+        <translation>Uso del processore</translation>
+    </message>
+    <message>
+        <source>How much of the processor reading handwriting may take. Less keeps the device cool and quiet; more reads faster.</source>
+        <translation>Quanto processore può usare la lettura della scrittura a mano. Meno mantiene il dispositivo fresco e silenzioso; di più legge più in fretta.</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1%</translation>
+    </message>
+    <message>
         <source>Languages</source>
         <translation>Lingue</translation>
     </message>

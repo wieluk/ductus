@@ -2147,6 +2147,18 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
         <translation>Servidor con modelo de visión</translation>
     </message>
     <message>
+        <source>Processor use</source>
+        <translation>Uso del procesador</translation>
+    </message>
+    <message>
+        <source>How much of the processor reading handwriting may take. Less keeps the device cool and quiet; more reads faster.</source>
+        <translation>Cuánto procesador puede usar la lectura de la escritura a mano. Menos mantiene el equipo frío y silencioso; más lee más rápido.</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
         <source>Languages</source>
         <translation>Idiomas</translation>
     </message>

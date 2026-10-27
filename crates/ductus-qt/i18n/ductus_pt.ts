@@ -2147,6 +2147,18 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
         <translation>Servidor de modelo de visão</translation>
     </message>
     <message>
+        <source>Processor use</source>
+        <translation>Uso do processador</translation>
+    </message>
+    <message>
+        <source>How much of the processor reading handwriting may take. Less keeps the device cool and quiet; more reads faster.</source>
+        <translation>Quanto do processador a leitura da escrita à mão pode usar. Menos mantém o aparelho frio e silencioso; mais lê mais rápido.</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1%</translation>
+    </message>
+    <message>
         <source>Languages</source>
         <translation>Idiomas</translation>
     </message>
