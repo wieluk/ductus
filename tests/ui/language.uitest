@@ -1,0 +1,14 @@
+# On a German system with nothing chosen yet, the app and handwriting follow its language.
+# env: LANGUAGE=de
+# env: LANG=de_DE.UTF-8
+# env: LC_ALL=de_DE.UTF-8
+size 1280 800
+click-item appMenuButton
+click-item menuSettings
+click-item settingsSection2
+expect-prop appLanguage displayText System (Deutsch)
+click-item settingsSection4
+expect-prop hwrLang_de picked true
+expect-prop hwrLang_en picked false
+shot settings
+click-item settingsClose

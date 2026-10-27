@@ -2487,8 +2487,8 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
 <context>
     <name>Translations</name>
     <message>
-        <source>System</source>
-        <translation>Système</translation>
+        <source>System (%1)</source>
+        <translation>Système (%1)</translation>
     </message>
 </context>
 <context>

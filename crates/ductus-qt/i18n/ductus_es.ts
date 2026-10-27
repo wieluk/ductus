@@ -2487,8 +2487,8 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
 <context>
     <name>Translations</name>
     <message>
-        <source>System</source>
-        <translation>Sistema</translation>
+        <source>System (%1)</source>
+        <translation>Sistema (%1)</translation>
     </message>
 </context>
 <context>

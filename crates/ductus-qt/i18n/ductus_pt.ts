@@ -2487,8 +2487,8 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
 <context>
     <name>Translations</name>
     <message>
-        <source>System</source>
-        <translation>Sistema</translation>
+        <source>System (%1)</source>
+        <translation>Sistema (%1)</translation>
     </message>
 </context>
 <context>

@@ -2492,8 +2492,8 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>Translations</name>
     <message>
-        <source>System</source>
-        <translation>Система</translation>
+        <source>System (%1)</source>
+        <translation>Система (%1)</translation>
     </message>
 </context>
 <context>
