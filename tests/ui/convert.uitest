@@ -20,5 +20,5 @@ expect-in-file My Notebook/First page.svg | Grenzwert
 key Ctrl+Z
 setenv DUCTUS_TEST_RECOGNIZER
 click-item pageToText
-expect-prop model_text-en visible true
+expect-prop model_text visible true
 expect-prop hwrSearchSwitch checked false

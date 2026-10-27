@@ -31,11 +31,6 @@ all = { level = "warn", priority = -1 }
 [profile.release]
 lto = "thin"
 
-# Recognition models are unusably slow without optimizations, even in development builds.
+# Preparing line images pixel by pixel is slow without optimizations, even in development builds.
 [profile.dev.package]
-candle-core = { opt-level = 3 }
-candle-nn = { opt-level = 3 }
-gemm = { opt-level = 3 }
-gemm-common = { opt-level = 3 }
-gemm-f32 = { opt-level = 3 }
 ductus-hwr = { opt-level = 3 }

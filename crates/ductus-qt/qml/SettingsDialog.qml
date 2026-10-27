@@ -544,7 +544,7 @@ Dialog {
                 Described {
                     visible: hwr.backend !== "server"
                     label: qsTr("Runs on this computer; nothing is sent anywhere.")
-                    hint: qsTr("The models are large, so each downloads once, when you want it.")
+                    hint: qsTr("Each model downloads once, when you want it.")
                 }
                 Repeater {
                     model: Models.entries
@@ -558,7 +558,7 @@ Dialog {
                         Described {
                             label: modelRow.modelData.title
                             hint: modelRow.loading ? qsTr("Downloading… %1%").arg(Math.round(Models.progress * 100))
-                                : (modelRow.modelData.size / 1e9).toFixed(1) + " GB"
+                                : Math.round(modelRow.modelData.size / 1e6) + " MB"
                                   + (modelRow.modelData.installed ? " · " + qsTr("installed") : "")
                         }
                         RibbonButton {
@@ -620,6 +620,7 @@ Dialog {
                     label: qsTr("Language")
                     readonly property var langs: ["auto", "de", "en"]
                     options: [qsTr("Either"), qsTr("German"), qsTr("English")]
+                    hint: qsTr("Knowing it makes the built-in recognizer a little more accurate and faster.")
                     value: langs.indexOf(hwr.lang)
                     onPicked: (index) => hwr.lang = langs[index]
                 }
@@ -628,7 +629,7 @@ Dialog {
                 Toggle {
                     objectName: "hwrSearch"
                     label: qsTr("Read handwriting for search")
-                    hint: qsTr("After a page is saved, the recognizer above reads its new lines of writing, so search finds them. The text is kept with the page and only read again when the ink changes. Built-in recognition takes a few seconds per line.")
+                    hint: qsTr("After a page is saved, the recognizer above reads its new lines of writing, so search finds them. The text is kept with the page and only read again when the ink changes.")
                     checked: hwr.search
                     onToggled: (on) => hwr.search = on
                 }

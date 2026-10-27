@@ -52,6 +52,8 @@ fi
 
 pdfium=$build/pdfium-$arch
 build-aux/fetch-pdfium.sh "$pdfium_platform" "$pdfium"
+onnxruntime=$build/onnxruntime-$arch
+build-aux/fetch-onnxruntime.sh "$pdfium_platform" "$onnxruntime"
 
 # Android counts versions with one number: 1.2.3 becomes 10203.
 IFS=. read -r major minor patch <<<"${version%%[-+]*}"
@@ -77,7 +79,7 @@ cat > "$build/deployment-settings.json" <<EOF
   "ndk-host": "linux-x86_64",
   "abi": "$abi",
   "architectures": { "$abi": "$target" },
-  "android-extra-libs": "$pdfium/lib/libpdfium.so",
+  "android-extra-libs": "$pdfium/lib/libpdfium.so,$onnxruntime/lib/libonnxruntime.so",
   "android-package-source-directory": "$root/build-aux/android/package",
   "android-package-name": "app.ductus.Ductus",
   "android-app-name": "Ductus",

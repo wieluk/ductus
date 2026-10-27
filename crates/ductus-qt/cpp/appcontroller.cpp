@@ -20,7 +20,6 @@
 #include <QPdfWriter>
 #include <QTextDocument>
 #include <QDir>
-#include <QLocale>
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QImage>
@@ -1555,14 +1554,8 @@ void AppController::recognizeOpenPage()
 
 QString AppController::textModel() const
 {
-    const QString lang = QSettings().value(QStringLiteral("hwr/lang"), QStringLiteral("auto")).toString();
-    if (lang == u"de" || lang == u"en")
-        return QStringLiteral("text-") + lang;
-    if (Models::installed(QStringLiteral("text-de")))
-        return QStringLiteral("text-de");
-    if (Models::installed(QStringLiteral("text-en")) || QLocale::system().language() != QLocale::German)
-        return QStringLiteral("text-en");
-    return QStringLiteral("text-de");
+    // One model for every language: hwr/lang picks which of its recognizers read a line.
+    return QStringLiteral("text");
 }
 
 void AppController::convertSelection(const QString &kind)
