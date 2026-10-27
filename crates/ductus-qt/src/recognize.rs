@@ -34,12 +34,15 @@ pub fn open_recognizer() -> Box<RecognitionHandle> {
         .name("handwriting".into())
         .spawn(move || {
             // Kept while the settings stay: a built-in model takes seconds to load.
-            let mut current: Option<(Config, Option<Box<dyn ductus_hwr::Recognizer>>)> = None;
+            type Loaded = ((Config, usize), Option<Box<dyn ductus_hwr::Recognizer>>);
+            let mut current: Option<Loaded> = None;
             while let Ok(job) = inbox.recv() {
                 let config = worker.lock().map(|s| s.config.clone()).unwrap_or_default();
-                if current.as_ref().is_none_or(|(c, _)| *c != config) {
-                    let r = ductus_hwr::from_settings(&config.0, &config.1, &config.2, &config.3);
-                    current = Some((config, r));
+                let wanted = (config, ductus_hwr::threads());
+                if current.as_ref().is_none_or(|(c, _)| *c != wanted) {
+                    let c = &wanted.0;
+                    let r = ductus_hwr::from_settings(&c.0, &c.1, &c.2, &c.3);
+                    current = Some((wanted, r));
                 }
                 let outcome = match current.as_ref().and_then(|(_, r)| r.as_ref()) {
                     Some(r) => r.recognize(&job.png, &job.lang),

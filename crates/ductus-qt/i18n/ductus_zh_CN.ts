@@ -2142,6 +2142,18 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>视觉模型服务器</translation>
     </message>
     <message>
+        <source>Processor use</source>
+        <translation>处理器占用</translation>
+    </message>
+    <message>
+        <source>How much of the processor reading handwriting may take. Less keeps the device cool and quiet; more reads faster.</source>
+        <translation>识别手写内容最多可占用多少处理器。占用越少，设备越凉爽安静；越多，识别越快。</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1%</translation>
+    </message>
+    <message>
         <source>Languages</source>
         <translation>语言</translation>
     </message>

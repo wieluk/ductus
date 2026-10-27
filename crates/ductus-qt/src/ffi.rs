@@ -115,6 +115,8 @@ pub mod qobject {
         type RecognitionHandle;
         fn open_recognizer() -> Box<RecognitionHandle>;
         /// `kind`: "off", "server" or "fixed:<text>".
+        /// Built-in recognizers use about this share of the processor's cores, in percent.
+        fn set_processor_share(percent: u32);
         fn configure(self: &RecognitionHandle, kind: &str, url: &str, model: &str, key: &str);
         #[allow(clippy::too_many_arguments)]
         fn submit(
@@ -543,3 +545,4 @@ pub use crate::models::{
 pub use crate::recognize::{RecognitionHandle, open_recognizer};
 pub use crate::search::{SearchHandle, open_search};
 pub use crate::update::{UpdateHandle, open_updater, update_is_newer};
+pub use ductus_hwr::set_processor_share;

@@ -2152,6 +2152,18 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Сервер модели зрения</translation>
     </message>
     <message>
+        <source>Processor use</source>
+        <translation>Нагрузка на процессор</translation>
+    </message>
+    <message>
+        <source>How much of the processor reading handwriting may take. Less keeps the device cool and quiet; more reads faster.</source>
+        <translation>Какую долю процессора может занимать чтение рукописного текста. Меньше — устройство тише и холоднее, больше — читает быстрее.</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1%</translation>
+    </message>
+    <message>
         <source>Languages</source>
         <translation>Языки</translation>
     </message>

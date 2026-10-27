@@ -43,6 +43,8 @@ Dialog {
         property string url: ""
         property string model: ""
         property string key: ""
+        /// Percent of the processor's cores the built-in recognizer may use.
+        property int processor: 80
         /// The handwriting languages, as codes: "de,en"; "" follows the system.
         property string lang: ""
     }
@@ -587,6 +589,16 @@ Dialog {
                     options: [qsTr("Built-in"), qsTr("Vision model server")]
                     value: Math.max(0, kinds.indexOf(hwr.backend))
                     onPicked: (index) => hwr.backend = kinds[index]
+                }
+                Choice {
+                    objectName: "hwrProcessor"
+                    visible: hwr.backend !== "server"
+                    label: qsTr("Processor use")
+                    hint: qsTr("How much of the processor reading handwriting may take. Less keeps the device cool and quiet; more reads faster.")
+                    readonly property var shares: [25, 50, 80, 100]
+                    options: shares.map(n => qsTr("%1%").arg(n))
+                    value: Math.max(0, shares.indexOf(hwr.processor))
+                    onPicked: (index) => hwr.processor = shares[index]
                 }
                 ColumnLayout {
                     id: langs

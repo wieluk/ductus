@@ -2142,6 +2142,18 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>画像認識モデルのサーバー</translation>
     </message>
     <message>
+        <source>Processor use</source>
+        <translation>プロセッサーの使用量</translation>
+    </message>
+    <message>
+        <source>How much of the processor reading handwriting may take. Less keeps the device cool and quiet; more reads faster.</source>
+        <translation>手書きの読み取りが使えるプロセッサーの量です。少なくすると端末が熱くならず静かになり、多くすると速く読み取ります。</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1%</translation>
+    </message>
+    <message>
         <source>Languages</source>
         <translation>言語</translation>
     </message>

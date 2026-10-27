@@ -2147,6 +2147,18 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Server mit Bildmodell</translation>
     </message>
     <message>
+        <source>Processor use</source>
+        <translation>Prozessorauslastung</translation>
+    </message>
+    <message>
+        <source>How much of the processor reading handwriting may take. Less keeps the device cool and quiet; more reads faster.</source>
+        <translation>Wie viel vom Prozessor das Lesen der Handschrift nutzen darf. Weniger hält das Gerät kühl und leise, mehr liest schneller.</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
         <source>Languages</source>
         <translation>Sprachen</translation>
     </message>
