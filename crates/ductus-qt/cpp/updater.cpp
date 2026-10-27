@@ -248,6 +248,7 @@ void Updater::install()
         // Earlier downloads are done with.
         QDir(dir).removeRecursively();
         m_busy = true;
+        m_cancelled = false;
         m_task = Task::Download;
         setStatus(tr("Downloading version %1…").arg(m_latest), 0);
         (*m_handle)->download(toStd(suffix), toStd(dir));
@@ -259,10 +260,19 @@ void Updater::install()
 
 void Updater::cancel()
 {
-    if (m_task == Task::Download)
+    if (!downloading())
+        return;
+    m_cancelled = true;
+    if (m_task == Task::Download) {
         (*m_handle)->cancel();
-    else if (m_task == Task::Flatpak)
-        m_flatpak.kill();
+        return;
+    }
+    // flatpak-spawn passes SIGTERM on to flatpak on the host; SIGKILL would end only flatpak-spawn.
+    m_flatpak.terminate();
+    QTimer::singleShot(5000, this, [this] {
+        if (m_task == Task::Flatpak)
+            m_flatpak.kill();
+    });
 }
 
 void Updater::openReleasePage()
@@ -273,6 +283,10 @@ void Updater::openReleasePage()
 void Updater::finishDownload(const QString &file, const QString &error)
 {
     m_busy = false;
+    if (m_cancelled) {
+        setStatus(tr("The update was cancelled."));
+        return;
+    }
     if (!error.isEmpty() || file.isEmpty()) {
         setStatus(tr("The update couldn't be downloaded: %1.").arg(error.isEmpty() ? tr("no file") : error));
         return;
@@ -336,6 +350,7 @@ void Updater::flatpakUpdate()
     }
     m_flatpakCommit = installedCommit();
     m_busy = true;
+    m_cancelled = false;
     m_task = Task::Flatpak;
     m_flatpakOutput.clear();
     setStatus(tr("Updating…"));
@@ -355,6 +370,10 @@ void Updater::flatpakFinished(int exitCode)
     if (exitCode == 0 && !commit.isEmpty() && commit != m_flatpakCommit) {
         m_restartNeeded = true;
         setStatus(tr("Version %1 is installed. Restart Ductus to use it.").arg(m_latest));
+        return;
+    }
+    if (m_cancelled) {
+        setStatus(tr("The update was cancelled."));
         return;
     }
     // flatpak prints an unreachable repository as a warning and then says there's nothing to do.

@@ -677,19 +677,30 @@ Dialog {
                         spacing: 12
                         Described {
                             label: modelRow.modelData.title
-                            hint: modelRow.loading ? qsTr("Downloading… %1%").arg(Math.round(Models.progress * 100))
-                                : Math.round(modelRow.modelData.size / 1e6) + " MB"
+                            hint: Math.round(modelRow.modelData.size / 1e6) + " MB"
                                   + (modelRow.modelData.installed ? " · " + qsTr("installed") : "")
                         }
+                        // The bar below has Cancel while it downloads.
                         RibbonButton {
                             objectName: "model_" + modelRow.modelData.id
-                            text: modelRow.modelData.installed ? qsTr("Remove")
-                                : modelRow.loading ? qsTr("Cancel") : qsTr("Download")
-                            enabled: Models.busy === "" || modelRow.loading
+                            visible: !modelRow.loading
+                            text: modelRow.modelData.installed ? qsTr("Remove") : qsTr("Download")
+                            enabled: Models.busy === ""
                             onClicked: modelRow.modelData.installed ? Models.remove(modelRow.modelData.id)
-                                : modelRow.loading ? Models.cancel() : Models.download(modelRow.modelData.id)
+                                : Models.download(modelRow.modelData.id)
                         }
                     }
+                }
+                TransferProgress {
+                    objectName: "modelProgress"
+                    visible: hwr.backend !== "server" && Models.busy !== ""
+                    Layout.fillWidth: true
+                    label: {
+                        const model = Models.entries.find(e => e.id === Models.busy)
+                        return qsTr("Downloading “%1”…").arg(model ? model.title : Models.busy)
+                    }
+                    value: Models.progress
+                    onCancelled: Models.cancel()
                 }
                 Label {
                     visible: hwr.backend !== "server" && Models.error.length > 0
@@ -781,6 +792,13 @@ Dialog {
                              android: qsTr("Updates download after you agree; Android asks before installing them."),
                              manual: qsTr("New versions are on the download page."),
                              none: "" })[Updater.channel]
+                }
+                TransferProgress {
+                    objectName: "settingsUpdateProgress"
+                    visible: Updater.downloading
+                    Layout.fillWidth: true
+                    value: Updater.progress
+                    onCancelled: Updater.cancel()
                 }
                 Flow {
                     visible: Updater.channel !== "none"

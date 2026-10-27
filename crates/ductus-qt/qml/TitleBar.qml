@@ -286,7 +286,9 @@ Rectangle {
                 objectName: "updateButton"
                 visible: Updater.available
                 iconName: "update"
-                text: Updater.restartNeeded ? qsTr("Restart to update") : qsTr("Update")
+                text: Updater.restartNeeded ? qsTr("Restart to update")
+                    : Updater.downloading && Updater.progress >= 0
+                      ? qsTr("Updating %1%").arg(Math.floor(Updater.progress * 100)) : qsTr("Update")
                 tip: qsTr("Ductus %1 is available").arg(Updater.latestVersion)
                 onTitleBar: true
                 checked: true
