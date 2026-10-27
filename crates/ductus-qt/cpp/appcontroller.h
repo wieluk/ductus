@@ -107,6 +107,8 @@ class AppController : public QObject
     Q_PROPERTY(NotebookModel *tree READ tree CONSTANT)
     Q_PROPERTY(QString currentPage READ currentPage NOTIFY currentPageChanged)
     Q_PROPERTY(QString currentTitle READ currentTitle NOTIFY currentPageChanged)
+    /// The pages open as tabs in the title bar, in order; the current one among them.
+    Q_PROPERTY(QStringList openPages READ openPages NOTIFY openPagesChanged)
     Q_PROPERTY(InkCanvas *canvas READ canvas WRITE setCanvas NOTIFY canvasChanged)
     Q_PROPERTY(QString pdfProblem READ pdfProblem CONSTANT)
     /// The shown view's: 1 notes, 2 PDFs, 4 other files, 8 hide folders without those.
@@ -133,6 +135,7 @@ public:
     NotebookModel *tree() { return &m_tree; }
     QString currentPage() const;
     QString currentTitle() const;
+    QStringList openPages() const { return m_openPages; }
     InkCanvas *canvas() const { return m_canvas; }
     QString pdfProblem() const;
     bool indexing() const { return m_indexing; }
@@ -161,7 +164,12 @@ public:
     Q_INVOKABLE void storageQuestionAnswered();
     /// Moves the notes to Documents/Ductus, asking for access first where needed.
     Q_INVOKABLE void useSharedStorage();
+    /// In the current tab, or the page's own tab when it has one.
     Q_INVOKABLE void openPage(const QString &path);
+    Q_INVOKABLE void openInNewTab(const QString &path);
+    Q_INVOKABLE void closeTab(const QString &path);
+    /// The tab `delta` places to the right, wrapping around.
+    Q_INVOKABLE void switchTab(int delta);
     /// In a new folder named `name` (its first page opens), or `location` itself.
     Q_INVOKABLE QString addNotebook(const QString &location, const QString &name, bool ownFolder);
     /// A page in `folder` (a notebook or one of its sections), which opens.
@@ -219,6 +227,7 @@ public:
     Q_INVOKABLE void locate(const QString &path);
     Q_INVOKABLE void collapseAll();
     Q_INVOKABLE void saveNow();
+    /// Closes the current tab; the one beside it opens.
     Q_INVOKABLE void closePage();
     /// A blank page after the PDF page in the middle of the view.
     Q_INVOKABLE void insertBlankPage();
@@ -253,6 +262,7 @@ public:
 Q_SIGNALS:
     void libraryChanged();
     void currentPageChanged();
+    void openPagesChanged();
     void canvasChanged();
     void errorOccurred(const QString &message);
     void notice(const QString &message);
@@ -298,6 +308,13 @@ private:
     /// Each library reopens its own last page; "" forgets it.
     void rememberPage(const QString &path);
     QString rememberedPage() const;
+    void showPage(const QString &path, bool newTab);
+    /// Stores the tabs for this library.
+    void setOpenPages(const QStringList &pages);
+    /// Tabs and their views follow `from` (a page or a folder) to `to`.
+    void followMove(const QString &from, const QString &to);
+    /// `path` once `from` became `to`.
+    static QString moved(const QString &path, const QString &from, const QString &to);
     QString inboxFolder() const;
     /// The Inbox appears with the first thing put in it.
     bool ensureFolder(const QString &folder);
@@ -353,6 +370,10 @@ private:
     bool m_notebookView = false;
     QString m_folderFocus;
     QString m_notebookFocus;
+    QStringList m_openPages;
+    struct View { double zoom, x, y; };
+    /// Where each tab was scrolled to, kept while it is open.
+    QHash<QString, View> m_views;
     quint64 m_savedRevision = 0;
     bool m_dirty = false;
     void setDirty(bool dirty);

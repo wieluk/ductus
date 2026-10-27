@@ -983,6 +983,10 @@ Library: %1</source>
         <translation>更多</translation>
     </message>
     <message>
+        <source>Open in new tab</source>
+        <translation>在新标签页中打开</translation>
+    </message>
+    <message>
         <source>Open with its program</source>
         <translation>用其默认程序打开</translation>
     </message>

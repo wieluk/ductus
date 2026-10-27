@@ -988,6 +988,10 @@ Libreria: %1</translation>
         <translation>Altro</translation>
     </message>
     <message>
+        <source>Open in new tab</source>
+        <translation>Apri in una nuova scheda</translation>
+    </message>
+    <message>
         <source>Open with its program</source>
         <translation>Apri con il suo programma</translation>
     </message>

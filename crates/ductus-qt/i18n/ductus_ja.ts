@@ -983,6 +983,10 @@ Library: %1</source>
         <translation>その他</translation>
     </message>
     <message>
+        <source>Open in new tab</source>
+        <translation>新しいタブで開く</translation>
+    </message>
+    <message>
         <source>Open with its program</source>
         <translation>対応するプログラムで開く</translation>
     </message>

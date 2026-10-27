@@ -988,6 +988,10 @@ Bibliothèque : %1</translation>
         <translation>Plus</translation>
     </message>
     <message>
+        <source>Open in new tab</source>
+        <translation>Ouvrir dans un nouvel onglet</translation>
+    </message>
+    <message>
         <source>Open with its program</source>
         <translation>Ouvrir avec son programme</translation>
     </message>

@@ -993,6 +993,10 @@ Library: %1</source>
         <translation>Ещё</translation>
     </message>
     <message>
+        <source>Open in new tab</source>
+        <translation>Открыть в новой вкладке</translation>
+    </message>
+    <message>
         <source>Open with its program</source>
         <translation>Открыть в своей программе</translation>
     </message>

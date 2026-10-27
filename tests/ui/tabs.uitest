@@ -1,0 +1,44 @@
+# Pages open in tabs: a sidebar click uses the current tab, Open in new tab adds one; each keeps its view.
+size 1280 800
+click-item sidebarNewNotebook
+type Physics
+key Return
+expect-file Physics
+right-click-item row_Physics
+click-item menuNewPage
+type Optics
+key Return
+expect-text pageTitle Optics
+right-click-item row_Physics
+click-item menuNewPage
+type Waves
+key Return
+expect-text pageTitle Waves
+expect-hidden pageTab_Physics/Optics
+right-click-item row_Physics/Optics
+click-item menuOpenInNewTab
+expect-text pageTitle Optics
+expect-prop pageTab_Physics/Waves active false
+key Ctrl+=
+expect-prop canvas zoom 1.25
+click-item pageTab_Physics/Waves
+expect-text pageTitle Waves
+expect-prop canvas zoom 1
+key Ctrl+Tab
+expect-text pageTitle Optics
+expect-prop canvas zoom 1.25
+shot tabs
+# Renaming follows into the tab; closing the open tab shows the one beside it.
+right-click-item row_Physics/Waves
+click-item menuRename
+key Ctrl+A
+type Sound
+key Return
+expect-file Physics/Sound.svg
+expect-prop pageTab_Physics/Sound active false
+key Ctrl+W
+expect-text pageTitle Sound
+expect-hidden pageTab_Physics/Optics
+# Closing the last tab leaves no page open.
+click-item closePage
+expect-prop noPage visible true
