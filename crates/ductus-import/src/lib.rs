@@ -18,8 +18,8 @@ pub struct ImportedPage {
     pub document: Document,
     /// The PDF the page is written over.
     pub pdf: Option<Vec<u8>>,
-    /// Pictures by file name, as the document's images name them.
-    pub assets: Vec<(String, Vec<u8>)>,
+    /// PNG pictures by the names the document's images use; saved inside the page.
+    pub pictures: Vec<(String, Vec<u8>)>,
 }
 
 pub enum Entry {
@@ -95,7 +95,7 @@ fn save_entry(
                 &name,
                 page.document.clone(),
                 page.pdf.as_deref(),
-                &page.assets,
+                &page.pictures,
             )?;
             first_page.get_or_insert_with(|| rel.clone());
             Ok(rel)

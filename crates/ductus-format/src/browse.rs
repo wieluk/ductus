@@ -478,37 +478,25 @@ mod tests {
     }
 
     #[test]
-    fn pictures_are_saved_linked_and_retired() {
+    fn pictures_live_inside_the_page() {
         let (_dir, mut lib) = library();
         let rel = lib
             .create_page("", "Limits", PageSettings::default())
             .unwrap();
         let mut page = lib.load_page(&rel).unwrap();
-        lib.save_asset(&rel, "img-a.png", b"png-a").unwrap();
-        lib.save_asset(&rel, "img-b.png", b"png-b").unwrap();
-        let image = |source: &str| ductus_core::Image {
+        page.document = page.document.with_images([ductus_core::Image {
             id: ductus_core::StrokeId(0),
-            source: source.into(),
+            source: "img-a.png".into(),
             x: 0.0,
             y: 0.0,
             width: 10.0,
             height: 10.0,
-        };
-        page.document = page.document.with_images([image("img-a.png")]);
+        }]);
+        page.pictures.insert("img-a.png".into(), b"png-a".to_vec());
         lib.save_page(&rel, &page).unwrap();
-        let svg = fs::read_to_string(lib.abs("Limits.svg")).unwrap();
-        assert!(svg.contains(r#"href="Limits.assets/img-a.png""#));
-        assert!(!lib.abs("Limits.assets/img-b.png").exists());
-        assert!(
-            lib.data_dir()
-                .join("history")
-                .join(&page.id)
-                .join("assets/img-b.png")
-                .is_file()
-        );
         lib.rename("Limits", "Grenzwerte").unwrap();
-        let svg = fs::read_to_string(lib.abs("Grenzwerte.svg")).unwrap();
-        assert!(svg.contains(r#"href="Grenzwerte.assets/img-a.png""#));
-        assert_eq!(lib.read_asset("Grenzwerte", "img-a.png").unwrap(), b"png-a");
+        assert!(!lib.abs("Grenzwerte.assets").exists());
+        let back = lib.load_page("Grenzwerte").unwrap();
+        assert_eq!(back.pictures["img-a.png"], b"png-a");
     }
 }

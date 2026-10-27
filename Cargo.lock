@@ -954,6 +954,7 @@ version = "0.1.0"
 name = "ductus-format"
 version = "0.1.0"
 dependencies = [
+ "base64 0.23.1",
  "ductus-core",
  "ductus-ink",
  "ductus-math",

@@ -92,7 +92,7 @@ impl Item {
 struct Converter {
     /// Ductus units per Rnote pixel.
     k: f64,
-    assets: Vec<(String, Vec<u8>)>,
+    pictures: Vec<(String, Vec<u8>)>,
     skipped: usize,
 }
 
@@ -102,7 +102,7 @@ fn convert(snapshot: &Value, name: String) -> Result<Import, Error> {
     let dpi = num(&format["dpi"]).filter(|d| *d > 0.0).unwrap_or(96.0);
     let mut c = Converter {
         k: 96.0 / dpi,
-        assets: Vec::new(),
+        pictures: Vec::new(),
         skipped: 0,
     };
     let background = background(&config["background"], c.k);
@@ -147,10 +147,10 @@ fn convert(snapshot: &Value, name: String) -> Result<Import, Error> {
                 (width, height),
                 doc_height,
                 background,
-                c.assets,
+                c.pictures,
             )?
         }
-        _ => endless(name, items, background, c.assets),
+        _ => endless(name, items, background, c.pictures),
     };
     Ok(Import {
         entry: Entry::Page(page),
@@ -165,7 +165,7 @@ fn paged(
     (width, height): (f64, f64),
     doc_height: f64,
     background: PageBackground,
-    assets: Vec<(String, Vec<u8>)>,
+    pictures: Vec<(String, Vec<u8>)>,
 ) -> Result<ImportedPage, Error> {
     let page_of = |y: f64| (y / height).floor().max(0.0) as usize;
     let count = items
@@ -192,7 +192,7 @@ fn paged(
             Item::Text(t) => sheet.texts.push(t),
         }
     }
-    assemble(name, sheets, &[], assets)
+    assemble(name, sheets, &[], pictures)
 }
 
 /// Moved so nothing lies left of or above the page's corner.
@@ -200,7 +200,7 @@ fn endless(
     name: String,
     items: Vec<Item>,
     background: PageBackground,
-    assets: Vec<(String, Vec<u8>)>,
+    pictures: Vec<(String, Vec<u8>)>,
 ) -> ImportedPage {
     let left = items.iter().map(Item::left).fold(f64::INFINITY, f64::min);
     let top = items.iter().map(Item::top).fold(f64::INFINITY, f64::min);
@@ -233,7 +233,7 @@ fn endless(
             .with_images(images)
             .with_texts(texts),
         pdf: None,
-        assets,
+        pictures,
     }
 }
 
@@ -483,8 +483,8 @@ impl Converter {
 
     fn place(&mut self, bytes: &[u8], (x0, y0, x1, y1): (f64, f64, f64, f64)) -> Option<Image> {
         let (name, png) = picture(bytes)?;
-        if !self.assets.iter().any(|(n, _)| *n == name) {
-            self.assets.push((name.clone(), png));
+        if !self.pictures.iter().any(|(n, _)| *n == name) {
+            self.pictures.push((name.clone(), png));
         }
         Some(Image {
             id: StrokeId(0),

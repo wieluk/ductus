@@ -561,10 +561,8 @@ impl LibraryHandle {
 
         let mut page = self.library.load_page(path)?;
         // Pictures must be known before the page is shown; missing ones stay blank.
-        for image in page.document.images() {
-            if let Ok(bytes) = self.library.read_asset(path, &image.source) {
-                canvas.canvas_mut().add_picture(&image.source, bytes);
-            }
+        for (name, bytes) in std::mem::take(&mut page.pictures) {
+            canvas.canvas_mut().add_picture(&name, bytes);
         }
         let painter: Option<Box<dyn ductus_render::SheetPainter>> = match &page.pdf {
             Some(name) => {
@@ -617,12 +615,15 @@ impl LibraryHandle {
                         .filter(|l| current.contains(&l.key))
                         .cloned()
                         .collect(),
+                    pictures: doc
+                        .images()
+                        .iter()
+                        .filter_map(|i| {
+                            let bytes = canvas.canvas().picture_bytes(&i.source)?;
+                            Some((i.source.clone(), bytes.to_vec()))
+                        })
+                        .collect(),
                 };
-                for image in doc.images() {
-                    if let Some(bytes) = canvas.canvas().picture_bytes(&image.source) {
-                        self.library.save_asset(&path, &image.source, bytes)?;
-                    }
-                }
                 self.library.save_page(&path, &page)
             }
             OpenKind::Pdf => {

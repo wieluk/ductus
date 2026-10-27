@@ -170,8 +170,8 @@ fn infinite_canvas_becomes_endless_and_pictures_come_along() {
     // Moved right and down so the leftmost picture starts at the margin.
     assert_eq!((images[0].x, images[0].y), (MARGIN, MARGIN));
     assert_eq!(images[0].width, 40.0);
-    assert_eq!(page.assets.len(), 2);
-    let decoded = image::load_from_memory(&page.assets[0].1)
+    assert_eq!(page.pictures.len(), 2);
+    let decoded = image::load_from_memory(&page.pictures[0].1)
         .unwrap()
         .to_rgba8();
     assert_eq!(decoded.get_pixel(1, 0).0, [0, 0, 255, 128]);

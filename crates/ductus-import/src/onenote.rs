@@ -184,7 +184,7 @@ struct Builder {
     images: Vec<Image>,
     texts: Vec<TextBox>,
     maths: Vec<MathBox>,
-    assets: Vec<(String, Vec<u8>)>,
+    pictures: Vec<(String, Vec<u8>)>,
     files: Vec<(String, Vec<u8>)>,
     skipped: usize,
     bad_pictures: usize,
@@ -302,7 +302,7 @@ impl Builder {
             mut images,
             mut texts,
             mut maths,
-            assets,
+            pictures,
             ..
         } = self;
         // Nothing may lie above or left of the page's corner.
@@ -349,7 +349,7 @@ impl Builder {
                 .with_texts(texts)
                 .with_maths(maths),
             pdf: None,
-            assets,
+            pictures,
         }
     }
 
@@ -465,8 +465,8 @@ impl Builder {
             (None, Some(h)) => (h * pw / ph, h),
             (None, None) => (pw, ph),
         };
-        if !self.assets.iter().any(|(n, _)| *n == name) {
-            self.assets.push((name.clone(), png));
+        if !self.pictures.iter().any(|(n, _)| *n == name) {
+            self.pictures.push((name.clone(), png));
         }
         self.images.push(Image {
             id: StrokeId(0),
