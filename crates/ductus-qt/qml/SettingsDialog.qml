@@ -300,7 +300,7 @@ Dialog {
                     objectName: "pressure"
                     label: qsTr("Pressure")
                     hint: qsTr("How hard you press for a bold line.")
-                    options: [qsTr("Light"), qsTr("Normal"), qsTr("Firm")]
+                    options: [qsTr("Light", "pen pressure"), qsTr("Normal"), qsTr("Firm")]
                     value: dialog.canvas.pressureResponse
                     onPicked: (index) => dialog.canvas.pressureResponse = index
                 }
@@ -424,6 +424,27 @@ Dialog {
             }
 
             Section {
+                Heading { text: qsTr("Language") }
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: dialog.narrow ? 1 : 2
+                    rowSpacing: 6
+                    columnSpacing: 12
+                    Described {
+                        label: qsTr("App language")
+                        hint: qsTr("The language of menus and messages. Handwriting languages are under Handwriting.")
+                    }
+                    ComboBox {
+                        objectName: "appLanguage"
+                        Layout.preferredWidth: 240
+                        Layout.fillWidth: dialog.narrow
+                        model: Translations.languages
+                        textRole: "name"
+                        valueRole: "code"
+                        currentIndex: Math.max(0, Translations.languages.findIndex(l => l.code === Translations.language))
+                        onActivated: Translations.language = currentValue
+                    }
+                }
                 Heading { text: qsTr("Theme") }
                 Choice {
                     objectName: "theme"
@@ -438,7 +459,7 @@ Dialog {
                 Toggle {
                     objectName: "sidebar"
                     label: qsTr("Notebook list")
-                    hint: qsTr("The sidebar with folders and notebooks (Ctrl+\\).")
+                    hint: qsTr("The sidebar with folders and notebooks (%1).").arg("Ctrl+\\")
                     checked: dialog.window.sidebarVisible
                     onToggled: (on) => dialog.window.sidebarVisible = on
                 }
@@ -618,7 +639,8 @@ Dialog {
                         model: Models.languages
                             .filter(l => langs.query.length === 0 || l.name.toLowerCase().includes(langs.query)
                                          || l.code === langs.query)
-                            .sort((a, b) => langs.chosen.includes(b.code) - langs.chosen.includes(a.code))
+                            .sort((a, b) => langs.chosen.includes(b.code) - langs.chosen.includes(a.code)
+                                            || a.name.localeCompare(b.name))
                         delegate: AbstractButton {
                             id: langRow
                             required property var modelData

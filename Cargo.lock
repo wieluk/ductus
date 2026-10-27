@@ -1063,6 +1063,7 @@ dependencies = [
  "ductus-update",
  "embed-resource",
  "kurbo",
+ "qt-build-utils",
  "tempfile",
  "tiny-skia",
 ]

@@ -42,10 +42,8 @@ pub fn languages() -> Vec<LanguageRow> {
         .iter()
         .map(|l| LanguageRow {
             code: l.code.into(),
-            name: match l.native {
-                "" => l.english.into(),
-                native => format!("{} ({native})", l.english),
-            },
+            english: l.english.into(),
+            native: l.native.into(),
             model: l.model.into(),
         })
         .collect()

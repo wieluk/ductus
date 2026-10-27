@@ -176,7 +176,7 @@ Rectangle {
             RibbonButton {
                 objectName: "sidebarToggle"
                 iconName: "sidebar"
-                tip: qsTr("Show or hide notebooks (Ctrl+\\)")
+                tip: qsTr("Show or hide notebooks (%1)").arg("Ctrl+\\")
                 onTitleBar: true
                 implicitHeight: Theme.titleHeight - 4
                 onClicked: bar.sidebarToggled()

@@ -171,11 +171,12 @@ pub mod qobject {
         installed: bool,
     }
 
-    /// A handwriting language: its `hwr/lang` code, its name for the settings, the model reading it.
+    /// A handwriting language: its `hwr/lang` code, English and own name, the model reading it.
     #[derive(Debug, Default)]
     struct LanguageRow {
         code: String,
-        name: String,
+        english: String,
+        native: String,
         model: String,
     }
 

@@ -1,4 +1,6 @@
-use cxx_qt_build::{CxxQtBuilder, QResources, QmlFile, QmlModule};
+use cxx_qt_build::{CxxQtBuilder, QResource, QResources, QmlFile, QmlModule};
+use std::path::{Path, PathBuf};
+use std::process::Command;
 
 fn main() {
     // cxx-qt-build reads it but doesn't rebuild when it changes (the Android build sets it).
@@ -56,8 +58,11 @@ fn main() {
             "cpp/models.cpp",
             "cpp/platformfiles.h",
             "cpp/platformfiles.cpp",
+            "cpp/translations.h",
+            "cpp/translations.cpp",
         ])
-        .qrc_resources(QResources::from(icons()));
+        .qrc_resources(QResources::from(icons()))
+        .qrc_resources(translations());
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
     // Screenshots go through the desktop portal on D-Bus; the pen's cursor goes through Qt's Wayland client.
     if target_os == "linux" {
@@ -110,6 +115,57 @@ fn windows_icon() {
     embed_resource::compile(&rc, embed_resource::NONE)
         .manifest_optional()
         .unwrap();
+}
+
+/// i18n/ductus_<code>.ts compiled by Qt's lrelease, served from :/i18n.
+fn translations() -> QResources {
+    println!("cargo::rerun-if-changed=i18n");
+    let out = PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("i18n");
+    std::fs::create_dir_all(&out).unwrap();
+    let lrelease = lrelease();
+    let mut files = Vec::new();
+    for entry in std::fs::read_dir("i18n").expect("i18n exists") {
+        let ts = entry.unwrap().path();
+        if ts.extension().is_none_or(|e| e != "ts") {
+            continue;
+        }
+        let qm = out.join(ts.with_extension("qm").file_name().unwrap());
+        let status = Command::new(&lrelease)
+            .args([
+                "-silent".as_ref(),
+                ts.as_os_str(),
+                "-qm".as_ref(),
+                qm.as_os_str(),
+            ])
+            .status()
+            .unwrap_or_else(|e| panic!("{} could not run: {e}", lrelease.display()));
+        assert!(status.success(), "lrelease failed on {}", ts.display());
+        let name = qm.file_name().unwrap().to_string_lossy().into_owned();
+        files.push(qt_build_utils::QResourceFile::new(qm).alias(name));
+    }
+    QResources::new().resource(QResource::new().prefix("/i18n").files(files))
+}
+
+/// Qt's lrelease: LRELEASE, or beside the qmake cxx-qt uses (its host tools for Android).
+fn lrelease() -> PathBuf {
+    if let Some(path) = std::env::var_os("LRELEASE") {
+        return path.into();
+    }
+    let exe = format!("lrelease{}", std::env::consts::EXE_SUFFIX);
+    let qmake = std::env::var("QMAKE").unwrap_or_else(|_| "qmake6".into());
+    for query in ["QT_HOST_BINS", "QT_INSTALL_BINS", "QT_HOST_LIBEXECS"] {
+        for program in [qmake.as_str(), "qmake"] {
+            let Ok(output) = Command::new(program).args(["-query", query]).output() else {
+                continue;
+            };
+            let dir = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+            let candidate = Path::new(&dir).join(&exe);
+            if output.status.success() && candidate.is_file() {
+                return candidate;
+            }
+        }
+    }
+    exe.into()
 }
 
 fn icons() -> Vec<String> {
