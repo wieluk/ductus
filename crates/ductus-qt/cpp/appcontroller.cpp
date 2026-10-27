@@ -183,7 +183,8 @@ AppController::AppController(QObject *parent)
     m_treeFilter = QSettings().value(QStringLiteral("tree/filter"), 3).toInt();
     m_notebookFilter = QSettings().value(QStringLiteral("tree/notebookFilter"), 1).toInt();
     m_notebookView = QSettings().value(QStringLiteral("tree/notebooks"), false).toBool();
-    m_treeFocus = QSettings().value(QStringLiteral("tree/focus")).toString();
+    m_folderFocus = QSettings().value(QStringLiteral("tree/focus")).toString();
+    m_notebookFocus = QSettings().value(QStringLiteral("tree/notebookFocus")).toString();
 
     m_saveTimer.setSingleShot(true);
     m_saveTimer.setInterval(QSettings().value(QStringLiteral("saving/delay"), 1500).toInt());
@@ -281,16 +282,25 @@ QString AppController::parentOf(const QString &path) const
     return slash < 0 ? QString() : path.left(slash);
 }
 
-QString AppController::currentFolder() const
+bool AppController::inside(const QString &path, const QString &folder)
 {
-    const QString folder = parentOf(currentPage());
-    return inFocus(folder) ? folder : m_treeFocus;
+    return folder.isEmpty() || path == folder || path.startsWith(folder + QLatin1Char('/'));
 }
 
-bool AppController::inFocus(const QString &path) const
+void AppController::clearFocusOutside(const QString &path)
 {
-    return m_treeFocus.isEmpty() || path == m_treeFocus
-           || path.startsWith(m_treeFocus + QLatin1Char('/'));
+    const bool folders = !inside(path, m_folderFocus);
+    const bool notebooks = !inside(path, m_notebookFocus);
+    if (folders) {
+        m_folderFocus.clear();
+        QSettings().remove(QStringLiteral("tree/focus"));
+    }
+    if (notebooks) {
+        m_notebookFocus.clear();
+        QSettings().remove(QStringLiteral("tree/notebookFocus"));
+    }
+    if (folders || notebooks)
+        Q_EMIT treeViewChanged();
 }
 
 void AppController::setCanvas(InkCanvas *canvas)
@@ -489,10 +499,18 @@ void AppController::refreshTree()
 {
     if (!m_library)
         return;
-    // The focus folder is gone or belongs to another library.
-    if (!m_treeFocus.isEmpty() && !QFileInfo(libraryPath() + QLatin1Char('/') + m_treeFocus).isDir()) {
-        m_treeFocus.clear();
+    // The focus is gone, no notebook any more, or belongs to another library.
+    const auto gone = [this](const QString &folder) {
+        return !folder.isEmpty() && !QFileInfo(libraryPath() + QLatin1Char('/') + folder).isDir();
+    };
+    if (gone(m_folderFocus)) {
+        m_folderFocus.clear();
         QSettings().remove(QStringLiteral("tree/focus"));
+        Q_EMIT treeViewChanged();
+    }
+    if (gone(m_notebookFocus) || (!m_notebookFocus.isEmpty() && notebookName(m_notebookFocus).isEmpty())) {
+        m_notebookFocus.clear();
+        QSettings().remove(QStringLiteral("tree/notebookFocus"));
         Q_EMIT treeViewChanged();
     }
     QStringList expanded(m_expanded.begin(), m_expanded.end());
@@ -500,7 +518,7 @@ void AppController::refreshTree()
         const rust::Vec<TreeRow> rows =
             (*m_library)->rows(toStd(expanded.join(QLatin1Char('\n'))),
                                static_cast<std::uint8_t>(treeFilter()), m_notebookView,
-                               toStd(m_treeFocus), toStd(m_keepVisible));
+                               toStd(treeFocus()), toStd(m_keepVisible));
         QList<NotebookModel::Row> out;
         out.reserve(static_cast<qsizetype>(rows.size()));
         for (const TreeRow &r : rows) {
@@ -561,11 +579,7 @@ void AppController::openPage(const QString &path)
     attempt([&] { (*m_library)->add_recent(toStd(path)); });
     expandTo(path);
     // The open page is always in the sidebar.
-    if (!inFocus(path)) {
-        m_treeFocus.clear();
-        QSettings().remove(QStringLiteral("tree/focus"));
-        Q_EMIT treeViewChanged();
-    }
+    clearFocusOutside(path);
     refreshTree();
     Q_EMIT currentPageChanged();
 }
@@ -649,20 +663,24 @@ QString AppController::addNotebook(const QString &location, const QString &name,
 
 QString AppController::addPage(const QString &folder, const QString &name)
 {
-    if (!m_library || !m_canvas)
+    if (!m_library || !m_canvas || !ensureFolder(folder))
         return {};
-    // The Inbox appears with its first page.
-    if (folder == inboxFolder() && !QFileInfo(libraryPath() + QLatin1Char('/') + folder).isDir()) {
-        if (!attempt([&] {
-                (*m_library)->create_folder("", toStd(folder));
-                (*m_library)->set_notebook(toStd(folder), toStd(folder));
-            }))
-            return {};
-    }
     const QString path = createPage(folder, name);
-    if (!path.isEmpty())
+    if (!path.isEmpty()) {
         openPage(path);
+        Q_EMIT revealRequested(path);
+    }
     return path;
+}
+
+bool AppController::ensureFolder(const QString &folder)
+{
+    if (folder != inboxFolder() || QFileInfo(libraryPath() + QLatin1Char('/') + folder).isDir())
+        return true;
+    return attempt([&] {
+        (*m_library)->create_folder("", toStd(folder));
+        (*m_library)->set_notebook(toStd(folder), toStd(folder));
+    });
 }
 
 QString AppController::inboxFolder() const
@@ -676,6 +694,42 @@ QString AppController::defaultPageFolder() const
     if (!page.isEmpty() && !notebookOf(page).isEmpty())
         return parentOf(page);
     return inboxFolder();
+}
+
+QString AppController::defaultNotebookLocation() const
+{
+    // The folder looked at under Folders, else beside the open page's notebook.
+    if (!m_notebookView && !m_folderFocus.isEmpty())
+        return m_folderFocus;
+    return parentOf(notebookOf(currentPage()));
+}
+
+QString AppController::placeLabel(const QString &folder) const
+{
+    QStringList parts{displayName(QString())};
+    const QStringList names = folder.split(QLatin1Char('/'), Qt::SkipEmptyParts);
+    for (qsizetype i = 0; i < names.size(); ++i) {
+        const QString notebook = notebookName(names.mid(0, i + 1).join(QLatin1Char('/')));
+        parts << (notebook.isEmpty() ? names[i] : notebook);
+    }
+    return parts.join(QStringLiteral(" \u203a "));
+}
+
+QVariantList AppController::notebookList() const
+{
+    QVariantList out;
+    if (!m_library)
+        return out;
+    const QStringList lines = toQ((*m_library)->notebook_list()).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    for (const QString &line : lines)
+        out.append(QVariantMap{{QStringLiteral("path"), line.section(QLatin1Char('\t'), 0, 0)},
+                               {QStringLiteral("name"), line.section(QLatin1Char('\t'), 1)}});
+    return out;
+}
+
+QString AppController::uniqueName(const QString &folder, const QString &name) const
+{
+    return m_library ? toQ((*m_library)->unique_name(toStd(folder), toStd(name.trimmed()))) : name;
 }
 
 QVariantList AppController::pageTargets() const
@@ -762,7 +816,7 @@ QString AppController::displayName(const QString &path) const
 void AppController::showInNotebooks(const QString &path)
 {
     setNotebookView(true);
-    if (!inFocus(path))
+    if (!inside(path, m_notebookFocus))
         setTreeFocus(QString());
     m_expanded.insert(path);
     storeExpanded();
@@ -1072,7 +1126,7 @@ void AppController::moveBy(const QString &path, int delta)
     const QStringList siblings = moveSiblings(path, &notebookList);
     if (notebookList) {
         if (attempt([&] {
-                (*m_library)->move_notebook(toStd(path), delta, toStd(m_treeFocus));
+                (*m_library)->move_notebook(toStd(path), delta, toStd(treeFocus()));
             }))
             refreshTree();
         return;
@@ -1170,9 +1224,9 @@ QString AppController::pdfProblem() const
     return toQ(pdf_support_problem());
 }
 
-QString AppController::importPdf(const QString &fileOrUrl, bool annotate)
+QString AppController::importPdf(const QString &fileOrUrl, bool annotate, const QString &folder)
 {
-    if (!m_library)
+    if (!m_library || !ensureFolder(folder))
         return {};
     const QString file = PlatformFiles::readable(fileOrUrl);
     if (file.isEmpty()) {
@@ -1180,11 +1234,11 @@ QString AppController::importPdf(const QString &fileOrUrl, bool annotate)
         return {};
     }
     QString path;
-    const QString parent = currentFolder();
-    attempt([&] { path = toQ((*m_library)->import_pdf(toStd(parent), toStd(file), annotate)); });
+    attempt([&] { path = toQ((*m_library)->import_pdf(toStd(folder), toStd(file), annotate)); });
     if (path.isEmpty())
         return {};
     openPage(path);
+    Q_EMIT revealRequested(path);
     refreshIndex();
     Q_EMIT notice(annotate ? tr("PDF added. Your ink is saved into the PDF itself.")
                            : tr("PDF imported as a page."));
@@ -1214,21 +1268,44 @@ void AppController::pollImport()
     m_importPoll.stop();
     m_importing = false;
     Q_EMIT importingChanged();
-    if (!m_library)
+    const ImportSummary summary = (*m_importer)->summary();
+    if (!summary.ready) {
+        (*m_importer)->discard();
+        if (!summary.error.empty())
+            Q_EMIT errorOccurred(toQ(summary.error));
         return;
+    }
+    const QString kind = toQ(summary.kind);
+    const QString location = kind == u"notebook" ? defaultNotebookLocation()
+                             : kind == u"section" ? notebookOf(currentPage())
+                                                  : defaultPageFolder();
+    Q_EMIT importReady(kind, toQ(summary.name), int(summary.pages), int(summary.sections), location);
+}
+
+void AppController::finishImport(const QString &folder, const QString &name)
+{
+    if (!m_library || !ensureFolder(folder))
+        return cancelImport();
     ImportResult result;
-    if (!attempt([&] {
-            result = (*m_library)->finish_import(**m_importer, toStd(currentFolder()),
-                                                 toStd(m_treeFocus));
-        }))
+    if (!attempt([&] { result = (*m_library)->finish_import(**m_importer, toStd(folder), toStd(name)); }))
         return;
+    const QString root = toQ(result.root);
+    if (!notebookName(root).isEmpty())
+        m_expanded.insert(root);
+    storeExpanded();
     refreshTree();
     refreshIndex();
     if (!result.page.empty())
         openPage(toQ(result.page));
+    locate(root);
     const QString warnings = toQ(result.warnings);
-    Q_EMIT notice(warnings.isEmpty() ? tr("Imported into your library.")
-                                     : tr("Imported. %1").arg(warnings));
+    const QString place = tr("Imported into %1.").arg(placeLabel(folder));
+    Q_EMIT notice(warnings.isEmpty() ? place : place + QLatin1Char(' ') + warnings);
+}
+
+void AppController::cancelImport()
+{
+    (*m_importer)->discard();
 }
 
 bool AppController::exportPdf(const QString &fileOrUrl)
@@ -1322,15 +1399,44 @@ void AppController::setNotebookView(bool on)
 
 void AppController::setTreeFocus(const QString &folder)
 {
-    if (folder == m_treeFocus)
+    QString &focus = m_notebookView ? m_notebookFocus : m_folderFocus;
+    if (folder == focus)
         return;
-    m_treeFocus = folder;
+    focus = folder;
+    const QString key = m_notebookView ? QStringLiteral("tree/notebookFocus") : QStringLiteral("tree/focus");
     if (folder.isEmpty())
-        QSettings().remove(QStringLiteral("tree/focus"));
+        QSettings().remove(key);
     else
-        QSettings().setValue(QStringLiteral("tree/focus"), folder);
+        QSettings().setValue(key, folder);
+    if (m_notebookView && !folder.isEmpty()) {
+        // Its sections show open, as they do in the notebook list.
+        m_expanded.insert(folder);
+        storeExpanded();
+    }
     Q_EMIT treeViewChanged();
     refreshTree();
+}
+
+void AppController::collapseAll()
+{
+    m_expanded.clear();
+    storeExpanded();
+    refreshTree();
+}
+
+void AppController::locate(const QString &path)
+{
+    if (!m_library || path.isEmpty())
+        return;
+    if (!m_notebookView || notebookOf(path).isEmpty()) {
+        reveal(path);
+        return;
+    }
+    if (!inside(path, m_notebookFocus))
+        setTreeFocus(QString());
+    expandTo(path);
+    refreshTree();
+    Q_EMIT revealRequested(path);
 }
 
 void AppController::setPinned(const QString &path, bool pinned)
@@ -1344,7 +1450,7 @@ void AppController::reveal(const QString &path)
     if (!m_library)
         return;
     setNotebookView(false);
-    if (!inFocus(path))
+    if (!inside(path, m_folderFocus))
         setTreeFocus(QString());
     expandTo(path);
     refreshTree();
@@ -1400,13 +1506,14 @@ QString AppController::openFile(const QString &fileOrUrl)
     }
     if (suffix == u"pdf")
         return QStringLiteral("pdf");
+    const QString folder = defaultPageFolder();
     QString path;
-    attempt([&] {
-        path = toQ((*m_library)->import_page(toStd(currentFolder()), toStd(info.absoluteFilePath())));
-    });
+    if (ensureFolder(folder))
+        attempt([&] { path = toQ((*m_library)->import_page(toStd(folder), toStd(info.absoluteFilePath()))); });
     if (!path.isEmpty()) {
         openPage(path);
-        Q_EMIT notice(tr("Page copied into your library."));
+        Q_EMIT revealRequested(path);
+        Q_EMIT notice(tr("Page copied into %1.").arg(placeLabel(folder)));
     }
     return {};
 }

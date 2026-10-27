@@ -154,6 +154,17 @@ pub mod qobject {
         warnings: String,
     }
 
+    /// An import that has been read; `kind` is "notebook", "section", "page" or "file".
+    #[derive(Debug, Default)]
+    struct ImportSummary {
+        ready: bool,
+        error: String,
+        kind: String,
+        name: String,
+        pages: u32,
+        sections: u32,
+    }
+
     #[derive(Debug, Default)]
     struct ConvertState {
         busy: bool,
@@ -208,6 +219,8 @@ pub mod qobject {
         fn can_import(file: &str) -> bool;
         fn start(self: &ImportHandle, file: &str);
         fn busy(self: &ImportHandle) -> bool;
+        fn summary(self: &ImportHandle) -> ImportSummary;
+        fn discard(self: &ImportHandle);
 
         type ModelsHandle;
         fn open_models() -> Box<ModelsHandle>;
@@ -277,6 +290,8 @@ pub mod qobject {
         fn add_recent(self: &LibraryHandle, page: &str) -> Result<()>;
         /// Where a new page can go: notebooks and their sections, as "path\tlabel" lines.
         fn page_targets(self: &LibraryHandle) -> String;
+        /// Every notebook, as "path\tname" lines in the user's order.
+        fn notebook_list(self: &LibraryHandle) -> String;
         /// The subfolders of `folder`, as "name\tnotebook name" lines.
         fn subfolders(self: &LibraryHandle, folder: &str) -> String;
         fn absolute_path(self: &LibraryHandle, path: &str) -> String;
@@ -347,12 +362,12 @@ pub mod qobject {
             h: f64,
             lang: &str,
         ) -> Result<bool>;
-        /// Pages go into `parent`, sections into its notebook, notebooks into `notebooks`.
+        /// Saves what was read into `parent` as `name`; a taken name gets a number.
         fn finish_import(
             self: &mut LibraryHandle,
             importer: &ImportHandle,
             parent: &str,
-            notebooks: &str,
+            name: &str,
         ) -> Result<ImportResult>;
         fn import_pdf(
             self: &mut LibraryHandle,

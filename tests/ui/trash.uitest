@@ -52,9 +52,9 @@ click-item trashClose
 # Into another notebook.
 right-click-item row_Physics/Optics
 click-item menuMoveTo
-click-item moveUp
+click-item placeUp
 shot move
-click-item moveFolder_My Notebook
+click-item placeFolder_My Notebook
 click-item moveConfirm
 expect-file My Notebook/Optics.svg
 expect-no-file Physics/Optics.svg

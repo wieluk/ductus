@@ -172,24 +172,41 @@ impl LibraryHandle {
             self.tree_rows(focus, 0, color, &view, &mut out);
             return Ok(out);
         }
-        let recent = self.library.recent().into_iter().take(RECENT_SHOWN);
-        for (section, path) in self
-            .library
-            .favorites()
-            .into_iter()
-            .map(|p| ("favorites", p))
-            .chain(recent.map(|p| ("recent", p)))
-        {
-            if let Some(node) = self.node(&path) {
-                let mut row = self.row(&node, 0, self.inherited_color(&path), &pinned);
-                row.quick = true;
-                row.section = section.into();
-                row.subtitle = self.place(&path);
-                out.push(row);
+        // Narrowed to one notebook: its sections and pages, then notebooks kept inside it.
+        let single = !focus.is_empty();
+        if single {
+            let color = self.inherited_color(focus);
+            self.tree_rows(focus, 0, color, &view, &mut out);
+            if out.is_empty() {
+                out.push(TreeRow {
+                    path: focus.to_owned(),
+                    placeholder: true,
+                    ..TreeRow::default()
+                });
+            }
+        } else {
+            let recent = self.library.recent().into_iter().take(RECENT_SHOWN);
+            for (section, path) in self
+                .library
+                .favorites()
+                .into_iter()
+                .map(|p| ("favorites", p))
+                .chain(recent.map(|p| ("recent", p)))
+            {
+                if let Some(node) = self.node(&path) {
+                    let mut row = self.row(&node, 0, self.inherited_color(&path), &pinned);
+                    row.quick = true;
+                    row.section = section.into();
+                    row.subtitle = self.place(&path);
+                    out.push(row);
+                }
             }
         }
         view.keep = "";
         for folder in self.library.notebooks(focus) {
+            if folder == focus {
+                continue;
+            }
             let Some(node) = self.node(&folder) else {
                 continue;
             };
@@ -217,6 +234,12 @@ impl LibraryHandle {
                         ..TreeRow::default()
                     });
                 }
+            }
+        }
+        // One notebook needs no headings.
+        if single {
+            for row in &mut out {
+                row.section.clear();
             }
         }
         Ok(out)
@@ -350,6 +373,15 @@ impl LibraryHandle {
                 self.section_targets(&node.path, &label, lines);
             }
         }
+    }
+
+    pub fn notebook_list(&self) -> String {
+        self.library
+            .notebooks("")
+            .into_iter()
+            .map(|n| format!("{n}\t{}", self.notebook_name(&n)))
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 
     pub fn subfolders(&self, folder: &str) -> String {
@@ -767,19 +799,20 @@ impl LibraryHandle {
         &mut self,
         importer: &ImportHandle,
         parent: &str,
-        notebooks: &str,
+        name: &str,
     ) -> Result<ImportResult> {
-        let import = importer
+        let mut import = importer
             .take()
             .ok_or_else(|| ductus_format::Error::Invalid("Nothing was imported.".into()))?
             .map_err(ductus_format::Error::Invalid)?;
-        // A section goes into the notebook, not into the section of the open page.
-        let in_notebook = self.library.notebook_of(parent);
-        let parent = match import.entry {
-            ductus_import::Entry::Folder { notebook: true, .. } => notebooks,
-            ductus_import::Entry::Folder { .. } => in_notebook.as_deref().unwrap_or(notebooks),
-            _ => parent,
-        };
+        let name = name.trim();
+        if !name.is_empty() {
+            match &mut import.entry {
+                ductus_import::Entry::Page(page) => page.name = name.to_owned(),
+                ductus_import::Entry::Folder { name: n, .. } => *n = name.to_owned(),
+                ductus_import::Entry::File { .. } => {}
+            }
+        }
         let saved = ductus_import::save(&mut self.library, parent, &import)?;
         Ok(ImportResult {
             root: saved.root,
@@ -970,7 +1003,7 @@ mod tests {
             .set_notebook("Uni/Sem 3/Statik/VO", "Statik")
             .unwrap();
         handle.add_recent("Uni/Sem 3/Statik/VO/Week 1").unwrap();
-        let rows = handle.rows("", 3, true, "Uni/Sem 3", "").unwrap();
+        let rows = handle.rows("", 3, true, "", "").unwrap();
         let summary: Vec<_> = rows
             .iter()
             .map(|r| (r.section.as_str(), r.name.as_str(), r.subtitle.as_str()))
@@ -979,9 +1012,16 @@ mod tests {
             summary,
             [
                 ("recent", "Week 1", "Uni › Sem 3 › Statik › VO · Statik"),
-                ("notebooks", "Statik", "Statik › VO")
+                ("notebooks", "Statik", "Uni › Sem 3 › Statik › VO")
             ]
         );
+        // Narrowed to that notebook: its pages, without headings or shortcuts.
+        let rows = handle.rows("", 3, true, "Uni/Sem 3/Statik/VO", "").unwrap();
+        let summary: Vec<_> = rows
+            .iter()
+            .map(|r| (r.depth, r.section.as_str(), r.name.as_str()))
+            .collect();
+        assert_eq!(summary, [(0, "", "Week 1")]);
         assert_eq!(relative("Uni/Sem 3", "Uni/Sem 3"), "");
         assert_eq!(relative("Uni/Sem 30/x", "Uni/Sem 3"), "Uni/Sem 30/x");
     }

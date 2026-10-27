@@ -1,20 +1,31 @@
-# Notes from Xournal++ and Rnote become ordinary pages next to the open one.
+# Notes from Xournal++ and Rnote become ordinary pages; a dialog says where first.
 size 1280 860
 import-notes tests/fixtures/annotated.xopp
+expect-text placeWhere Notes › My Notebook
+click-item importConfirm
 expect-file My Notebook/annotated.svg
 expect-file My Notebook/annotated.assets/source.pdf
 expect-text pageTitle annotated
 shot import-xopp
 import-notes tests/fixtures/sketch.rnote
+click-item importConfirm
 expect-file My Notebook/sketch.svg
 expect-in-file My Notebook/sketch.svg | Sketched in Rnote
 expect-text pageTitle sketch
 shot import-rnote
 # A folder of notes becomes a notebook; subfolders become its sections.
 import-notes tests/fixtures/Physics
+expect-text importSummary Notebook · Sections: 1 · Pages: 2
+expect-text placeWhere Notes
+click-item importConfirm
 expect-file Physics/Week 1.svg
 expect-file Physics/Lab/Week 2.svg
 expect-in-file Physics/Lab/Week 2.svg | Lab notes
+# The same again: nothing is overwritten, and cancelling saves nothing.
+import-notes tests/fixtures/Physics
+expect-text importNote “Physics” already exists there, so this is saved as “Physics 2”. Nothing is overwritten.
+key Escape
+expect-no-file Physics 2
 click-item tab_file
 click-item fileImport
 expect-text importFolder Notebook folder…

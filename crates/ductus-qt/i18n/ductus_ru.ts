@@ -88,12 +88,12 @@
         <translation>Импорт %1…</translation>
     </message>
     <message>
-        <source>Imported into your library.</source>
-        <translation>Импортировано в вашу библиотеку.</translation>
+        <source>Imported into %1.</source>
+        <translation>Импортировано в %1.</translation>
     </message>
     <message>
-        <source>Imported. %1</source>
-        <translation>Импортировано. %1</translation>
+        <source>Page copied into %1.</source>
+        <translation>Страница скопирована в %1.</translation>
     </message>
     <message>
         <source>The PDF couldn&apos;t be saved there.</source>
@@ -122,10 +122,6 @@
     <message>
         <source>Ductus opens notes pages (.svg), PDFs, and Xournal++, Rnote and OneNote files.</source>
         <translation>Ductus открывает страницы заметок (.svg), PDF и файлы Xournal++, Rnote и OneNote.</translation>
-    </message>
-    <message>
-        <source>Page copied into your library.</source>
-        <translation>Страница скопирована в вашу библиотеку.</translation>
     </message>
     <message>
         <source>Indexing %1 of %2 files…</source>
@@ -272,6 +268,49 @@
     <message>
         <source>No earlier versions yet. One is kept the first time it changes in a session.</source>
         <translation>Прежних версий пока нет. Версия сохраняется при первом изменении страницы в сеансе.</translation>
+    </message>
+</context>
+<context>
+    <name>ImportDialog</name>
+    <message>
+        <source>Import notes</source>
+        <translation>Импорт заметок</translation>
+    </message>
+    <message>
+        <source>Import</source>
+        <translation>Импорт</translation>
+    </message>
+    <message>
+        <source>Notebook</source>
+        <translation>Блокнот</translation>
+    </message>
+    <message>
+        <source>Section</source>
+        <translation>Раздел</translation>
+    </message>
+    <message>
+        <source>Page</source>
+        <translation>Страница</translation>
+    </message>
+    <message>
+        <source>Sections: %1</source>
+        <translation>Разделов: %1</translation>
+    </message>
+    <message>
+        <source>Pages: %1</source>
+        <translation>Страниц: %1</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Имя</translation>
+    </message>
+    <message>
+        <source>“%1” already exists there, so this is saved as “%2”. Nothing is overwritten.</source>
+        <translation>«%1» там уже есть, поэтому импорт сохранится как «%2». Ничего не перезаписывается.</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>Исходный файл только читается и никогда не меняется.</translation>
     </message>
 </context>
 <context>
@@ -477,6 +516,10 @@
     <message>
         <source>Notebook in the folder “%1”</source>
         <translation>Блокнот в папке «%1»</translation>
+    </message>
+    <message>
+        <source>Show in the sidebar</source>
+        <translation>Показать на боковой панели</translation>
     </message>
 </context>
 <context>
@@ -769,22 +812,6 @@ Library: %1</source>
         <translation>Переместить в</translation>
     </message>
     <message>
-        <source>Up one folder</source>
-        <translation>На папку выше</translation>
-    </message>
-    <message>
-        <source>%1 (notebook)</source>
-        <translation>%1 (блокнот)</translation>
-    </message>
-    <message>
-        <source>%1 (notebook “%2”)</source>
-        <translation>%1 (блокнот «%2»)</translation>
-    </message>
-    <message>
-        <source>No folders in here</source>
-        <translation>Здесь нет папок</translation>
-    </message>
-    <message>
         <source>A folder can&apos;t go inside itself.</source>
         <translation>Папку нельзя поместить в саму себя.</translation>
     </message>
@@ -822,30 +849,6 @@ Library: %1</source>
     <message>
         <source>Saved in</source>
         <translation>Сохранить в</translation>
-    </message>
-    <message>
-        <source>Done</source>
-        <translation>Готово</translation>
-    </message>
-    <message>
-        <source>Change…</source>
-        <translation>Изменить…</translation>
-    </message>
-    <message>
-        <source>Up one folder</source>
-        <translation>На папку выше</translation>
-    </message>
-    <message>
-        <source>%1 (notebook)</source>
-        <translation>%1 (блокнот)</translation>
-    </message>
-    <message>
-        <source>%1 (notebook “%2”)</source>
-        <translation>%1 (блокнот «%2»)</translation>
-    </message>
-    <message>
-        <source>No folders in here</source>
-        <translation>Здесь нет папок</translation>
     </message>
     <message>
         <source>In a new folder with its name</source>
@@ -934,6 +937,10 @@ Library: %1</source>
         <translation>Скрыть папки без этого</translation>
     </message>
     <message>
+        <source>Collapse all</source>
+        <translation>Свернуть всё</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>Новая страница…</translation>
     </message>
@@ -944,6 +951,14 @@ Library: %1</source>
     <message>
         <source>Up one folder</source>
         <translation>На папку выше</translation>
+    </message>
+    <message>
+        <source>All notebooks</source>
+        <translation>Все блокноты</translation>
+    </message>
+    <message>
+        <source>Show everything</source>
+        <translation>Показать всё</translation>
     </message>
     <message>
         <source>Favorites</source>
@@ -968,6 +983,10 @@ Library: %1</source>
     <message>
         <source>Show only this folder</source>
         <translation>Показывать только эту папку</translation>
+    </message>
+    <message>
+        <source>Show only this notebook</source>
+        <translation>Показывать только этот блокнот</translation>
     </message>
     <message>
         <source>More</source>
@@ -1213,6 +1232,37 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Down</source>
         <translation>Вниз</translation>
+    </message>
+</context>
+<context>
+    <name>PlacePicker</name>
+    <message>
+        <source>Saved in</source>
+        <translation>Сохранить в</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>Готово</translation>
+    </message>
+    <message>
+        <source>Change…</source>
+        <translation>Изменить…</translation>
+    </message>
+    <message>
+        <source>Up one folder</source>
+        <translation>На папку выше</translation>
+    </message>
+    <message>
+        <source>%1 (notebook)</source>
+        <translation>%1 (блокнот)</translation>
+    </message>
+    <message>
+        <source>%1 (notebook “%2”)</source>
+        <translation>%1 (блокнот «%2»)</translation>
+    </message>
+    <message>
+        <source>No folders in here</source>
+        <translation>Здесь нет папок</translation>
     </message>
 </context>
 <context>

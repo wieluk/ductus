@@ -1,5 +1,7 @@
 //! Reading notes from other apps on a worker thread; the main thread then writes the pages.
 
+use crate::ffi::qobject::ImportSummary;
+use ductus_import::Entry;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
@@ -58,5 +60,59 @@ impl ImportHandle {
 
     pub(crate) fn take(&self) -> Option<Outcome> {
         self.shared.lock().ok()?.outcome.take()
+    }
+
+    /// What was read, to show before anything is saved.
+    pub fn summary(&self) -> ImportSummary {
+        let Ok(s) = self.shared.lock() else {
+            return ImportSummary::default();
+        };
+        match &s.outcome {
+            None => ImportSummary::default(),
+            Some(Err(e)) => ImportSummary {
+                error: e.clone(),
+                ..ImportSummary::default()
+            },
+            Some(Ok(import)) => {
+                let (kind, name) = match &import.entry {
+                    Entry::Page(page) => ("page", page.name.clone()),
+                    Entry::Folder {
+                        notebook: true,
+                        name,
+                        ..
+                    } => ("notebook", name.clone()),
+                    Entry::Folder { name, .. } => ("section", name.clone()),
+                    Entry::File { name, .. } => ("file", name.clone()),
+                };
+                let (mut pages, mut sections) = (0, 0);
+                count(&import.entry, &mut pages, &mut sections);
+                ImportSummary {
+                    ready: true,
+                    kind: kind.into(),
+                    name,
+                    pages,
+                    sections: sections.saturating_sub(u32::from(kind != "page" && kind != "file")),
+                    ..ImportSummary::default()
+                }
+            }
+        }
+    }
+
+    /// Nothing is saved.
+    pub fn discard(&self) {
+        drop(self.take());
+    }
+}
+
+fn count(entry: &Entry, pages: &mut u32, folders: &mut u32) {
+    match entry {
+        Entry::Page(_) => *pages += 1,
+        Entry::Folder { entries, .. } => {
+            *folders += 1;
+            for e in entries {
+                count(e, pages, folders);
+            }
+        }
+        Entry::File { .. } => {}
     }
 }

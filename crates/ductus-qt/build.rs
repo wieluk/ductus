@@ -35,6 +35,8 @@ fn main() {
         QmlFile::from("qml/TrashDialog.qml"),
         QmlFile::from("qml/HistoryDialog.qml"),
         QmlFile::from("qml/MoveDialog.qml"),
+        QmlFile::from("qml/PlacePicker.qml"),
+        QmlFile::from("qml/ImportDialog.qml"),
     ]);
     let mut builder = CxxQtBuilder::new_qml_module(qml)
         .qt_module("Quick")

@@ -88,12 +88,12 @@
         <translation>Importando %1…</translation>
     </message>
     <message>
-        <source>Imported into your library.</source>
-        <translation>Importado a tu biblioteca.</translation>
+        <source>Imported into %1.</source>
+        <translation>Importado en %1.</translation>
     </message>
     <message>
-        <source>Imported. %1</source>
-        <translation>Importado. %1</translation>
+        <source>Page copied into %1.</source>
+        <translation>Página copiada en %1.</translation>
     </message>
     <message>
         <source>The PDF couldn&apos;t be saved there.</source>
@@ -121,10 +121,6 @@
     <message>
         <source>Ductus opens notes pages (.svg), PDFs, and Xournal++, Rnote and OneNote files.</source>
         <translation>Ductus abre páginas de notas (.svg), PDF y archivos de Xournal++, Rnote y OneNote.</translation>
-    </message>
-    <message>
-        <source>Page copied into your library.</source>
-        <translation>Página copiada a tu biblioteca.</translation>
     </message>
     <message>
         <source>Indexing %1 of %2 files…</source>
@@ -267,6 +263,49 @@
     <message>
         <source>No earlier versions yet. One is kept the first time it changes in a session.</source>
         <translation>Aún no hay versiones anteriores. Se guarda una la primera vez que cambia en una sesión.</translation>
+    </message>
+</context>
+<context>
+    <name>ImportDialog</name>
+    <message>
+        <source>Import notes</source>
+        <translation>Importar notas</translation>
+    </message>
+    <message>
+        <source>Import</source>
+        <translation>Importar</translation>
+    </message>
+    <message>
+        <source>Notebook</source>
+        <translation>Cuaderno</translation>
+    </message>
+    <message>
+        <source>Section</source>
+        <translation>Sección</translation>
+    </message>
+    <message>
+        <source>Page</source>
+        <translation>Página</translation>
+    </message>
+    <message>
+        <source>Sections: %1</source>
+        <translation>Secciones: %1</translation>
+    </message>
+    <message>
+        <source>Pages: %1</source>
+        <translation>Páginas: %1</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Nombre</translation>
+    </message>
+    <message>
+        <source>“%1” already exists there, so this is saved as “%2”. Nothing is overwritten.</source>
+        <translation>«%1» ya existe ahí, así que se guarda como «%2». No se sobrescribe nada.</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>El archivo original solo se lee, nunca se modifica.</translation>
     </message>
 </context>
 <context>
@@ -472,6 +511,10 @@
     <message>
         <source>Notebook in the folder “%1”</source>
         <translation>Cuaderno en la carpeta «%1»</translation>
+    </message>
+    <message>
+        <source>Show in the sidebar</source>
+        <translation>Mostrar en la barra lateral</translation>
     </message>
 </context>
 <context>
@@ -764,22 +807,6 @@ Biblioteca: %1</translation>
         <translation>Mover a</translation>
     </message>
     <message>
-        <source>Up one folder</source>
-        <translation>Subir una carpeta</translation>
-    </message>
-    <message>
-        <source>%1 (notebook)</source>
-        <translation>%1 (cuaderno)</translation>
-    </message>
-    <message>
-        <source>%1 (notebook “%2”)</source>
-        <translation>%1 (cuaderno «%2»)</translation>
-    </message>
-    <message>
-        <source>No folders in here</source>
-        <translation>Aquí no hay carpetas</translation>
-    </message>
-    <message>
         <source>A folder can&apos;t go inside itself.</source>
         <translation>Una carpeta no puede ir dentro de sí misma.</translation>
     </message>
@@ -817,30 +844,6 @@ Biblioteca: %1</translation>
     <message>
         <source>Saved in</source>
         <translation>Guardado en</translation>
-    </message>
-    <message>
-        <source>Done</source>
-        <translation>Hecho</translation>
-    </message>
-    <message>
-        <source>Change…</source>
-        <translation>Cambiar…</translation>
-    </message>
-    <message>
-        <source>Up one folder</source>
-        <translation>Subir una carpeta</translation>
-    </message>
-    <message>
-        <source>%1 (notebook)</source>
-        <translation>%1 (cuaderno)</translation>
-    </message>
-    <message>
-        <source>%1 (notebook “%2”)</source>
-        <translation>%1 (cuaderno «%2»)</translation>
-    </message>
-    <message>
-        <source>No folders in here</source>
-        <translation>Aquí no hay carpetas</translation>
     </message>
     <message>
         <source>In a new folder with its name</source>
@@ -929,6 +932,10 @@ Biblioteca: %1</translation>
         <translation>Ocultar carpetas sin estos</translation>
     </message>
     <message>
+        <source>Collapse all</source>
+        <translation>Contraer todo</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>Nueva página…</translation>
     </message>
@@ -939,6 +946,14 @@ Biblioteca: %1</translation>
     <message>
         <source>Up one folder</source>
         <translation>Subir una carpeta</translation>
+    </message>
+    <message>
+        <source>All notebooks</source>
+        <translation>Todos los cuadernos</translation>
+    </message>
+    <message>
+        <source>Show everything</source>
+        <translation>Mostrar todo</translation>
     </message>
     <message>
         <source>Favorites</source>
@@ -963,6 +978,10 @@ Biblioteca: %1</translation>
     <message>
         <source>Show only this folder</source>
         <translation>Mostrar solo esta carpeta</translation>
+    </message>
+    <message>
+        <source>Show only this notebook</source>
+        <translation>Mostrar solo este cuaderno</translation>
     </message>
     <message>
         <source>More</source>
@@ -1208,6 +1227,37 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
     <message>
         <source>Down</source>
         <translation>Abajo</translation>
+    </message>
+</context>
+<context>
+    <name>PlacePicker</name>
+    <message>
+        <source>Saved in</source>
+        <translation>Guardado en</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>Hecho</translation>
+    </message>
+    <message>
+        <source>Change…</source>
+        <translation>Cambiar…</translation>
+    </message>
+    <message>
+        <source>Up one folder</source>
+        <translation>Subir una carpeta</translation>
+    </message>
+    <message>
+        <source>%1 (notebook)</source>
+        <translation>%1 (cuaderno)</translation>
+    </message>
+    <message>
+        <source>%1 (notebook “%2”)</source>
+        <translation>%1 (cuaderno «%2»)</translation>
+    </message>
+    <message>
+        <source>No folders in here</source>
+        <translation>Aquí no hay carpetas</translation>
     </message>
 </context>
 <context>

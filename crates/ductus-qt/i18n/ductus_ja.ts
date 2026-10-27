@@ -88,12 +88,12 @@
         <translation>%1 を取り込み中…</translation>
     </message>
     <message>
-        <source>Imported into your library.</source>
-        <translation>ライブラリに取り込みました。</translation>
+        <source>Imported into %1.</source>
+        <translation>%1 に取り込みました。</translation>
     </message>
     <message>
-        <source>Imported. %1</source>
-        <translation>取り込みました。%1</translation>
+        <source>Page copied into %1.</source>
+        <translation>ページを %1 にコピーしました。</translation>
     </message>
     <message>
         <source>The PDF couldn&apos;t be saved there.</source>
@@ -120,10 +120,6 @@
     <message>
         <source>Ductus opens notes pages (.svg), PDFs, and Xournal++, Rnote and OneNote files.</source>
         <translation>Ductus はノートページ (.svg)、PDF、Xournal++・Rnote・OneNote のファイルを開けます。</translation>
-    </message>
-    <message>
-        <source>Page copied into your library.</source>
-        <translation>ページをライブラリにコピーしました。</translation>
     </message>
     <message>
         <source>Indexing %1 of %2 files…</source>
@@ -262,6 +258,49 @@
     <message>
         <source>No earlier versions yet. One is kept the first time it changes in a session.</source>
         <translation>以前のバージョンはまだありません。セッション中に初めて変更されたときに 1 つ保存されます。</translation>
+    </message>
+</context>
+<context>
+    <name>ImportDialog</name>
+    <message>
+        <source>Import notes</source>
+        <translation>ノートを取り込む</translation>
+    </message>
+    <message>
+        <source>Import</source>
+        <translation>取り込み</translation>
+    </message>
+    <message>
+        <source>Notebook</source>
+        <translation>ノート</translation>
+    </message>
+    <message>
+        <source>Section</source>
+        <translation>セクション</translation>
+    </message>
+    <message>
+        <source>Page</source>
+        <translation>ページ</translation>
+    </message>
+    <message>
+        <source>Sections: %1</source>
+        <translation>セクション: %1</translation>
+    </message>
+    <message>
+        <source>Pages: %1</source>
+        <translation>ページ: %1</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>名前</translation>
+    </message>
+    <message>
+        <source>“%1” already exists there, so this is saved as “%2”. Nothing is overwritten.</source>
+        <translation>「%1」は既にあるため、「%2」として保存します。上書きはされません。</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>元のファイルは読み取るだけで、変更しません。</translation>
     </message>
 </context>
 <context>
@@ -467,6 +506,10 @@
     <message>
         <source>Notebook in the folder “%1”</source>
         <translation>フォルダー「%1」のノート</translation>
+    </message>
+    <message>
+        <source>Show in the sidebar</source>
+        <translation>サイドバーで表示</translation>
     </message>
 </context>
 <context>
@@ -759,22 +802,6 @@ Library: %1</source>
         <translation>移動先</translation>
     </message>
     <message>
-        <source>Up one folder</source>
-        <translation>1 つ上のフォルダー</translation>
-    </message>
-    <message>
-        <source>%1 (notebook)</source>
-        <translation>%1（ノート）</translation>
-    </message>
-    <message>
-        <source>%1 (notebook “%2”)</source>
-        <translation>%1（ノート「%2」）</translation>
-    </message>
-    <message>
-        <source>No folders in here</source>
-        <translation>ここにはフォルダーがありません</translation>
-    </message>
-    <message>
         <source>A folder can&apos;t go inside itself.</source>
         <translation>フォルダーを自分自身の中に入れることはできません。</translation>
     </message>
@@ -812,30 +839,6 @@ Library: %1</source>
     <message>
         <source>Saved in</source>
         <translation>保存先</translation>
-    </message>
-    <message>
-        <source>Done</source>
-        <translation>完了</translation>
-    </message>
-    <message>
-        <source>Change…</source>
-        <translation>変更…</translation>
-    </message>
-    <message>
-        <source>Up one folder</source>
-        <translation>1 つ上のフォルダー</translation>
-    </message>
-    <message>
-        <source>%1 (notebook)</source>
-        <translation>%1（ノート）</translation>
-    </message>
-    <message>
-        <source>%1 (notebook “%2”)</source>
-        <translation>%1（ノート「%2」）</translation>
-    </message>
-    <message>
-        <source>No folders in here</source>
-        <translation>ここにはフォルダーがありません</translation>
     </message>
     <message>
         <source>In a new folder with its name</source>
@@ -924,6 +927,10 @@ Library: %1</source>
         <translation>これらを含まないフォルダーを隠す</translation>
     </message>
     <message>
+        <source>Collapse all</source>
+        <translation>すべて折りたたむ</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>新しいページ…</translation>
     </message>
@@ -934,6 +941,14 @@ Library: %1</source>
     <message>
         <source>Up one folder</source>
         <translation>1 つ上のフォルダー</translation>
+    </message>
+    <message>
+        <source>All notebooks</source>
+        <translation>すべてのノート</translation>
+    </message>
+    <message>
+        <source>Show everything</source>
+        <translation>すべて表示</translation>
     </message>
     <message>
         <source>Favorites</source>
@@ -958,6 +973,10 @@ Library: %1</source>
     <message>
         <source>Show only this folder</source>
         <translation>このフォルダーだけを表示</translation>
+    </message>
+    <message>
+        <source>Show only this notebook</source>
+        <translation>このノートだけを表示</translation>
     </message>
     <message>
         <source>More</source>
@@ -1203,6 +1222,37 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Down</source>
         <translation>下へ</translation>
+    </message>
+</context>
+<context>
+    <name>PlacePicker</name>
+    <message>
+        <source>Saved in</source>
+        <translation>保存先</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>完了</translation>
+    </message>
+    <message>
+        <source>Change…</source>
+        <translation>変更…</translation>
+    </message>
+    <message>
+        <source>Up one folder</source>
+        <translation>1 つ上のフォルダー</translation>
+    </message>
+    <message>
+        <source>%1 (notebook)</source>
+        <translation>%1（ノート）</translation>
+    </message>
+    <message>
+        <source>%1 (notebook “%2”)</source>
+        <translation>%1（ノート「%2」）</translation>
+    </message>
+    <message>
+        <source>No folders in here</source>
+        <translation>ここにはフォルダーがありません</translation>
     </message>
 </context>
 <context>

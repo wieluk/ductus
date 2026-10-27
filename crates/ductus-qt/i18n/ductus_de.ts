@@ -88,12 +88,12 @@
         <translation>%1 wird importiert…</translation>
     </message>
     <message>
-        <source>Imported into your library.</source>
-        <translation>In deine Bibliothek importiert.</translation>
+        <source>Imported into %1.</source>
+        <translation>Importiert nach %1.</translation>
     </message>
     <message>
-        <source>Imported. %1</source>
-        <translation>Importiert. %1</translation>
+        <source>Page copied into %1.</source>
+        <translation>Seite nach %1 kopiert.</translation>
     </message>
     <message>
         <source>The PDF couldn&apos;t be saved there.</source>
@@ -121,10 +121,6 @@
     <message>
         <source>Ductus opens notes pages (.svg), PDFs, and Xournal++, Rnote and OneNote files.</source>
         <translation>Ductus öffnet Notizseiten (.svg), PDFs sowie Dateien aus Xournal++, Rnote und OneNote.</translation>
-    </message>
-    <message>
-        <source>Page copied into your library.</source>
-        <translation>Seite in deine Bibliothek kopiert.</translation>
     </message>
     <message>
         <source>Indexing %1 of %2 files…</source>
@@ -267,6 +263,49 @@
     <message>
         <source>No earlier versions yet. One is kept the first time it changes in a session.</source>
         <translation>Noch keine früheren Versionen. Eine wird behalten, sobald sich die Seite in einer Sitzung zum ersten Mal ändert.</translation>
+    </message>
+</context>
+<context>
+    <name>ImportDialog</name>
+    <message>
+        <source>Import notes</source>
+        <translation>Notizen importieren</translation>
+    </message>
+    <message>
+        <source>Import</source>
+        <translation>Importieren</translation>
+    </message>
+    <message>
+        <source>Notebook</source>
+        <translation>Notizbuch</translation>
+    </message>
+    <message>
+        <source>Section</source>
+        <translation>Abschnitt</translation>
+    </message>
+    <message>
+        <source>Page</source>
+        <translation>Seite</translation>
+    </message>
+    <message>
+        <source>Sections: %1</source>
+        <translation>Abschnitte: %1</translation>
+    </message>
+    <message>
+        <source>Pages: %1</source>
+        <translation>Seiten: %1</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Name</translation>
+    </message>
+    <message>
+        <source>“%1” already exists there, so this is saved as “%2”. Nothing is overwritten.</source>
+        <translation>„%1“ gibt es dort schon, darum wird es als „%2“ gespeichert. Nichts wird überschrieben.</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>Die Originaldatei wird nur gelesen, nie verändert.</translation>
     </message>
 </context>
 <context>
@@ -472,6 +511,10 @@
     <message>
         <source>Notebook in the folder “%1”</source>
         <translation>Notizbuch im Ordner „%1“</translation>
+    </message>
+    <message>
+        <source>Show in the sidebar</source>
+        <translation>In der Seitenleiste zeigen</translation>
     </message>
 </context>
 <context>
@@ -764,22 +807,6 @@ Bibliothek: %1</translation>
         <translation>Verschieben nach</translation>
     </message>
     <message>
-        <source>Up one folder</source>
-        <translation>Einen Ordner nach oben</translation>
-    </message>
-    <message>
-        <source>%1 (notebook)</source>
-        <translation>%1 (Notizbuch)</translation>
-    </message>
-    <message>
-        <source>%1 (notebook “%2”)</source>
-        <translation>%1 (Notizbuch „%2“)</translation>
-    </message>
-    <message>
-        <source>No folders in here</source>
-        <translation>Hier sind keine Ordner</translation>
-    </message>
-    <message>
         <source>A folder can&apos;t go inside itself.</source>
         <translation>Ein Ordner kann nicht in sich selbst liegen.</translation>
     </message>
@@ -817,30 +844,6 @@ Bibliothek: %1</translation>
     <message>
         <source>Saved in</source>
         <translation>Gespeichert in</translation>
-    </message>
-    <message>
-        <source>Done</source>
-        <translation>Fertig</translation>
-    </message>
-    <message>
-        <source>Change…</source>
-        <translation>Ändern…</translation>
-    </message>
-    <message>
-        <source>Up one folder</source>
-        <translation>Einen Ordner nach oben</translation>
-    </message>
-    <message>
-        <source>%1 (notebook)</source>
-        <translation>%1 (Notizbuch)</translation>
-    </message>
-    <message>
-        <source>%1 (notebook “%2”)</source>
-        <translation>%1 (Notizbuch „%2“)</translation>
-    </message>
-    <message>
-        <source>No folders in here</source>
-        <translation>Hier sind keine Ordner</translation>
     </message>
     <message>
         <source>In a new folder with its name</source>
@@ -929,6 +932,10 @@ Bibliothek: %1</translation>
         <translation>Ordner ohne diese ausblenden</translation>
     </message>
     <message>
+        <source>Collapse all</source>
+        <translation>Alle zuklappen</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>Neue Seite…</translation>
     </message>
@@ -939,6 +946,14 @@ Bibliothek: %1</translation>
     <message>
         <source>Up one folder</source>
         <translation>Einen Ordner nach oben</translation>
+    </message>
+    <message>
+        <source>All notebooks</source>
+        <translation>Alle Notizbücher</translation>
+    </message>
+    <message>
+        <source>Show everything</source>
+        <translation>Alles anzeigen</translation>
     </message>
     <message>
         <source>Favorites</source>
@@ -963,6 +978,10 @@ Bibliothek: %1</translation>
     <message>
         <source>Show only this folder</source>
         <translation>Nur diesen Ordner anzeigen</translation>
+    </message>
+    <message>
+        <source>Show only this notebook</source>
+        <translation>Nur dieses Notizbuch anzeigen</translation>
     </message>
     <message>
         <source>More</source>
@@ -1208,6 +1227,37 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     <message>
         <source>Down</source>
         <translation>Nach unten</translation>
+    </message>
+</context>
+<context>
+    <name>PlacePicker</name>
+    <message>
+        <source>Saved in</source>
+        <translation>Gespeichert in</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>Fertig</translation>
+    </message>
+    <message>
+        <source>Change…</source>
+        <translation>Ändern…</translation>
+    </message>
+    <message>
+        <source>Up one folder</source>
+        <translation>Einen Ordner nach oben</translation>
+    </message>
+    <message>
+        <source>%1 (notebook)</source>
+        <translation>%1 (Notizbuch)</translation>
+    </message>
+    <message>
+        <source>%1 (notebook “%2”)</source>
+        <translation>%1 (Notizbuch „%2“)</translation>
+    </message>
+    <message>
+        <source>No folders in here</source>
+        <translation>Hier sind keine Ordner</translation>
     </message>
 </context>
 <context>

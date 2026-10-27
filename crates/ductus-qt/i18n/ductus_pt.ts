@@ -88,12 +88,12 @@
         <translation>Importando %1…</translation>
     </message>
     <message>
-        <source>Imported into your library.</source>
-        <translation>Importado para a sua biblioteca.</translation>
+        <source>Imported into %1.</source>
+        <translation>Importado para %1.</translation>
     </message>
     <message>
-        <source>Imported. %1</source>
-        <translation>Importado. %1</translation>
+        <source>Page copied into %1.</source>
+        <translation>Página copiada para %1.</translation>
     </message>
     <message>
         <source>The PDF couldn&apos;t be saved there.</source>
@@ -121,10 +121,6 @@
     <message>
         <source>Ductus opens notes pages (.svg), PDFs, and Xournal++, Rnote and OneNote files.</source>
         <translation>O Ductus abre páginas de notas (.svg), PDFs e arquivos do Xournal++, Rnote e OneNote.</translation>
-    </message>
-    <message>
-        <source>Page copied into your library.</source>
-        <translation>Página copiada para a sua biblioteca.</translation>
     </message>
     <message>
         <source>Indexing %1 of %2 files…</source>
@@ -267,6 +263,49 @@
     <message>
         <source>No earlier versions yet. One is kept the first time it changes in a session.</source>
         <translation>Ainda não há versões anteriores. Uma é guardada na primeira vez que a página muda em uma sessão.</translation>
+    </message>
+</context>
+<context>
+    <name>ImportDialog</name>
+    <message>
+        <source>Import notes</source>
+        <translation>Importar notas</translation>
+    </message>
+    <message>
+        <source>Import</source>
+        <translation>Importar</translation>
+    </message>
+    <message>
+        <source>Notebook</source>
+        <translation>Caderno</translation>
+    </message>
+    <message>
+        <source>Section</source>
+        <translation>Seção</translation>
+    </message>
+    <message>
+        <source>Page</source>
+        <translation>Página</translation>
+    </message>
+    <message>
+        <source>Sections: %1</source>
+        <translation>Seções: %1</translation>
+    </message>
+    <message>
+        <source>Pages: %1</source>
+        <translation>Páginas: %1</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Nome</translation>
+    </message>
+    <message>
+        <source>“%1” already exists there, so this is saved as “%2”. Nothing is overwritten.</source>
+        <translation>“%1” já existe aí, por isso é salvo como “%2”. Nada é substituído.</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>O arquivo original é apenas lido, nunca alterado.</translation>
     </message>
 </context>
 <context>
@@ -472,6 +511,10 @@
     <message>
         <source>Notebook in the folder “%1”</source>
         <translation>Caderno na pasta “%1”</translation>
+    </message>
+    <message>
+        <source>Show in the sidebar</source>
+        <translation>Mostrar na barra lateral</translation>
     </message>
 </context>
 <context>
@@ -764,22 +807,6 @@ Biblioteca: %1</translation>
         <translation>Mover para</translation>
     </message>
     <message>
-        <source>Up one folder</source>
-        <translation>Subir uma pasta</translation>
-    </message>
-    <message>
-        <source>%1 (notebook)</source>
-        <translation>%1 (caderno)</translation>
-    </message>
-    <message>
-        <source>%1 (notebook “%2”)</source>
-        <translation>%1 (caderno “%2”)</translation>
-    </message>
-    <message>
-        <source>No folders in here</source>
-        <translation>Nenhuma pasta aqui</translation>
-    </message>
-    <message>
         <source>A folder can&apos;t go inside itself.</source>
         <translation>Uma pasta não pode ficar dentro de si mesma.</translation>
     </message>
@@ -817,30 +844,6 @@ Biblioteca: %1</translation>
     <message>
         <source>Saved in</source>
         <translation>Salvo em</translation>
-    </message>
-    <message>
-        <source>Done</source>
-        <translation>Concluído</translation>
-    </message>
-    <message>
-        <source>Change…</source>
-        <translation>Alterar…</translation>
-    </message>
-    <message>
-        <source>Up one folder</source>
-        <translation>Subir uma pasta</translation>
-    </message>
-    <message>
-        <source>%1 (notebook)</source>
-        <translation>%1 (caderno)</translation>
-    </message>
-    <message>
-        <source>%1 (notebook “%2”)</source>
-        <translation>%1 (caderno “%2”)</translation>
-    </message>
-    <message>
-        <source>No folders in here</source>
-        <translation>Nenhuma pasta aqui</translation>
     </message>
     <message>
         <source>In a new folder with its name</source>
@@ -929,6 +932,10 @@ Biblioteca: %1</translation>
         <translation>Ocultar pastas sem estes</translation>
     </message>
     <message>
+        <source>Collapse all</source>
+        <translation>Recolher tudo</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>Nova página…</translation>
     </message>
@@ -939,6 +946,14 @@ Biblioteca: %1</translation>
     <message>
         <source>Up one folder</source>
         <translation>Subir uma pasta</translation>
+    </message>
+    <message>
+        <source>All notebooks</source>
+        <translation>Todos os cadernos</translation>
+    </message>
+    <message>
+        <source>Show everything</source>
+        <translation>Mostrar tudo</translation>
     </message>
     <message>
         <source>Favorites</source>
@@ -963,6 +978,10 @@ Biblioteca: %1</translation>
     <message>
         <source>Show only this folder</source>
         <translation>Mostrar só esta pasta</translation>
+    </message>
+    <message>
+        <source>Show only this notebook</source>
+        <translation>Mostrar só este caderno</translation>
     </message>
     <message>
         <source>More</source>
@@ -1208,6 +1227,37 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
     <message>
         <source>Down</source>
         <translation>Para baixo</translation>
+    </message>
+</context>
+<context>
+    <name>PlacePicker</name>
+    <message>
+        <source>Saved in</source>
+        <translation>Salvo em</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>Concluído</translation>
+    </message>
+    <message>
+        <source>Change…</source>
+        <translation>Alterar…</translation>
+    </message>
+    <message>
+        <source>Up one folder</source>
+        <translation>Subir uma pasta</translation>
+    </message>
+    <message>
+        <source>%1 (notebook)</source>
+        <translation>%1 (caderno)</translation>
+    </message>
+    <message>
+        <source>%1 (notebook “%2”)</source>
+        <translation>%1 (caderno “%2”)</translation>
+    </message>
+    <message>
+        <source>No folders in here</source>
+        <translation>Nenhuma pasta aqui</translation>
     </message>
 </context>
 <context>

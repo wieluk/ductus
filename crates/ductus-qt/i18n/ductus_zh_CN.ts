@@ -88,12 +88,12 @@
         <translation>正在导入 %1…</translation>
     </message>
     <message>
-        <source>Imported into your library.</source>
-        <translation>已导入到你的资料库。</translation>
+        <source>Imported into %1.</source>
+        <translation>已导入到 %1。</translation>
     </message>
     <message>
-        <source>Imported. %1</source>
-        <translation>已导入。%1</translation>
+        <source>Page copied into %1.</source>
+        <translation>页面已复制到 %1。</translation>
     </message>
     <message>
         <source>The PDF couldn&apos;t be saved there.</source>
@@ -120,10 +120,6 @@
     <message>
         <source>Ductus opens notes pages (.svg), PDFs, and Xournal++, Rnote and OneNote files.</source>
         <translation>Ductus 可打开笔记页面 (.svg)、PDF 以及 Xournal++、Rnote 和 OneNote 文件。</translation>
-    </message>
-    <message>
-        <source>Page copied into your library.</source>
-        <translation>页面已复制到你的资料库。</translation>
     </message>
     <message>
         <source>Indexing %1 of %2 files…</source>
@@ -262,6 +258,49 @@
     <message>
         <source>No earlier versions yet. One is kept the first time it changes in a session.</source>
         <translation>还没有早期版本。每次会话中页面第一次更改时会保留一个版本。</translation>
+    </message>
+</context>
+<context>
+    <name>ImportDialog</name>
+    <message>
+        <source>Import notes</source>
+        <translation>导入笔记</translation>
+    </message>
+    <message>
+        <source>Import</source>
+        <translation>导入</translation>
+    </message>
+    <message>
+        <source>Notebook</source>
+        <translation>笔记本</translation>
+    </message>
+    <message>
+        <source>Section</source>
+        <translation>分区</translation>
+    </message>
+    <message>
+        <source>Page</source>
+        <translation>页面</translation>
+    </message>
+    <message>
+        <source>Sections: %1</source>
+        <translation>分区：%1</translation>
+    </message>
+    <message>
+        <source>Pages: %1</source>
+        <translation>页面：%1</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>名称</translation>
+    </message>
+    <message>
+        <source>“%1” already exists there, so this is saved as “%2”. Nothing is overwritten.</source>
+        <translation>那里已有“%1”，因此保存为“%2”。不会覆盖任何内容。</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>只读取原始文件，绝不修改它。</translation>
     </message>
 </context>
 <context>
@@ -467,6 +506,10 @@
     <message>
         <source>Notebook in the folder “%1”</source>
         <translation>文件夹“%1”中的笔记本</translation>
+    </message>
+    <message>
+        <source>Show in the sidebar</source>
+        <translation>在侧边栏中显示</translation>
     </message>
 </context>
 <context>
@@ -759,22 +802,6 @@ Library: %1</source>
         <translation>移动到</translation>
     </message>
     <message>
-        <source>Up one folder</source>
-        <translation>上一级文件夹</translation>
-    </message>
-    <message>
-        <source>%1 (notebook)</source>
-        <translation>%1（笔记本）</translation>
-    </message>
-    <message>
-        <source>%1 (notebook “%2”)</source>
-        <translation>%1（笔记本“%2”）</translation>
-    </message>
-    <message>
-        <source>No folders in here</source>
-        <translation>这里没有文件夹</translation>
-    </message>
-    <message>
         <source>A folder can&apos;t go inside itself.</source>
         <translation>文件夹不能放进它自己里面。</translation>
     </message>
@@ -812,30 +839,6 @@ Library: %1</source>
     <message>
         <source>Saved in</source>
         <translation>保存位置</translation>
-    </message>
-    <message>
-        <source>Done</source>
-        <translation>完成</translation>
-    </message>
-    <message>
-        <source>Change…</source>
-        <translation>更改…</translation>
-    </message>
-    <message>
-        <source>Up one folder</source>
-        <translation>上一级文件夹</translation>
-    </message>
-    <message>
-        <source>%1 (notebook)</source>
-        <translation>%1（笔记本）</translation>
-    </message>
-    <message>
-        <source>%1 (notebook “%2”)</source>
-        <translation>%1（笔记本“%2”）</translation>
-    </message>
-    <message>
-        <source>No folders in here</source>
-        <translation>这里没有文件夹</translation>
     </message>
     <message>
         <source>In a new folder with its name</source>
@@ -924,6 +927,10 @@ Library: %1</source>
         <translation>隐藏不含这些内容的文件夹</translation>
     </message>
     <message>
+        <source>Collapse all</source>
+        <translation>全部折叠</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>新建页面…</translation>
     </message>
@@ -934,6 +941,14 @@ Library: %1</source>
     <message>
         <source>Up one folder</source>
         <translation>上一级文件夹</translation>
+    </message>
+    <message>
+        <source>All notebooks</source>
+        <translation>所有笔记本</translation>
+    </message>
+    <message>
+        <source>Show everything</source>
+        <translation>全部显示</translation>
     </message>
     <message>
         <source>Favorites</source>
@@ -958,6 +973,10 @@ Library: %1</source>
     <message>
         <source>Show only this folder</source>
         <translation>只显示此文件夹</translation>
+    </message>
+    <message>
+        <source>Show only this notebook</source>
+        <translation>只显示此笔记本</translation>
     </message>
     <message>
         <source>More</source>
@@ -1203,6 +1222,37 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Down</source>
         <translation>下移</translation>
+    </message>
+</context>
+<context>
+    <name>PlacePicker</name>
+    <message>
+        <source>Saved in</source>
+        <translation>保存位置</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>完成</translation>
+    </message>
+    <message>
+        <source>Change…</source>
+        <translation>更改…</translation>
+    </message>
+    <message>
+        <source>Up one folder</source>
+        <translation>上一级文件夹</translation>
+    </message>
+    <message>
+        <source>%1 (notebook)</source>
+        <translation>%1（笔记本）</translation>
+    </message>
+    <message>
+        <source>%1 (notebook “%2”)</source>
+        <translation>%1（笔记本“%2”）</translation>
+    </message>
+    <message>
+        <source>No folders in here</source>
+        <translation>这里没有文件夹</translation>
     </message>
 </context>
 <context>

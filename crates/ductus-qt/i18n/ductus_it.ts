@@ -88,12 +88,12 @@
         <translation>Importazione di %1…</translation>
     </message>
     <message>
-        <source>Imported into your library.</source>
-        <translation>Importato nella tua libreria.</translation>
+        <source>Imported into %1.</source>
+        <translation>Importato in %1.</translation>
     </message>
     <message>
-        <source>Imported. %1</source>
-        <translation>Importato. %1</translation>
+        <source>Page copied into %1.</source>
+        <translation>Pagina copiata in %1.</translation>
     </message>
     <message>
         <source>The PDF couldn&apos;t be saved there.</source>
@@ -121,10 +121,6 @@
     <message>
         <source>Ductus opens notes pages (.svg), PDFs, and Xournal++, Rnote and OneNote files.</source>
         <translation>Ductus apre pagine di appunti (.svg), PDF e file di Xournal++, Rnote e OneNote.</translation>
-    </message>
-    <message>
-        <source>Page copied into your library.</source>
-        <translation>Pagina copiata nella tua libreria.</translation>
     </message>
     <message>
         <source>Indexing %1 of %2 files…</source>
@@ -267,6 +263,49 @@
     <message>
         <source>No earlier versions yet. One is kept the first time it changes in a session.</source>
         <translation>Ancora nessuna versione precedente. Ne viene conservata una la prima volta che la pagina cambia in una sessione.</translation>
+    </message>
+</context>
+<context>
+    <name>ImportDialog</name>
+    <message>
+        <source>Import notes</source>
+        <translation>Importa appunti</translation>
+    </message>
+    <message>
+        <source>Import</source>
+        <translation>Importa</translation>
+    </message>
+    <message>
+        <source>Notebook</source>
+        <translation>Quaderno</translation>
+    </message>
+    <message>
+        <source>Section</source>
+        <translation>Sezione</translation>
+    </message>
+    <message>
+        <source>Page</source>
+        <translation>Pagina</translation>
+    </message>
+    <message>
+        <source>Sections: %1</source>
+        <translation>Sezioni: %1</translation>
+    </message>
+    <message>
+        <source>Pages: %1</source>
+        <translation>Pagine: %1</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Nome</translation>
+    </message>
+    <message>
+        <source>“%1” already exists there, so this is saved as “%2”. Nothing is overwritten.</source>
+        <translation>«%1» esiste già lì, quindi viene salvato come «%2». Nulla viene sovrascritto.</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>Il file originale viene solo letto, mai modificato.</translation>
     </message>
 </context>
 <context>
@@ -472,6 +511,10 @@
     <message>
         <source>Notebook in the folder “%1”</source>
         <translation>Quaderno nella cartella «%1»</translation>
+    </message>
+    <message>
+        <source>Show in the sidebar</source>
+        <translation>Mostra nella barra laterale</translation>
     </message>
 </context>
 <context>
@@ -764,22 +807,6 @@ Libreria: %1</translation>
         <translation>Sposta in</translation>
     </message>
     <message>
-        <source>Up one folder</source>
-        <translation>Una cartella in su</translation>
-    </message>
-    <message>
-        <source>%1 (notebook)</source>
-        <translation>%1 (quaderno)</translation>
-    </message>
-    <message>
-        <source>%1 (notebook “%2”)</source>
-        <translation>%1 (quaderno «%2»)</translation>
-    </message>
-    <message>
-        <source>No folders in here</source>
-        <translation>Nessuna cartella qui</translation>
-    </message>
-    <message>
         <source>A folder can&apos;t go inside itself.</source>
         <translation>Una cartella non può stare dentro sé stessa.</translation>
     </message>
@@ -817,30 +844,6 @@ Libreria: %1</translation>
     <message>
         <source>Saved in</source>
         <translation>Salvato in</translation>
-    </message>
-    <message>
-        <source>Done</source>
-        <translation>Fatto</translation>
-    </message>
-    <message>
-        <source>Change…</source>
-        <translation>Cambia…</translation>
-    </message>
-    <message>
-        <source>Up one folder</source>
-        <translation>Una cartella in su</translation>
-    </message>
-    <message>
-        <source>%1 (notebook)</source>
-        <translation>%1 (quaderno)</translation>
-    </message>
-    <message>
-        <source>%1 (notebook “%2”)</source>
-        <translation>%1 (quaderno «%2»)</translation>
-    </message>
-    <message>
-        <source>No folders in here</source>
-        <translation>Nessuna cartella qui</translation>
     </message>
     <message>
         <source>In a new folder with its name</source>
@@ -929,6 +932,10 @@ Libreria: %1</translation>
         <translation>Nascondi le cartelle senza questi</translation>
     </message>
     <message>
+        <source>Collapse all</source>
+        <translation>Comprimi tutto</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>Nuova pagina…</translation>
     </message>
@@ -939,6 +946,14 @@ Libreria: %1</translation>
     <message>
         <source>Up one folder</source>
         <translation>Una cartella in su</translation>
+    </message>
+    <message>
+        <source>All notebooks</source>
+        <translation>Tutti i quaderni</translation>
+    </message>
+    <message>
+        <source>Show everything</source>
+        <translation>Mostra tutto</translation>
     </message>
     <message>
         <source>Favorites</source>
@@ -963,6 +978,10 @@ Libreria: %1</translation>
     <message>
         <source>Show only this folder</source>
         <translation>Mostra solo questa cartella</translation>
+    </message>
+    <message>
+        <source>Show only this notebook</source>
+        <translation>Mostra solo questo quaderno</translation>
     </message>
     <message>
         <source>More</source>
@@ -1208,6 +1227,37 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
     <message>
         <source>Down</source>
         <translation>Giù</translation>
+    </message>
+</context>
+<context>
+    <name>PlacePicker</name>
+    <message>
+        <source>Saved in</source>
+        <translation>Salvato in</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>Fatto</translation>
+    </message>
+    <message>
+        <source>Change…</source>
+        <translation>Cambia…</translation>
+    </message>
+    <message>
+        <source>Up one folder</source>
+        <translation>Una cartella in su</translation>
+    </message>
+    <message>
+        <source>%1 (notebook)</source>
+        <translation>%1 (quaderno)</translation>
+    </message>
+    <message>
+        <source>%1 (notebook “%2”)</source>
+        <translation>%1 (quaderno «%2»)</translation>
+    </message>
+    <message>
+        <source>No folders in here</source>
+        <translation>Nessuna cartella qui</translation>
     </message>
 </context>
 <context>

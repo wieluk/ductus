@@ -28,6 +28,19 @@ ApplicationWindow {
             sidebarVisible = !sidebarVisible
     }
 
+    function showInSidebar(path, view) {
+        if (compact)
+            drawerOpen = true
+        else
+            sidebarVisible = true
+        if (view === "notebooks")
+            AppController.showInNotebooks(path)
+        else if (view === "folders")
+            AppController.reveal(path)
+        else
+            AppController.locate(path)
+    }
+
     // Small tablet screens (or large scaling) get a window that fits above the taskbar.
     width: Math.min(1280, Screen.desktopAvailableWidth)
     height: Math.min(820, Screen.desktopAvailableHeight)
@@ -149,6 +162,9 @@ ApplicationWindow {
         target: AppController
         function onErrorOccurred(message) { toast.show(message, true) }
         function onNotice(message) { toast.show(message, false) }
+        function onImportReady(kind, name, pages, sections, location) {
+            importDialog.show(kind, name, pages, sections, location)
+        }
         function onTrashed(name, trashId) {
             toast.show(qsTr("\u201c%1\u201d is in the trash.").arg(name), false, qsTr("Undo"),
                        () => AppController.restoreFromTrash(trashId))
@@ -257,7 +273,7 @@ ApplicationWindow {
             visible: window.visibility !== Window.FullScreen
             onAboutRequested: aboutDialog.open()
             onNewPageRequested: newPageDialog.show("")
-            onNewNotebookRequested: newNotebookDialog.show(AppController.treeFocus)
+            onNewNotebookRequested: newNotebookDialog.show(AppController.defaultNotebookLocation())
             onHistoryRequested: historyDialog.show(AppController.currentPage)
             onTrashRequested: trashDialog.show()
             onSettingsRequested: settingsDialog.open()
@@ -287,7 +303,7 @@ ApplicationWindow {
             onSettingsRequested: settingsDialog.open()
             onAboutRequested: aboutDialog.open()
             onNewPageRequested: newPageDialog.show("")
-            onNewNotebookRequested: newNotebookDialog.show(AppController.treeFocus)
+            onNewNotebookRequested: newNotebookDialog.show(AppController.defaultNotebookLocation())
             onHistoryRequested: historyDialog.show(AppController.currentPage)
             onTrashRequested: trashDialog.show()
         }
@@ -368,6 +384,7 @@ ApplicationWindow {
                     objectName: "locationBar"
                     Layout.fillWidth: true
                     visible: AppController.currentPage.length > 0
+                    onShowRequested: (path, view) => window.showInSidebar(path, view)
                 }
 
                 Item {
@@ -541,7 +558,11 @@ ApplicationWindow {
 
         title: qsTr("How do you want to write on this PDF?")
         acceptText: qsTr("Import")
-        onAccepted: AppController.importPdf(file, annotate)
+        onAboutToShow: {
+            pdfPlace.location = AppController.defaultPageFolder()
+            pdfPlace.browsing = false
+        }
+        onAccepted: AppController.importPdf(file, annotate, pdfPlace.location)
 
         contentItem: Column {
             spacing: 8
@@ -585,6 +606,10 @@ ApplicationWindow {
                         }
                     }
                 }
+            }
+            PlacePicker {
+                id: pdfPlace
+                width: pdfModeDialog.availableWidth
             }
         }
     }
@@ -693,6 +718,7 @@ ApplicationWindow {
     }
 
     NewPageDialog { id: newPageDialog }
+    ImportDialog { id: importDialog }
     NewNotebookDialog { id: newNotebookDialog }
 
     AppDialog {

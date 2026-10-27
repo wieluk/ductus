@@ -119,7 +119,7 @@ class AppController : public QObject
     Q_PROPERTY(bool converting READ converting NOTIFY convertingChanged)
     Q_PROPERTY(bool importing READ importing NOTIFY importingChanged)
     Q_PROPERTY(bool notebookView READ notebookView WRITE setNotebookView NOTIFY treeViewChanged)
-    /// "" for the whole library.
+    /// The shown view's: a folder under Folders, a notebook under Notebooks; "" for everything.
     Q_PROPERTY(QString treeFocus READ treeFocus WRITE setTreeFocus NOTIFY treeViewChanged)
     /// Milliseconds after the last edit; 0 saves only on Ctrl+S, page switches and quitting.
     Q_PROPERTY(int autosaveDelay READ autosaveDelay WRITE setAutosaveDelay NOTIFY autosaveDelayChanged)
@@ -145,7 +145,7 @@ public:
     void setTreeFilter(int flags);
     bool notebookView() const { return m_notebookView; }
     void setNotebookView(bool on);
-    QString treeFocus() const { return m_treeFocus; }
+    QString treeFocus() const { return m_notebookView ? m_notebookFocus : m_folderFocus; }
     void setTreeFocus(const QString &folder);
     int autosaveDelay() const { return m_saveTimer.interval(); }
     void setAutosaveDelay(int ms);
@@ -168,6 +168,12 @@ public:
     Q_INVOKABLE QString addPage(const QString &folder, const QString &name);
     /// Beside the open page, else the Inbox.
     Q_INVOKABLE QString defaultPageFolder() const;
+    /// Where a new notebook goes unless the user picks another place.
+    Q_INVOKABLE QString defaultNotebookLocation() const;
+    /// A folder as "Library › Notebook › Section", notebooks under their names.
+    Q_INVOKABLE QString placeLabel(const QString &folder) const;
+    /// Every notebook as {path, name}, in the user's order.
+    Q_INVOKABLE QVariantList notebookList() const;
     /// Notebooks and sections as {path, label}, the Inbox first.
     Q_INVOKABLE QVariantList pageTargets() const;
     /// {name, path, notebook} of each folder in `folder`.
@@ -209,15 +215,21 @@ public:
     /// 1: up possible, 2: down possible.
     Q_INVOKABLE int moveOptions(const QString &path) const;
     Q_INVOKABLE QString parentOf(const QString &path) const;
-    Q_INVOKABLE QString currentFolder() const;
-    bool inFocus(const QString &path) const;
+    /// Shows `path` in the sidebar: under Notebooks when it is in one, else under Folders.
+    Q_INVOKABLE void locate(const QString &path);
+    Q_INVOKABLE void collapseAll();
     Q_INVOKABLE void saveNow();
     Q_INVOKABLE void closePage();
     /// A blank page after the PDF page in the middle of the view.
     Q_INVOKABLE void insertBlankPage();
-    Q_INVOKABLE QString importPdf(const QString &fileOrUrl, bool annotate);
+    Q_INVOKABLE QString importPdf(const QString &fileOrUrl, bool annotate, const QString &folder);
     /// Xournal++, Rnote and OneNote files or a folder of them, read in the background.
+    /// Reads the file, then asks where to save it (importReady).
     Q_INVOKABLE void importNotes(const QString &fileOrUrl);
+    /// Saves what importNotes read into `folder` as `name`.
+    Q_INVOKABLE void finishImport(const QString &folder, const QString &name);
+    Q_INVOKABLE void cancelImport();
+    Q_INVOKABLE QString uniqueName(const QString &folder, const QString &name) const;
     Q_INVOKABLE bool exportPdf(const QString &fileOrUrl);
     /// Every page of a notebook, section or folder in one PDF.
     Q_INVOKABLE bool exportFolder(const QString &folder, const QString &fileOrUrl);
@@ -256,6 +268,9 @@ Q_SIGNALS:
     void recognitionStatusChanged();
     void convertingChanged();
     void importingChanged();
+    /// A file was read; `kind` is "notebook", "section", "page" or "file".
+    void importReady(const QString &kind, const QString &name, int pages, int sections,
+                     const QString &location);
     /// A built-in model has to be downloaded first.
     void modelsNeeded(const QString &id);
     void screenshotCancelled();
@@ -283,6 +298,10 @@ private:
     void rememberPage(const QString &path);
     QString rememberedPage() const;
     QString inboxFolder() const;
+    /// The Inbox appears with the first thing put in it.
+    bool ensureFolder(const QString &folder);
+    static bool inside(const QString &path, const QString &folder);
+    void clearFocusOutside(const QString &path);
     QString createPage(const QString &parent, const QString &baseName = {});
     bool paintPages(QPrinter &printer);
     QByteArray textOverlay();
@@ -331,7 +350,8 @@ private:
     bool m_awaitingShared = false;
     QString m_screenshotRequest;
     bool m_notebookView = false;
-    QString m_treeFocus;
+    QString m_folderFocus;
+    QString m_notebookFocus;
     quint64 m_savedRevision = 0;
     bool m_dirty = false;
     void setDirty(bool dirty);

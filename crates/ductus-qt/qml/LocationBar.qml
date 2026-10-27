@@ -9,6 +9,8 @@ Rectangle {
     id: bar
 
     property var parts: []
+    /// `view`: "notebooks", "folders", or "" for wherever the page shows.
+    signal showRequested(string path, string view)
 
     function update() {
         const page = AppController.currentPage
@@ -67,16 +69,15 @@ Rectangle {
             height: crumbs.height
             implicitWidth: row.implicitWidth + 8
             focusPolicy: Qt.NoFocus
-            enabled: !last
-            onClicked: modelData.notebook ? AppController.showInNotebooks(modelData.path)
-                                          : AppController.reveal(modelData.path)
+            onClicked: bar.showRequested(modelData.path, modelData.notebook ? "notebooks"
+                                                         : last ? "" : "folders")
             // Hidden once pressed, until the pointer leaves.
             property bool tipDismissed: false
             onPressed: tipDismissed = true
             onHoveredChanged: if (!hovered) tipDismissed = false
-            ToolTip.visible: hovered && !tipDismissed && modelData.notebook && modelData.folder !== modelData.name
+            ToolTip.visible: hovered && !tipDismissed && (last || modelData.notebook && modelData.folder !== modelData.name)
             ToolTip.delay: 600
-            ToolTip.text: qsTr("Notebook in the folder “%1”").arg(modelData.folder)
+            ToolTip.text: last ? qsTr("Show in the sidebar") : qsTr("Notebook in the folder “%1”").arg(modelData.folder)
             contentItem: Row {
                 id: row
                 spacing: 4
@@ -99,14 +100,14 @@ Rectangle {
                 Label {
                     anchors.verticalCenter: parent.verticalCenter
                     text: crumb.modelData.name
-                    color: crumb.last ? Theme.text : crumb.hovered ? Theme.accent : Theme.textMuted
+                    color: crumb.hovered ? Theme.accent : crumb.last ? Theme.text : Theme.textMuted
                     font.pixelSize: 12
                     font.weight: crumb.last || crumb.modelData.notebook ? Font.DemiBold : Font.Normal
                 }
             }
             background: Rectangle {
                 radius: Theme.radius
-                color: crumb.hovered && !crumb.last ? Theme.hover : "transparent"
+                color: crumb.hovered ? Theme.hover : "transparent"
             }
         }
     }

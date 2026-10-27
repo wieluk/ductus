@@ -88,12 +88,12 @@
         <translation>Importation de %1…</translation>
     </message>
     <message>
-        <source>Imported into your library.</source>
-        <translation>Importé dans votre bibliothèque.</translation>
+        <source>Imported into %1.</source>
+        <translation>Importé dans %1.</translation>
     </message>
     <message>
-        <source>Imported. %1</source>
-        <translation>Importé. %1</translation>
+        <source>Page copied into %1.</source>
+        <translation>Page copiée dans %1.</translation>
     </message>
     <message>
         <source>The PDF couldn&apos;t be saved there.</source>
@@ -121,10 +121,6 @@
     <message>
         <source>Ductus opens notes pages (.svg), PDFs, and Xournal++, Rnote and OneNote files.</source>
         <translation>Ductus ouvre les pages de notes (.svg), les PDF et les fichiers Xournal++, Rnote et OneNote.</translation>
-    </message>
-    <message>
-        <source>Page copied into your library.</source>
-        <translation>Page copiée dans votre bibliothèque.</translation>
     </message>
     <message>
         <source>Indexing %1 of %2 files…</source>
@@ -267,6 +263,49 @@
     <message>
         <source>No earlier versions yet. One is kept the first time it changes in a session.</source>
         <translation>Pas encore de versions précédentes. Une version est gardée la première fois que la page change dans une session.</translation>
+    </message>
+</context>
+<context>
+    <name>ImportDialog</name>
+    <message>
+        <source>Import notes</source>
+        <translation>Importer des notes</translation>
+    </message>
+    <message>
+        <source>Import</source>
+        <translation>Importer</translation>
+    </message>
+    <message>
+        <source>Notebook</source>
+        <translation>Carnet</translation>
+    </message>
+    <message>
+        <source>Section</source>
+        <translation>Section</translation>
+    </message>
+    <message>
+        <source>Page</source>
+        <translation>Page</translation>
+    </message>
+    <message>
+        <source>Sections: %1</source>
+        <translation>Sections : %1</translation>
+    </message>
+    <message>
+        <source>Pages: %1</source>
+        <translation>Pages : %1</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>Nom</translation>
+    </message>
+    <message>
+        <source>“%1” already exists there, so this is saved as “%2”. Nothing is overwritten.</source>
+        <translation>« %1 » existe déjà ici, l’import est donc enregistré sous « %2 ». Rien n’est écrasé.</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>Le fichier d’origine est seulement lu, jamais modifié.</translation>
     </message>
 </context>
 <context>
@@ -472,6 +511,10 @@
     <message>
         <source>Notebook in the folder “%1”</source>
         <translation>Carnet dans le dossier « %1 »</translation>
+    </message>
+    <message>
+        <source>Show in the sidebar</source>
+        <translation>Afficher dans le panneau latéral</translation>
     </message>
 </context>
 <context>
@@ -764,22 +807,6 @@ Bibliothèque : %1</translation>
         <translation>Déplacer vers</translation>
     </message>
     <message>
-        <source>Up one folder</source>
-        <translation>Remonter d’un dossier</translation>
-    </message>
-    <message>
-        <source>%1 (notebook)</source>
-        <translation>%1 (carnet)</translation>
-    </message>
-    <message>
-        <source>%1 (notebook “%2”)</source>
-        <translation>%1 (carnet « %2 »)</translation>
-    </message>
-    <message>
-        <source>No folders in here</source>
-        <translation>Aucun dossier ici</translation>
-    </message>
-    <message>
         <source>A folder can&apos;t go inside itself.</source>
         <translation>Un dossier ne peut pas se trouver dans lui-même.</translation>
     </message>
@@ -817,30 +844,6 @@ Bibliothèque : %1</translation>
     <message>
         <source>Saved in</source>
         <translation>Enregistré dans</translation>
-    </message>
-    <message>
-        <source>Done</source>
-        <translation>Terminé</translation>
-    </message>
-    <message>
-        <source>Change…</source>
-        <translation>Modifier…</translation>
-    </message>
-    <message>
-        <source>Up one folder</source>
-        <translation>Remonter d’un dossier</translation>
-    </message>
-    <message>
-        <source>%1 (notebook)</source>
-        <translation>%1 (carnet)</translation>
-    </message>
-    <message>
-        <source>%1 (notebook “%2”)</source>
-        <translation>%1 (carnet « %2 »)</translation>
-    </message>
-    <message>
-        <source>No folders in here</source>
-        <translation>Aucun dossier ici</translation>
     </message>
     <message>
         <source>In a new folder with its name</source>
@@ -929,6 +932,10 @@ Bibliothèque : %1</translation>
         <translation>Masquer les dossiers sans ceux-ci</translation>
     </message>
     <message>
+        <source>Collapse all</source>
+        <translation>Tout replier</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>Nouvelle page…</translation>
     </message>
@@ -939,6 +946,14 @@ Bibliothèque : %1</translation>
     <message>
         <source>Up one folder</source>
         <translation>Remonter d’un dossier</translation>
+    </message>
+    <message>
+        <source>All notebooks</source>
+        <translation>Tous les carnets</translation>
+    </message>
+    <message>
+        <source>Show everything</source>
+        <translation>Tout afficher</translation>
     </message>
     <message>
         <source>Favorites</source>
@@ -963,6 +978,10 @@ Bibliothèque : %1</translation>
     <message>
         <source>Show only this folder</source>
         <translation>N’afficher que ce dossier</translation>
+    </message>
+    <message>
+        <source>Show only this notebook</source>
+        <translation>N’afficher que ce carnet</translation>
     </message>
     <message>
         <source>More</source>
@@ -1208,6 +1227,37 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     <message>
         <source>Down</source>
         <translation>Vers le bas</translation>
+    </message>
+</context>
+<context>
+    <name>PlacePicker</name>
+    <message>
+        <source>Saved in</source>
+        <translation>Enregistré dans</translation>
+    </message>
+    <message>
+        <source>Done</source>
+        <translation>Terminé</translation>
+    </message>
+    <message>
+        <source>Change…</source>
+        <translation>Modifier…</translation>
+    </message>
+    <message>
+        <source>Up one folder</source>
+        <translation>Remonter d’un dossier</translation>
+    </message>
+    <message>
+        <source>%1 (notebook)</source>
+        <translation>%1 (carnet)</translation>
+    </message>
+    <message>
+        <source>%1 (notebook “%2”)</source>
+        <translation>%1 (carnet « %2 »)</translation>
+    </message>
+    <message>
+        <source>No folders in here</source>
+        <translation>Aucun dossier ici</translation>
     </message>
 </context>
 <context>
