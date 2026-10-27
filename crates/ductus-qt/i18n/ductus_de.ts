@@ -1648,6 +1648,30 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
 <context>
     <name>SearchBox</name>
     <message>
+        <source>This page</source>
+        <translation>Diese Seite</translation>
+    </message>
+    <message>
+        <source>Text, formulas, PDF text and handwriting on the open page (Ctrl+F)</source>
+        <translation>Text, Formeln, PDF-Text und Handschrift auf der offenen Seite (Strg+F)</translation>
+    </message>
+    <message>
+        <source>Page names</source>
+        <translation>Seitennamen</translation>
+    </message>
+    <message>
+        <source>The names of all pages and PDFs</source>
+        <translation>Die Namen aller Seiten und PDFs</translation>
+    </message>
+    <message>
+        <source>All pages</source>
+        <translation>Alle Seiten</translation>
+    </message>
+    <message>
+        <source>Names and contents of all pages and PDFs (Ctrl+K)</source>
+        <translation>Namen und Inhalte aller Seiten und PDFs (Strg+K)</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Suchen (Strg+F)</translation>
     </message>

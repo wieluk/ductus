@@ -243,7 +243,8 @@ public:
     /// Without a dialog, for tests.
     Q_INVOKABLE bool printToFile(const QString &fileOrUrl);
     Q_INVOKABLE void takeScreenshot();
-    Q_INVOKABLE QVariantList search(const QString &query, int limit = 50);
+    /// `scope`: "all", "names" or "page" (the open page).
+    Q_INVOKABLE QVariantList search(const QString &query, const QString &scope, int limit = 50);
     Q_INVOKABLE void openSearchHit(const QVariantMap &hit);
     Q_INVOKABLE void recognizeNow();
     /// Selected handwriting to "text" or "math", or the whole page to text ("page").

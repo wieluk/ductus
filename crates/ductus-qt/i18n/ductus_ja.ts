@@ -1643,6 +1643,30 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>SearchBox</name>
     <message>
+        <source>This page</source>
+        <translation>このページ</translation>
+    </message>
+    <message>
+        <source>Text, formulas, PDF text and handwriting on the open page (Ctrl+F)</source>
+        <translation>開いているページのテキスト、数式、PDF のテキスト、手書き (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Page names</source>
+        <translation>ページ名</translation>
+    </message>
+    <message>
+        <source>The names of all pages and PDFs</source>
+        <translation>すべてのページと PDF の名前</translation>
+    </message>
+    <message>
+        <source>All pages</source>
+        <translation>すべてのページ</translation>
+    </message>
+    <message>
+        <source>Names and contents of all pages and PDFs (Ctrl+K)</source>
+        <translation>すべてのページと PDF の名前と内容 (Ctrl+K)</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>検索（Ctrl+F）</translation>
     </message>

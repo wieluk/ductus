@@ -1648,6 +1648,30 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
 <context>
     <name>SearchBox</name>
     <message>
+        <source>This page</source>
+        <translation>Esta página</translation>
+    </message>
+    <message>
+        <source>Text, formulas, PDF text and handwriting on the open page (Ctrl+F)</source>
+        <translation>Texto, fórmulas, texto de PDF y escritura a mano en la página abierta (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Page names</source>
+        <translation>Nombres de páginas</translation>
+    </message>
+    <message>
+        <source>The names of all pages and PDFs</source>
+        <translation>Los nombres de todas las páginas y PDF</translation>
+    </message>
+    <message>
+        <source>All pages</source>
+        <translation>Todas las páginas</translation>
+    </message>
+    <message>
+        <source>Names and contents of all pages and PDFs (Ctrl+K)</source>
+        <translation>Nombres y contenido de todas las páginas y PDF (Ctrl+K)</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Buscar (Ctrl+F)</translation>
     </message>

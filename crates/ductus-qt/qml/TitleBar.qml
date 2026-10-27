@@ -35,7 +35,7 @@ Rectangle {
     implicitHeight: Theme.titleHeight
     color: Theme.titleBar
 
-    function focusSearch() { searchBox.focusSearch() }
+    function focusSearch(page) { searchBox.focusSearch(page) }
 
     function toggleMaximized() {
         if (window.visibility === Window.Maximized)
@@ -300,7 +300,7 @@ Rectangle {
             SearchBox {
                 id: searchBox
                 objectName: "searchBox"
-                Layout.preferredWidth: !bar.compact ? Math.min(260, bar.width / 4) : active ? 200 : 32
+                Layout.preferredWidth: !bar.compact ? Math.min(300, bar.width / 4) : active ? 230 : 32
                 Layout.rightMargin: 8
             }
 

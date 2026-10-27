@@ -1648,6 +1648,30 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
 <context>
     <name>SearchBox</name>
     <message>
+        <source>This page</source>
+        <translation>Esta página</translation>
+    </message>
+    <message>
+        <source>Text, formulas, PDF text and handwriting on the open page (Ctrl+F)</source>
+        <translation>Texto, fórmulas, texto de PDF e escrita à mão na página aberta (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Page names</source>
+        <translation>Nomes das páginas</translation>
+    </message>
+    <message>
+        <source>The names of all pages and PDFs</source>
+        <translation>Os nomes de todas as páginas e PDFs</translation>
+    </message>
+    <message>
+        <source>All pages</source>
+        <translation>Todas as páginas</translation>
+    </message>
+    <message>
+        <source>Names and contents of all pages and PDFs (Ctrl+K)</source>
+        <translation>Nomes e conteúdos de todas as páginas e PDFs (Ctrl+K)</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Buscar (Ctrl+F)</translation>
     </message>

@@ -90,6 +90,17 @@ pub struct Hit {
     pub snippet: String,
 }
 
+/// Where a search looks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Scope<'a> {
+    /// Names and contents of every page and PDF.
+    All,
+    /// Page and PDF names only, not the folders they are in.
+    Names,
+    /// The contents of one page.
+    Page(&'a str),
+}
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Progress {
     pub done: usize,
@@ -384,15 +395,18 @@ impl Index {
         Ok(())
     }
 
-    pub fn search(&self, query: &str, limit: usize) -> Result<Vec<Hit>> {
+    pub fn search(&self, query: &str, scope: Scope, limit: usize) -> Result<Vec<Hit>> {
         let words: Vec<&str> = query.split_whitespace().collect();
         if words.is_empty() {
             return Ok(Vec::new());
         }
+        if scope == Scope::Names {
+            return self.search_names(&words, limit);
+        }
         let short = words.iter().any(|w| w.chars().count() < 3);
         // Trigrams need three characters; shorter words are matched with LIKE.
-        let (sql, args): (String, Vec<String>) = if short {
-            let conds: Vec<String> = (1..=words.len())
+        let (mut conds, mut args): (Vec<String>, Vec<String>) = if short {
+            let conds = (1..=words.len())
                 .map(|i| format!("text LIKE ?{i} ESCAPE '\\'"))
                 .collect();
             let args = words
@@ -405,23 +419,27 @@ impl Index {
                     format!("%{w}%")
                 })
                 .collect();
-            (
-                format!(
-                    "SELECT path, kind, page, x, y, w, h, text FROM entries WHERE {}
-                     ORDER BY kind != 'title' LIMIT {limit}",
-                    conds.join(" AND ")
-                ),
-                args,
+            (conds, args)
+        } else {
+            (vec!["entries MATCH ?1".to_owned()], vec![fts_query(query)])
+        };
+        if let Scope::Page(path) = scope {
+            args.push(path.to_owned());
+            conds.push(format!("path = ?{} AND kind != 'title'", args.len()));
+        }
+        let sql = if short {
+            format!(
+                "SELECT path, kind, page, x, y, w, h, text FROM entries WHERE {}
+                 ORDER BY kind != 'title' LIMIT {limit}",
+                conds.join(" AND ")
             )
         } else {
-            (
-                format!(
-                    "SELECT path, kind, page, x, y, w, h,
-                            snippet(entries, 0, char(1), char(2), '…', 48)
-                     FROM entries WHERE entries MATCH ?1
-                     ORDER BY kind != 'title', bm25(entries) LIMIT {limit}"
-                ),
-                vec![fts_query(query)],
+            format!(
+                "SELECT path, kind, page, x, y, w, h,
+                        snippet(entries, 0, char(1), char(2), '…', 48)
+                 FROM entries WHERE {}
+                 ORDER BY kind != 'title', bm25(entries) LIMIT {limit}",
+                conds.join(" AND ")
             )
         };
         let mut stmt = self.conn.prepare(&sql)?;
@@ -455,6 +473,38 @@ impl Index {
         } else {
             hits
         })
+    }
+
+    fn search_names(&self, words: &[&str], limit: usize) -> Result<Vec<Hit>> {
+        let words: Vec<String> = words.iter().map(|w| w.to_lowercase()).collect();
+        let mut stmt = self.conn.prepare("SELECT path FROM files")?;
+        let mut hits: Vec<(bool, String, String)> = stmt
+            .query_map([], |r| r.get::<_, String>(0))?
+            .filter_map(|p| {
+                let path = p.ok()?;
+                let file = path.rsplit('/').next().unwrap_or(&path);
+                let name = ductus_format::library::pdf_stem(file)
+                    .unwrap_or(file)
+                    .to_lowercase();
+                words
+                    .iter()
+                    .all(|w| name.contains(w.as_str()))
+                    .then(|| (!name.starts_with(words[0].as_str()), name, path))
+            })
+            .collect();
+        // Names starting with the query first, then alphabetical.
+        hits.sort();
+        Ok(hits
+            .into_iter()
+            .take(limit)
+            .map(|(_, _, path)| Hit {
+                path,
+                kind: Kind::Title,
+                page: None,
+                rect: None,
+                snippet: String::new(),
+            })
+            .collect())
     }
 }
 
