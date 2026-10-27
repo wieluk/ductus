@@ -180,15 +180,7 @@ impl Library {
         let (rel, to) = self.target(&parent, &name, entry.kind);
         move_path(&self.trash_dir().join(id), &to)?;
         let mut index = self.trash_index();
-        let assets = index.get(id).and_then(|d| d.assets.clone()).or_else(|| {
-            let legacy = format!(
-                "{} {}{ASSETS_SUFFIX}",
-                id.split_once(' ').map_or("", |(s, _)| s),
-                Self::split(&entry.original).1
-            );
-            (entry.kind == NodeKind::Page && self.trash_dir().join(&legacy).is_dir())
-                .then_some(legacy)
-        });
+        let assets = index.get(id).and_then(|d| d.assets.clone());
         if let Some(assets) = assets {
             let from = self.trash_dir().join(&assets);
             if from.is_dir() {

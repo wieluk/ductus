@@ -11,12 +11,8 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-/// Where older versions kept a folder's color and order, inside the folder.
-const LEGACY_META_FILE: &str = ".ductus.json";
 /// Every folder's color and order, by path.
 const FOLDERS_FILE: &str = "folders.json";
-/// Where older versions kept history, trash and favorites inside the library.
-const LEGACY_APP_DIR: &str = ".ductus";
 /// Names the library a data folder belongs to, for people looking at it.
 const LOCATION_FILE: &str = "library.txt";
 pub const PAGE_EXTENSION: &str = "svg";
@@ -275,10 +271,6 @@ impl Library {
         if fs::read_to_string(&location).ok().as_deref() != Some(named.as_ref()) {
             write_atomic(&location, named.as_bytes())?;
         }
-        let legacy = root.join(LEGACY_APP_DIR);
-        if legacy.is_dir() {
-            merge_into(&legacy, &data)?;
-        }
         let library = Self {
             root,
             data,
@@ -388,19 +380,11 @@ impl Library {
             return meta.clone();
         }
         self.reload_folders();
-        if let Some(meta) = self.folders.borrow().get(folder) {
-            return meta.clone();
-        }
-        // Older versions kept this file in the folder.
-        let legacy = self.abs(folder).join(LEGACY_META_FILE);
-        let Ok(text) = fs::read_to_string(&legacy) else {
-            return FolderMeta::default();
-        };
-        let meta: FolderMeta = serde_json::from_str(&text).unwrap_or_default();
-        if self.write_meta(folder, &meta).is_ok() {
-            let _ = fs::remove_file(legacy);
-        }
-        meta
+        self.folders
+            .borrow()
+            .get(folder)
+            .cloned()
+            .unwrap_or_default()
     }
 
     fn write_meta(&self, folder: &str, meta: &FolderMeta) -> Result<(), Error> {

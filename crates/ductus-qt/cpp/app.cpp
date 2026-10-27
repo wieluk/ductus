@@ -21,18 +21,6 @@ bool softwareRendering()
 #endif
 }
 
-// "Off" used to be one of the recognizers; reading for search is now a switch of its own.
-void migrateSettings()
-{
-    QSettings settings;
-    if (settings.contains(QStringLiteral("hwr/search")) || !settings.contains(QStringLiteral("hwr/backend")))
-        return;
-    const QString backend = settings.value(QStringLiteral("hwr/backend")).toString();
-    settings.setValue(QStringLiteral("hwr/search"), backend != u"off");
-    if (backend == u"off")
-        settings.setValue(QStringLiteral("hwr/backend"), QStringLiteral("builtin"));
-}
-
 std::int32_t run_app(rust::Str program)
 {
     // Qt for Android looks for its plugins next to argv[0], the app's library.
@@ -51,7 +39,6 @@ std::int32_t run_app(rust::Str program)
         QSettings::setDefaultFormat(QSettings::IniFormat);
         QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, configDir);
     }
-    migrateSettings();
     // Some graphics drivers draw Qt Quick garbled: Qt's software renderer is slower but right.
     if (softwareRendering())
         QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
