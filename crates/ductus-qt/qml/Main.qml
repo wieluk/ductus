@@ -265,6 +265,7 @@ ApplicationWindow {
             onOpenFolderRequested: folderDialog.open()
             onOpenFileRequested: openFileDialog.open()
             onImportRequested: importFileDialog.open()
+            onImportFolderRequested: importFolderDialog.open()
             onPrintRequested: AppController.print()
             onSidebarToggled: window.toggleSidebar()
             onUpdateRequested: updateDialog.open()
@@ -279,6 +280,7 @@ ApplicationWindow {
             onImageInsertRequested: imageFileDialog.open()
             onOpenFileRequested: openFileDialog.open()
             onImportRequested: importFileDialog.open()
+            onImportFolderRequested: importFolderDialog.open()
             onOpenFolderRequested: folderDialog.open()
             onExportRequested: exportDialog.show()
             onPrintRequested: AppController.print()
@@ -510,6 +512,13 @@ ApplicationWindow {
         nameFilters: [notesFilter, qsTr("Xournal++ (*.xopp *.xoj)"), qsTr("Rnote (*.rnote)"),
                       qsTr("OneNote (*.one *.onetoc2 *.onepkg)"), qsTr("All files (*)")]
         onAccepted: AppController.importNotes(selectedFile.toString())
+    }
+
+    // A OneNote notebook folder, or any folder of notes, becomes one notebook.
+    FolderDialog {
+        id: importFolderDialog
+        title: qsTr("Import a notebook folder")
+        onAccepted: AppController.importNotes(selectedFolder.toString())
     }
 
     FileDialog {

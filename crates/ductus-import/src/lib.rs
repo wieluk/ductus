@@ -1,5 +1,6 @@
 //! Notes from other apps, turned into ordinary Ductus pages: the originals are only read.
 
+mod folder;
 mod onenote;
 mod rnote;
 mod sheets;
@@ -58,7 +59,11 @@ fn extension(path: &Path) -> Option<String> {
     Some(name.rsplit_once('.')?.1.to_ascii_lowercase())
 }
 
+/// A file, or a folder that becomes a notebook.
 pub fn read(path: &Path) -> Result<Import, Error> {
+    if path.is_dir() {
+        return folder::read(path);
+    }
     match extension(path).as_deref() {
         Some("xopp" | "xoj") => xournal::read(path),
         Some("rnote") => rnote::read(path),

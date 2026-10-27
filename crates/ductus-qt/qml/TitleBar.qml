@@ -23,6 +23,7 @@ Rectangle {
     signal openFolderRequested()
     signal openFileRequested()
     signal importRequested()
+    signal importFolderRequested()
     signal printRequested()
     signal sidebarToggled()
     signal updateRequested()
@@ -104,6 +105,12 @@ Rectangle {
                         text: qsTr("Import…")
                         enabled: !AppController.importing
                         onTriggered: bar.importRequested()
+                    }
+                    AppMenuItem {
+                        objectName: "menuImportFolder"
+                        text: qsTr("Import Folder…")
+                        enabled: !AppController.importing
+                        onTriggered: bar.importFolderRequested()
                     }
                     AppMenuItem {
                         objectName: "menuOpenLibrary"

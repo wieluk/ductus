@@ -15,6 +15,7 @@ Rectangle {
     signal imageInsertRequested()
     signal openFileRequested()
     signal importRequested()
+    signal importFolderRequested()
     signal openFolderRequested()
     signal exportRequested()
     signal printRequested()
@@ -139,6 +140,20 @@ Rectangle {
     }
 
     AppMenu {
+        id: importMenu
+        AppMenuItem {
+            objectName: "importFile"
+            text: qsTr("Notes file…")
+            onTriggered: ribbon.importRequested()
+        }
+        AppMenuItem {
+            objectName: "importFolder"
+            text: qsTr("Notebook folder…")
+            onTriggered: ribbon.importFolderRequested()
+        }
+    }
+
+    AppMenu {
         id: eraserMenu
         AppMenuItem {
             objectName: "eraserPartial"
@@ -245,9 +260,9 @@ Rectangle {
                     objectName: "fileImport"
                     iconName: "import"
                     text: AppController.importing ? qsTr("Importing…") : qsTr("Import…")
-                    tip: qsTr("Bring in notes from Xournal++, Rnote or OneNote")
+                    tip: qsTr("Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder")
                     enabled: !AppController.importing
-                    onClicked: ribbon.importRequested()
+                    onClicked: importMenu.popup(this, 0, height)
                 }
                 RibbonButton {
                     objectName: "fileOpenLibrary"

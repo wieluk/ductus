@@ -216,7 +216,7 @@ public:
     /// A blank page after the PDF page in the middle of the view.
     Q_INVOKABLE void insertBlankPage();
     Q_INVOKABLE QString importPdf(const QString &fileOrUrl, bool annotate);
-    /// Xournal++, Rnote and OneNote files, read in the background.
+    /// Xournal++, Rnote and OneNote files or a folder of them, read in the background.
     Q_INVOKABLE void importNotes(const QString &fileOrUrl);
     Q_INVOKABLE bool exportPdf(const QString &fileOrUrl);
     /// Every page of a notebook, section or folder in one PDF.

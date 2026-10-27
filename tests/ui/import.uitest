@@ -10,3 +10,12 @@ expect-file My Notebook/sketch.svg
 expect-in-file My Notebook/sketch.svg | Sketched in Rnote
 expect-text pageTitle sketch
 shot import-rnote
+# A folder of notes becomes a notebook; subfolders become its sections.
+import-notes tests/fixtures/Physics
+expect-file Physics/Week 1.svg
+expect-file Physics/Lab/Week 2.svg
+expect-in-file Physics/Lab/Week 2.svg | Lab notes
+click-item tab_file
+click-item fileImport
+expect-text importFolder Notebook folder…
+key Escape
