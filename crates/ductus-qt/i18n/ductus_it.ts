@@ -1648,6 +1648,30 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
 <context>
     <name>SearchBox</name>
     <message>
+        <source>This page</source>
+        <translation>Questa pagina</translation>
+    </message>
+    <message>
+        <source>Text, formulas, PDF text and handwriting on the open page (Ctrl+F)</source>
+        <translation>Testo, formule, testo PDF e scrittura a mano nella pagina aperta (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Page names</source>
+        <translation>Nomi delle pagine</translation>
+    </message>
+    <message>
+        <source>The names of all pages and PDFs</source>
+        <translation>I nomi di tutte le pagine e di tutti i PDF</translation>
+    </message>
+    <message>
+        <source>All pages</source>
+        <translation>Tutte le pagine</translation>
+    </message>
+    <message>
+        <source>Names and contents of all pages and PDFs (Ctrl+K)</source>
+        <translation>Nomi e contenuti di tutte le pagine e di tutti i PDF (Ctrl+K)</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Cerca (Ctrl+F)</translation>
     </message>

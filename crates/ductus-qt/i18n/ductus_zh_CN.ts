@@ -1643,6 +1643,30 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>SearchBox</name>
     <message>
+        <source>This page</source>
+        <translation>此页面</translation>
+    </message>
+    <message>
+        <source>Text, formulas, PDF text and handwriting on the open page (Ctrl+F)</source>
+        <translation>打开页面上的文本、公式、PDF 文本和手写内容 (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Page names</source>
+        <translation>页面名称</translation>
+    </message>
+    <message>
+        <source>The names of all pages and PDFs</source>
+        <translation>所有页面和 PDF 的名称</translation>
+    </message>
+    <message>
+        <source>All pages</source>
+        <translation>所有页面</translation>
+    </message>
+    <message>
+        <source>Names and contents of all pages and PDFs (Ctrl+K)</source>
+        <translation>所有页面和 PDF 的名称与内容 (Ctrl+K)</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>搜索（Ctrl+F）</translation>
     </message>

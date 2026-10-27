@@ -233,9 +233,14 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+\\"; onActivated: window.toggleSidebar() }
     Shortcut { sequences: [StandardKey.Open]; onActivated: openFileDialog.open() }
     Shortcut {
-        sequences: [StandardKey.Find, "Ctrl+K"]
-        onActivated: titleBar.focusSearch()
-        onActivatedAmbiguously: titleBar.focusSearch()
+        sequences: [StandardKey.Find]
+        onActivated: titleBar.focusSearch(true)
+        onActivatedAmbiguously: titleBar.focusSearch(true)
+    }
+    Shortcut {
+        sequence: "Ctrl+K"
+        onActivated: titleBar.focusSearch(false)
+        onActivatedAmbiguously: titleBar.focusSearch(false)
     }
     Shortcut { sequences: [StandardKey.Save]; onActivated: AppController.saveNow() }
     Shortcut { sequence: "Ctrl+W"; onActivated: AppController.closePage() }

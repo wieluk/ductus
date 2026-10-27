@@ -1648,6 +1648,30 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
 <context>
     <name>SearchBox</name>
     <message>
+        <source>This page</source>
+        <translation>Cette page</translation>
+    </message>
+    <message>
+        <source>Text, formulas, PDF text and handwriting on the open page (Ctrl+F)</source>
+        <translation>Texte, formules, texte PDF et écriture manuscrite de la page ouverte (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Page names</source>
+        <translation>Noms des pages</translation>
+    </message>
+    <message>
+        <source>The names of all pages and PDFs</source>
+        <translation>Les noms de toutes les pages et de tous les PDF</translation>
+    </message>
+    <message>
+        <source>All pages</source>
+        <translation>Toutes les pages</translation>
+    </message>
+    <message>
+        <source>Names and contents of all pages and PDFs (Ctrl+K)</source>
+        <translation>Noms et contenus de toutes les pages et de tous les PDF (Ctrl+K)</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Rechercher (Ctrl+F)</translation>
     </message>

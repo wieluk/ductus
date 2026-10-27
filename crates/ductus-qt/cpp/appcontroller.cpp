@@ -1541,7 +1541,8 @@ void AppController::pollIndex()
         status = tr("Indexing…");
     else if (const QString error = toQ((*m_search)->index_error()); !error.isEmpty())
         status = tr("Search index: %1").arg(error);
-    if (busy != m_indexing || status != m_indexStatus) {
+    // Also once when done: a quick job may finish between two polls, and open results go stale.
+    if (busy != m_indexing || status != m_indexStatus || !busy) {
         m_indexing = busy;
         m_indexStatus = status;
         Q_EMIT indexStatusChanged();
@@ -1550,12 +1551,19 @@ void AppController::pollIndex()
         m_indexTimer.stop();
 }
 
-QVariantList AppController::search(const QString &query, int limit)
+QVariantList AppController::search(const QString &query, const QString &scope, int limit)
 {
     QVariantList out;
     if (!m_search || query.trimmed().isEmpty())
         return out;
-    const rust::Vec<SearchHit> hits = (*m_search)->search(toStd(query), static_cast<std::size_t>(limit));
+    const bool onPage = scope == u"page";
+    if (onPage && currentPage().isEmpty())
+        return out;
+    // What was just written is found once this save is indexed.
+    if (onPage && m_dirty)
+        saveNow();
+    const rust::Vec<SearchHit> hits = (*m_search)->search(toStd(query), toStd(scope), toStd(currentPage()),
+                                                          static_cast<std::size_t>(limit));
     for (const SearchHit &h : hits) {
         QString snippet = toQ(h.snippet).toHtmlEscaped();
         snippet.replace(QChar(1), QStringLiteral("<b>")).replace(QChar(2), QStringLiteral("</b>"));

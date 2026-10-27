@@ -253,7 +253,14 @@ pub mod qobject {
         fn indexing(self: &SearchHandle) -> bool;
         fn index_progress(self: &SearchHandle) -> Vec<u64>;
         fn index_error(self: &SearchHandle) -> String;
-        fn search(self: &SearchHandle, query: &str, limit: usize) -> Vec<SearchHit>;
+        /// `scope`: "all", "names" or "page" (only `page`).
+        fn search(
+            self: &SearchHandle,
+            query: &str,
+            scope: &str,
+            page: &str,
+            limit: usize,
+        ) -> Vec<SearchHit>;
     }
 
     extern "Rust" {

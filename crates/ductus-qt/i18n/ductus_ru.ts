@@ -1653,6 +1653,30 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>SearchBox</name>
     <message>
+        <source>This page</source>
+        <translation>Эта страница</translation>
+    </message>
+    <message>
+        <source>Text, formulas, PDF text and handwriting on the open page (Ctrl+F)</source>
+        <translation>Текст, формулы, текст PDF и рукописный текст на открытой странице (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Page names</source>
+        <translation>Названия страниц</translation>
+    </message>
+    <message>
+        <source>The names of all pages and PDFs</source>
+        <translation>Названия всех страниц и PDF</translation>
+    </message>
+    <message>
+        <source>All pages</source>
+        <translation>Все страницы</translation>
+    </message>
+    <message>
+        <source>Names and contents of all pages and PDFs (Ctrl+K)</source>
+        <translation>Названия и содержимое всех страниц и PDF (Ctrl+K)</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Поиск (Ctrl+F)</translation>
     </message>
