@@ -456,9 +456,18 @@ void InkCanvas::setShapeAssist(bool on)
 
 bool InkCanvas::replaceInk(const QString &content, bool math)
 {
-    if (!m_engine->replace_ink(content.toStdString(), math))
+    const rust::Vec<double> added = m_engine->replace_ink(content.toStdString(), math);
+    if (added.empty())
         return false;
     afterEdit();
+    // The result opens in its editor, so a misread is fixed right away.
+    const auto id = static_cast<qint64>(added[0]);
+    const QPointF end = toScreen(QPointF(added[1], added[2])) - QPointF(2, 2);
+    setTool(math ? Math : Text);
+    if (math)
+        Q_EMIT mathRequested(end, id);
+    else
+        Q_EMIT textRequested(end, id);
     return true;
 }
 

@@ -28,6 +28,8 @@ pub struct Ctc {
     pad: f32,
     /// Index 0 is the blank.
     chars: Vec<String>,
+    /// Right-to-left scripts come out in visual order.
+    reverse: bool,
 }
 
 fn err(e: impl std::fmt::Display) -> String {
@@ -78,12 +80,14 @@ impl Ctc {
             chars: std::iter::once(String::new())
                 .chain(c.alphabet.chars().map(String::from))
                 .collect(),
+            reverse: false,
         })
     }
 
     /// PaddleOCR's recognizers: RGB scaled to -1..1, at least as wide as the training shape,
     /// zero padding; their dictionary plus a space follows the blank (their inference.yml).
-    pub fn paddle(model: &Path, config: &Path) -> Result<Self, String> {
+    /// `reverse` for Arabic script, which they read in visual order.
+    pub fn paddle(model: &Path, config: &Path, reverse: bool) -> Result<Self, String> {
         let c: PaddleConfig =
             serde_yaml::from_slice(&std::fs::read(config).map_err(err)?).map_err(err)?;
         let shape: Vec<u32> = c
@@ -125,6 +129,7 @@ impl Ctc {
                 .chain(chars)
                 .chain([" ".to_owned()])
                 .collect(),
+            reverse,
         })
     }
 
@@ -158,7 +163,11 @@ impl Ctc {
             ref s => return Err(format!("unexpected output shape {s:?}")),
         };
         let flat: Vec<f32> = scores.iter().copied().collect();
-        Ok(decode(&flat, steps, classes, &self.chars))
+        let (text, confidence) = decode(&flat, steps, classes, &self.chars);
+        Ok(match self.reverse {
+            true => (reading_order(&text), confidence),
+            false => (text, confidence),
+        })
     }
 }
 
@@ -199,7 +208,30 @@ fn decode(scores: &[f32], steps: usize, classes: usize, chars: &[String]) -> (St
     (text, confidence)
 }
 
-/// Both line recognizers; `lang` picks one, otherwise the more confident reading wins.
+/// Visual order to reading order for right-to-left text, as PaddleOCR does: the characters turn
+/// around, while runs of Latin letters, digits and their punctuation keep their own order.
+fn reading_order(text: &str) -> String {
+    let keeps = |c: char| c.is_ascii_alphanumeric() || " :*./%+-".contains(c);
+    let mut parts: Vec<String> = Vec::new();
+    let mut run = String::new();
+    for c in text.chars() {
+        if keeps(c) {
+            run.push(c);
+        } else {
+            if !run.is_empty() {
+                parts.push(std::mem::take(&mut run));
+            }
+            parts.push(c.to_string());
+        }
+    }
+    if !run.is_empty() {
+        parts.push(run);
+    }
+    parts.into_iter().rev().collect()
+}
+
+/// Both line recognizers: German goes to DE·HTR, "auto" to whichever is more confident,
+/// every other language to PP-OCRv6.
 pub struct TextModel {
     german: Ctc,
     latin: Ctc,
@@ -209,15 +241,14 @@ impl TextModel {
     pub fn load(dir: &Path) -> Result<Self, String> {
         Ok(Self {
             german: Ctc::dehtr(&dir.join("dehtr.onnx"), &dir.join("dehtr.json"))?,
-            latin: Ctc::paddle(&dir.join("ppocr.onnx"), &dir.join("ppocr.yml"))?,
+            latin: Ctc::paddle(&dir.join("ppocr.onnx"), &dir.join("ppocr.yml"), false)?,
         })
     }
 
     pub fn recognize(&mut self, image: &Pixmap, lang: &str) -> Result<String, String> {
         Ok(match lang {
             "de" => self.german.read(image)?.0,
-            "en" => self.latin.read(image)?.0,
-            _ => {
+            "auto" | "" => {
                 let german = self.german.read(image)?;
                 let latin = self.latin.read(image)?;
                 match latin.1 > german.1 {
@@ -225,6 +256,7 @@ impl TextModel {
                     false => german.0,
                 }
             }
+            _ => self.latin.read(image)?.0,
         })
     }
 }
@@ -262,6 +294,13 @@ mod tests {
         let (_, confidence) = decode(&flat, 1, 4, &chars());
         let expected = 1.0 / (2.0 + (-5.0f64).exp() + (-15.0f64).exp());
         assert!((confidence - expected).abs() < 1e-6);
+    }
+
+    #[test]
+    fn arabic_turns_around_but_numbers_do_not() {
+        // Visual order, left to right: "123", a space, then ب ا.
+        assert_eq!(reading_order("123 با"), "اب123 ");
+        assert_eq!(reading_order("abc"), "abc");
     }
 
     #[test]

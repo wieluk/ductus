@@ -171,6 +171,14 @@ pub mod qobject {
         installed: bool,
     }
 
+    /// A handwriting language: its `hwr/lang` code, its name for the settings, the model reading it.
+    #[derive(Debug, Default)]
+    struct LanguageRow {
+        code: String,
+        name: String,
+        model: String,
+    }
+
     /// `busy` is the id of the model being downloaded, or empty.
     #[derive(Debug, Default)]
     struct ModelsState {
@@ -204,6 +212,8 @@ pub mod qobject {
         fn open_models() -> Box<ModelsHandle>;
         fn model_rows(dir: &str) -> Vec<ModelRow>;
         fn remove_model(dir: &str, id: &str) -> String;
+        fn languages() -> Vec<LanguageRow>;
+        fn text_model(lang: &str) -> String;
         fn install(self: &ModelsHandle, dir: &str, id: &str);
         fn cancel(self: &ModelsHandle);
         fn state(self: &ModelsHandle) -> ModelsState;
@@ -453,7 +463,7 @@ pub mod qobject {
         fn clear_selection(self: &mut CanvasEngine);
         fn select_all(self: &mut CanvasEngine);
         fn selection_jobs(self: &CanvasEngine, math: bool) -> Vec<LineJob>;
-        fn replace_ink(self: &mut CanvasEngine, content: &str, math: bool) -> bool;
+        fn replace_ink(self: &mut CanvasEngine, content: &str, math: bool) -> Vec<f64>;
         fn delete_selection(self: &mut CanvasEngine);
         fn copy_selection(self: &mut CanvasEngine);
         fn cut_selection(self: &mut CanvasEngine);
@@ -503,7 +513,9 @@ pub use crate::library::{
     LibraryHandle, PrintJob, merge_pdf_files, open_library, pdf_support_problem, pdf_text,
     relocate_library,
 };
-pub use crate::models::{ModelsHandle, model_rows, open_models, remove_model};
+pub use crate::models::{
+    ModelsHandle, languages, model_rows, open_models, remove_model, text_model,
+};
 pub use crate::recognize::{RecognitionHandle, open_recognizer};
 pub use crate::search::{SearchHandle, open_search};
 pub use crate::update::{UpdateHandle, open_updater, update_is_newer};

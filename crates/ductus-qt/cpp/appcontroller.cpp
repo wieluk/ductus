@@ -1554,8 +1554,7 @@ void AppController::recognizeOpenPage()
 
 QString AppController::textModel() const
 {
-    // One model for every language: hwr/lang picks which of its recognizers read a line.
-    return QStringLiteral("text");
+    return Models::textModel(QSettings().value(QStringLiteral("hwr/lang"), QStringLiteral("auto")).toString());
 }
 
 void AppController::convertSelection(const QString &kind)

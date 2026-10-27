@@ -13,13 +13,15 @@ impl Canvas {
     }
 
     /// Replaces the selected ink with recognized text, or with a LaTeX formula, as one undo step.
-    pub fn replace_ink(&mut self, content: &str, math: bool) -> bool {
+    /// Gives the new box's id and its bottom-right corner (document units), for opening it to edit.
+    pub fn replace_ink(&mut self, content: &str, math: bool) -> Option<(StrokeId, kurbo::Point)> {
         let ink = self.selected_ink();
-        let Some(bounds) = ink.iter().map(ductus_ink::bounds).reduce(|a, b| a.union(b)) else {
-            return false;
-        };
+        let bounds = ink
+            .iter()
+            .map(ductus_ink::bounds)
+            .reduce(|a, b| a.union(b))?;
         if content.trim().is_empty() {
-            return false;
+            return None;
         }
         let ids: Vec<StrokeId> = ink.iter().map(|s| s.id).collect();
         let id = self.doc.alloc_id();
@@ -53,14 +55,17 @@ impl Canvas {
                 scale: 1.0,
             }])
         };
-        let Some(cmd) = Command::batch([Command::remove(&self.doc, &ids), Some(added)]) else {
-            return false;
+        let corner = match &added {
+            Command::AddMaths(m) => kurbo::Point::new(m[0].x + m[0].width, m[0].y + m[0].height),
+            Command::AddTexts(t) => kurbo::Point::new(t[0].x + t[0].width, t[0].y + t[0].height),
+            _ => bounds.origin(),
         };
+        let cmd = Command::batch([Command::remove(&self.doc, &ids), Some(added)])?;
         self.clear_selection();
         self.tiles
             .invalidate(TileLayer::Base, bounds.inflate(8.0, 8.0));
         self.history.apply(&mut self.doc, cmd);
         self.sync_layout();
-        true
+        Some((id, corner))
     }
 }

@@ -415,8 +415,11 @@ impl CanvasEngine {
             .collect()
     }
 
-    pub fn replace_ink(&mut self, content: &str, math: bool) -> bool {
-        self.0.replace_ink(content, math)
+    /// The new box's id and bottom-right corner in document units; empty when nothing changed.
+    pub fn replace_ink(&mut self, content: &str, math: bool) -> Vec<f64> {
+        self.0
+            .replace_ink(content, math)
+            .map_or_else(Vec::new, |(id, p)| vec![id.0 as f64, p.x, p.y])
     }
 
     pub fn copy_selection(&mut self) {

@@ -8,10 +8,9 @@ pub trait Recognizer: Send {
 }
 
 fn prompt(lang: &str) -> String {
-    let language = match lang {
-        "de" => "The text is German.",
-        "en" => "The text is English.",
-        _ => "The text may be German or English.",
+    let language = match crate::builtin::language(lang) {
+        l if l.code == "auto" => "The text may be German or English.".to_owned(),
+        l => format!("The text is {}.", l.english),
     };
     format!(
         "This image shows one line of handwritten notes. {language} Transcribe it exactly, \

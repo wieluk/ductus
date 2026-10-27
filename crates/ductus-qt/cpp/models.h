@@ -24,6 +24,8 @@ class Models : public QObject
     Q_PROPERTY(QString busy READ busy NOTIFY changed)
     Q_PROPERTY(double progress READ progress NOTIFY changed)
     Q_PROPERTY(QString error READ error NOTIFY changed)
+    /// [{ code, name, model }]: what handwriting can be read in, "auto" first.
+    Q_PROPERTY(QVariantList languages READ languages CONSTANT)
 
 public:
     explicit Models(QObject *parent = nullptr);
@@ -31,11 +33,14 @@ public:
 
     static QString dir();
     static bool installed(const QString &id);
+    /// The model that reads handwriting in the `hwr/lang` language `lang`.
+    Q_INVOKABLE static QString textModel(const QString &lang);
 
     QVariantList entries() const;
     QString busy() const { return m_busy; }
     double progress() const { return m_progress; }
     QString error() const { return m_error; }
+    QVariantList languages() const;
 
     Q_INVOKABLE void download(const QString &id);
     Q_INVOKABLE void remove(const QString &id);

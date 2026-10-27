@@ -11,12 +11,19 @@ expect-prop canvas selectionCount 1
 click-item selectionToMath
 wait 500
 expect-in-file My Notebook/First page.svg | dx:src="\frac{1}{2}"
+# The result opens in its editor, to correct a misreading right away.
+expect-prop mathEditor visible true
+expect-prop mathSource text \frac{1}{2}
+key Escape
 key Ctrl+Z
 expect-prop canvas canRedo true
 setenv DUCTUS_TEST_RECOGNIZER Grenzwert
 click-item pageToText
 wait 500
 expect-in-file My Notebook/First page.svg | Grenzwert
+type e
+key Escape
+expect-in-file My Notebook/First page.svg | Grenzwerte
 key Ctrl+Z
 setenv DUCTUS_TEST_RECOGNIZER
 click-item pageToText

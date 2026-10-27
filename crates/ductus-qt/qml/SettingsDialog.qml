@@ -541,10 +541,30 @@ Dialog {
                     value: Math.max(0, kinds.indexOf(hwr.backend))
                     onPicked: (index) => hwr.backend = kinds[index]
                 }
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+                    Described {
+                        label: qsTr("Language")
+                        hint: hwr.lang === "auto"
+                              ? qsTr("Each line is read twice, as German and as other Latin-script writing, and the clearer reading is kept.")
+                              : qsTr("The language you write in. Notes in several Latin-script languages read best with \u201cGerman or English\u201d.")
+                    }
+                    ComboBox {
+                        objectName: "hwrLang"
+                        Layout.preferredWidth: 240
+                        Layout.minimumWidth: 140
+                        model: Models.languages
+                        textRole: "name"
+                        valueRole: "code"
+                        currentIndex: Math.max(0, Models.languages.findIndex(l => l.code === hwr.lang))
+                        onActivated: hwr.lang = currentValue
+                    }
+                }
                 Described {
                     visible: hwr.backend !== "server"
                     label: qsTr("Runs on this computer; nothing is sent anywhere.")
-                    hint: qsTr("Each model downloads once, when you want it.")
+                    hint: qsTr("Download the handwriting reader for your language and, for formulas, the formula model. Each downloads once.")
                 }
                 Repeater {
                     model: Models.entries
@@ -552,7 +572,10 @@ Dialog {
                         id: modelRow
                         required property var modelData
                         readonly property bool loading: Models.busy === modelData.id
+                        // The reader for the chosen language, formulas, and whatever is already here.
                         visible: hwr.backend !== "server"
+                                 && (modelData.id === "math" || modelData.installed
+                                     || modelData.id === Models.textModel(hwr.lang))
                         Layout.fillWidth: true
                         spacing: 12
                         Described {
@@ -614,15 +637,6 @@ Dialog {
                                  : qsTr("Your handwriting is sent to this server.")
                     hint: local ? ""
                                 : qsTr("Line images leave your computer. Use a cloud service only if you are fine with that.")
-                }
-                Choice {
-                    objectName: "hwrLang"
-                    label: qsTr("Language")
-                    readonly property var langs: ["auto", "de", "en"]
-                    options: [qsTr("Either"), qsTr("German"), qsTr("English")]
-                    hint: qsTr("Knowing it makes the built-in recognizer a little more accurate and faster.")
-                    value: langs.indexOf(hwr.lang)
-                    onPicked: (index) => hwr.lang = langs[index]
                 }
 
                 Heading { text: qsTr("Search") }
