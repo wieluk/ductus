@@ -6,6 +6,7 @@
 #include <functional>
 #include <optional>
 #include <QDateTime>
+#include <QElapsedTimer>
 #include <QFont>
 #include <QFileSystemWatcher>
 #include <QPointer>
@@ -328,6 +329,10 @@ private:
 public:
     static QFont textFont();
 
+protected:
+    /// Input anywhere in the app holds back recognition for a moment.
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
 
     std::optional<rust::Box<LibraryHandle>> m_library;
@@ -340,6 +345,7 @@ private:
     std::optional<rust::Box<RecognitionHandle>> m_recognizer;
     QTimer m_recognizeTimer;
     QTimer m_recognitionPoll;
+    QElapsedTimer m_lastInput;
     QString m_recognitionStatus;
     /// "off", "server" or "fixed:<text>" (tests).
     QString recognizerKind() const;

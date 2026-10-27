@@ -1,6 +1,7 @@
 use crate::engine::CanvasEngine;
-use crate::ffi::qobject::{ImportResult, LineJob, TrashRow, TreeRow};
+use crate::ffi::qobject::{ImportResult, TrashRow, TreeRow};
 use crate::import::ImportHandle;
+use crate::recognize::RecognitionHandle;
 use ductus_core::{Document, PageKind, PageSettings, Rgba};
 use ductus_format::library::pdf_stem;
 use ductus_format::{Filter, Library, Node, NodeKind, PageFile};
@@ -725,30 +726,27 @@ impl LibraryHandle {
         )
     }
 
-    pub fn recognition_jobs(&self, canvas: &CanvasEngine) -> Vec<LineJob> {
+    /// Queues the open page's lines that haven't been read yet; returns how many were added.
+    pub fn queue_recognition(
+        &self,
+        canvas: &CanvasEngine,
+        recognizer: &RecognitionHandle,
+        lang: &str,
+    ) -> usize {
         let Some(OpenPage {
+            path,
             kind: OpenKind::Svg { recognized, .. },
-            ..
         }) = &self.open
         else {
-            return Vec::new(); // PDFs written on directly: not yet
+            return 0; // PDFs written on directly: not yet
         };
         let known: HashSet<&str> = recognized.iter().map(|l| l.key.as_str()).collect();
         let strokes = canvas.canvas().document().strokes();
         ductus_hwr::find_lines(strokes)
-            .into_iter()
+            .iter()
             .filter(|line| !known.contains(line.key.as_str()))
-            .filter_map(|line| {
-                Some(LineJob {
-                    png: ductus_hwr::line_png(strokes, &line, 96)?,
-                    key: line.key,
-                    x: line.rect.x0,
-                    y: line.rect.y0,
-                    w: line.rect.width(),
-                    h: line.rect.height(),
-                })
-            })
-            .collect()
+            .filter(|line| recognizer.submit(path, line, strokes, lang))
+            .count()
     }
 
     #[allow(clippy::too_many_arguments)]

@@ -199,6 +199,7 @@ AppController::AppController(QObject *parent)
         refreshIndex();
     });
     m_recognizer.emplace(open_recognizer());
+    qApp->installEventFilter(this);
     m_converter.emplace(open_converter());
     m_convertPoll.setInterval(200);
     connect(&m_convertPoll, &QTimer::timeout, this, &AppController::pollConversion);
@@ -248,6 +249,29 @@ AppController::AppController(QObject *parent)
 }
 
 AppController::~AppController() = default;
+
+bool AppController::eventFilter(QObject *watched, QEvent *event)
+{
+    switch (event->type()) {
+    case QEvent::TabletPress:
+    case QEvent::TabletMove:
+    case QEvent::TouchBegin:
+    case QEvent::TouchUpdate:
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseMove:
+    case QEvent::Wheel:
+    case QEvent::KeyPress:
+        // Every event would be thousands of calls a second while drawing.
+        if (m_recognizer && (!m_lastInput.isValid() || m_lastInput.elapsed() > 100)) {
+            m_lastInput.start();
+            (*m_recognizer)->user_active();
+        }
+        break;
+    default:
+        break;
+    }
+    return QObject::eventFilter(watched, event);
+}
 
 bool AppController::attempt(const std::function<void()> &action)
 {
@@ -1299,7 +1323,8 @@ void AppController::saveNow()
             (*m_search)->reindex(toStd(currentPage()));
             m_indexTimer.start();
         }
-        if (recognizerKind() != u"off")
+        // Lines still queued are not prepared again; the rest follow once they are read.
+        if (recognizerKind() != u"off" && (*m_recognizer)->pending() == 0)
             m_recognizeTimer.start();
         // An atomic save replaces the file, which ends the watch on it.
         QTimer::singleShot(0, this, &AppController::rewatch);
@@ -1769,18 +1794,11 @@ void AppController::recognizeOpenPage()
             return;
         }
     }
-    set_processor_share(settings.value(QStringLiteral("hwr/processor"), 80).toUInt());
+    set_processor_share(settings.value(QStringLiteral("hwr/processor"), 50).toUInt());
     (*m_recognizer)->configure(toStd(kind), toStd(url), toStd(model),
                                toStd(settings.value(QStringLiteral("hwr/key")).toString()));
     const QString lang = Models::languages();
-    const QString page = currentPage();
-    const rust::Vec<LineJob> jobs = (*m_library)->recognition_jobs(m_canvas->engine());
-    for (const LineJob &job : jobs) {
-        (*m_recognizer)->submit(toStd(page), job.key, job.x, job.y, job.w, job.h,
-                                rust::Slice<const std::uint8_t>(job.png.data(), job.png.size()),
-                                toStd(lang));
-    }
-    if (!jobs.empty())
+    if ((*m_library)->queue_recognition(m_canvas->engine(), **m_recognizer, toStd(lang)) > 0)
         m_recognitionPoll.start();
     pollRecognition();
 }
@@ -1818,7 +1836,7 @@ void AppController::convertSelection(const QString &kind)
         Q_EMIT modelsNeeded(missing);
         return;
     }
-    set_processor_share(settings.value(QStringLiteral("hwr/processor"), 80).toUInt());
+    set_processor_share(settings.value(QStringLiteral("hwr/processor"), 50).toUInt());
     rust::Vec<LineJob> jobs = m_canvas->engine().selection_jobs(math);
     if (jobs.empty()) {
         Q_EMIT notice(tr("Select some handwriting first."));
@@ -1876,9 +1894,11 @@ void AppController::pollRecognition()
             (*m_search)->reindex(r.page);
     }
     if (openPageChanged) {
-        // The text is stored with the page (and indexed when it is saved).
+        // The text is stored with the page (and indexed when it is saved); the autosave
+        // writes once the lines stop coming in, not while the user scrolls on.
         setDirty(true);
-        saveNow();
+        if (autosaveDelay() > 0)
+            m_saveTimer.start();
     }
     const QString error = toQ((*m_recognizer)->last_error());
     if (left > 0)

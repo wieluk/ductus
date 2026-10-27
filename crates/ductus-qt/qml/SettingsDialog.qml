@@ -44,7 +44,7 @@ Dialog {
         property string model: ""
         property string key: ""
         /// Percent of the processor's cores the built-in recognizer may use.
-        property int processor: 80
+        property int processor: 50
         /// The handwriting languages, as codes: "de,en"; "" follows the system.
         property string lang: ""
     }

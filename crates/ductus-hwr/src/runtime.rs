@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 static ENVIRONMENT: OnceLock<Result<Environment, String>> = OnceLock::new();
 /// The share of the processor models may use, in percent.
-static PROCESSOR_SHARE: AtomicU32 = AtomicU32::new(80);
+static PROCESSOR_SHARE: AtomicU32 = AtomicU32::new(50);
 
 /// Models opened from now on use about `percent` of the processor's cores, at least one.
 pub fn set_processor_share(percent: u32) {
@@ -101,6 +101,6 @@ mod tests {
         assert_eq!(threads(), (cores / 4).max(1));
         set_processor_share(0);
         assert_eq!(threads(), (cores / 100).max(1));
-        set_processor_share(80);
+        set_processor_share(50);
     }
 }

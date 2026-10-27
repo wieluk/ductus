@@ -44,6 +44,7 @@ pub fn open_search(cache_dir: &str, root: &str, data_dir: &str) -> Result<Box<Se
     std::thread::Builder::new()
         .name("search-index".into())
         .spawn(move || {
+            crate::priority::lower_this_thread();
             let set = |f: &dyn Fn(&mut Status)| {
                 if let Ok(mut s) = worker_status.lock() {
                     f(&mut s);
