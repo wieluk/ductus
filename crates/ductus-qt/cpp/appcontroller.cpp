@@ -1531,15 +1531,15 @@ void AppController::recognizeOpenPage()
     QString model = settings.value(QStringLiteral("hwr/model")).toString();
     if (kind == u"builtin") {
         url = Models::dir();
-        model = textModel();
-        if (!Models::installed(model)) {
+        model = QStringLiteral("text");
+        if (!missingTextModel().isEmpty()) {
             setRecognitionStatus(tr("Download a handwriting model in Settings › Handwriting."));
             return;
         }
     }
     (*m_recognizer)->configure(toStd(kind), toStd(url), toStd(model),
                                toStd(settings.value(QStringLiteral("hwr/key")).toString()));
-    const QString lang = settings.value(QStringLiteral("hwr/lang"), QStringLiteral("auto")).toString();
+    const QString lang = Models::languages();
     const QString page = currentPage();
     const rust::Vec<LineJob> jobs = (*m_library)->recognition_jobs(m_canvas->engine());
     for (const LineJob &job : jobs) {
@@ -1552,9 +1552,13 @@ void AppController::recognizeOpenPage()
     pollRecognition();
 }
 
-QString AppController::textModel() const
+QString AppController::missingTextModel() const
 {
-    return Models::textModel(QSettings().value(QStringLiteral("hwr/lang"), QStringLiteral("auto")).toString());
+    for (const QString &id : Models::textModels(Models::languages())) {
+        if (!Models::installed(id))
+            return id;
+    }
+    return {};
 }
 
 void AppController::convertSelection(const QString &kind)
@@ -1567,7 +1571,9 @@ void AppController::convertSelection(const QString &kind)
     QSettings settings;
     QString recognizer = settings.value(QStringLiteral("hwr/backend"), QStringLiteral("builtin")).toString();
     QString url = Models::dir();
-    QString model = math ? QStringLiteral("math") : textModel();
+    // "text" reads with the models of all chosen languages.
+    QString model = math ? QStringLiteral("math") : QStringLiteral("text");
+    const QString missing = math ? (Models::installed(model) ? QString() : model) : missingTextModel();
     // Tests: every line reads as this text.
     const QString fixed = qEnvironmentVariable("DUCTUS_TEST_RECOGNIZER");
     if (!fixed.isEmpty()) {
@@ -1575,8 +1581,8 @@ void AppController::convertSelection(const QString &kind)
     } else if (recognizer == u"server") {
         url = settings.value(QStringLiteral("hwr/url")).toString();
         model = settings.value(QStringLiteral("hwr/model")).toString();
-    } else if (!Models::installed(model)) {
-        Q_EMIT modelsNeeded(model);
+    } else if (!missing.isEmpty()) {
+        Q_EMIT modelsNeeded(missing);
         return;
     }
     rust::Vec<LineJob> jobs = m_canvas->engine().selection_jobs(math);
@@ -1590,8 +1596,7 @@ void AppController::convertSelection(const QString &kind)
     Q_EMIT notice(tr("Reading the handwriting…"));
     (*m_converter)->start(toStd(recognizer), toStd(url), toStd(model),
                           toStd(settings.value(QStringLiteral("hwr/key")).toString()),
-                          toStd(settings.value(QStringLiteral("hwr/lang"), QStringLiteral("auto")).toString()),
-                          std::move(jobs));
+                          toStd(Models::languages()), std::move(jobs));
     m_convertPoll.start();
 }
 

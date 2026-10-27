@@ -2,6 +2,8 @@
 #include "ductus-qt/cpp/appcontroller.h"
 #include "ductus-qt/src/ffi.cxxqt.h"
 
+#include <QLocale>
+#include <QSettings>
 #include <QVariantMap>
 
 namespace {
@@ -38,12 +40,25 @@ bool Models::installed(const QString &id)
     return false;
 }
 
-QString Models::textModel(const QString &lang)
+QStringList Models::textModels(const QString &langs)
 {
-    return toQ(text_model(lang.toStdString()));
+    QStringList out;
+    for (const rust::String &id : text_models(langs.toStdString()))
+        out.append(toQ(id));
+    return out;
 }
 
-QVariantList Models::languages() const
+QString Models::defaultLanguages()
+{
+    return toQ(locale_language(QLocale::system().name().toStdString()));
+}
+
+QString Models::languages()
+{
+    return QSettings().value(QStringLiteral("hwr/lang"), defaultLanguages()).toString();
+}
+
+QVariantList Models::languageList() const
 {
     QVariantList out;
     for (const LanguageRow &row : ::languages()) {

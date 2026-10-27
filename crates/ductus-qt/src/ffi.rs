@@ -213,7 +213,8 @@ pub mod qobject {
         fn model_rows(dir: &str) -> Vec<ModelRow>;
         fn remove_model(dir: &str, id: &str) -> String;
         fn languages() -> Vec<LanguageRow>;
-        fn text_model(lang: &str) -> String;
+        fn text_models(langs: &str) -> Vec<String>;
+        fn locale_language(locale: &str) -> String;
         fn install(self: &ModelsHandle, dir: &str, id: &str);
         fn cancel(self: &ModelsHandle);
         fn state(self: &ModelsHandle) -> ModelsState;
@@ -514,7 +515,7 @@ pub use crate::library::{
     relocate_library,
 };
 pub use crate::models::{
-    ModelsHandle, languages, model_rows, open_models, remove_model, text_model,
+    ModelsHandle, languages, locale_language, model_rows, open_models, remove_model, text_models,
 };
 pub use crate::recognize::{RecognitionHandle, open_recognizer};
 pub use crate::search::{SearchHandle, open_search};

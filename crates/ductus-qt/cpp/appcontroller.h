@@ -306,7 +306,8 @@ private:
     QString m_recognitionStatus;
     /// "off", "server" or "fixed:<text>" (tests).
     QString recognizerKind() const;
-    QString textModel() const;
+    /// A model the chosen handwriting languages need but that isn't downloaded, or "".
+    QString missingTextModel() const;
     void pollConversion();
     void pollImport();
     std::optional<rust::Box<ImportHandle>> m_importer;

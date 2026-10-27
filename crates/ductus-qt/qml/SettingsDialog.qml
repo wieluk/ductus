@@ -43,7 +43,8 @@ Dialog {
         property string url: ""
         property string model: ""
         property string key: ""
-        property string lang: "auto"
+        /// The handwriting languages, as codes: "de,en".
+        property string lang: Models.defaultLanguages()
     }
 
     Settings {
@@ -566,32 +567,101 @@ Dialog {
                     value: Math.max(0, kinds.indexOf(hwr.backend))
                     onPicked: (index) => hwr.backend = kinds[index]
                 }
-                GridLayout {
+                ColumnLayout {
+                    id: langs
                     Layout.fillWidth: true
-                    columns: dialog.narrow ? 1 : 2
-                    rowSpacing: 6
-                    columnSpacing: 12
+                    spacing: 6
+                    readonly property var chosen: hwr.lang.split(",").filter(c => Models.languages.some(l => l.code === c))
+                    readonly property string query: langSearch.text.trim().toLowerCase()
+
+                    function toggle(code) {
+                        const next = chosen.includes(code) ? chosen.filter(c => c !== code) : chosen.concat([code])
+                        if (next.length > 0)
+                            hwr.lang = Models.languages.filter(l => next.includes(l.code)).map(l => l.code).join(",")
+                    }
+
                     Described {
-                        label: qsTr("Language")
-                        hint: hwr.lang === "auto"
-                              ? qsTr("Each line is read twice, as German and as other Latin-script writing, and the clearer reading is kept.")
-                              : qsTr("The language you write in. Notes in several Latin-script languages read best with \u201cGerman or English\u201d.")
+                        label: qsTr("Languages")
+                        hint: qsTr("Check the languages you write in. Each line is read in all of them and the clearest reading is kept; fewer languages read faster.")
                     }
-                    ComboBox {
-                        objectName: "hwrLang"
-                        Layout.preferredWidth: 240
-                        Layout.fillWidth: dialog.narrow
+                    Label {
+                        Layout.fillWidth: true
+                        text: Models.languages.filter(l => langs.chosen.includes(l.code)).map(l => l.name).join(", ")
+                        color: Theme.accent
+                        font.pixelSize: 12
+                        wrapMode: Text.WordWrap
+                    }
+                    TextField {
+                        id: langSearch
+                        objectName: "hwrLangSearch"
+                        Layout.fillWidth: true
+                        placeholderText: qsTr("Search languages")
+                        color: Theme.text
+                        placeholderTextColor: Theme.textDisabled
+                        font.pixelSize: 13
+                        selectByMouse: true
+                        background: Rectangle {
+                            radius: 6
+                            color: Theme.dark ? "#24222c" : "#f6f5f9"
+                            border.width: 1
+                            border.color: langSearch.activeFocus ? Theme.accent : Theme.separator
+                        }
+                    }
+                    ListView {
+                        objectName: "hwrLangList"
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: Math.min(contentHeight, 200)
+                        clip: true
+                        boundsBehavior: Flickable.StopAtBounds
+                        ScrollBar.vertical: ScrollBar {}
+                        // Chosen languages first; the search matches English and own names.
                         model: Models.languages
-                        textRole: "name"
-                        valueRole: "code"
-                        currentIndex: Math.max(0, Models.languages.findIndex(l => l.code === hwr.lang))
-                        onActivated: hwr.lang = currentValue
+                            .filter(l => langs.query.length === 0 || l.name.toLowerCase().includes(langs.query)
+                                         || l.code === langs.query)
+                            .sort((a, b) => langs.chosen.includes(b.code) - langs.chosen.includes(a.code))
+                        delegate: AbstractButton {
+                            id: langRow
+                            required property var modelData
+                            readonly property bool picked: langs.chosen.includes(modelData.code)
+                            objectName: "hwrLang_" + modelData.code
+                            width: ListView.view.width
+                            height: 32
+                            // One language at least stays.
+                            enabled: !(picked && langs.chosen.length === 1)
+                            onClicked: langs.toggle(modelData.code)
+                            contentItem: RowLayout {
+                                spacing: 10
+                                Rectangle {
+                                    Layout.leftMargin: 6
+                                    implicitWidth: 16
+                                    implicitHeight: 16
+                                    radius: 4
+                                    color: langRow.picked ? Theme.accent : "transparent"
+                                    border.width: 1
+                                    border.color: langRow.picked ? Theme.accent : Theme.separator
+                                    opacity: langRow.enabled ? 1 : 0.6
+                                    Label {
+                                        anchors.centerIn: parent
+                                        visible: langRow.picked
+                                        text: "✓"
+                                        color: "white"
+                                        font.pixelSize: 11
+                                    }
+                                }
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: langRow.modelData.name
+                                    color: Theme.text
+                                    font.pixelSize: 13
+                                    elide: Text.ElideRight
+                                }
+                            }
+                            background: Rectangle {
+                                radius: Theme.radius
+                                color: langRow.hovered ? Theme.hover : "transparent"
+                            }
+                        }
                     }
-                }
-                Described {
-                    visible: hwr.backend !== "server"
-                    label: qsTr("Runs on this computer; nothing is sent anywhere.")
-                    hint: qsTr("Download the handwriting reader for your language and, for formulas, the formula model. Each downloads once.")
                 }
                 Repeater {
                     model: Models.entries
@@ -599,10 +669,10 @@ Dialog {
                         id: modelRow
                         required property var modelData
                         readonly property bool loading: Models.busy === modelData.id
-                        // The reader for the chosen language, formulas, and whatever is already here.
+                        // The readers for the chosen languages, formulas, and whatever is already here.
                         visible: hwr.backend !== "server"
                                  && (modelData.id === "math" || modelData.installed
-                                     || modelData.id === Models.textModel(hwr.lang))
+                                     || Models.textModels(hwr.lang).includes(modelData.id))
                         Layout.fillWidth: true
                         spacing: 12
                         Described {

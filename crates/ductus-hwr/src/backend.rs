@@ -8,9 +8,14 @@ pub trait Recognizer: Send {
 }
 
 fn prompt(lang: &str) -> String {
-    let language = match crate::builtin::language(lang) {
-        l if l.code == "auto" => "The text may be German or English.".to_owned(),
-        l => format!("The text is {}.", l.english),
+    let names: Vec<&str> = crate::builtin::languages_in(lang)
+        .iter()
+        .map(|l| l.english)
+        .collect();
+    let language = match names.as_slice() {
+        [one] => format!("The text is {one}."),
+        [first @ .., last] => format!("The text may be {} or {last}.", first.join(", ")),
+        [] => String::new(),
     };
     format!(
         "This image shows one line of handwritten notes. {language} Transcribe it exactly, \
@@ -145,9 +150,32 @@ fn start_unloading() {
 }
 
 impl Recognizer for Builtin {
+    /// "text" reads with the model of every language in `lang` and keeps the most confident reading.
     fn recognize(&self, png: &[u8], lang: &str) -> Result<String, String> {
         let image = tiny_skia::Pixmap::decode_png(png).map_err(|e| e.to_string())?;
-        let path = self.dir.join(&self.id);
+        let ids = match self.id.as_str() {
+            "text" => crate::builtin::text_models(lang),
+            id => vec![id],
+        };
+        let mut best: Option<(String, f64)> = None;
+        for id in ids {
+            let reading = self.read(id, &image, lang)?;
+            if best.as_ref().is_none_or(|b| reading.1 > b.1) {
+                best = Some(reading);
+            }
+        }
+        Ok(best.unwrap_or_default().0)
+    }
+}
+
+impl Builtin {
+    fn read(
+        &self,
+        id: &str,
+        image: &tiny_skia::Pixmap,
+        lang: &str,
+    ) -> Result<(String, f64), String> {
+        let path = self.dir.join(id);
         let slot = slot(&path);
         let mut loaded = slot.lock().map_err(|_| "recognizer failed before")?;
         let loaded = match &mut *loaded {
@@ -160,9 +188,9 @@ impl Recognizer for Builtin {
                 })
             }
         };
-        let text = loaded.model.recognize(&image, lang);
+        let reading = loaded.model.recognize(image, lang);
         loaded.used = Instant::now();
-        text
+        reading
     }
 }
 
