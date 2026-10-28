@@ -1257,8 +1257,9 @@ void InkCanvas::geometryChange(const QRectF &newGeometry, const QRectF &oldGeome
         m_engine->set_viewport(newWidth, newGeometry.height(), window()->effectiveDevicePixelRatio());
         m_engine->reset_view();
         viewMoved();
-    } else if (oldWidth > 0 && newWidth > 0 && !qFuzzyCompare(oldWidth, newWidth)) {
-        // The page stays centred when the canvas narrows or widens, e.g. beside another page.
+    } else if (oldWidth > 0 && newWidth > 0 && !qFuzzyCompare(oldWidth, newWidth)
+               && pageKind() != QLatin1String("endless")) {
+        // Paper and PDFs stay centred when the canvas narrows or widens, e.g. beside another page.
         m_engine->pan_by((newWidth - oldWidth) / 2, 0);
         viewMoved();
     }
