@@ -1,4 +1,5 @@
 #include "ductus-qt/cpp/app.h"
+#include "ductus-qt/cpp/singleinstance.h"
 #include "ductus-qt/cpp/translations.h"
 #include "ductus-qt/cpp/uitest.h"
 
@@ -40,6 +41,12 @@ std::int32_t run_app(rust::Str program)
         QSettings::setDefaultFormat(QSettings::IniFormat);
         QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, configDir);
     }
+#if !defined(Q_OS_ANDROID)
+    // Two copies would each save the same open pages over the other's.
+    SingleInstance instance;
+    if (!instance.claim())
+        return 0;
+#endif
     // Some graphics drivers draw Qt Quick garbled: Qt's software renderer is slower but right.
     if (softwareRendering())
         QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
@@ -57,6 +64,18 @@ std::int32_t run_app(rust::Str program)
     engine.loadFromModule("Ductus", "Main");
     if (engine.rootObjects().isEmpty())
         return 1;
+#if !defined(Q_OS_ANDROID)
+    auto *mainWindow = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
+    QObject::connect(&instance, &SingleInstance::activationRequested, mainWindow, [mainWindow](const QString &token) {
+        // Qt's Wayland shell reads the launcher's token from here when the window asks to come forward.
+        if (!token.isEmpty())
+            qputenv("XDG_ACTIVATION_TOKEN", token.toUtf8());
+        mainWindow->setWindowStates(mainWindow->windowStates() & ~Qt::WindowMinimized);
+        mainWindow->show();
+        mainWindow->raise();
+        mainWindow->requestActivate();
+    });
+#endif
 
     if (!script.isEmpty()) {
         auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());

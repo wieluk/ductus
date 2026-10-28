@@ -73,9 +73,12 @@ fn main() {
     if target_os == "linux" {
         builder = builder.qt_module("DBus").qt_module("WaylandClient");
     }
-    // Android has no printing.
+    // Android has no printing, and runs one copy of an app by itself.
     if target_os != "android" {
-        builder = builder.qt_module("PrintSupport");
+        builder = builder
+            .qt_module("PrintSupport")
+            .qt_module("Network")
+            .cpp_files(["cpp/singleinstance.h", "cpp/singleinstance.cpp"]);
     } else {
         link_android_qt_libraries();
     }
