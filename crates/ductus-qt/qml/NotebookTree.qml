@@ -729,6 +729,13 @@ Rectangle {
                         onTriggered: AppController.openInNewTab(row.path)
                     }
                     AppMenuItem {
+                        visible: row.isPage
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("Open side by side")
+                        objectName: "menuOpenBeside"
+                        onTriggered: AppController.openBeside(row.path)
+                    }
+                    AppMenuItem {
                         visible: row.isFile
                         height: visible ? implicitHeight : 0
                         text: qsTr("Open with its program")

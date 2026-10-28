@@ -549,18 +549,6 @@
         <translation>Сначала скачайте для этого распознаватель.</translation>
     </message>
     <message>
-        <source>No page open</source>
-        <translation>Страница не открыта</translation>
-    </message>
-    <message>
-        <source>Pick a page in the notebook list, or start a new one.</source>
-        <translation>Выберите страницу в списке блокнотов или начните новую.</translation>
-    </message>
-    <message>
-        <source>New page…</source>
-        <translation>Новая страница…</translation>
-    </message>
-    <message>
         <source>Show or hide notebooks (%1)</source>
         <translation>Показать или скрыть блокноты (%1)</translation>
     </message>
@@ -1025,6 +1013,10 @@ Library: %1</source>
         <translation>Новый раздел</translation>
     </message>
     <message>
+        <source>Open side by side</source>
+        <translation>Открыть рядом</translation>
+    </message>
+    <message>
         <source>New folder inside</source>
         <translation>Новая папка внутри</translation>
     </message>
@@ -1109,6 +1101,21 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Open library folder…</source>
         <translation>Открыть папку библиотеки…</translation>
+    </message>
+</context>
+<context>
+    <name>PagePane</name>
+    <message>
+        <source>No page open</source>
+        <translation>Страница не открыта</translation>
+    </message>
+    <message>
+        <source>Pick a page in the notebook list, or start a new one.</source>
+        <translation>Выберите страницу в списке блокнотов или начните новую.</translation>
+    </message>
+    <message>
+        <source>New page…</source>
+        <translation>Новая страница…</translation>
     </message>
 </context>
 <context>

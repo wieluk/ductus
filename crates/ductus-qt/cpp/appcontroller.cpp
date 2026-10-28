@@ -337,16 +337,89 @@ void AppController::clearFocusOutside(const QString &path)
 
 void AppController::setCanvas(InkCanvas *canvas)
 {
-    if (canvas == m_canvas)
+    if (canvas == m_canvas || !canvas)
         return;
     if (m_canvas)
         disconnect(m_canvas, nullptr, this, nullptr);
     m_canvas = canvas;
-    if (m_canvas) {
-        connect(m_canvas, &InkCanvas::edited, this, &AppController::onCanvasEdited);
-        openLibrary(defaultLibraryPath());
-    }
+    if (!m_first)
+        m_first = canvas;
+    hookCanvas(canvas);
+    openLibrary(defaultLibraryPath());
     Q_EMIT canvasChanged();
+}
+
+void AppController::setOtherCanvas(InkCanvas *canvas)
+{
+    if (canvas == m_other.canvas || !canvas || canvas == m_canvas)
+        return;
+    m_other.canvas = canvas;
+    hookCanvas(canvas);
+    Q_EMIT canvasChanged();
+}
+
+void AppController::hookCanvas(InkCanvas *canvas)
+{
+    // Touching the other half makes it the active one before anything is drawn there.
+    connect(canvas, &InkCanvas::pressed, this, [this, canvas] { activate(canvas); });
+    connect(canvas, &InkCanvas::edited, this, [this, canvas] {
+        activate(canvas);
+        if (canvas == m_canvas)
+            onCanvasEdited();
+    });
+}
+
+QString AppController::otherPage() const
+{
+    return m_library ? toQ((*m_library)->parked_page()) : QString();
+}
+
+void AppController::activate(InkCanvas *canvas)
+{
+    if (!canvas || canvas == m_canvas || canvas != m_other.canvas)
+        return;
+    if (m_canvas)
+        m_canvas->finishTextEditing();
+    saveNow();
+    std::swap(m_canvas, m_other.canvas);
+    std::swap(m_openPages, m_other.tabs);
+    std::swap(m_previewPage, m_other.preview);
+    std::swap(m_views, m_other.views);
+    std::swap(m_savedRevision, m_other.savedRevision);
+    if (m_library)
+        (*m_library)->swap_open();
+    setDirty(false);
+    storePanes();
+    refreshTree();
+    Q_EMIT canvasChanged();
+    Q_EMIT openPagesChanged();
+    Q_EMIT currentPageChanged();
+}
+
+void AppController::moveTab(const QString &path, InkCanvas *to)
+{
+    if (!m_library || !to || (to != m_canvas && to != m_other.canvas))
+        return;
+    InkCanvas *from = m_openPages.contains(path)    ? m_canvas.data()
+                      : m_other.tabs.contains(path) ? m_other.canvas.data()
+                                                    : nullptr;
+    if (from == to)
+        return;
+    if (from) {
+        // A half's only tab moving into an empty half would show the same thing.
+        const QStringList &toTabs = to == m_canvas ? m_openPages : m_other.tabs;
+        if ((from == m_canvas ? m_openPages : m_other.tabs).size() == 1 && toTabs.isEmpty())
+            return;
+        activate(from);
+        closeTab(path);
+    }
+    activate(to);
+    openInNewTab(path);
+}
+
+void AppController::openBeside(const QString &path)
+{
+    moveTab(path, m_other.canvas);
 }
 
 void AppController::openLibrary(const QString &pathOrUrl)
@@ -379,19 +452,41 @@ void AppController::openLibrary(const QString &pathOrUrl)
     refreshIndex();
     Q_EMIT libraryChanged();
 
+    // Both halves start empty, the first canvas on the left as the active one.
+    if (m_other.canvas && m_canvas != m_first) {
+        std::swap(m_canvas, m_other.canvas);
+        Q_EMIT canvasChanged();
+    }
+    m_other.tabs.clear();
+    m_other.preview.clear();
+    m_other.views.clear();
+    if (m_other.canvas) {
+        m_other.canvas->engine().unload();
+        m_other.canvas->documentReplaced();
+        m_other.savedRevision = m_other.canvas->revision();
+    }
+
     // A closed page stays closed; a new library starts on its starter page.
     const auto exists = [this](const QString &page) {
         return QFileInfo::exists(toQ((*m_library)->page_file(toStd(page))));
     };
-    QString last = starter.isEmpty() ? rememberedPage() : starter;
-    if (!last.isEmpty() && !exists(last))
-        last.clear();
-    QStringList tabs;
-    if (!last.isEmpty()) {
-        const QVariantMap stored = QSettings().value(QStringLiteral("library/openPages")).toMap();
-        for (const QString &page : stored.value(libraryPath()).toStringList())
-            if (exists(page))
-                tabs << page;
+    const auto stored = [&](const QVariantMap &pane, QString *page) {
+        QStringList tabs;
+        for (const QString &tab : pane.value(QStringLiteral("tabs")).toStringList())
+            if (exists(tab))
+                tabs << tab;
+        *page = pane.value(QStringLiteral("page")).toString();
+        if (!tabs.contains(*page))
+            *page = tabs.value(0);
+        return tabs;
+    };
+    const QVariantMap record =
+        QSettings().value(QStringLiteral("library/panes")).toMap().value(libraryPath()).toMap();
+    QString last;
+    QStringList tabs = stored(record.value(QStringLiteral("first")).toMap(), &last);
+    if (!starter.isEmpty()) {
+        last = starter;
+        tabs = {starter};
     }
     m_views.clear();
     m_previewPage.clear();
@@ -405,7 +500,23 @@ void AppController::openLibrary(const QString &pathOrUrl)
             m_savedRevision = m_canvas->revision();
         }
         setDirty(false);
+        Q_EMIT openPagesChanged();
         Q_EMIT currentPageChanged();
+    }
+    // The other half of a split comes back too.
+    QString beside;
+    const QStringList besideTabs = stored(record.value(QStringLiteral("second")).toMap(), &beside);
+    if (!last.isEmpty() && starter.isEmpty() && m_other.canvas && !beside.isEmpty()
+        && !tabs.contains(beside)) {
+        activate(m_other.canvas);
+        QStringList own;
+        for (const QString &tab : besideTabs)
+            if (!m_other.tabs.contains(tab))
+                own << tab;
+        setOpenPages(own);
+        openInNewTab(beside);
+        if (record.value(QStringLiteral("active")).toInt() == 0)
+            activate(m_other.canvas);
     }
 }
 
@@ -487,20 +598,22 @@ QString AppController::ensureStarterContent()
     return page;
 }
 
-void AppController::rememberPage(const QString &path)
+void AppController::storePanes()
 {
+    if (!m_library)
+        return;
+    const QVariantMap active{{QStringLiteral("tabs"), m_openPages}, {QStringLiteral("page"), currentPage()}};
+    const QVariantMap other{{QStringLiteral("tabs"), m_other.tabs}, {QStringLiteral("page"), otherPage()}};
+    const bool firstActive = m_canvas == m_first;
     QSettings settings;
-    QVariantMap pages = settings.value(QStringLiteral("library/lastPages")).toMap();
-    if (path.isEmpty())
-        pages.remove(libraryPath());
+    QVariantMap panes = settings.value(QStringLiteral("library/panes")).toMap();
+    if (m_openPages.isEmpty() && m_other.tabs.isEmpty())
+        panes.remove(libraryPath());
     else
-        pages.insert(libraryPath(), path);
-    settings.setValue(QStringLiteral("library/lastPages"), pages);
-}
-
-QString AppController::rememberedPage() const
-{
-    return QSettings().value(QStringLiteral("library/lastPages")).toMap().value(libraryPath()).toString();
+        panes.insert(libraryPath(), QVariantMap{{QStringLiteral("first"), firstActive ? active : other},
+                                                {QStringLiteral("second"), firstActive ? other : active},
+                                                {QStringLiteral("active"), firstActive ? 0 : 1}});
+    settings.setValue(QStringLiteral("library/panes"), panes);
 }
 
 void AppController::closePage()
@@ -524,12 +637,15 @@ void AppController::closePage()
     m_canvas->documentReplaced();
     m_savedRevision = m_canvas->revision();
     setDirty(false);
-    rememberPage(QString());
+    storePanes();
     m_views.clear();
     setOpenPages({});
     refreshTree();
     rewatch();
     Q_EMIT currentPageChanged();
+    // The emptied half of a split gives way to the other.
+    if (!m_other.tabs.isEmpty())
+        activate(m_other.canvas);
 }
 
 void AppController::setHoldRecent(bool hold)
@@ -553,14 +669,33 @@ void AppController::openInNewTab(const QString &path)
 
 void AppController::keepTab(const QString &path)
 {
-    if (path.isEmpty() || path != m_previewPage)
+    if (path.isEmpty())
         return;
-    m_previewPage.clear();
+    if (path == m_previewPage)
+        m_previewPage.clear();
+    else if (path == m_other.preview)
+        m_other.preview.clear();
+    else
+        return;
     Q_EMIT openPagesChanged();
 }
 
 void AppController::closeTab(const QString &path)
 {
+    if (m_other.tabs.contains(path)) {
+        if (path == otherPage()) {
+            activate(m_other.canvas);
+            closePage();
+            return;
+        }
+        m_other.tabs.removeAll(path);
+        m_other.views.remove(path);
+        if (m_other.preview == path)
+            m_other.preview.clear();
+        storePanes();
+        Q_EMIT openPagesChanged();
+        return;
+    }
     if (path == currentPage()) {
         closePage();
         return;
@@ -586,13 +721,7 @@ void AppController::setOpenPages(const QStringList &pages)
     m_openPages = pages;
     if (!pages.contains(m_previewPage))
         m_previewPage.clear();
-    QSettings settings;
-    QVariantMap stored = settings.value(QStringLiteral("library/openPages")).toMap();
-    if (pages.isEmpty())
-        stored.remove(libraryPath());
-    else
-        stored.insert(libraryPath(), pages);
-    settings.setValue(QStringLiteral("library/openPages"), stored);
+    storePanes();
     if (changed)
         Q_EMIT openPagesChanged();
 }
@@ -616,7 +745,15 @@ void AppController::followMove(const QString &from, const QString &to)
     for (auto it = m_views.cbegin(); it != m_views.cend(); ++it)
         views.insert(moved(it.key(), from, to), it.value());
     m_views = views;
+    for (QString &page : m_other.tabs)
+        page = moved(page, from, to);
+    m_other.preview = moved(m_other.preview, from, to);
+    QHash<QString, View> otherViews;
+    for (auto it = m_other.views.cbegin(); it != m_other.views.cend(); ++it)
+        otherViews.insert(moved(it.key(), from, to), it.value());
+    m_other.views = otherViews;
     setOpenPages(tabs);
+    Q_EMIT openPagesChanged();
 }
 
 void AppController::insertBlankPage()
@@ -709,6 +846,9 @@ void AppController::showPage(const QString &path, bool newTab)
 {
     if (!m_library || !m_canvas)
         return;
+    // A page shows in one half only: its own.
+    if (m_other.tabs.contains(path))
+        activate(m_other.canvas);
     m_canvas->finishTextEditing();
     saveNow();
     const QString before = currentPage();
@@ -725,7 +865,7 @@ void AppController::showPage(const QString &path, bool newTab)
     m_canvas->setPicturesAllowed((*m_library)->accepts_pictures());
     m_savedRevision = m_canvas->revision();
     setDirty(false);
-    rememberPage(path);
+    storePanes();
     if (!m_openPages.contains(path)) {
         QStringList tabs = m_openPages;
         const qsizetype preview = tabs.indexOf(m_previewPage);
@@ -1029,7 +1169,7 @@ QString AppController::rename(const QString &path, const QString &name)
     storeExpanded();
     followMove(path, renamed);
     if (!currentPage().isEmpty())
-        rememberPage(currentPage());
+        storePanes();
     refreshTree();
     refreshIndex();
     Q_EMIT currentPageChanged();
@@ -1055,7 +1195,7 @@ QString AppController::moveTo(const QString &path, const QString &parent)
     followMove(path, moved);
     m_keepVisible = moved;
     if (!currentPage().isEmpty())
-        rememberPage(currentPage());
+        storePanes();
     refreshTree();
     refreshIndex();
     Q_EMIT currentPageChanged();
@@ -1070,6 +1210,8 @@ void AppController::remove(const QString &path)
         return;
     const QString open = currentPage();
     const bool openInside = inside(open, path) && !open.isEmpty();
+    const QString besideOpen = otherPage();
+    const bool besideInside = !besideOpen.isEmpty() && inside(besideOpen, path);
     if (openInside)
         saveNow();
     // Where to go instead: the next tab, else the next page beside it, else the one before.
@@ -1112,6 +1254,31 @@ void AppController::remove(const QString &path)
         if (!tabs.contains(page))
             m_views.remove(page);
     setOpenPages(tabs);
+    // The other half of a split loses it too, and shows another of its tabs.
+    QStringList besideTabs;
+    for (const QString &page : std::as_const(m_other.tabs)) {
+        if (inside(page, path))
+            m_other.views.remove(page);
+        else
+            besideTabs << page;
+    }
+    m_other.tabs = besideTabs;
+    if (!besideTabs.contains(m_other.preview))
+        m_other.preview.clear();
+    if (besideInside && m_other.canvas) {
+        if (besideTabs.isEmpty()) {
+            m_other.canvas->engine().unload();
+            m_other.canvas->documentReplaced();
+            m_other.savedRevision = m_other.canvas->revision();
+        } else {
+            InkCanvas *back = m_canvas;
+            activate(m_other.canvas);
+            openPage(besideTabs.first());
+            activate(back);
+        }
+    }
+    storePanes();
+    Q_EMIT openPagesChanged();
     refreshTree();
     refreshIndex();
     if (openInside) {
@@ -1127,14 +1294,17 @@ void AppController::remove(const QString &path)
 void AppController::unloadPage()
 {
     setOpenPages({});
+    m_views.clear();
     m_canvas->engine().unload();
     m_canvas->documentReplaced();
     m_savedRevision = m_canvas->revision();
     setDirty(false);
-    rememberPage(QString());
+    storePanes();
     refreshTree();
     rewatch();
     Q_EMIT currentPageChanged();
+    if (!m_other.tabs.isEmpty())
+        activate(m_other.canvas);
 }
 
 QVariantList AppController::trashRows()

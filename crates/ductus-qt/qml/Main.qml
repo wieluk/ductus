@@ -22,6 +22,10 @@ ApplicationWindow {
     /// A phone or a narrow window: the notebooks open as a drawer over the page.
     readonly property bool compact: width < 720
     property bool drawerOpen: false
+    /// The canvas of the half the ribbon, pen bar and keys act on.
+    readonly property InkCanvas canvas: AppController.canvas === canvasB ? canvasB : canvasA
+    readonly property InkCanvas idleCanvas: canvas === canvasA ? canvasB : canvasA
+    readonly property bool split: paneA.visible && paneB.visible
 
     function toggleSidebar() {
         if (compact)
@@ -84,7 +88,8 @@ ApplicationWindow {
     Component.onCompleted: {
         updateTheme()
         Theme.dark = darkMode
-        AppController.canvas = canvas
+        AppController.otherCanvas = canvasB
+        AppController.canvas = canvasA
         if (AppController.storageQuestionPending())
             storageDialog.open()
     }
@@ -137,27 +142,27 @@ ApplicationWindow {
         property alias sidebarWidth: window.sidebarWidth
         property alias penBarRight: window.penBarRight
         property alias sidebarRight: window.sidebarRight
-        property alias holdDelay: canvas.holdDelay
-        property alias palmRejection: canvas.palmRejection
-        property alias penTipVisible: canvas.penTipVisible
-        property alias penTipSize: canvas.penTipSize
-        property alias fingerDrawing: canvas.fingerDrawing
-        property alias penColor: canvas.penColor
-        property alias penWidth: canvas.penWidth
-        property alias penPattern: canvas.penPattern
-        property alias highlighterColor: canvas.highlighterColor
-        property alias highlighterWidth: canvas.highlighterWidth
-        property alias eraserWholeStrokes: canvas.eraserWholeStrokes
-        property alias eraserSize: canvas.eraserSize
-        property alias shapeAssist: canvas.shapeAssist
+        property alias holdDelay: canvasA.holdDelay
+        property alias palmRejection: canvasA.palmRejection
+        property alias penTipVisible: canvasA.penTipVisible
+        property alias penTipSize: canvasA.penTipSize
+        property alias fingerDrawing: canvasA.fingerDrawing
+        property alias penColor: canvasA.penColor
+        property alias penWidth: canvasA.penWidth
+        property alias penPattern: canvasA.penPattern
+        property alias highlighterColor: canvasA.highlighterColor
+        property alias highlighterWidth: canvasA.highlighterWidth
+        property alias eraserWholeStrokes: canvasA.eraserWholeStrokes
+        property alias eraserSize: canvasA.eraserSize
+        property alias shapeAssist: canvasA.shapeAssist
         property alias penBarVisible: window.penBarVisible
         property alias penPresets: penBar.presetsJson
         property alias currentTab: titleBar.currentTab
-        property alias mathSyntax: mathLayer.syntax
-        property alias mathFavorites: mathLayer.favoritesJson
-        property alias mathCategory: mathLayer.category
-        property alias pressureResponse: canvas.pressureResponse
-        property alias smoothing: canvas.smoothing
+        property alias mathSyntax: paneA.mathSyntax
+        property alias mathFavorites: paneA.mathFavorites
+        property alias mathCategory: paneA.mathCategory
+        property alias pressureResponse: canvasA.pressureResponse
+        property alias smoothing: canvasA.smoothing
     }
 
     Connections {
@@ -173,8 +178,35 @@ ApplicationWindow {
         }
     }
     Connections {
-        target: canvas
+        target: canvasA
         function onNotice(message, error) { toast.show(message, error) }
+    }
+    Connections {
+        target: canvasB
+        function onNotice(message, error) { toast.show(message, error) }
+    }
+    // The idle half follows the active one's pens, tools and input settings.
+    Instantiator {
+        model: ["tool", "penColor", "penWidth", "penPattern", "highlighterColor", "highlighterWidth",
+                "eraserWholeStrokes", "eraserSize", "shapeAssist", "fingerDrawing", "holdDelay",
+                "palmRejection", "penTipVisible", "penTipSize", "pressureResponse", "smoothing"]
+        delegate: Binding {
+            required property string modelData
+            target: window.idleCanvas
+            property: modelData
+            value: window.canvas[modelData]
+            restoreMode: Binding.RestoreNone
+        }
+    }
+    Instantiator {
+        model: ["mathSyntax", "mathFavorites", "mathCategory"]
+        delegate: Binding {
+            required property string modelData
+            target: paneA.active ? paneB : paneA
+            property: modelData
+            value: (paneA.active ? paneA : paneB)[modelData]
+            restoreMode: Binding.RestoreNone
+        }
     }
     // The drawer makes way for the page that was picked in it.
     Connections {
@@ -294,7 +326,7 @@ ApplicationWindow {
             id: titleBar
             Layout.fillWidth: true
             window: window
-            canvas: canvas
+            canvas: window.canvas
             compact: window.compact
             visible: !window.fullScreen
             onAboutRequested: aboutDialog.open()
@@ -316,7 +348,7 @@ ApplicationWindow {
         Ribbon {
             Layout.fillWidth: true
             visible: !window.fullScreen
-            canvas: canvas
+            canvas: window.canvas
             window: window
             tab: titleBar.currentTab
             onPdfImportRequested: pdfFileDialog.open()
@@ -402,148 +434,168 @@ ApplicationWindow {
                 onExportRequested: (folder, name) => exportDialog.show(folder, name)
             }
 
-            ColumnLayout {
+            Item {
+                id: pageArea
                 x: body.besidePage && !window.sidebarRight ? tree.width : 0
                 width: parent.width - (body.besidePage ? tree.width : 0)
                 height: parent.height
-                spacing: 0
 
-                PageTabs {
-                    Layout.fillWidth: true
-                    visible: AppController.openPages.length > 0 && !window.fullScreen
-                    pageTitle: window.pageTitle
+                // The half at the window's left edge, where the pen bar sits.
+                readonly property PagePane leftPane: paneA.visible ? paneA : paneB
+                readonly property PagePane rightPane: paneB.visible ? paneB : paneA
+
+                function paneAt(scenePosition) {
+                    for (const pane of [paneA, paneB]) {
+                        const p = pane.area.mapFromItem(null, scenePosition)
+                        if (pane.visible && p.x >= 0 && p.x < pane.area.width && p.y >= 0 && p.y < pane.area.height)
+                            return pane
+                    }
+                    return null
                 }
 
-                LocationBar {
-                    objectName: "locationBar"
-                    Layout.fillWidth: true
-                    visible: AppController.currentPage.length > 0 && !window.fullScreen
-                    onShowRequested: (path, view) => window.showInSidebar(path, view)
+                // A tab dragged onto the other half moves there; onto the empty side of a lone half, it splits.
+                function tabDragged(from, path, scenePosition, dropped) {
+                    const target = paneAt(scenePosition)
+                    let hint = ""
+                    if (target && target !== from) {
+                        hint = "pane"
+                    } else if (target && !window.split && !window.compact && from.pages.length > 1) {
+                        const p = target.area.mapFromItem(null, scenePosition)
+                        const besideRight = target === paneA
+                        if (besideRight ? p.x > target.area.width / 2 : p.x < target.area.width / 2)
+                            hint = besideRight ? "right" : "left"
+                    }
+                    paneA.dropHint = dropped || target !== paneA ? "" : hint
+                    paneB.dropHint = dropped || target !== paneB ? "" : hint
+                    if (!dropped || hint.length === 0)
+                        return
+                    if (hint === "pane")
+                        AppController.moveTab(path, target.canvas)
+                    else
+                        AppController.openBeside(path)
                 }
 
-                Item {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
+                RowLayout {
+                    anchors.fill: parent
+                    spacing: 0
 
-                    InkCanvas {
-                        id: canvas
-                        objectName: "canvas"
-                        anchors.fill: parent
-                        deskColor: Theme.desk
-                        enabled: AppController.currentPage.length > 0
-                    }
-                    // Plain desk instead of an empty page that can't be written on.
-                    Rectangle {
-                        anchors.fill: parent
-                        color: Theme.desk
-                        visible: !canvas.enabled
-                    }
-
-                    ColumnLayout {
-                        objectName: "noPage"
-                        anchors.centerIn: parent
-                        width: Math.min(360, parent.width - 40)
-                        visible: !canvas.enabled
-                        spacing: 12
-                        Label {
-                            Layout.fillWidth: true
-                            horizontalAlignment: Text.AlignHCenter
-                            wrapMode: Text.WordWrap
-                            text: qsTr("No page open")
-                            color: Theme.text
-                            font.pixelSize: 18
-                            font.weight: Font.DemiBold
-                        }
-                        Label {
-                            Layout.fillWidth: true
-                            horizontalAlignment: Text.AlignHCenter
-                            wrapMode: Text.WordWrap
-                            text: qsTr("Pick a page in the notebook list, or start a new one.")
-                            color: Theme.textMuted
-                            font.pixelSize: 13
-                        }
-                        RibbonButton {
-                            objectName: "noPageNewPage"
-                            Layout.alignment: Qt.AlignHCenter
-                            iconName: "page-add"
-                            text: qsTr("New page…")
-                            onClicked: newPageDialog.show("")
-                        }
-                    }
-
-                    TextLayer {
-                        id: textLayer
-                        objectName: "textLayer"
-                        anchors.fill: canvas
-                        canvas: canvas
-                        onNoticeRequested: (message) => toast.show(message, true)
-                    }
-
-                    MathLayer {
-                        id: mathLayer
-                        objectName: "mathLayer"
-                        anchors.fill: canvas
-                        canvas: canvas
-                        onNoticeRequested: (message) => toast.show(message, true)
-                    }
-
-                    PenBar {
-                        id: penBar
-                        objectName: "penBar"
-                        canvas: canvas
-                        onRight: window.penBarRight
-                        onScreenshotRequested: window.takeScreenshot()
-                        onPictureRequested: imageFileDialog.open()
+                    PagePane {
+                        id: paneA
+                        canvas: canvasA
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.preferredWidth: 1
+                        // An emptied half gives way; a phone shows only the active one.
+                        visible: (pages.length > 0 || paneB.pages.length === 0)
+                                 && (!window.compact || active || paneB.pages.length === 0)
+                        split: window.split
+                        pageTitle: window.pageTitle
                         fullScreen: window.fullScreen
-                        onFullScreenToggled: window.toggleFullScreen()
-                        // Full screen has no ribbon, so the bar is the way to the tools and back.
-                        visible: window.penBarVisible && canvas.enabled || window.fullScreen
-                        x: window.penBarRight ? parent.width - width - 10 : 10
-                        anchors.verticalCenter: parent.verticalCenter
-                        // Clear of the corner button on its side.
-                        height: Math.min(implicitHeight, parent.height - 20
-                                         - (sidebarOpener.visible && window.penBarRight === window.sidebarRight
-                                            ? 2 * (sidebarOpener.height + 8) : 0))
-                        clip: true
-                    }
+                        leftInset: pageArea.leftPane === paneA && penBar.visible && !window.penBarRight
+                                   ? penBar.x + penBar.width + 8 : 8
+                        rightInset: pageArea.rightPane === paneA && penBar.visible && window.penBarRight
+                                    ? pageArea.width - penBar.x + 8 : 8
+                        onShowInSidebar: (path, view) => window.showInSidebar(path, view)
+                        onNewPageRequested: newPageDialog.show("")
+                        onNoticeRequested: (message, error) => toast.show(message, error)
+                        onTabDragged: (path, scenePosition, dropped) => pageArea.tabDragged(paneA, path, scenePosition, dropped)
 
-                    // The hidden sidebar comes back from where it was collapsed.
-                    Rectangle {
-                        id: sidebarOpener
-                        visible: !window.compact && !window.sidebarVisible && !window.fullScreen
-                        x: window.sidebarRight ? parent.width - width - 10 : 10
-                        y: parent.height - height - 10
-                        width: opener.implicitWidth + 8
-                        height: opener.implicitHeight + 8
-                        radius: 10
-                        color: Theme.popup
-                        border.width: 1
-                        border.color: Theme.ribbonBorder
-                        RibbonButton {
-                            id: opener
-                            objectName: "sidebarExpand"
-                            anchors.centerIn: parent
-                            iconName: "sidebar"
-                            tip: qsTr("Show or hide notebooks (%1)").arg("Ctrl+\\")
-                            onClicked: window.toggleSidebar()
+                        InkCanvas {
+                            id: canvasA
+                            objectName: paneA.active ? "canvas" : "otherCanvas"
+                            anchors.fill: parent
+                            z: -1
+                            deskColor: Theme.desk
+                            enabled: paneA.page.length > 0
                         }
                     }
 
-                    SelectionBar {
-                        objectName: "selectionBar"
-                        canvas: canvas
-                        // Beside the pen bar, never over it.
-                        leftInset: penBar.visible && !window.penBarRight ? penBar.x + penBar.width + 8 : 8
-                        rightInset: penBar.visible && window.penBarRight ? parent.width - penBar.x + 8 : 8
+                    Rectangle {
+                        Layout.fillHeight: true
+                        Layout.preferredWidth: 1
+                        visible: window.split
+                        color: Theme.ribbonBorder
                     }
 
-                    Toast {
-                        id: toast
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.bottom: parent.bottom
-                        anchors.bottomMargin: 24
+                    PagePane {
+                        id: paneB
+                        canvas: canvasB
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.preferredWidth: 1
+                        visible: pages.length > 0 && (!window.compact || active)
+                        split: window.split
+                        pageTitle: window.pageTitle
+                        fullScreen: window.fullScreen
+                        leftInset: pageArea.leftPane === paneB && penBar.visible && !window.penBarRight
+                                   ? penBar.x + penBar.width + 8 : 8
+                        rightInset: pageArea.rightPane === paneB && penBar.visible && window.penBarRight
+                                    ? width - (penBar.x - x) + 8 : 8
+                        onShowInSidebar: (path, view) => window.showInSidebar(path, view)
+                        onNewPageRequested: newPageDialog.show("")
+                        onNoticeRequested: (message, error) => toast.show(message, error)
+                        onTabDragged: (path, scenePosition, dropped) => pageArea.tabDragged(paneB, path, scenePosition, dropped)
+
+                        InkCanvas {
+                            id: canvasB
+                            objectName: paneB.active ? "canvas" : "otherCanvas"
+                            anchors.fill: parent
+                            z: -1
+                            deskColor: Theme.desk
+                            enabled: paneB.page.length > 0
+                        }
                     }
+                }
+
+                PenBar {
+                    id: penBar
+                    objectName: "penBar"
+                    canvas: window.canvas
+                    onRight: window.penBarRight
+                    onScreenshotRequested: window.takeScreenshot()
+                    onPictureRequested: imageFileDialog.open()
+                    fullScreen: window.fullScreen
+                    onFullScreenToggled: window.toggleFullScreen()
+                    // Full screen has no ribbon, so the bar is the way to the tools and back.
+                    visible: window.penBarVisible && window.canvas.enabled || window.fullScreen
+                    x: window.penBarRight ? parent.width - width - 10 : 10
+                    // Centred on the page, below the tabs.
+                    readonly property Item area: pageArea.leftPane.area
+                    y: area.y + (area.height - height) / 2
+                    // Clear of the corner button on its side.
+                    height: Math.min(implicitHeight, area.height - 20
+                                     - (sidebarOpener.visible && window.penBarRight === window.sidebarRight
+                                        ? 2 * (sidebarOpener.height + 8) : 0))
+                    clip: true
+                }
+
+                // The hidden sidebar comes back from where it was collapsed.
+                Rectangle {
+                    id: sidebarOpener
+                    visible: !window.compact && !window.sidebarVisible && !window.fullScreen
+                    x: window.sidebarRight ? parent.width - width - 10 : 10
+                    y: parent.height - height - 10
+                    width: opener.implicitWidth + 8
+                    height: opener.implicitHeight + 8
+                    radius: 10
+                    color: Theme.popup
+                    border.width: 1
+                    border.color: Theme.ribbonBorder
+                    RibbonButton {
+                        id: opener
+                        objectName: "sidebarExpand"
+                        anchors.centerIn: parent
+                        iconName: "sidebar"
+                        tip: qsTr("Show or hide notebooks (%1)").arg("Ctrl+\\")
+                        onClicked: window.toggleSidebar()
+                    }
+                }
+
+                Toast {
+                    id: toast
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 24
                 }
             }
         }
@@ -766,7 +818,7 @@ ApplicationWindow {
 
     SettingsDialog {
         id: settingsDialog
-        canvas: canvas
+        canvas: window.canvas
         window: window
         onOpenFolderRequested: folderDialog.open()
         onUpdateRequested: {

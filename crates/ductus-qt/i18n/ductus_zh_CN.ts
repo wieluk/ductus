@@ -539,18 +539,6 @@
         <translation>请先下载相应的识别器。</translation>
     </message>
     <message>
-        <source>No page open</source>
-        <translation>没有打开的页面</translation>
-    </message>
-    <message>
-        <source>Pick a page in the notebook list, or start a new one.</source>
-        <translation>在笔记本列表中选择一个页面，或新建一个。</translation>
-    </message>
-    <message>
-        <source>New page…</source>
-        <translation>新建页面…</translation>
-    </message>
-    <message>
         <source>Show or hide notebooks (%1)</source>
         <translation>显示或隐藏笔记本（%1）</translation>
     </message>
@@ -1015,6 +1003,10 @@ Library: %1</source>
         <translation>新建分区</translation>
     </message>
     <message>
+        <source>Open side by side</source>
+        <translation>并排打开</translation>
+    </message>
+    <message>
         <source>New folder inside</source>
         <translation>在其中新建文件夹</translation>
     </message>
@@ -1099,6 +1091,21 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Open library folder…</source>
         <translation>打开资料库文件夹…</translation>
+    </message>
+</context>
+<context>
+    <name>PagePane</name>
+    <message>
+        <source>No page open</source>
+        <translation>没有打开的页面</translation>
+    </message>
+    <message>
+        <source>Pick a page in the notebook list, or start a new one.</source>
+        <translation>在笔记本列表中选择一个页面，或新建一个。</translation>
+    </message>
+    <message>
+        <source>New page…</source>
+        <translation>新建页面…</translation>
     </message>
 </context>
 <context>

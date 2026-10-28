@@ -544,18 +544,6 @@
         <translation>Lade zuerst die Erkennung dafür herunter.</translation>
     </message>
     <message>
-        <source>No page open</source>
-        <translation>Keine Seite offen</translation>
-    </message>
-    <message>
-        <source>Pick a page in the notebook list, or start a new one.</source>
-        <translation>Wähle eine Seite in der Notizbuchliste oder beginne eine neue.</translation>
-    </message>
-    <message>
-        <source>New page…</source>
-        <translation>Neue Seite…</translation>
-    </message>
-    <message>
         <source>Show or hide notebooks (%1)</source>
         <translation>Notizbücher ein- oder ausblenden (%1)</translation>
     </message>
@@ -1020,6 +1008,10 @@ Bibliothek: %1</translation>
         <translation>Neuer Abschnitt</translation>
     </message>
     <message>
+        <source>Open side by side</source>
+        <translation>Nebeneinander öffnen</translation>
+    </message>
+    <message>
         <source>New folder inside</source>
         <translation>Neuer Ordner darin</translation>
     </message>
@@ -1104,6 +1096,21 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     <message>
         <source>Open library folder…</source>
         <translation>Bibliotheksordner öffnen…</translation>
+    </message>
+</context>
+<context>
+    <name>PagePane</name>
+    <message>
+        <source>No page open</source>
+        <translation>Keine Seite offen</translation>
+    </message>
+    <message>
+        <source>Pick a page in the notebook list, or start a new one.</source>
+        <translation>Wähle eine Seite in der Notizbuchliste oder beginne eine neue.</translation>
+    </message>
+    <message>
+        <source>New page…</source>
+        <translation>Neue Seite…</translation>
     </message>
 </context>
 <context>

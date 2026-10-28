@@ -539,18 +539,6 @@
         <translation>まずこのための認識エンジンをダウンロードしてください。</translation>
     </message>
     <message>
-        <source>No page open</source>
-        <translation>開いているページはありません</translation>
-    </message>
-    <message>
-        <source>Pick a page in the notebook list, or start a new one.</source>
-        <translation>ノート一覧からページを選ぶか、新しいページを始めてください。</translation>
-    </message>
-    <message>
-        <source>New page…</source>
-        <translation>新しいページ…</translation>
-    </message>
-    <message>
         <source>Show or hide notebooks (%1)</source>
         <translation>ノートの表示／非表示（%1）</translation>
     </message>
@@ -1015,6 +1003,10 @@ Library: %1</source>
         <translation>新しいセクション</translation>
     </message>
     <message>
+        <source>Open side by side</source>
+        <translation>並べて開く</translation>
+    </message>
+    <message>
         <source>New folder inside</source>
         <translation>中に新しいフォルダー</translation>
     </message>
@@ -1099,6 +1091,21 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Open library folder…</source>
         <translation>ライブラリフォルダーを開く…</translation>
+    </message>
+</context>
+<context>
+    <name>PagePane</name>
+    <message>
+        <source>No page open</source>
+        <translation>開いているページはありません</translation>
+    </message>
+    <message>
+        <source>Pick a page in the notebook list, or start a new one.</source>
+        <translation>ノート一覧からページを選ぶか、新しいページを始めてください。</translation>
+    </message>
+    <message>
+        <source>New page…</source>
+        <translation>新しいページ…</translation>
     </message>
 </context>
 <context>

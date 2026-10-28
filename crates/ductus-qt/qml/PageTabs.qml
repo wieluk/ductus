@@ -9,6 +9,15 @@ Rectangle {
 
     /// The current page's name, with the unsaved mark.
     property string pageTitle
+    property var pages: []
+    /// The page shown below, and the preview tab a single click reuses.
+    property string current
+    property string preview
+    /// The half the ribbon and keys act on; only its tabs carry the names tests look for.
+    property bool focused: true
+
+    /// While a tab is dragged, and once more where it is dropped.
+    signal tabDragged(string path, point scenePosition, bool dropped)
 
     implicitHeight: 32
     color: Theme.sidebar
@@ -27,23 +36,23 @@ Rectangle {
         spacing: 2
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        model: AppController.openPages
+        model: bar.pages
 
         function showCurrent() {
-            const at = AppController.openPages.indexOf(AppController.currentPage)
+            const at = bar.pages.indexOf(bar.current)
             if (at >= 0)
                 positionViewAtIndex(at, ListView.Contain)
         }
         Connections {
-            target: AppController
-            function onCurrentPageChanged() { Qt.callLater(tabs.showCurrent) }
+            target: bar
+            function onCurrentChanged() { Qt.callLater(tabs.showCurrent) }
         }
 
         delegate: AbstractButton {
             id: tab
             required property string modelData
-            readonly property bool active: modelData === AppController.currentPage
-            readonly property bool preview: modelData === AppController.previewPage
+            readonly property bool active: modelData === bar.current
+            readonly property bool preview: modelData === bar.preview
             objectName: "pageTab_" + modelData
             height: ListView.view.height
             width: Math.min(220, pageIcon.width + title.implicitWidth + close.width + 26)
@@ -59,6 +68,13 @@ Rectangle {
             TapHandler {
                 acceptedButtons: Qt.MiddleButton
                 onTapped: AppController.closeTab(tab.modelData)
+            }
+            // Dragged onto the other half, or the right side of the page, it opens there.
+            DragHandler {
+                target: null
+                acceptedButtons: Qt.LeftButton
+                onCentroidChanged: if (active) bar.tabDragged(tab.modelData, centroid.scenePosition, false)
+                onActiveChanged: bar.tabDragged(tab.modelData, centroid.scenePosition, !active)
             }
 
             background: Rectangle {
@@ -88,12 +104,12 @@ Rectangle {
                 }
                 Label {
                     id: title
-                    objectName: tab.active ? "pageTitle" : ""
+                    objectName: tab.active && bar.focused ? "pageTitle" : ""
                     anchors.left: pageIcon.right
                     anchors.leftMargin: 6
                     anchors.verticalCenter: parent.verticalCenter
                     width: Math.min(implicitWidth, close.x - x - 2)
-                    text: tab.active ? bar.pageTitle : tab.modelData.split("/").pop()
+                    text: tab.active && bar.focused ? bar.pageTitle : tab.modelData.split("/").pop()
                     color: tab.active ? Theme.text : Theme.textMuted
                     font.pixelSize: 12
                     font.weight: tab.active ? Font.DemiBold : Font.Normal
@@ -102,7 +118,7 @@ Rectangle {
                 }
                 ToolButton {
                     id: close
-                    objectName: tab.active ? "closePage" : "closeTab_" + tab.modelData
+                    objectName: tab.active && bar.focused ? "closePage" : "closeTab_" + tab.modelData
                     anchors.right: parent.right
                     anchors.rightMargin: 2
                     anchors.verticalCenter: parent.verticalCenter
@@ -120,7 +136,7 @@ Rectangle {
                     onHoveredChanged: if (!hovered) tipDismissed = false
                     ToolTip.visible: hovered && !tipDismissed
                     ToolTip.delay: 600
-                    ToolTip.text: tab.active ? qsTr("Close page (Ctrl+W)") : qsTr("Close")
+                    ToolTip.text: tab.active && bar.focused ? qsTr("Close page (Ctrl+W)") : qsTr("Close")
                     onClicked: AppController.closeTab(tab.modelData)
                     background: Rectangle {
                         radius: Theme.radius

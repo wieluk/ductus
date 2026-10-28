@@ -544,18 +544,6 @@
         <translation>Prima scarica il riconoscimento per questo.</translation>
     </message>
     <message>
-        <source>No page open</source>
-        <translation>Nessuna pagina aperta</translation>
-    </message>
-    <message>
-        <source>Pick a page in the notebook list, or start a new one.</source>
-        <translation>Scegli una pagina nell’elenco dei quaderni o iniziane una nuova.</translation>
-    </message>
-    <message>
-        <source>New page…</source>
-        <translation>Nuova pagina…</translation>
-    </message>
-    <message>
         <source>Show or hide notebooks (%1)</source>
         <translation>Mostra o nascondi i quaderni (%1)</translation>
     </message>
@@ -1020,6 +1008,10 @@ Libreria: %1</translation>
         <translation>Nuova sezione</translation>
     </message>
     <message>
+        <source>Open side by side</source>
+        <translation>Apri affiancata</translation>
+    </message>
+    <message>
         <source>New folder inside</source>
         <translation>Nuova cartella al suo interno</translation>
     </message>
@@ -1104,6 +1096,21 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
     <message>
         <source>Open library folder…</source>
         <translation>Apri la cartella della libreria…</translation>
+    </message>
+</context>
+<context>
+    <name>PagePane</name>
+    <message>
+        <source>No page open</source>
+        <translation>Nessuna pagina aperta</translation>
+    </message>
+    <message>
+        <source>Pick a page in the notebook list, or start a new one.</source>
+        <translation>Scegli una pagina nell’elenco dei quaderni o iniziane una nuova.</translation>
+    </message>
+    <message>
+        <source>New page…</source>
+        <translation>Nuova pagina…</translation>
     </message>
 </context>
 <context>

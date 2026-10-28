@@ -39,6 +39,8 @@ const RECENT_SHOWN: usize = 5;
 pub struct LibraryHandle {
     library: Library,
     open: Option<OpenPage>,
+    /// The page in the other half of a side-by-side view; `swap_open` makes it the open one.
+    parked: Option<OpenPage>,
 }
 
 type Result<T> = std::result::Result<T, ductus_format::Error>;
@@ -51,6 +53,7 @@ pub fn open_library(root: &str, data_dir: &str) -> Result<Box<LibraryHandle>> {
     Ok(Box::new(LibraryHandle {
         library: Library::open(root, Path::new(data_dir))?,
         open: None,
+        parked: None,
     }))
 }
 
@@ -495,23 +498,35 @@ impl LibraryHandle {
     }
 
     fn follow_move(&mut self, from: &str, to: &str) {
-        if let Some(open) = &mut self.open {
-            if let Some(updated) = moved(&open.path, from, to) {
-                open.path = updated;
+        for page in [&mut self.open, &mut self.parked].into_iter().flatten() {
+            if let Some(updated) = moved(&page.path, from, to) {
+                page.path = updated;
             }
         }
     }
 
     pub fn remove(&mut self, path: &str) -> Result<String> {
         let id = self.library.delete(path)?;
-        if self
-            .open
-            .as_ref()
-            .is_some_and(|open| moved(&open.path, path, "").is_some())
-        {
-            self.open = None;
+        for page in [&mut self.open, &mut self.parked] {
+            if page
+                .as_ref()
+                .is_some_and(|p| moved(&p.path, path, "").is_some())
+            {
+                *page = None;
+            }
         }
         Ok(id)
+    }
+
+    pub fn swap_open(&mut self) {
+        std::mem::swap(&mut self.open, &mut self.parked);
+    }
+
+    pub fn parked_page(&self) -> String {
+        self.parked
+            .as_ref()
+            .map(|o| o.path.clone())
+            .unwrap_or_default()
     }
 
     pub fn pages_in(&self, folder: &str) -> Result<Vec<String>> {
@@ -805,6 +820,17 @@ impl LibraryHandle {
                 recognized.retain(|l| l.key != key);
                 recognized.push(line);
                 return Ok(true);
+            }
+        }
+        // The other half was saved when it was left, so its file below is current too.
+        if let Some(OpenPage {
+            path,
+            kind: OpenKind::Svg { recognized, .. },
+        }) = &mut self.parked
+        {
+            if path == page {
+                recognized.retain(|l| l.key != key);
+                recognized.push(line.clone());
             }
         }
         // Not open (any more): update the file if that ink is still there.
@@ -1103,5 +1129,28 @@ mod tests {
         assert!(dir.path().join("Notes/Mathematics/Limits.svg").is_file());
         handle.remove("Mathematics").unwrap();
         assert_eq!(handle.open_page(), "");
+    }
+
+    #[test]
+    fn the_other_half_of_a_split_follows_renames_and_deletes() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut handle = open_library(
+            dir.path().join("Notes").to_str().unwrap(),
+            dir.path().join("app").to_str().unwrap(),
+        )
+        .unwrap();
+        let mut canvas = crate::engine::new_canvas_engine();
+        handle.create_folder("", "Math").unwrap();
+        let a = handle.create_page("Math", "A", &canvas).unwrap();
+        let b = handle.create_page("Math", "B", &canvas).unwrap();
+        handle.load_into(&a, &mut canvas).unwrap();
+        handle.swap_open();
+        handle.load_into(&b, &mut canvas).unwrap();
+        handle.rename("Math", "Maths").unwrap();
+        assert_eq!(handle.parked_page(), "Maths/A");
+        handle.swap_open();
+        assert_eq!(handle.open_page(), "Maths/A");
+        handle.remove("Maths/B").unwrap();
+        assert_eq!(handle.parked_page(), "");
     }
 }

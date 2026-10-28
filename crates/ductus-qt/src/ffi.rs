@@ -343,6 +343,9 @@ pub mod qobject {
         -> Result<()>;
         fn save_from(self: &mut LibraryHandle, canvas: &CanvasEngine) -> Result<()>;
         fn close_page(self: &mut LibraryHandle);
+        /// The open page and the one in the other half of a split view trade places.
+        fn swap_open(self: &mut LibraryHandle);
+        fn parked_page(self: &LibraryHandle) -> String;
         fn accepts_pictures(self: &LibraryHandle) -> bool;
         /// After the PDF page at `view_y`; reload the page afterwards.
         fn insert_blank_sheet(

@@ -544,18 +544,6 @@
         <translation>Téléchargez d’abord la reconnaissance nécessaire.</translation>
     </message>
     <message>
-        <source>No page open</source>
-        <translation>Aucune page ouverte</translation>
-    </message>
-    <message>
-        <source>Pick a page in the notebook list, or start a new one.</source>
-        <translation>Choisissez une page dans la liste des carnets ou commencez-en une nouvelle.</translation>
-    </message>
-    <message>
-        <source>New page…</source>
-        <translation>Nouvelle page…</translation>
-    </message>
-    <message>
         <source>Show or hide notebooks (%1)</source>
         <translation>Afficher ou masquer les carnets (%1)</translation>
     </message>
@@ -1020,6 +1008,10 @@ Bibliothèque : %1</translation>
         <translation>Nouvelle section</translation>
     </message>
     <message>
+        <source>Open side by side</source>
+        <translation>Ouvrir côte à côte</translation>
+    </message>
+    <message>
         <source>New folder inside</source>
         <translation>Nouveau dossier à l’intérieur</translation>
     </message>
@@ -1104,6 +1096,21 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     <message>
         <source>Open library folder…</source>
         <translation>Ouvrir le dossier de la bibliothèque…</translation>
+    </message>
+</context>
+<context>
+    <name>PagePane</name>
+    <message>
+        <source>No page open</source>
+        <translation>Aucune page ouverte</translation>
+    </message>
+    <message>
+        <source>Pick a page in the notebook list, or start a new one.</source>
+        <translation>Choisissez une page dans la liste des carnets ou commencez-en une nouvelle.</translation>
+    </message>
+    <message>
+        <source>New page…</source>
+        <translation>Nouvelle page…</translation>
     </message>
 </context>
 <context>

@@ -116,6 +116,11 @@ class AppController : public QObject
     Q_PROPERTY(QStringList openPages READ openPages NOTIFY openPagesChanged)
     /// The tab a single click reuses, until the page is kept or written on; "" for none.
     Q_PROPERTY(QString previewPage READ previewPage NOTIFY openPagesChanged)
+    /// Side by side: the canvas of the half that isn't active, its tabs, page and preview.
+    Q_PROPERTY(InkCanvas *otherCanvas READ otherCanvas WRITE setOtherCanvas NOTIFY canvasChanged)
+    Q_PROPERTY(QStringList otherPages READ otherPages NOTIFY openPagesChanged)
+    Q_PROPERTY(QString otherPage READ otherPage NOTIFY openPagesChanged)
+    Q_PROPERTY(QString otherPreview READ otherPreview NOTIFY openPagesChanged)
     Q_PROPERTY(InkCanvas *canvas READ canvas WRITE setCanvas NOTIFY canvasChanged)
     Q_PROPERTY(QString pdfProblem READ pdfProblem CONSTANT)
     /// The shown view's: 1 notes, 2 PDFs, 4 other files, 8 hide folders without those.
@@ -146,6 +151,11 @@ public:
     QString currentTitle() const;
     QStringList openPages() const { return m_openPages; }
     QString previewPage() const { return m_previewPage; }
+    InkCanvas *otherCanvas() const { return m_other.canvas; }
+    void setOtherCanvas(InkCanvas *canvas);
+    QStringList otherPages() const { return m_other.tabs; }
+    QString otherPage() const;
+    QString otherPreview() const { return m_other.preview; }
     bool holdRecent() const { return m_holdRecent; }
     void setHoldRecent(bool hold);
     InkCanvas *canvas() const { return m_canvas; }
@@ -181,6 +191,12 @@ public:
     Q_INVOKABLE void openInNewTab(const QString &path);
     /// A preview tab stays open as a normal one.
     Q_INVOKABLE void keepTab(const QString &path);
+    /// That canvas's half of a split view becomes the one the ribbon, pen bar and keys act on.
+    Q_INVOKABLE void activate(InkCanvas *canvas);
+    /// Into the half with that canvas, from the other one or the sidebar.
+    Q_INVOKABLE void moveTab(const QString &path, InkCanvas *to);
+    /// In the half beside the active one, which splits the view.
+    Q_INVOKABLE void openBeside(const QString &path);
     Q_INVOKABLE void closeTab(const QString &path);
     /// The tab `delta` places to the right, wrapping around.
     Q_INVOKABLE void switchTab(int delta);
@@ -324,9 +340,9 @@ private:
     void storeExpanded();
     /// The starter page it created in an empty library, else "".
     QString ensureStarterContent();
-    /// Each library reopens its own last page; "" forgets it.
-    void rememberPage(const QString &path);
-    QString rememberedPage() const;
+    /// Each library reopens its tabs, in both halves of a split.
+    void storePanes();
+    void hookCanvas(InkCanvas *canvas);
     void showPage(const QString &path, bool newTab);
     /// Stores the tabs for this library.
     void setOpenPages(const QStringList &pages);
@@ -396,12 +412,23 @@ private:
     QString m_notebookFocus;
     QStringList m_openPages;
     QString m_previewPage;
+    /// The canvas QML set first: the left half, so a split comes back on the same sides.
+    QPointer<InkCanvas> m_first;
     bool m_holdRecent = false;
     /// Pages opened while Recent was held, oldest first.
     QStringList m_heldRecent;
     struct View { double zoom, x, y; };
     /// Where each tab was scrolled to, kept while it is open.
     QHash<QString, View> m_views;
+    /// The inactive half; `activate` trades it with the fields above.
+    struct Pane {
+        QPointer<InkCanvas> canvas;
+        QStringList tabs;
+        QString preview;
+        QHash<QString, View> views;
+        quint64 savedRevision = 0;
+    };
+    Pane m_other;
     quint64 m_savedRevision = 0;
     bool m_dirty = false;
     void setDirty(bool dirty);

@@ -87,6 +87,7 @@ InkCanvas::InkCanvas(QQuickItem *parent)
     , m_engine(new_canvas_engine())
     , m_penColor(QColor::fromRgbF(0.1f, 0.1f, 0.12f))
 {
+    s_canvases << this;
     setFlag(ItemHasContents);
     setAcceptedMouseButtons(Qt::LeftButton | Qt::MiddleButton);
     setAcceptHoverEvents(true);
@@ -120,6 +121,7 @@ InkCanvas::InkCanvas(QQuickItem *parent)
 
 InkCanvas::~InkCanvas()
 {
+    s_canvases.removeAll(this);
     hideCursor(false);
 }
 
@@ -803,8 +805,13 @@ bool InkCanvas::eventFilter(QObject *watched, QEvent *event)
     case QEvent::TabletPress:
     case QEvent::TabletMove:
     case QEvent::TabletRelease:
-        if (watched == window())
+        if (watched == window()) {
+            if (otherTakesPen(static_cast<QTabletEvent *>(event)->scenePosition())) {
+                hidePenTip();
+                return false;
+            }
             return handleTablet(static_cast<QTabletEvent *>(event));
+        }
         break;
     case QEvent::MouseMove:
         // Some systems move the mouse along with the pen; only a mouse on its own counts.
@@ -816,6 +823,24 @@ bool InkCanvas::eventFilter(QObject *watched, QEvent *event)
         break;
     }
     return QQuickItem::eventFilter(watched, event);
+}
+
+bool InkCanvas::otherTakesPen(QPointF scenePosition) const
+{
+    if (m_tabletGrab || m_tabletForward)
+        return false;
+    const InkCanvas *forwarder = nullptr;
+    for (const InkCanvas *other : std::as_const(s_canvases)) {
+        if (other->window() != window())
+            continue;
+        if (other != this
+            && (other->m_tabletGrab || other->m_tabletForward || other->ownsScenePoint(scenePosition)))
+            return true;
+        if (!forwarder && other->isVisible())
+            forwarder = other;
+    }
+    // Off every page only one of them turns the pen into a mouse.
+    return !ownsScenePoint(scenePosition) && forwarder && forwarder != this;
 }
 
 bool InkCanvas::ownsScenePoint(QPointF scenePosition) const
@@ -905,6 +930,8 @@ bool InkCanvas::handleTablet(QTabletEvent *event)
         return true;
     }
     event->accept();
+    if (press)
+        Q_EMIT pressed();
     m_penSeen.restart();
     hideCursor(true);
     // Otherwise the control the pen last pointed at stays hovered, with its tooltip.
@@ -981,6 +1008,7 @@ void InkCanvas::mousePressEvent(QMouseEvent *event)
         event->ignore();
         return;
     }
+    Q_EMIT pressed();
     hidePenTip();
     if (event->button() == Qt::MiddleButton) {
         m_mousePanning = true;
@@ -1049,6 +1077,8 @@ void InkCanvas::hoverLeaveEvent(QHoverEvent *)
 void InkCanvas::touchEvent(QTouchEvent *event)
 {
     event->accept();
+    if (event->type() == QEvent::TouchBegin)
+        Q_EMIT pressed();
     // Palm rejection: a hand resting on the screen while writing must not pan.
     if (m_penSeen.isValid() && m_penSeen.elapsed() < m_palmRejection) {
         if (m_touchDrawing) {
@@ -1220,6 +1250,18 @@ void InkCanvas::hidePenTip()
 void InkCanvas::geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry)
 {
     QQuickItem::geometryChange(newGeometry, oldGeometry);
+    const qreal oldWidth = oldGeometry.width();
+    const qreal newWidth = newGeometry.width();
+    if (window() && oldWidth <= 0 && newWidth > 0) {
+        // A page loaded while hidden (the other half of a split) is laid out for its real size.
+        m_engine->set_viewport(newWidth, newGeometry.height(), window()->effectiveDevicePixelRatio());
+        m_engine->reset_view();
+        viewMoved();
+    } else if (oldWidth > 0 && newWidth > 0 && !qFuzzyCompare(oldWidth, newWidth)) {
+        // The page stays centred when the canvas narrows or widens, e.g. beside another page.
+        m_engine->pan_by((newWidth - oldWidth) / 2, 0);
+        viewMoved();
+    }
     update();
 }
 

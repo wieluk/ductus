@@ -544,18 +544,6 @@
         <translation>Primeiro baixe o reconhecedor para isso.</translation>
     </message>
     <message>
-        <source>No page open</source>
-        <translation>Nenhuma página aberta</translation>
-    </message>
-    <message>
-        <source>Pick a page in the notebook list, or start a new one.</source>
-        <translation>Escolha uma página na lista de cadernos ou comece uma nova.</translation>
-    </message>
-    <message>
-        <source>New page…</source>
-        <translation>Nova página…</translation>
-    </message>
-    <message>
         <source>Show or hide notebooks (%1)</source>
         <translation>Mostrar ou ocultar cadernos (%1)</translation>
     </message>
@@ -1020,6 +1008,10 @@ Biblioteca: %1</translation>
         <translation>Nova seção</translation>
     </message>
     <message>
+        <source>Open side by side</source>
+        <translation>Abrir lado a lado</translation>
+    </message>
+    <message>
         <source>New folder inside</source>
         <translation>Nova pasta dentro</translation>
     </message>
@@ -1104,6 +1096,21 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
     <message>
         <source>Open library folder…</source>
         <translation>Abrir pasta da biblioteca…</translation>
+    </message>
+</context>
+<context>
+    <name>PagePane</name>
+    <message>
+        <source>No page open</source>
+        <translation>Nenhuma página aberta</translation>
+    </message>
+    <message>
+        <source>Pick a page in the notebook list, or start a new one.</source>
+        <translation>Escolha uma página na lista de cadernos ou comece uma nova.</translation>
+    </message>
+    <message>
+        <source>New page…</source>
+        <translation>Nova página…</translation>
     </message>
 </context>
 <context>
