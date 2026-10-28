@@ -9,9 +9,6 @@ Rectangle {
     required property ApplicationWindow window
     required property InkCanvas canvas
     property string currentTab: "draw"
-    // A tab name saved by an older version falls back to Draw.
-    onCurrentTabChanged: if (["file", "draw", "insert", "page", "view"].indexOf(currentTab) < 0)
-                             currentTab = "draw"
     /// A narrow window, such as a phone: less text, more scrolling.
     property bool compact: false
     readonly property bool mobile: Qt.platform.os === "android" || Qt.platform.os === "ios"

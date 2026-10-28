@@ -385,7 +385,7 @@ fn trash_restores_entries_where_they_were() {
 }
 
 #[test]
-fn trash_purges_and_reads_entries_from_before_the_index() {
+fn trash_purges_and_empties() {
     let (_d, mut lib) = lib();
     lib.create_page("", "Gone", PageSettings::default())
         .unwrap();
@@ -393,18 +393,8 @@ fn trash_purges_and_reads_entries_from_before_the_index() {
     lib.purge(&id).unwrap();
     assert!(lib.trash().unwrap().is_empty());
 
-    let trash = lib.data_dir().join("trash");
-    fs::write(
-        trash.join("1700000000 Old notes.svg"),
-        write_page(&page_with_stroke("x")),
-    )
-    .unwrap();
-    let entries = lib.trash().unwrap();
-    assert_eq!(entries.len(), 1);
-    assert_eq!(entries[0].original, "Old notes");
-    assert_eq!(entries[0].deleted, 1_700_000_000_000);
-    assert_eq!(lib.restore(&entries[0].id).unwrap(), "Old notes");
-
+    lib.create_page("", "Old notes", PageSettings::default())
+        .unwrap();
     lib.delete("Old notes").unwrap();
     lib.empty_trash().unwrap();
     assert!(lib.trash().unwrap().is_empty());

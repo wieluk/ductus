@@ -11,12 +11,11 @@ use std::time::{Duration, SystemTime};
 const MAX_DEPTH: usize = 48;
 /// Coarse file timestamps could hide a second change this soon after the first.
 const SETTLE: Duration = Duration::from_secs(2);
-/// The old name stays so existing favorites survive.
-const FAVORITES_FILE: &str = "quick-access.json";
+const FAVORITES_FILE: &str = "favorites.json";
 const NOTEBOOK_ORDER_FILE: &str = "notebook-order.json";
 const RECENT_FILE: &str = "recent.json";
 const RECENT_LIMIT: usize = 8;
-/// Present once the folders that were notebooks before marking existed are marked.
+/// Present once this device has made the library's folders with pages notebooks.
 const NOTEBOOKS_MARKED: &str = "notebooks-marked";
 /// Lists of paths that follow renames and deletes.
 const PATH_LISTS: [&str; 3] = [FAVORITES_FILE, NOTEBOOK_ORDER_FILE, RECENT_FILE];
@@ -142,7 +141,7 @@ impl Library {
                 .any(|n| n.kind == NodeKind::Folder && self.holds_files(&n.path, filter))
     }
 
-    /// Libraries from before marked notebooks: the topmost folders with pages become notebooks once.
+    /// A library first opened on this device: the topmost folders with pages become notebooks once.
     pub(crate) fn mark_existing_notebooks(&self) -> Result<(), Error> {
         fn walk(lib: &Library, folder: &str, out: &mut Vec<String>) {
             if depth(folder) > MAX_DEPTH {

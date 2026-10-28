@@ -498,14 +498,7 @@ void AppController::rememberPage(const QString &path)
 
 QString AppController::rememberedPage() const
 {
-    QSettings settings;
-    const QVariantMap pages = settings.value(QStringLiteral("library/lastPages")).toMap();
-    if (pages.contains(libraryPath()))
-        return pages.value(libraryPath()).toString();
-    // Older versions kept one last page; the first library opened gets it.
-    const QString old = settings.value(QStringLiteral("library/lastPage")).toString();
-    settings.remove(QStringLiteral("library/lastPage"));
-    return old;
+    return QSettings().value(QStringLiteral("library/lastPages")).toMap().value(libraryPath()).toString();
 }
 
 void AppController::closePage()
@@ -937,18 +930,7 @@ QString AppController::dataDir()
     if (!dir.isEmpty())
         return dir;
     // Local app data on Windows: history and models are large and per device.
-    const QString local = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
-    const QString roaming = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    if (local != roaming) {
-        // Older versions used the roaming folder.
-        for (const QString &name : {QStringLiteral("libraries"), QStringLiteral("models")}) {
-            const QString from = roaming + QLatin1Char('/') + name;
-            const QString to = local + QLatin1Char('/') + name;
-            if (QFileInfo(from).isDir() && !QFileInfo::exists(to) && QDir().mkpath(local))
-                QDir().rename(from, to);
-        }
-    }
-    return local;
+    return QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
 }
 
 void AppController::showLibraryData()
