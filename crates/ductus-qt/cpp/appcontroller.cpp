@@ -789,7 +789,7 @@ QString AppController::addNotebook(const QString &location, const QString &name,
     m_expanded.insert(folder);
     storeExpanded();
     if (!page.isEmpty())
-        openPage(page);
+        openInNewTab(page);
     else
         refreshTree();
     Q_EMIT revealRequested(folder);
@@ -802,7 +802,7 @@ QString AppController::addPage(const QString &folder, const QString &name)
         return {};
     const QString path = createPage(folder, name);
     if (!path.isEmpty()) {
-        openPage(path);
+        openInNewTab(path);
         Q_EMIT revealRequested(path);
     }
     return path;
@@ -1142,7 +1142,7 @@ QString AppController::restoreFromTrash(const QString &id)
     if (QFileInfo(libraryPath() + QLatin1Char('/') + rel).isDir())
         reveal(rel);
     else
-        openPage(rel);
+        openInNewTab(rel);
     Q_EMIT notice(tr("\u201c%1\u201d is back.").arg(rel.section(QLatin1Char('/'), -1)));
     return rel;
 }
@@ -1209,7 +1209,7 @@ QString AppController::copyVersion(const QString &path, double saved)
     m_keepVisible = rel;
     refreshTree();
     refreshIndex();
-    openPage(rel);
+    openInNewTab(rel);
     return rel;
 }
 
@@ -1379,7 +1379,7 @@ QString AppController::importPdf(const QString &fileOrUrl, bool annotate, const 
     attempt([&] { path = toQ((*m_library)->import_pdf(toStd(folder), toStd(file), annotate)); });
     if (path.isEmpty())
         return {};
-    openPage(path);
+    openInNewTab(path);
     Q_EMIT revealRequested(path);
     refreshIndex();
     Q_EMIT notice(annotate ? tr("PDF added. Your ink is saved into the PDF itself.")
@@ -1438,7 +1438,7 @@ void AppController::finishImport(const QString &folder, const QString &name)
     refreshTree();
     refreshIndex();
     if (!result.page.empty())
-        openPage(toQ(result.page));
+        openInNewTab(toQ(result.page));
     locate(root);
     const QString warnings = toQ(result.warnings);
     const QString place = tr("Imported into %1.").arg(placeLabel(folder));
@@ -1643,7 +1643,7 @@ QString AppController::openFile(const QString &fileOrUrl)
         QString rel = file.mid(root.size());
         if (suffix == u"svg")
             rel.chop(4);
-        openPage(rel);
+        openInNewTab(rel);
         return {};
     }
     if (suffix == u"pdf")
@@ -1653,7 +1653,7 @@ QString AppController::openFile(const QString &fileOrUrl)
     if (ensureFolder(folder))
         attempt([&] { path = toQ((*m_library)->import_page(toStd(folder), toStd(info.absoluteFilePath()))); });
     if (!path.isEmpty()) {
-        openPage(path);
+        openInNewTab(path);
         Q_EMIT revealRequested(path);
         Q_EMIT notice(tr("Page copied into %1.").arg(placeLabel(folder)));
     }

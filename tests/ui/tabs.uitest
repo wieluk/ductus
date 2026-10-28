@@ -1,4 +1,4 @@
-# Pages open in tabs: a sidebar click uses the current tab, Open in new tab adds one; each keeps its view.
+# New pages open in new tabs; a sidebar click uses the current tab, Open in new tab adds one; each keeps its view.
 size 1280 800
 click-item sidebarNewNotebook
 type Physics
@@ -13,6 +13,11 @@ right-click-item row_Physics
 click-item menuNewPage
 type Waves
 key Return
+expect-text pageTitle Waves
+expect-prop pageTab_Physics/Optics active false
+click-item closePage
+expect-text pageTitle Optics
+click-item row_Physics/Waves
 expect-text pageTitle Waves
 expect-hidden pageTab_Physics/Optics
 right-click-item row_Physics/Optics
@@ -39,6 +44,8 @@ expect-prop pageTab_Physics/Sound active false
 key Ctrl+W
 expect-text pageTitle Sound
 expect-hidden pageTab_Physics/Optics
-# Closing the last tab leaves no page open.
+# Closing every tab leaves no page open.
+click-item closePage
+click-item closePage
 click-item closePage
 expect-prop noPage visible true
