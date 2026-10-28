@@ -1109,6 +1109,10 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
 <context>
     <name>PageTabs</name>
     <message>
+        <source>Preview: the next page you open replaces it. Double-click to keep it.</source>
+        <translation>Vista previa: la próxima página que abras la sustituye. Haz doble clic para conservarla.</translation>
+    </message>
+    <message>
         <source>Close page (Ctrl+W)</source>
         <translation>Cerrar página (Ctrl+W)</translation>
     </message>

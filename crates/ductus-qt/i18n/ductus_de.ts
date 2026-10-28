@@ -1109,6 +1109,10 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
 <context>
     <name>PageTabs</name>
     <message>
+        <source>Preview: the next page you open replaces it. Double-click to keep it.</source>
+        <translation>Vorschau: Die nächste Seite, die du öffnest, ersetzt sie. Doppelklicken, um sie zu behalten.</translation>
+    </message>
+    <message>
         <source>Close page (Ctrl+W)</source>
         <translation>Seite schließen (Strg+W)</translation>
     </message>

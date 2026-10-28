@@ -1,4 +1,4 @@
-# New pages open in new tabs; a sidebar click uses the current tab, Open in new tab adds one; each keeps its view.
+# New pages open in new tabs; a sidebar click uses the preview tab, Open in new tab adds one; each keeps its view.
 size 1280 800
 click-item sidebarNewNotebook
 type Physics
@@ -17,19 +17,30 @@ expect-text pageTitle Waves
 expect-prop pageTab_Physics/Optics active false
 click-item closePage
 expect-text pageTitle Optics
+# A single click opens a preview tab beside the open one; the next click reuses it.
 click-item row_Physics/Waves
 expect-text pageTitle Waves
-expect-hidden pageTab_Physics/Optics
-right-click-item row_Physics/Optics
-click-item menuOpenInNewTab
+expect-prop pageTab_Physics/Optics active false
+expect-prop pageTab_Physics/Waves preview true
+click-item closeTab_Physics/Optics
+click-item row_Physics/Optics
 expect-text pageTitle Optics
-expect-prop pageTab_Physics/Waves active false
+expect-hidden pageTab_Physics/Waves
+expect-prop pageTab_Physics/Optics preview true
+# Writing on a preview keeps it.
+pen p=0.6 600,400 700,420
+expect-prop pageTab_Physics/Optics preview false
+right-click-item row_Physics/Waves
+click-item menuOpenInNewTab
+expect-text pageTitle Waves
+expect-prop pageTab_Physics/Waves preview false
+click-item pageTab_Physics/Optics
 key Ctrl+=
 expect-prop canvas zoom 1.25
 click-item pageTab_Physics/Waves
 expect-text pageTitle Waves
 expect-prop canvas zoom 1
-key Ctrl+Tab
+key Ctrl+PgUp
 expect-text pageTitle Optics
 expect-prop canvas zoom 1.25
 shot tabs

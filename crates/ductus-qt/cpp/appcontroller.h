@@ -114,6 +114,8 @@ class AppController : public QObject
     Q_PROPERTY(QString currentTitle READ currentTitle NOTIFY currentPageChanged)
     /// The pages open as tabs in the title bar, in order; the current one among them.
     Q_PROPERTY(QStringList openPages READ openPages NOTIFY openPagesChanged)
+    /// The tab a single click reuses, until the page is kept or written on; "" for none.
+    Q_PROPERTY(QString previewPage READ previewPage NOTIFY openPagesChanged)
     Q_PROPERTY(InkCanvas *canvas READ canvas WRITE setCanvas NOTIFY canvasChanged)
     Q_PROPERTY(QString pdfProblem READ pdfProblem CONSTANT)
     /// The shown view's: 1 notes, 2 PDFs, 4 other files, 8 hide folders without those.
@@ -143,6 +145,7 @@ public:
     QString currentPage() const;
     QString currentTitle() const;
     QStringList openPages() const { return m_openPages; }
+    QString previewPage() const { return m_previewPage; }
     bool holdRecent() const { return m_holdRecent; }
     void setHoldRecent(bool hold);
     InkCanvas *canvas() const { return m_canvas; }
@@ -173,9 +176,11 @@ public:
     Q_INVOKABLE void storageQuestionAnswered();
     /// Moves the notes to Documents/Ductus, asking for access first where needed.
     Q_INVOKABLE void useSharedStorage();
-    /// In the current tab, or the page's own tab when it has one.
+    /// In the preview tab, or the page's own tab when it has one.
     Q_INVOKABLE void openPage(const QString &path);
     Q_INVOKABLE void openInNewTab(const QString &path);
+    /// A preview tab stays open as a normal one.
+    Q_INVOKABLE void keepTab(const QString &path);
     Q_INVOKABLE void closeTab(const QString &path);
     /// The tab `delta` places to the right, wrapping around.
     Q_INVOKABLE void switchTab(int delta);
@@ -390,6 +395,7 @@ private:
     QString m_folderFocus;
     QString m_notebookFocus;
     QStringList m_openPages;
+    QString m_previewPage;
     bool m_holdRecent = false;
     /// Pages opened while Recent was held, oldest first.
     QStringList m_heldRecent;

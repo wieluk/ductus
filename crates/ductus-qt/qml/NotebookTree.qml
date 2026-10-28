@@ -536,6 +536,7 @@ Rectangle {
                     acceptedButtons: Qt.LeftButton
                     acceptedModifiers: Qt.NoModifier
                     onTapped: row.activate()
+                    onDoubleTapped: if (row.isPage) AppController.keepTab(row.path)
                     // At the touch point: touch does not move the cursor.
                     onLongPressed: if (!row.placeholder) rowMenu.popup(point.position.x, point.position.y)
                 }

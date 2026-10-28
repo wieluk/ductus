@@ -1109,6 +1109,10 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
 <context>
     <name>PageTabs</name>
     <message>
+        <source>Preview: the next page you open replaces it. Double-click to keep it.</source>
+        <translation>Anteprima: la prossima pagina che apri la sostituisce. Fai doppio clic per tenerla.</translation>
+    </message>
+    <message>
         <source>Close page (Ctrl+W)</source>
         <translation>Chiudi pagina (Ctrl+W)</translation>
     </message>

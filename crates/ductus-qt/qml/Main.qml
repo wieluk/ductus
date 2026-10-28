@@ -256,7 +256,11 @@ ApplicationWindow {
     Shortcut { sequences: [StandardKey.Save]; onActivated: AppController.saveNow() }
     Shortcut { sequence: "Ctrl+W"; onActivated: AppController.closePage() }
     Shortcut { sequences: [StandardKey.NextChild, "Ctrl+PgDown"]; onActivated: AppController.switchTab(1) }
-    Shortcut { sequences: [StandardKey.PreviousChild, "Ctrl+PgUp"]; onActivated: AppController.switchTab(-1) }
+    Shortcut {
+        sequences: [StandardKey.PreviousChild, "Ctrl+Shift+Tab", "Ctrl+PgUp"]
+        onActivated: AppController.switchTab(-1)
+        onActivatedAmbiguously: AppController.switchTab(-1)
+    }
     // Not StandardKey.Quit: on Linux that is Ctrl+Q as well.
     Shortcut { sequence: "Ctrl+Q"; onActivated: Qt.quit() }
     Shortcut { sequences: [StandardKey.Print]; onActivated: AppController.print() }

@@ -43,15 +43,18 @@ Rectangle {
             id: tab
             required property string modelData
             readonly property bool active: modelData === AppController.currentPage
+            readonly property bool preview: modelData === AppController.previewPage
             objectName: "pageTab_" + modelData
             height: ListView.view.height
             width: Math.min(220, pageIcon.width + title.implicitWidth + close.width + 26)
             z: active ? 1 : 0
             focusPolicy: Qt.NoFocus
             onClicked: AppController.openPage(modelData)
+            onDoubleClicked: AppController.keepTab(modelData)
             ToolTip.visible: hovered && !close.hovered
             ToolTip.delay: 600
             ToolTip.text: AppController.displayName(AppController.parentOf(modelData))
+                          + (preview ? "\n" + qsTr("Preview: the next page you open replaces it. Double-click to keep it.") : "")
 
             TapHandler {
                 acceptedButtons: Qt.MiddleButton
@@ -94,6 +97,7 @@ Rectangle {
                     color: tab.active ? Theme.text : Theme.textMuted
                     font.pixelSize: 12
                     font.weight: tab.active ? Font.DemiBold : Font.Normal
+                    font.italic: tab.preview
                     elide: Text.ElideRight
                 }
                 ToolButton {

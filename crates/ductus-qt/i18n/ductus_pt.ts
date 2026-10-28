@@ -1109,6 +1109,10 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
 <context>
     <name>PageTabs</name>
     <message>
+        <source>Preview: the next page you open replaces it. Double-click to keep it.</source>
+        <translation>Prévia: a próxima página que você abrir a substitui. Clique duas vezes para mantê-la.</translation>
+    </message>
+    <message>
         <source>Close page (Ctrl+W)</source>
         <translation>Fechar página (Ctrl+W)</translation>
     </message>

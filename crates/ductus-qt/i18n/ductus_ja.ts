@@ -1104,6 +1104,10 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>PageTabs</name>
     <message>
+        <source>Preview: the next page you open replaces it. Double-click to keep it.</source>
+        <translation>プレビュー：次に開いたページに置き換わります。ダブルクリックで残せます。</translation>
+    </message>
+    <message>
         <source>Close page (Ctrl+W)</source>
         <translation>ページを閉じる（Ctrl+W）</translation>
     </message>

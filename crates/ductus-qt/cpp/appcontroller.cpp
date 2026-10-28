@@ -394,9 +394,10 @@ void AppController::openLibrary(const QString &pathOrUrl)
                 tabs << page;
     }
     m_views.clear();
+    m_previewPage.clear();
     setOpenPages(tabs);
     if (!last.isEmpty()) {
-        openPage(last);
+        openInNewTab(last);
     } else {
         if (m_canvas) {
             m_canvas->engine().unload();
@@ -550,6 +551,14 @@ void AppController::openInNewTab(const QString &path)
     showPage(path, true);
 }
 
+void AppController::keepTab(const QString &path)
+{
+    if (path.isEmpty() || path != m_previewPage)
+        return;
+    m_previewPage.clear();
+    Q_EMIT openPagesChanged();
+}
+
 void AppController::closeTab(const QString &path)
 {
     if (path == currentPage()) {
@@ -575,6 +584,8 @@ void AppController::setOpenPages(const QStringList &pages)
 {
     const bool changed = pages != m_openPages;
     m_openPages = pages;
+    if (!pages.contains(m_previewPage))
+        m_previewPage.clear();
     QSettings settings;
     QVariantMap stored = settings.value(QStringLiteral("library/openPages")).toMap();
     if (pages.isEmpty())
@@ -600,6 +611,7 @@ void AppController::followMove(const QString &from, const QString &to)
     QStringList tabs;
     for (const QString &page : std::as_const(m_openPages))
         tabs << moved(page, from, to);
+    m_previewPage = moved(m_previewPage, from, to);
     QHash<QString, View> views;
     for (auto it = m_views.cbegin(); it != m_views.cend(); ++it)
         views.insert(moved(it.key(), from, to), it.value());
@@ -716,16 +728,19 @@ void AppController::showPage(const QString &path, bool newTab)
     rememberPage(path);
     if (!m_openPages.contains(path)) {
         QStringList tabs = m_openPages;
-        const qsizetype at = tabs.indexOf(before);
-        if (at < 0) {
-            tabs << path;
-        } else if (newTab) {
-            tabs.insert(at + 1, path);
+        const qsizetype preview = tabs.indexOf(m_previewPage);
+        if (!newTab && preview >= 0) {
+            m_views.remove(m_previewPage);
+            tabs[preview] = path;
         } else {
-            m_views.remove(before);
-            tabs[at] = path;
+            const qsizetype at = tabs.indexOf(before);
+            tabs.insert(at < 0 ? tabs.size() : at + 1, path);
         }
+        if (!newTab)
+            m_previewPage = path;
         setOpenPages(tabs);
+    } else if (newTab) {
+        keepTab(path);
     }
     if (m_holdRecent)
         m_heldRecent << path;
@@ -1300,6 +1315,8 @@ void AppController::onCanvasEdited()
     if (!m_canvas || m_canvas->revision() == m_savedRevision)
         return;
     setDirty(true);
+    // Writing on a preview keeps its tab.
+    keepTab(currentPage());
     if (autosaveDelay() > 0)
         m_saveTimer.start();
 }

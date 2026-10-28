@@ -1114,6 +1114,10 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>PageTabs</name>
     <message>
+        <source>Preview: the next page you open replaces it. Double-click to keep it.</source>
+        <translation>Предпросмотр: следующая открытая страница заменит её. Дважды щёлкните, чтобы оставить.</translation>
+    </message>
+    <message>
         <source>Close page (Ctrl+W)</source>
         <translation>Закрыть страницу (Ctrl+W)</translation>
     </message>

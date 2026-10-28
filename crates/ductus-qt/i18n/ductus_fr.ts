@@ -1109,6 +1109,10 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
 <context>
     <name>PageTabs</name>
     <message>
+        <source>Preview: the next page you open replaces it. Double-click to keep it.</source>
+        <translation>Aperçu : la prochaine page ouverte la remplace. Double-cliquez pour la garder.</translation>
+    </message>
+    <message>
         <source>Close page (Ctrl+W)</source>
         <translation>Fermer la page (Ctrl+W)</translation>
     </message>
