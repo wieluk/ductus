@@ -249,7 +249,7 @@ Item {
                             onTapped: maths.toggleFavorite(snippet.modelData)
                         }
                         TapHandler {
-                            acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Mouse
+                            acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Mouse | PointerDevice.TouchPad
                             onLongPressed: maths.toggleFavorite(snippet.modelData)
                         }
                     }

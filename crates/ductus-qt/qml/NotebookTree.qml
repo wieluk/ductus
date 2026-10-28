@@ -18,6 +18,15 @@ Rectangle {
     }
     property bool onRight: false
 
+    /// Row menus open now; their rows must not be rebuilt under them.
+    property int openMenus: 0
+    HoverHandler { id: sidebarHover }
+    Binding {
+        target: AppController
+        property: "holdRecent"
+        value: sidebarHover.hovered || sidebar.openMenus > 0
+    }
+
     // Dragging a row with mouse or pen (touch scrolls).
     property string dragging: ""
     property string draggingName: ""
@@ -29,14 +38,14 @@ Rectangle {
         return item && item.path !== undefined && item.path !== dragging && !item.quick ? item : null
     }
 
-    /// Onto a folder: into it. Onto a page: its place, or its folder.
+    /// Onto a folder or a notebook's add row: into it. Onto a page: its place, or its folder.
     function dropDragged() {
         const target = dropTarget
         const path = dragging
         dragging = ""
         if (!target)
             return
-        if (target.isFolder) {
+        if (target.isFolder || target.placeholder) {
             if (target.path !== AppController.parentOf(path))
                 AppController.moveTo(path, target.path)
             return
@@ -51,6 +60,7 @@ Rectangle {
 
     signal deleteRequested(string path, string name, bool isFolder)
     signal openFolderRequested()
+    signal collapseRequested()
     /// "" for the default place.
     signal newPageRequested(string folder)
     signal newNotebookRequested(string location)
@@ -118,15 +128,18 @@ Rectangle {
             spacing: 0
 
             Repeater {
-                model: [{ notebooks: false, label: qsTr("Folders") },
-                        { notebooks: true, label: qsTr("Notebooks") }]
+                model: [{ notebooks: true, label: qsTr("Notebooks") },
+                        { notebooks: false, label: qsTr("Folders") }]
                 delegate: AbstractButton {
                     id: viewButton
                     required property var modelData
                     readonly property bool active: AppController.notebookView === modelData.notebooks
                     objectName: modelData.notebooks ? "viewNotebooks" : "viewFolders"
                     implicitHeight: 28
-                    implicitWidth: viewLabel.implicitWidth + 16
+                    implicitWidth: viewLabel.implicitWidth + 12
+                    // A narrow sidebar shortens the names rather than pushing the buttons out.
+                    Layout.fillWidth: true
+                    Layout.maximumWidth: implicitWidth
                     focusPolicy: Qt.NoFocus
                     onClicked: AppController.notebookView = modelData.notebooks
                     // Hidden once pressed, until the pointer leaves.
@@ -141,6 +154,7 @@ Rectangle {
                     contentItem: Label {
                         id: viewLabel
                         text: viewButton.modelData.label
+                        elide: Text.ElideRight
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                         color: viewButton.active ? Theme.accent : Theme.textMuted
@@ -153,13 +167,24 @@ Rectangle {
                     }
                 }
             }
+            RibbonButton {
+                objectName: AppController.tree.anyExpanded ? "collapseAll" : "expandAll"
+                iconName: AppController.tree.anyExpanded ? "collapse-all" : "expand-all"
+                tip: AppController.tree.anyExpanded ? qsTr("Collapse all") : qsTr("Expand all")
+                implicitHeight: 32
+                implicitWidth: 24
+                padding: 4
+                icon.width: 16
+                icon.height: 16
+                onClicked: AppController.tree.anyExpanded ? AppController.collapseAll() : AppController.expandAll()
+            }
             Item { Layout.fillWidth: true }
             RibbonButton {
                 objectName: "treeFilter"
                 iconName: "filter"
                 tip: qsTr("Show…")
                 implicitHeight: 32
-                implicitWidth: 32
+                implicitWidth: 28
                 checked: AppController.treeFilter !== AppController.defaultTreeFilter
                 onClicked: filterMenu.popup(this, 0, height)
 
@@ -196,12 +221,6 @@ Rectangle {
                         checked: sidebar.hasFilter(8)
                         onTriggered: sidebar.toggleFilter(8)
                     }
-                    AppMenuSeparator {}
-                    AppMenuItem {
-                        objectName: "collapseAll"
-                        text: qsTr("Collapse all")
-                        onTriggered: AppController.collapseAll()
-                    }
                 }
             }
             RibbonButton {
@@ -209,7 +228,7 @@ Rectangle {
                 iconName: "page-add"
                 tip: qsTr("New page…")
                 implicitHeight: 32
-                implicitWidth: 32
+                implicitWidth: 28
                 onClicked: sidebar.newPageRequested("")
             }
             RibbonButton {
@@ -217,7 +236,7 @@ Rectangle {
                 iconName: "plus"
                 tip: qsTr("New notebook…")
                 implicitHeight: 32
-                implicitWidth: 32
+                implicitWidth: 28
                 onClicked: sidebar.newNotebookRequested(AppController.defaultNotebookLocation())
             }
         }
@@ -378,22 +397,67 @@ Rectangle {
             Layout.fillHeight: true
             clip: true
             boundsBehavior: Flickable.StopAtBounds
+            // Mouse and pen drag rows; touch and the wheel scroll.
+            acceptedButtons: Qt.NoButton
             model: AppController.tree
             spacing: 1
             ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
+            // A row dragged to an edge scrolls the list towards rows out of view.
+            Timer {
+                readonly property int edge: 32
+                interval: 16
+                repeat: true
+                running: sidebar.dragging.length > 0
+                         && (sidebar.dragAt.y < edge || sidebar.dragAt.y > list.height - edge)
+                onTriggered: {
+                    const step = sidebar.dragAt.y < edge ? -12 : 12
+                    const end = list.originY + Math.max(0, list.contentHeight - list.height)
+                    list.contentY = Math.max(list.originY, Math.min(end, list.contentY + step))
+                }
+            }
+
             section.property: AppController.tree.hasSections ? "section" : ""
-            section.delegate: Label {
+            section.delegate: Item {
+                id: heading
                 required property string section
+                width: ListView.view.width
                 height: 26
-                leftPadding: 14
-                topPadding: 6
-                text: ({ favorites: qsTr("Favorites"), recent: qsTr("Recent"),
-                         notebooks: qsTr("Notebooks") })[section] || ""
-                color: Theme.textMuted
-                font.pixelSize: 11
-                font.weight: Font.DemiBold
-                font.capitalization: Font.AllUppercase
+                Label {
+                    anchors.left: parent.left
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 2
+                    leftPadding: 14
+                    text: ({ favorites: qsTr("Favorites"), recent: qsTr("Recent"),
+                             notebooks: qsTr("Notebooks") })[heading.section] || ""
+                    color: Theme.textMuted
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    font.capitalization: Font.AllUppercase
+                }
+                AbstractButton {
+                    objectName: "clearRecent"
+                    visible: heading.section === "recent"
+                    anchors.right: parent.right
+                    anchors.rightMargin: 12
+                    anchors.bottom: parent.bottom
+                    height: 22
+                    implicitWidth: clearLabel.implicitWidth + 12
+                    focusPolicy: Qt.NoFocus
+                    onClicked: AppController.clearRecent()
+                    contentItem: Label {
+                        id: clearLabel
+                        text: qsTr("Clear")
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        color: parent.hovered ? Theme.accent : Theme.textMuted
+                        font.pixelSize: 11
+                    }
+                    background: Rectangle {
+                        radius: Theme.radius
+                        color: parent.hovered ? Theme.hover : "transparent"
+                    }
+                }
             }
 
             delegate: Item {
@@ -417,24 +481,28 @@ Rectangle {
                 required property bool isNotebook
                 required property string section
                 required property string notebookName
-                required property bool placeholder
+                required property string kind
+                required property string placeholder
                 // Folders shows which folders are notebooks under another name.
                 readonly property string caption: subtitle.length > 0 ? subtitle
                     : isNotebook && !AppController.notebookView && notebookName !== name
                       ? qsTr("Notebook \u201c%1\u201d").arg(notebookName) : ""
 
-                readonly property bool isSubject: isFolder && depth === 0
+                readonly property bool isSubject: isFolder && depth === 0 && kind === ""
                 // Folders narrows to any folder, Notebooks to one notebook.
                 readonly property bool canFocus: !quick && !placeholder
                     && (AppController.notebookView ? isNotebook && depth === 0 : isFolder)
                 readonly property color mark: color.length > 0 ? color : Theme.accent
 
-                objectName: (placeholder ? "empty_" : section === "recent" ? "recent_" : quick ? "quick_" : "row_") + path
+                objectName: (placeholder === "section" ? "addSection_" : placeholder ? "empty_"
+                             : section === "recent" ? "recent_" : quick ? "quick_" : "row_") + path
                 width: ListView.view.width
                 height: caption.length > 0 ? 42 : 34
 
                 function activate() {
-                    if (row.placeholder)
+                    if (row.placeholder === "section")
+                        AppController.newFolder(row.path, true)
+                    else if (row.placeholder)
                         sidebar.newPageRequested(row.path)
                     else if (row.isFolder && row.quick)
                         AppController.reveal(row.path)
@@ -451,7 +519,8 @@ Rectangle {
                     id: dragger
                     target: null
                     enabled: !row.quick && !row.placeholder && sidebar.renaming !== row.path
-                    acceptedDevices: PointerDevice.Mouse | PointerDevice.Stylus
+                    // Laptops report their pointer as a touchpad, and the pen arrives through it.
+                    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad | PointerDevice.Stylus
                     onActiveChanged: {
                         if (active) {
                             sidebar.dragging = row.path
@@ -467,8 +536,9 @@ Rectangle {
                     acceptedButtons: Qt.LeftButton
                     acceptedModifiers: Qt.NoModifier
                     onTapped: row.activate()
+                    onDoubleTapped: if (row.isPage) AppController.keepTab(row.path)
                     // At the touch point: touch does not move the cursor.
-                    onLongPressed: rowMenu.popup(point.position.x, point.position.y)
+                    onLongPressed: if (!row.placeholder) rowMenu.popup(point.position.x, point.position.y)
                 }
                 // Like a link in a browser: Ctrl or the middle button opens a new tab.
                 TapHandler {
@@ -531,10 +601,13 @@ Rectangle {
                         color: row.mark
                     }
                     IconImage {
-                        visible: (!row.isSubject || row.isNotebook) && !row.placeholder
+                        visible: (!row.isSubject || row.isNotebook) && row.placeholder !== "page"
                         Layout.preferredWidth: 16
                         Layout.preferredHeight: 16
-                        source: Qt.resolvedUrl(row.isNotebook ? "icons/notebooks.svg"
+                        source: Qt.resolvedUrl(row.placeholder ? "icons/plus.svg"
+                                               : row.isNotebook ? "icons/notebooks.svg"
+                                               : row.kind === "section" ? "icons/section.svg"
+                                               : row.kind === "group" ? "icons/section-group.svg"
                                                : row.isFolder ? "icons/folder.svg"
                                                : row.isPdf ? "icons/pdf.svg"
                                                : row.isFile ? "icons/file.svg" : "icons/page.svg")
@@ -548,10 +621,11 @@ Rectangle {
                         spacing: 0
                         Label {
                             Layout.fillWidth: true
-                            text: row.placeholder ? qsTr("No pages yet. Tap to add one.") : row.name
+                            text: row.placeholder === "section" ? qsTr("New section")
+                                  : row.placeholder ? qsTr("No pages yet. Tap to add one.") : row.name
                             elide: Text.ElideRight
                             color: row.isFile || row.placeholder ? Theme.textMuted : Theme.text
-                            font.italic: row.placeholder
+                            font.italic: row.placeholder === "page"
                             font.pixelSize: 13
                             font.weight: (row.isSubject && !row.quick) || row.isCurrent ? Font.DemiBold : Font.Normal
                         }
@@ -595,11 +669,7 @@ Rectangle {
                             sidebar.renaming = ""
                             if (text.trim() === row.name)
                                 return
-                            // Under Notebooks the folder on disk keeps its name.
-                            if (AppController.notebookView && row.isNotebook)
-                                AppController.setNotebook(row.path, text)
-                            else
-                                AppController.rename(row.path, text)
+                            AppController.rename(row.path, text)
                         }
                         onAccepted: commit()
                         onActiveFocusChanged: if (!activeFocus) commit()
@@ -644,7 +714,12 @@ Rectangle {
                     objectName: "rowMenu"
 
                     property int moves: 0
-                    onAboutToShow: moves = AppController.moveOptions(row.path)
+                    onAboutToShow: {
+                        moves = AppController.moveOptions(row.path)
+                        sidebar.openMenus++
+                    }
+                    onAboutToHide: sidebar.openMenus--
+                    Component.onDestruction: if (visible) sidebar.openMenus--
 
                     AppMenuItem {
                         visible: row.isPage
@@ -652,6 +727,13 @@ Rectangle {
                         text: qsTr("Open in new tab")
                         objectName: "menuOpenInNewTab"
                         onTriggered: AppController.openInNewTab(row.path)
+                    }
+                    AppMenuItem {
+                        visible: row.isPage
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("Open side by side")
+                        objectName: "menuOpenBeside"
+                        onTriggered: AppController.openBeside(row.path)
                     }
                     AppMenuItem {
                         visible: row.isFile
@@ -686,7 +768,10 @@ Rectangle {
                         height: visible ? implicitHeight : 0
                         text: AppController.notebookView ? qsTr("New section") : qsTr("New folder inside")
                         objectName: "menuNewFolder"
-                        onTriggered: AppController.newFolder(row.path)
+                        // Beside a section, inside a notebook or group.
+                        onTriggered: AppController.notebookView
+                                     ? AppController.newFolder(row.kind === "section" ? AppController.parentOf(row.path) : row.path, true)
+                                     : AppController.newFolder(row.path)
                     }
                     AppMenuItem {
                         visible: row.isFolder && !row.isNotebook && !AppController.notebookView
@@ -730,7 +815,7 @@ Rectangle {
                     AppMenuItem {
                         visible: !row.quick
                         height: visible ? implicitHeight : 0
-                        text: AppController.notebookView && row.isNotebook ? qsTr("Rename notebook") : qsTr("Rename")
+                        text: qsTr("Rename")
                         objectName: "menuRename"
                         onTriggered: sidebar.renaming = row.path
                     }
@@ -847,10 +932,18 @@ Rectangle {
         }
         RowLayout {
             Layout.fillWidth: true
-            Layout.leftMargin: 14
+            Layout.leftMargin: 6
             Layout.rightMargin: 6
             Layout.topMargin: 4
             Layout.bottomMargin: 4
+            RibbonButton {
+                objectName: "sidebarCollapse"
+                iconName: "sidebar"
+                tip: qsTr("Show or hide notebooks (%1)").arg("Ctrl+\\")
+                implicitHeight: 30
+                implicitWidth: 30
+                onClicked: sidebar.collapseRequested()
+            }
             Label {
                 objectName: "libraryLabel"
                 Layout.fillWidth: true

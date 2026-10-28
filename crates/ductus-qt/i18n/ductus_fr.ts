@@ -100,6 +100,10 @@
         <translation>Impossible d’enregistrer le PDF à cet endroit.</translation>
     </message>
     <message>
+        <source>New section</source>
+        <translation>Nouvelle section</translation>
+    </message>
+    <message>
         <source>Exported to %1</source>
         <translation>Exporté vers %1</translation>
     </message>
@@ -540,16 +544,8 @@
         <translation>Téléchargez d’abord la reconnaissance nécessaire.</translation>
     </message>
     <message>
-        <source>No page open</source>
-        <translation>Aucune page ouverte</translation>
-    </message>
-    <message>
-        <source>Pick a page in the notebook list, or start a new one.</source>
-        <translation>Choisissez une page dans la liste des carnets ou commencez-en une nouvelle.</translation>
-    </message>
-    <message>
-        <source>New page…</source>
-        <translation>Nouvelle page…</translation>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Afficher ou masquer les carnets (%1)</translation>
     </message>
     <message>
         <source>Choose a library folder</source>
@@ -936,6 +932,10 @@ Bibliothèque : %1</translation>
         <translation>Tout replier</translation>
     </message>
     <message>
+        <source>Expand all</source>
+        <translation>Tout déplier</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>Nouvelle page…</translation>
     </message>
@@ -962,6 +962,10 @@ Bibliothèque : %1</translation>
     <message>
         <source>Recent</source>
         <translation>Récents</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>Effacer</translation>
     </message>
     <message>
         <source>Notebook “%1”</source>
@@ -1004,6 +1008,10 @@ Bibliothèque : %1</translation>
         <translation>Nouvelle section</translation>
     </message>
     <message>
+        <source>Open side by side</source>
+        <translation>Ouvrir côte à côte</translation>
+    </message>
+    <message>
         <source>New folder inside</source>
         <translation>Nouveau dossier à l’intérieur</translation>
     </message>
@@ -1034,10 +1042,6 @@ Bibliothèque : %1</translation>
     <message>
         <source>Show in file manager</source>
         <translation>Afficher dans le gestionnaire de fichiers</translation>
-    </message>
-    <message>
-        <source>Rename notebook</source>
-        <translation>Renommer le carnet</translation>
     </message>
     <message>
         <source>Rename</source>
@@ -1086,12 +1090,35 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Afficher tous les fichiers</translation>
     </message>
     <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Afficher ou masquer les carnets (%1)</translation>
+    </message>
+    <message>
         <source>Open library folder…</source>
         <translation>Ouvrir le dossier de la bibliothèque…</translation>
     </message>
 </context>
 <context>
+    <name>PagePane</name>
+    <message>
+        <source>No page open</source>
+        <translation>Aucune page ouverte</translation>
+    </message>
+    <message>
+        <source>Pick a page in the notebook list, or start a new one.</source>
+        <translation>Choisissez une page dans la liste des carnets ou commencez-en une nouvelle.</translation>
+    </message>
+    <message>
+        <source>New page…</source>
+        <translation>Nouvelle page…</translation>
+    </message>
+</context>
+<context>
     <name>PageTabs</name>
+    <message>
+        <source>Preview: the next page you open replaces it. Double-click to keep it.</source>
+        <translation>Aperçu : la prochaine page ouverte la remplace. Double-cliquez pour la garder.</translation>
+    </message>
     <message>
         <source>Close page (Ctrl+W)</source>
         <translation>Fermer la page (Ctrl+W)</translation>
@@ -1160,6 +1187,10 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Ajouter un stylo ou un outil</translation>
     </message>
     <message>
+        <source>Full screen (F11)</source>
+        <translation>Plein écran (F11)</translation>
+    </message>
+    <message>
         <source>Add the current pen</source>
         <translation>Ajouter le stylo actuel</translation>
     </message>
@@ -1216,6 +1247,17 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Retirer de la barre</translation>
     </message>
     <message>
+        <source>Up</source>
+        <translation>Vers le haut</translation>
+    </message>
+    <message>
+        <source>Down</source>
+        <translation>Vers le bas</translation>
+    </message>
+</context>
+<context>
+    <name>PenOptions</name>
+    <message>
         <source>Choose a color</source>
         <translation>Choisir une couleur</translation>
     </message>
@@ -1234,14 +1276,6 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     <message>
         <source>Line</source>
         <translation>Ligne</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>Vers le haut</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>Vers le bas</translation>
     </message>
 </context>
 <context>
@@ -1278,18 +1312,6 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
 <context>
     <name>Ribbon</name>
     <message>
-        <source>Fine</source>
-        <translation>Fin</translation>
-    </message>
-    <message>
-        <source>Medium</source>
-        <translation>Moyen</translation>
-    </message>
-    <message>
-        <source>Bold</source>
-        <translation>Gras</translation>
-    </message>
-    <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
         <translation>Importer des notes de Xournal++, Rnote ou OneNote : un fichier ou tout un dossier de carnet</translation>
     </message>
@@ -1308,14 +1330,6 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Lasso : entourez l’encre pour la sélectionner, puis faites-la glisser, copiez-la ou supprimez-la</translation>
     </message>
     <message>
-        <source>Narrow</source>
-        <translation>Étroit</translation>
-    </message>
-    <message>
-        <source>Wide</source>
-        <translation>Large</translation>
-    </message>
-    <message>
         <source>Hand: drag text, formulas and pictures to move them, their corners to resize; elsewhere it scrolls</source>
         <translation>Main : faites glisser textes, formules et images pour les déplacer, leurs coins pour les redimensionner ; ailleurs elle fait défiler</translation>
     </message>
@@ -1324,8 +1338,16 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Stylo</translation>
     </message>
     <message>
+        <source>Pen color, width and line</source>
+        <translation>Stylo : couleur, épaisseur et trait</translation>
+    </message>
+    <message>
         <source>Highlighter</source>
         <translation>Surligneur</translation>
+    </message>
+    <message>
+        <source>Highlighter color and width</source>
+        <translation>Surligneur : couleur et épaisseur</translation>
     </message>
     <message>
         <source>Eraser: removes whole strokes (also: pen eraser end or barrel button)</source>
@@ -1374,10 +1396,6 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     <message>
         <source>Extra large eraser</source>
         <translation>Très grande gomme</translation>
-    </message>
-    <message>
-        <source>Choose a color</source>
-        <translation>Choisir une couleur</translation>
     </message>
     <message>
         <source>New page</source>
@@ -1474,22 +1492,6 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     <message>
         <source>About Ductus</source>
         <translation>À propos de Ductus</translation>
-    </message>
-    <message>
-        <source>More colors…</source>
-        <translation>Plus de couleurs…</translation>
-    </message>
-    <message>
-        <source>Solid line</source>
-        <translation>Ligne continue</translation>
-    </message>
-    <message>
-        <source>Dashed line</source>
-        <translation>Ligne tiretée</translation>
-    </message>
-    <message>
-        <source>Dotted line</source>
-        <translation>Ligne pointillée</translation>
     </message>
     <message>
         <source>Select everything on the page (Ctrl+A)</source>

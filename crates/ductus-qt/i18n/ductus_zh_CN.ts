@@ -100,6 +100,10 @@
         <translation>无法把 PDF 保存到那里。</translation>
     </message>
     <message>
+        <source>New section</source>
+        <translation>新建分区</translation>
+    </message>
+    <message>
         <source>Exported to %1</source>
         <translation>已导出到 %1</translation>
     </message>
@@ -535,16 +539,8 @@
         <translation>请先下载相应的识别器。</translation>
     </message>
     <message>
-        <source>No page open</source>
-        <translation>没有打开的页面</translation>
-    </message>
-    <message>
-        <source>Pick a page in the notebook list, or start a new one.</source>
-        <translation>在笔记本列表中选择一个页面，或新建一个。</translation>
-    </message>
-    <message>
-        <source>New page…</source>
-        <translation>新建页面…</translation>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>显示或隐藏笔记本（%1）</translation>
     </message>
     <message>
         <source>Choose a library folder</source>
@@ -931,6 +927,10 @@ Library: %1</source>
         <translation>全部折叠</translation>
     </message>
     <message>
+        <source>Expand all</source>
+        <translation>全部展开</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>新建页面…</translation>
     </message>
@@ -957,6 +957,10 @@ Library: %1</source>
     <message>
         <source>Recent</source>
         <translation>最近</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>清除</translation>
     </message>
     <message>
         <source>Notebook “%1”</source>
@@ -999,6 +1003,10 @@ Library: %1</source>
         <translation>新建分区</translation>
     </message>
     <message>
+        <source>Open side by side</source>
+        <translation>并排打开</translation>
+    </message>
+    <message>
         <source>New folder inside</source>
         <translation>在其中新建文件夹</translation>
     </message>
@@ -1029,10 +1037,6 @@ Library: %1</source>
     <message>
         <source>Show in file manager</source>
         <translation>在文件管理器中显示</translation>
-    </message>
-    <message>
-        <source>Rename notebook</source>
-        <translation>重命名笔记本</translation>
     </message>
     <message>
         <source>Rename</source>
@@ -1081,12 +1085,35 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>显示所有文件</translation>
     </message>
     <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>显示或隐藏笔记本（%1）</translation>
+    </message>
+    <message>
         <source>Open library folder…</source>
         <translation>打开资料库文件夹…</translation>
     </message>
 </context>
 <context>
+    <name>PagePane</name>
+    <message>
+        <source>No page open</source>
+        <translation>没有打开的页面</translation>
+    </message>
+    <message>
+        <source>Pick a page in the notebook list, or start a new one.</source>
+        <translation>在笔记本列表中选择一个页面，或新建一个。</translation>
+    </message>
+    <message>
+        <source>New page…</source>
+        <translation>新建页面…</translation>
+    </message>
+</context>
+<context>
     <name>PageTabs</name>
+    <message>
+        <source>Preview: the next page you open replaces it. Double-click to keep it.</source>
+        <translation>预览：下一个打开的页面会替换它。双击可保留。</translation>
+    </message>
     <message>
         <source>Close page (Ctrl+W)</source>
         <translation>关闭页面（Ctrl+W）</translation>
@@ -1155,6 +1182,10 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>添加笔或工具</translation>
     </message>
     <message>
+        <source>Full screen (F11)</source>
+        <translation>全屏（F11）</translation>
+    </message>
+    <message>
         <source>Add the current pen</source>
         <translation>添加当前的笔</translation>
     </message>
@@ -1211,6 +1242,17 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>从栏中移除</translation>
     </message>
     <message>
+        <source>Up</source>
+        <translation>上移</translation>
+    </message>
+    <message>
+        <source>Down</source>
+        <translation>下移</translation>
+    </message>
+</context>
+<context>
+    <name>PenOptions</name>
+    <message>
         <source>Choose a color</source>
         <translation>选择颜色</translation>
     </message>
@@ -1229,14 +1271,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Line</source>
         <translation>直线</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>上移</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>下移</translation>
     </message>
 </context>
 <context>
@@ -1273,18 +1307,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>Ribbon</name>
     <message>
-        <source>Fine</source>
-        <translation>细</translation>
-    </message>
-    <message>
-        <source>Medium</source>
-        <translation>中</translation>
-    </message>
-    <message>
-        <source>Bold</source>
-        <translation>粗体</translation>
-    </message>
-    <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
         <translation>导入 Xournal++、Rnote 或 OneNote 的笔记：一个文件或整个笔记本文件夹</translation>
     </message>
@@ -1303,14 +1325,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>套索：圈住笔迹以选中，然后拖动、复制或删除</translation>
     </message>
     <message>
-        <source>Narrow</source>
-        <translation>窄</translation>
-    </message>
-    <message>
-        <source>Wide</source>
-        <translation>宽</translation>
-    </message>
-    <message>
         <source>Hand: drag text, formulas and pictures to move them, their corners to resize; elsewhere it scrolls</source>
         <translation>抓手：拖动文字、公式和图片可移动它们，拖动其角可调整大小；在其他位置则滚动</translation>
     </message>
@@ -1319,8 +1333,16 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>笔</translation>
     </message>
     <message>
+        <source>Pen color, width and line</source>
+        <translation>笔的颜色、粗细和线型</translation>
+    </message>
+    <message>
         <source>Highlighter</source>
         <translation>荧光笔</translation>
+    </message>
+    <message>
+        <source>Highlighter color and width</source>
+        <translation>荧光笔的颜色和粗细</translation>
     </message>
     <message>
         <source>Eraser: removes whole strokes (also: pen eraser end or barrel button)</source>
@@ -1369,10 +1391,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Extra large eraser</source>
         <translation>特大橡皮擦</translation>
-    </message>
-    <message>
-        <source>Choose a color</source>
-        <translation>选择颜色</translation>
     </message>
     <message>
         <source>New page</source>
@@ -1469,22 +1487,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>About Ductus</source>
         <translation>关于 Ductus</translation>
-    </message>
-    <message>
-        <source>More colors…</source>
-        <translation>更多颜色…</translation>
-    </message>
-    <message>
-        <source>Solid line</source>
-        <translation>实线</translation>
-    </message>
-    <message>
-        <source>Dashed line</source>
-        <translation>虚线</translation>
-    </message>
-    <message>
-        <source>Dotted line</source>
-        <translation>点线</translation>
     </message>
     <message>
         <source>Select everything on the page (Ctrl+A)</source>

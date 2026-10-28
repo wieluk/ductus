@@ -39,6 +39,8 @@ const RECENT_SHOWN: usize = 5;
 pub struct LibraryHandle {
     library: Library,
     open: Option<OpenPage>,
+    /// The page in the other half of a side-by-side view; `swap_open` makes it the open one.
+    parked: Option<OpenPage>,
 }
 
 type Result<T> = std::result::Result<T, ductus_format::Error>;
@@ -51,6 +53,7 @@ pub fn open_library(root: &str, data_dir: &str) -> Result<Box<LibraryHandle>> {
     Ok(Box::new(LibraryHandle {
         library: Library::open(root, Path::new(data_dir))?,
         open: None,
+        parked: None,
     }))
 }
 
@@ -177,14 +180,7 @@ impl LibraryHandle {
         let single = !focus.is_empty();
         if single {
             let color = self.inherited_color(focus);
-            self.tree_rows(focus, 0, color, &view, &mut out);
-            if out.is_empty() {
-                out.push(TreeRow {
-                    path: focus.to_owned(),
-                    placeholder: true,
-                    ..TreeRow::default()
-                });
-            }
+            self.notebook_rows(focus, 0, color, &view, &mut out);
         } else {
             let recent = self.library.recent().into_iter().take(RECENT_SHOWN);
             for (section, path) in self
@@ -224,17 +220,7 @@ impl LibraryHandle {
             row.expanded = expanded.contains(folder.as_str());
             out.push(row);
             if row_open(&out) {
-                let before = out.len();
-                self.tree_rows(&folder, 1, color, &view, &mut out);
-                if out.len() == before {
-                    out.push(TreeRow {
-                        depth: 1,
-                        path: folder.clone(),
-                        section: "notebooks".into(),
-                        placeholder: true,
-                        ..TreeRow::default()
-                    });
-                }
+                self.notebook_rows(&folder, 1, color, &view, &mut out);
             }
         }
         // One notebook needs no headings.
@@ -244,6 +230,33 @@ impl LibraryHandle {
             }
         }
         Ok(out)
+    }
+
+    /// A notebook's sections and pages, then rows that add to it.
+    fn notebook_rows(
+        &self,
+        notebook: &str,
+        depth: u32,
+        color: Option<Rgba>,
+        view: &TreeView,
+        out: &mut Vec<TreeRow>,
+    ) {
+        let before = out.len();
+        self.tree_rows(notebook, depth, color, view, out);
+        let adders: &[&str] = if out.len() == before {
+            &["page", "section"]
+        } else {
+            &["section"]
+        };
+        for adder in adders {
+            out.push(TreeRow {
+                depth,
+                path: notebook.to_owned(),
+                section: "notebooks".into(),
+                placeholder: (*adder).into(),
+                ..TreeRow::default()
+            });
+        }
     }
 
     fn tree_rows(
@@ -283,6 +296,13 @@ impl LibraryHandle {
                 if let Some(name) = self.library.notebook_name(&node.path) {
                     row.is_notebook = true;
                     row.notebook_name = name;
+                } else if view.sections_only {
+                    row.kind = if self.holds_sections(&node.path, view.filter) {
+                        "group"
+                    } else {
+                        "section"
+                    }
+                    .into();
                 }
             }
             let open = row.expanded;
@@ -291,6 +311,16 @@ impl LibraryHandle {
                 self.tree_rows(&node.path, depth + 1, color, view, out);
             }
         }
+    }
+
+    fn holds_sections(&self, folder: &str, filter: Filter) -> bool {
+        self.library.list(folder).is_ok_and(|nodes| {
+            nodes.iter().any(|n| {
+                n.kind == NodeKind::Folder
+                    && self.library.is_shown(n, filter)
+                    && !self.library.is_notebook(&n.path)
+            })
+        })
     }
 
     fn row(
@@ -354,6 +384,10 @@ impl LibraryHandle {
 
     pub fn add_recent(&self, page: &str) -> Result<()> {
         self.library.add_recent(page)
+    }
+
+    pub fn clear_recent(&self) -> Result<()> {
+        self.library.clear_recent()
     }
 
     pub fn page_targets(&self) -> String {
@@ -464,23 +498,35 @@ impl LibraryHandle {
     }
 
     fn follow_move(&mut self, from: &str, to: &str) {
-        if let Some(open) = &mut self.open {
-            if let Some(updated) = moved(&open.path, from, to) {
-                open.path = updated;
+        for page in [&mut self.open, &mut self.parked].into_iter().flatten() {
+            if let Some(updated) = moved(&page.path, from, to) {
+                page.path = updated;
             }
         }
     }
 
     pub fn remove(&mut self, path: &str) -> Result<String> {
         let id = self.library.delete(path)?;
-        if self
-            .open
-            .as_ref()
-            .is_some_and(|open| moved(&open.path, path, "").is_some())
-        {
-            self.open = None;
+        for page in [&mut self.open, &mut self.parked] {
+            if page
+                .as_ref()
+                .is_some_and(|p| moved(&p.path, path, "").is_some())
+            {
+                *page = None;
+            }
         }
         Ok(id)
+    }
+
+    pub fn swap_open(&mut self) {
+        std::mem::swap(&mut self.open, &mut self.parked);
+    }
+
+    pub fn parked_page(&self) -> String {
+        self.parked
+            .as_ref()
+            .map(|o| o.path.clone())
+            .unwrap_or_default()
     }
 
     pub fn pages_in(&self, folder: &str) -> Result<Vec<String>> {
@@ -558,9 +604,7 @@ impl LibraryHandle {
         if is_pdf_path(path) {
             return self.library.abs(path).to_string_lossy().into_owned();
         }
-        let mut p = self.library.abs(path);
-        p.set_extension(ductus_format::library::PAGE_EXTENSION);
-        p.to_string_lossy().into_owned()
+        self.library.page_file(path).to_string_lossy().into_owned()
     }
 
     pub fn load_into(&mut self, path: &str, canvas: &mut CanvasEngine) -> Result<()> {
@@ -776,6 +820,17 @@ impl LibraryHandle {
                 recognized.retain(|l| l.key != key);
                 recognized.push(line);
                 return Ok(true);
+            }
+        }
+        // The other half was saved when it was left, so its file below is current too.
+        if let Some(OpenPage {
+            path,
+            kind: OpenKind::Svg { recognized, .. },
+        }) = &mut self.parked
+        {
+            if path == page {
+                recognized.retain(|l| l.key != key);
+                recognized.push(line.clone());
             }
         }
         // Not open (any more): update the file if that ink is still there.
@@ -1019,7 +1074,39 @@ mod tests {
             .iter()
             .map(|r| (r.depth, r.section.as_str(), r.name.as_str()))
             .collect();
-        assert_eq!(summary, [(0, "", "Week 1")]);
+        assert_eq!(summary, [(0, "", "Week 1"), (0, "", "")]);
+        assert_eq!(rows[1].placeholder, "section");
+        // Folders inside a notebook are sections, or groups when they hold sections.
+        handle
+            .create_folder("Uni/Sem 3/Statik/VO", "Exams")
+            .unwrap();
+        handle
+            .create_folder("Uni/Sem 3/Statik/VO/Exams", "2025")
+            .unwrap();
+        handle.create_folder("Uni/Sem 3/Statik/VO", "Labs").unwrap();
+        let rows = handle
+            .rows(
+                "Uni/Sem 3/Statik/VO/Exams",
+                3,
+                true,
+                "Uni/Sem 3/Statik/VO",
+                "",
+            )
+            .unwrap();
+        let kinds: Vec<_> = rows
+            .iter()
+            .map(|r| (r.name.as_str(), r.kind.as_str(), r.placeholder.as_str()))
+            .collect();
+        assert_eq!(
+            kinds,
+            [
+                ("Week 1", "", ""),
+                ("Exams", "group", ""),
+                ("2025", "section", ""),
+                ("Labs", "section", ""),
+                ("", "", "section")
+            ]
+        );
         assert_eq!(relative("Uni/Sem 3", "Uni/Sem 3"), "");
         assert_eq!(relative("Uni/Sem 30/x", "Uni/Sem 3"), "Uni/Sem 30/x");
     }
@@ -1042,5 +1129,28 @@ mod tests {
         assert!(dir.path().join("Notes/Mathematics/Limits.svg").is_file());
         handle.remove("Mathematics").unwrap();
         assert_eq!(handle.open_page(), "");
+    }
+
+    #[test]
+    fn the_other_half_of_a_split_follows_renames_and_deletes() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut handle = open_library(
+            dir.path().join("Notes").to_str().unwrap(),
+            dir.path().join("app").to_str().unwrap(),
+        )
+        .unwrap();
+        let mut canvas = crate::engine::new_canvas_engine();
+        handle.create_folder("", "Math").unwrap();
+        let a = handle.create_page("Math", "A", &canvas).unwrap();
+        let b = handle.create_page("Math", "B", &canvas).unwrap();
+        handle.load_into(&a, &mut canvas).unwrap();
+        handle.swap_open();
+        handle.load_into(&b, &mut canvas).unwrap();
+        handle.rename("Math", "Maths").unwrap();
+        assert_eq!(handle.parked_page(), "Maths/A");
+        handle.swap_open();
+        assert_eq!(handle.open_page(), "Maths/A");
+        handle.remove("Maths/B").unwrap();
+        assert_eq!(handle.parked_page(), "");
     }
 }

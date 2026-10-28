@@ -38,5 +38,5 @@ QtObject {
     readonly property int ribbonHeight: 48
     readonly property int buttonSize: 36
     readonly property int radius: 6
-    readonly property int sidebarWidth: 264
+    readonly property int sidebarWidth: 280
 }

@@ -1,7 +1,6 @@
 //! Deleted entries, kept in the library's data folder with where they came from.
-//! Entries from before the index restore to the top level.
 
-use super::{ASSETS_SUFFIX, Library, NodeKind, PAGE_EXTENSION, move_path};
+use super::{ASSETS_SUFFIX, Library, NodeKind, move_path};
 use crate::Error;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -134,31 +133,7 @@ impl Library {
                     kind: kind_from(&deleted.kind),
                     deleted: deleted.deleted,
                 });
-                continue;
             }
-            // From before the index: "<seconds> <file name>".
-            let Some((stamp, file)) = id.split_once(' ') else {
-                continue;
-            };
-            let is_dir = entry.file_type().is_ok_and(|t| t.is_dir());
-            if is_dir && file.ends_with(ASSETS_SUFFIX) {
-                continue;
-            }
-            let (original, kind) = if is_dir {
-                (file.to_owned(), NodeKind::Folder)
-            } else if let Some(page) = file.strip_suffix(&format!(".{PAGE_EXTENSION}")) {
-                (page.to_owned(), NodeKind::Page)
-            } else if let Some(pdf) = super::pdf_stem(file) {
-                (pdf.to_owned(), NodeKind::Pdf)
-            } else {
-                (file.to_owned(), NodeKind::File)
-            };
-            entries.push(TrashEntry {
-                id: id.clone(),
-                original,
-                kind,
-                deleted: stamp.parse::<u64>().unwrap_or(0).saturating_mul(1000),
-            });
         }
         entries.sort_by(|a, b| b.deleted.cmp(&a.deleted).then_with(|| a.id.cmp(&b.id)));
         Ok(entries)
@@ -217,7 +192,7 @@ impl Library {
         Ok(())
     }
 
-    /// Empties the trash, including entries from before the index.
+    /// Empties the trash.
     pub fn empty_trash(&self) -> Result<(), Error> {
         let dir = self.trash_dir();
         if dir.is_dir() {

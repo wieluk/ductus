@@ -87,6 +87,20 @@ fn rename_keeps_position_and_contents() {
 
     assert_eq!(lib.rename("Bee/Page", "Renamed").unwrap(), "Bee/Renamed");
     assert!(lib.load_page("Bee/Renamed").is_ok());
+
+    // Dots in a name are part of it, not an extension.
+    let dated = lib.rename("Bee/Renamed", "18.05.2026").unwrap();
+    let page = lib.load_page(&dated).unwrap();
+    lib.save_page(&dated, &page).unwrap();
+    assert_eq!(names(find(&lib.tree().unwrap(), "Bee")), ["18.05.2026"]);
+
+    // A notebook is called like its folder, even when it was named otherwise.
+    lib.set_notebook("A", Some("Physics")).unwrap();
+    assert_eq!(lib.rename("A", "Mechanics").unwrap(), "Mechanics");
+    assert_eq!(lib.notebook_name("Mechanics").as_deref(), Some("Mechanics"));
+    lib.set_notebook("C", Some("Physics")).unwrap();
+    lib.rename("C", "C").unwrap();
+    assert_eq!(lib.notebook_name("C").as_deref(), Some("C"));
 }
 
 #[test]
@@ -371,7 +385,7 @@ fn trash_restores_entries_where_they_were() {
 }
 
 #[test]
-fn trash_purges_and_reads_entries_from_before_the_index() {
+fn trash_purges_and_empties() {
     let (_d, mut lib) = lib();
     lib.create_page("", "Gone", PageSettings::default())
         .unwrap();
@@ -379,18 +393,8 @@ fn trash_purges_and_reads_entries_from_before_the_index() {
     lib.purge(&id).unwrap();
     assert!(lib.trash().unwrap().is_empty());
 
-    let trash = lib.data_dir().join("trash");
-    fs::write(
-        trash.join("1700000000 Old notes.svg"),
-        write_page(&page_with_stroke("x")),
-    )
-    .unwrap();
-    let entries = lib.trash().unwrap();
-    assert_eq!(entries.len(), 1);
-    assert_eq!(entries[0].original, "Old notes");
-    assert_eq!(entries[0].deleted, 1_700_000_000_000);
-    assert_eq!(lib.restore(&entries[0].id).unwrap(), "Old notes");
-
+    lib.create_page("", "Old notes", PageSettings::default())
+        .unwrap();
     lib.delete("Old notes").unwrap();
     lib.empty_trash().unwrap();
     assert!(lib.trash().unwrap().is_empty());

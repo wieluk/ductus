@@ -45,8 +45,10 @@ pub mod qobject {
         is_notebook: bool,
         /// A notebook folder's name under Notebooks.
         notebook_name: String,
-        /// Stands in for an empty notebook's pages; `path` is the notebook's.
-        placeholder: bool,
+        /// Under Notebooks, a folder inside a notebook: "section", or "group" when it holds sections.
+        kind: String,
+        /// A row that adds to the notebook at `path`: "page" while it is empty, "section".
+        placeholder: String,
     }
 
     /// Something deleted; `deleted` is in milliseconds since the epoch.
@@ -287,6 +289,7 @@ pub mod qobject {
         /// The notebook a page or folder belongs to, or "".
         fn notebook_of(self: &LibraryHandle, path: &str) -> String;
         fn add_recent(self: &LibraryHandle, page: &str) -> Result<()>;
+        fn clear_recent(self: &LibraryHandle) -> Result<()>;
         /// Where a new page can go: notebooks and their sections, as "path\tlabel" lines.
         fn page_targets(self: &LibraryHandle) -> String;
         /// Every notebook, as "path\tname" lines in the user's order.
@@ -340,6 +343,9 @@ pub mod qobject {
         -> Result<()>;
         fn save_from(self: &mut LibraryHandle, canvas: &CanvasEngine) -> Result<()>;
         fn close_page(self: &mut LibraryHandle);
+        /// The open page and the one in the other half of a split view trade places.
+        fn swap_open(self: &mut LibraryHandle);
+        fn parked_page(self: &LibraryHandle) -> String;
         fn accepts_pictures(self: &LibraryHandle) -> bool;
         /// After the PDF page at `view_y`; reload the page afterwards.
         fn insert_blank_sheet(

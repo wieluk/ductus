@@ -9,11 +9,14 @@ Rectangle {
     id: bar
 
     property var parts: []
+    /// The page whose place it shows.
+    property string page
+    onPageChanged: update()
     /// `view`: "notebooks", "folders", or "" for wherever the page shows.
     signal showRequested(string path, string view)
 
     function update() {
-        const page = AppController.currentPage
+        const page = bar.page
         const out = [{ name: AppController.displayName(""), path: "", notebook: false }]
         if (page.length > 0) {
             const names = page.split("/")
@@ -23,7 +26,7 @@ Rectangle {
                 out.push({ name: notebook.length > 0 ? notebook : names[i], path: path,
                            folder: names[i], notebook: notebook.length > 0 })
             }
-            out.push({ name: AppController.currentTitle, path: page, notebook: false, page: true })
+            out.push({ name: names[names.length - 1], path: page, notebook: false, page: true })
         }
         parts = out
     }
@@ -34,7 +37,6 @@ Rectangle {
     Component.onCompleted: update()
     Connections {
         target: AppController
-        function onCurrentPageChanged() { bar.update() }
         function onLibraryChanged() { bar.update() }
     }
     // Notebook names change with the sidebar.

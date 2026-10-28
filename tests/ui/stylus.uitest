@@ -16,9 +16,10 @@ pen-tap tab_draw
 expect-cursor shown
 pen-tap preset8
 expect-prop canvas penPattern dotted
-pen-tap toolPen
-pen-tap color2
+pen-tap penOptions
+pen-tap penColor7
 expect-prop canvas penColor #d12f2f
+key Escape
 pen-tap appMenuButton
 pen-tap menuSettings
 expect-prop settingsClose visible true

@@ -31,6 +31,7 @@ class NotebookModel : public QAbstractListModel
     QML_ANONYMOUS
     /// Notebooks view: Favorites, Recent and Notebooks headings.
     Q_PROPERTY(bool hasSections READ hasSections NOTIFY rowsChanged)
+    Q_PROPERTY(bool anyExpanded READ anyExpanded NOTIFY rowsChanged)
 
 public:
     enum Role {
@@ -51,6 +52,7 @@ public:
         IsNotebookRole,
         SectionRole,
         NotebookNameRole,
+        KindRole,
         PlaceholderRole,
     };
 
@@ -71,7 +73,8 @@ public:
         bool isNotebook = false;
         QString section;
         QString notebookName;
-        bool placeholder = false;
+        QString kind;
+        QString placeholder;
     };
 
     using QAbstractListModel::QAbstractListModel;
@@ -84,6 +87,7 @@ public:
     void setCurrent(const QString &path);
     const QList<Row> &rows() const { return m_rows; }
     bool hasSections() const { return !m_rows.isEmpty() && !m_rows.first().section.isEmpty(); }
+    bool anyExpanded() const;
     Q_INVOKABLE int treeIndexOf(const QString &path) const;
 
 Q_SIGNALS:
@@ -110,6 +114,13 @@ class AppController : public QObject
     Q_PROPERTY(QString currentTitle READ currentTitle NOTIFY currentPageChanged)
     /// The pages open as tabs in the title bar, in order; the current one among them.
     Q_PROPERTY(QStringList openPages READ openPages NOTIFY openPagesChanged)
+    /// The tab a single click reuses, until the page is kept or written on; "" for none.
+    Q_PROPERTY(QString previewPage READ previewPage NOTIFY openPagesChanged)
+    /// Side by side: the canvas of the half that isn't active, its tabs, page and preview.
+    Q_PROPERTY(InkCanvas *otherCanvas READ otherCanvas WRITE setOtherCanvas NOTIFY canvasChanged)
+    Q_PROPERTY(QStringList otherPages READ otherPages NOTIFY openPagesChanged)
+    Q_PROPERTY(QString otherPage READ otherPage NOTIFY openPagesChanged)
+    Q_PROPERTY(QString otherPreview READ otherPreview NOTIFY openPagesChanged)
     Q_PROPERTY(InkCanvas *canvas READ canvas WRITE setCanvas NOTIFY canvasChanged)
     Q_PROPERTY(QString pdfProblem READ pdfProblem CONSTANT)
     /// The shown view's: 1 notes, 2 PDFs, 4 other files, 8 hide folders without those.
@@ -122,6 +133,8 @@ class AppController : public QObject
     Q_PROPERTY(bool converting READ converting NOTIFY convertingChanged)
     Q_PROPERTY(bool importing READ importing NOTIFY importingChanged)
     Q_PROPERTY(bool notebookView READ notebookView WRITE setNotebookView NOTIFY treeViewChanged)
+    /// While the pointer is over the sidebar, Recent keeps its order so rows don't move under it.
+    Q_PROPERTY(bool holdRecent READ holdRecent WRITE setHoldRecent NOTIFY holdRecentChanged)
     /// The shown view's: a folder under Folders, a notebook under Notebooks; "" for everything.
     Q_PROPERTY(QString treeFocus READ treeFocus WRITE setTreeFocus NOTIFY treeViewChanged)
     /// Milliseconds after the last edit; 0 saves only on Ctrl+S, page switches and quitting.
@@ -137,6 +150,14 @@ public:
     QString currentPage() const;
     QString currentTitle() const;
     QStringList openPages() const { return m_openPages; }
+    QString previewPage() const { return m_previewPage; }
+    InkCanvas *otherCanvas() const { return m_other.canvas; }
+    void setOtherCanvas(InkCanvas *canvas);
+    QStringList otherPages() const { return m_other.tabs; }
+    QString otherPage() const;
+    QString otherPreview() const { return m_other.preview; }
+    bool holdRecent() const { return m_holdRecent; }
+    void setHoldRecent(bool hold);
     InkCanvas *canvas() const { return m_canvas; }
     QString pdfProblem() const;
     bool indexing() const { return m_indexing; }
@@ -145,7 +166,7 @@ public:
     bool importing() const { return m_importing; }
     QString indexStatus() const { return m_indexStatus; }
     int treeFilter() const { return m_notebookView ? m_notebookFilter : m_treeFilter; }
-    int defaultTreeFilter() const { return m_notebookView ? 1 : 3; }
+    int defaultTreeFilter() const { return 3; }
     void setTreeFilter(int flags);
     bool notebookView() const { return m_notebookView; }
     void setNotebookView(bool on);
@@ -165,9 +186,17 @@ public:
     Q_INVOKABLE void storageQuestionAnswered();
     /// Moves the notes to Documents/Ductus, asking for access first where needed.
     Q_INVOKABLE void useSharedStorage();
-    /// In the current tab, or the page's own tab when it has one.
+    /// In the preview tab, or the page's own tab when it has one.
     Q_INVOKABLE void openPage(const QString &path);
     Q_INVOKABLE void openInNewTab(const QString &path);
+    /// A preview tab stays open as a normal one.
+    Q_INVOKABLE void keepTab(const QString &path);
+    /// That canvas's half of a split view becomes the one the ribbon, pen bar and keys act on.
+    Q_INVOKABLE void activate(InkCanvas *canvas);
+    /// Into the half with that canvas, from the other one or the sidebar.
+    Q_INVOKABLE void moveTab(const QString &path, InkCanvas *to);
+    /// In the half beside the active one, which splits the view.
+    Q_INVOKABLE void openBeside(const QString &path);
     Q_INVOKABLE void closeTab(const QString &path);
     /// The tab `delta` places to the right, wrapping around.
     Q_INVOKABLE void switchTab(int delta);
@@ -192,7 +221,8 @@ public:
     Q_INVOKABLE QString notebookName(const QString &folder) const;
     /// The notebook a page or folder belongs to, or "".
     QString notebookOf(const QString &path) const;
-    Q_INVOKABLE QString newFolder(const QString &parent);
+    /// A section starts with a page and is called that.
+    Q_INVOKABLE QString newFolder(const QString &parent, bool section = false);
     /// The folder's name, or the library's for "".
     Q_INVOKABLE QString displayName(const QString &path) const;
     Q_INVOKABLE void showInNotebooks(const QString &path);
@@ -227,6 +257,9 @@ public:
     /// Shows `path` in the sidebar: under Notebooks when it is in one, else under Folders.
     Q_INVOKABLE void locate(const QString &path);
     Q_INVOKABLE void collapseAll();
+    Q_INVOKABLE void clearRecent();
+    /// Every folder the sidebar shows, all the way down.
+    Q_INVOKABLE void expandAll();
     Q_INVOKABLE void saveNow();
     /// Closes the current tab; the one beside it opens.
     Q_INVOKABLE void closePage();
@@ -264,6 +297,7 @@ Q_SIGNALS:
     void libraryChanged();
     void currentPageChanged();
     void openPagesChanged();
+    void holdRecentChanged();
     void canvasChanged();
     void errorOccurred(const QString &message);
     void notice(const QString &message);
@@ -306,9 +340,9 @@ private:
     void storeExpanded();
     /// The starter page it created in an empty library, else "".
     QString ensureStarterContent();
-    /// Each library reopens its own last page; "" forgets it.
-    void rememberPage(const QString &path);
-    QString rememberedPage() const;
+    /// Each library reopens its tabs, in both halves of a split.
+    void storePanes();
+    void hookCanvas(InkCanvas *canvas);
     void showPage(const QString &path, bool newTab);
     /// Stores the tabs for this library.
     void setOpenPages(const QStringList &pages);
@@ -367,7 +401,7 @@ private:
     QPointer<InkCanvas> m_canvas;
     QSet<QString> m_expanded;
     int m_treeFilter = 3;
-    int m_notebookFilter = 1;
+    int m_notebookFilter = 3;
     /// Shown whatever the filter, until it changes.
     QString m_keepVisible;
     bool m_awaitingSnip = false;
@@ -377,9 +411,24 @@ private:
     QString m_folderFocus;
     QString m_notebookFocus;
     QStringList m_openPages;
+    QString m_previewPage;
+    /// The canvas QML set first: the left half, so a split comes back on the same sides.
+    QPointer<InkCanvas> m_first;
+    bool m_holdRecent = false;
+    /// Pages opened while Recent was held, oldest first.
+    QStringList m_heldRecent;
     struct View { double zoom, x, y; };
     /// Where each tab was scrolled to, kept while it is open.
     QHash<QString, View> m_views;
+    /// The inactive half; `activate` trades it with the fields above.
+    struct Pane {
+        QPointer<InkCanvas> canvas;
+        QStringList tabs;
+        QString preview;
+        QHash<QString, View> views;
+        quint64 savedRevision = 0;
+    };
+    Pane m_other;
     quint64 m_savedRevision = 0;
     bool m_dirty = false;
     void setDirty(bool dirty);

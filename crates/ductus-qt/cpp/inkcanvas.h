@@ -226,6 +226,8 @@ Q_SIGNALS:
     void notice(const QString &message, bool error);
     void shapeRecognized(const QString &kind);
     void edited();
+    /// Pen, mouse or finger went down on it: its half of a split view becomes the active one.
+    void pressed();
 
 protected:
     bool event(QEvent *event) override;
@@ -328,6 +330,10 @@ private:
     QSGNode *m_tipLayer = nullptr;
     QSGImageNode *m_tipNode = nullptr;
     /// A stroke that started on the canvas keeps the pen until release.
+    /// Every canvas: the pen events of a window reach all of them.
+    static inline QList<InkCanvas *> s_canvases;
+    /// Another canvas of this window takes the pen there, or forwards it as a mouse.
+    bool otherTakesPen(QPointF scenePosition) const;
     bool m_tabletGrab = false;
     /// A pen press elsewhere is forwarded as mouse input until release.
     bool m_tabletForward = false;

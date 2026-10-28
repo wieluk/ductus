@@ -1,0 +1,37 @@
+# Two pages side by side: each half has its own tabs; the one written on last takes the ribbon and keys.
+size 1280 800
+click-item sidebarNewNotebook
+type Physics
+key Return
+right-click-item row_Physics
+click-item menuNewPage
+type Optics
+key Return
+right-click-item row_Physics
+click-item menuNewPage
+type Waves
+key Return
+expect-text pageTitle Waves
+right-click-item row_Physics/Optics
+click-item menuOpenBeside
+expect-text pageTitle Optics
+expect-prop otherCanvas enabled true
+shot split
+# Each half saves its own page.
+pen p=0.6 950,400 1150,420
+key Ctrl+S
+expect-in-file Physics/Optics.svg | dx:ink
+expect-not-in-file Physics/Waves.svg | dx:ink
+pen p=0.6 450,400 650,420
+expect-text pageTitle Waves
+key Ctrl+S
+expect-in-file Physics/Waves.svg | dx:ink
+# A tab dragged onto the other half moves there.
+drag-item pageTab_Physics/Untitled page | otherCanvas
+expect-text pageTitle Untitled page
+# Closing a half's last tab joins the halves again.
+click-item closePage
+expect-text pageTitle Optics
+click-item closePage
+expect-text pageTitle Waves
+expect-hidden otherCanvas

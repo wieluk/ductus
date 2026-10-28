@@ -100,6 +100,10 @@
         <translation>Não foi possível salvar o PDF ali.</translation>
     </message>
     <message>
+        <source>New section</source>
+        <translation>Nova seção</translation>
+    </message>
+    <message>
         <source>Exported to %1</source>
         <translation>Exportado para %1</translation>
     </message>
@@ -540,16 +544,8 @@
         <translation>Primeiro baixe o reconhecedor para isso.</translation>
     </message>
     <message>
-        <source>No page open</source>
-        <translation>Nenhuma página aberta</translation>
-    </message>
-    <message>
-        <source>Pick a page in the notebook list, or start a new one.</source>
-        <translation>Escolha uma página na lista de cadernos ou comece uma nova.</translation>
-    </message>
-    <message>
-        <source>New page…</source>
-        <translation>Nova página…</translation>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Mostrar ou ocultar cadernos (%1)</translation>
     </message>
     <message>
         <source>Choose a library folder</source>
@@ -936,6 +932,10 @@ Biblioteca: %1</translation>
         <translation>Recolher tudo</translation>
     </message>
     <message>
+        <source>Expand all</source>
+        <translation>Expandir tudo</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>Nova página…</translation>
     </message>
@@ -962,6 +962,10 @@ Biblioteca: %1</translation>
     <message>
         <source>Recent</source>
         <translation>Recentes</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>Limpar</translation>
     </message>
     <message>
         <source>Notebook “%1”</source>
@@ -1004,6 +1008,10 @@ Biblioteca: %1</translation>
         <translation>Nova seção</translation>
     </message>
     <message>
+        <source>Open side by side</source>
+        <translation>Abrir lado a lado</translation>
+    </message>
+    <message>
         <source>New folder inside</source>
         <translation>Nova pasta dentro</translation>
     </message>
@@ -1034,10 +1042,6 @@ Biblioteca: %1</translation>
     <message>
         <source>Show in file manager</source>
         <translation>Mostrar no gerenciador de arquivos</translation>
-    </message>
-    <message>
-        <source>Rename notebook</source>
-        <translation>Renomear caderno</translation>
     </message>
     <message>
         <source>Rename</source>
@@ -1086,12 +1090,35 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
         <translation>Mostrar todos os arquivos</translation>
     </message>
     <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Mostrar ou ocultar cadernos (%1)</translation>
+    </message>
+    <message>
         <source>Open library folder…</source>
         <translation>Abrir pasta da biblioteca…</translation>
     </message>
 </context>
 <context>
+    <name>PagePane</name>
+    <message>
+        <source>No page open</source>
+        <translation>Nenhuma página aberta</translation>
+    </message>
+    <message>
+        <source>Pick a page in the notebook list, or start a new one.</source>
+        <translation>Escolha uma página na lista de cadernos ou comece uma nova.</translation>
+    </message>
+    <message>
+        <source>New page…</source>
+        <translation>Nova página…</translation>
+    </message>
+</context>
+<context>
     <name>PageTabs</name>
+    <message>
+        <source>Preview: the next page you open replaces it. Double-click to keep it.</source>
+        <translation>Prévia: a próxima página que você abrir a substitui. Clique duas vezes para mantê-la.</translation>
+    </message>
     <message>
         <source>Close page (Ctrl+W)</source>
         <translation>Fechar página (Ctrl+W)</translation>
@@ -1160,6 +1187,10 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
         <translation>Adicionar uma caneta ou ferramenta</translation>
     </message>
     <message>
+        <source>Full screen (F11)</source>
+        <translation>Tela cheia (F11)</translation>
+    </message>
+    <message>
         <source>Add the current pen</source>
         <translation>Adicionar a caneta atual</translation>
     </message>
@@ -1216,6 +1247,17 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
         <translation>Remover da barra</translation>
     </message>
     <message>
+        <source>Up</source>
+        <translation>Para cima</translation>
+    </message>
+    <message>
+        <source>Down</source>
+        <translation>Para baixo</translation>
+    </message>
+</context>
+<context>
+    <name>PenOptions</name>
+    <message>
         <source>Choose a color</source>
         <translation>Escolher uma cor</translation>
     </message>
@@ -1234,14 +1276,6 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
     <message>
         <source>Line</source>
         <translation>Linha</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>Para cima</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>Para baixo</translation>
     </message>
 </context>
 <context>
@@ -1278,18 +1312,6 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
 <context>
     <name>Ribbon</name>
     <message>
-        <source>Fine</source>
-        <translation>Fino</translation>
-    </message>
-    <message>
-        <source>Medium</source>
-        <translation>Médio</translation>
-    </message>
-    <message>
-        <source>Bold</source>
-        <translation>Negrito</translation>
-    </message>
-    <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
         <translation>Trazer notas do Xournal++, Rnote ou OneNote: um arquivo ou uma pasta de caderno inteira</translation>
     </message>
@@ -1308,14 +1330,6 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
         <translation>Laço: circule a tinta para selecioná-la, depois arraste, copie ou exclua</translation>
     </message>
     <message>
-        <source>Narrow</source>
-        <translation>Estreito</translation>
-    </message>
-    <message>
-        <source>Wide</source>
-        <translation>Largo</translation>
-    </message>
-    <message>
         <source>Hand: drag text, formulas and pictures to move them, their corners to resize; elsewhere it scrolls</source>
         <translation>Mão: arraste textos, fórmulas e imagens para movê-los, os cantos para redimensionar; em outro lugar ela rola</translation>
     </message>
@@ -1324,8 +1338,16 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
         <translation>Caneta</translation>
     </message>
     <message>
+        <source>Pen color, width and line</source>
+        <translation>Caneta: cor, espessura e linha</translation>
+    </message>
+    <message>
         <source>Highlighter</source>
         <translation>Marca-texto</translation>
+    </message>
+    <message>
+        <source>Highlighter color and width</source>
+        <translation>Marca-texto: cor e espessura</translation>
     </message>
     <message>
         <source>Eraser: removes whole strokes (also: pen eraser end or barrel button)</source>
@@ -1374,10 +1396,6 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
     <message>
         <source>Extra large eraser</source>
         <translation>Borracha extragrande</translation>
-    </message>
-    <message>
-        <source>Choose a color</source>
-        <translation>Escolher uma cor</translation>
     </message>
     <message>
         <source>New page</source>
@@ -1474,22 +1492,6 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
     <message>
         <source>About Ductus</source>
         <translation>Sobre o Ductus</translation>
-    </message>
-    <message>
-        <source>More colors…</source>
-        <translation>Mais cores…</translation>
-    </message>
-    <message>
-        <source>Solid line</source>
-        <translation>Linha contínua</translation>
-    </message>
-    <message>
-        <source>Dashed line</source>
-        <translation>Linha tracejada</translation>
-    </message>
-    <message>
-        <source>Dotted line</source>
-        <translation>Linha pontilhada</translation>
     </message>
     <message>
         <source>Select everything on the page (Ctrl+A)</source>

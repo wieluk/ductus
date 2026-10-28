@@ -100,6 +100,10 @@
         <translation>Impossibile salvare il PDF lì.</translation>
     </message>
     <message>
+        <source>New section</source>
+        <translation>Nuova sezione</translation>
+    </message>
+    <message>
         <source>Exported to %1</source>
         <translation>Esportato in %1</translation>
     </message>
@@ -540,16 +544,8 @@
         <translation>Prima scarica il riconoscimento per questo.</translation>
     </message>
     <message>
-        <source>No page open</source>
-        <translation>Nessuna pagina aperta</translation>
-    </message>
-    <message>
-        <source>Pick a page in the notebook list, or start a new one.</source>
-        <translation>Scegli una pagina nell’elenco dei quaderni o iniziane una nuova.</translation>
-    </message>
-    <message>
-        <source>New page…</source>
-        <translation>Nuova pagina…</translation>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Mostra o nascondi i quaderni (%1)</translation>
     </message>
     <message>
         <source>Choose a library folder</source>
@@ -936,6 +932,10 @@ Libreria: %1</translation>
         <translation>Comprimi tutto</translation>
     </message>
     <message>
+        <source>Expand all</source>
+        <translation>Espandi tutto</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>Nuova pagina…</translation>
     </message>
@@ -962,6 +962,10 @@ Libreria: %1</translation>
     <message>
         <source>Recent</source>
         <translation>Recenti</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>Cancella</translation>
     </message>
     <message>
         <source>Notebook “%1”</source>
@@ -1004,6 +1008,10 @@ Libreria: %1</translation>
         <translation>Nuova sezione</translation>
     </message>
     <message>
+        <source>Open side by side</source>
+        <translation>Apri affiancata</translation>
+    </message>
+    <message>
         <source>New folder inside</source>
         <translation>Nuova cartella al suo interno</translation>
     </message>
@@ -1034,10 +1042,6 @@ Libreria: %1</translation>
     <message>
         <source>Show in file manager</source>
         <translation>Mostra nel gestore file</translation>
-    </message>
-    <message>
-        <source>Rename notebook</source>
-        <translation>Rinomina quaderno</translation>
     </message>
     <message>
         <source>Rename</source>
@@ -1086,12 +1090,35 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
         <translation>Mostra tutti i file</translation>
     </message>
     <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Mostra o nascondi i quaderni (%1)</translation>
+    </message>
+    <message>
         <source>Open library folder…</source>
         <translation>Apri la cartella della libreria…</translation>
     </message>
 </context>
 <context>
+    <name>PagePane</name>
+    <message>
+        <source>No page open</source>
+        <translation>Nessuna pagina aperta</translation>
+    </message>
+    <message>
+        <source>Pick a page in the notebook list, or start a new one.</source>
+        <translation>Scegli una pagina nell’elenco dei quaderni o iniziane una nuova.</translation>
+    </message>
+    <message>
+        <source>New page…</source>
+        <translation>Nuova pagina…</translation>
+    </message>
+</context>
+<context>
     <name>PageTabs</name>
+    <message>
+        <source>Preview: the next page you open replaces it. Double-click to keep it.</source>
+        <translation>Anteprima: la prossima pagina che apri la sostituisce. Fai doppio clic per tenerla.</translation>
+    </message>
     <message>
         <source>Close page (Ctrl+W)</source>
         <translation>Chiudi pagina (Ctrl+W)</translation>
@@ -1160,6 +1187,10 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
         <translation>Aggiungi una penna o uno strumento</translation>
     </message>
     <message>
+        <source>Full screen (F11)</source>
+        <translation>Schermo intero (F11)</translation>
+    </message>
+    <message>
         <source>Add the current pen</source>
         <translation>Aggiungi la penna attuale</translation>
     </message>
@@ -1216,6 +1247,17 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
         <translation>Rimuovi dalla barra</translation>
     </message>
     <message>
+        <source>Up</source>
+        <translation>Su</translation>
+    </message>
+    <message>
+        <source>Down</source>
+        <translation>Giù</translation>
+    </message>
+</context>
+<context>
+    <name>PenOptions</name>
+    <message>
         <source>Choose a color</source>
         <translation>Scegli un colore</translation>
     </message>
@@ -1234,14 +1276,6 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
     <message>
         <source>Line</source>
         <translation>Linea</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>Su</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>Giù</translation>
     </message>
 </context>
 <context>
@@ -1278,18 +1312,6 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
 <context>
     <name>Ribbon</name>
     <message>
-        <source>Fine</source>
-        <translation>Fine</translation>
-    </message>
-    <message>
-        <source>Medium</source>
-        <translation>Medio</translation>
-    </message>
-    <message>
-        <source>Bold</source>
-        <translation>Grassetto</translation>
-    </message>
-    <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
         <translation>Porta appunti da Xournal++, Rnote o OneNote: un file o un’intera cartella di quaderno</translation>
     </message>
@@ -1308,14 +1330,6 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
         <translation>Lazo: cerchia l’inchiostro per selezionarlo, poi trascinalo, copialo o eliminalo</translation>
     </message>
     <message>
-        <source>Narrow</source>
-        <translation>Stretto</translation>
-    </message>
-    <message>
-        <source>Wide</source>
-        <translation>Largo</translation>
-    </message>
-    <message>
         <source>Hand: drag text, formulas and pictures to move them, their corners to resize; elsewhere it scrolls</source>
         <translation>Mano: trascina testi, formule e immagini per spostarli, gli angoli per ridimensionarli; altrove scorre</translation>
     </message>
@@ -1324,8 +1338,16 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
         <translation>Penna</translation>
     </message>
     <message>
+        <source>Pen color, width and line</source>
+        <translation>Penna: colore, spessore e linea</translation>
+    </message>
+    <message>
         <source>Highlighter</source>
         <translation>Evidenziatore</translation>
+    </message>
+    <message>
+        <source>Highlighter color and width</source>
+        <translation>Evidenziatore: colore e spessore</translation>
     </message>
     <message>
         <source>Eraser: removes whole strokes (also: pen eraser end or barrel button)</source>
@@ -1374,10 +1396,6 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
     <message>
         <source>Extra large eraser</source>
         <translation>Gomma extra large</translation>
-    </message>
-    <message>
-        <source>Choose a color</source>
-        <translation>Scegli un colore</translation>
     </message>
     <message>
         <source>New page</source>
@@ -1474,22 +1492,6 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
     <message>
         <source>About Ductus</source>
         <translation>Informazioni su Ductus</translation>
-    </message>
-    <message>
-        <source>More colors…</source>
-        <translation>Altri colori…</translation>
-    </message>
-    <message>
-        <source>Solid line</source>
-        <translation>Linea continua</translation>
-    </message>
-    <message>
-        <source>Dashed line</source>
-        <translation>Linea tratteggiata</translation>
-    </message>
-    <message>
-        <source>Dotted line</source>
-        <translation>Linea punteggiata</translation>
     </message>
     <message>
         <source>Select everything on the page (Ctrl+A)</source>
