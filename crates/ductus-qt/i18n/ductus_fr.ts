@@ -1091,6 +1091,17 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     </message>
 </context>
 <context>
+    <name>PageTabs</name>
+    <message>
+        <source>Close page (Ctrl+W)</source>
+        <translation>Fermer la page (Ctrl+W)</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Fermer</translation>
+    </message>
+</context>
+<context>
     <name>PenBar</name>
     <message>
         <source>Lasso</source>
@@ -2377,10 +2388,6 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
 <context>
     <name>TitleBar</name>
     <message>
-        <source>Untitled page</source>
-        <translation>Page sans titre</translation>
-    </message>
-    <message>
         <source>Menu</source>
         <translation>Menu</translation>
     </message>
@@ -2471,10 +2478,6 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     <message>
         <source>View</source>
         <translation>Affichage</translation>
-    </message>
-    <message>
-        <source>Close page (Ctrl+W)</source>
-        <translation>Fermer la page (Ctrl+W)</translation>
     </message>
     <message>
         <source>Restart to update</source>

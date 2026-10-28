@@ -1091,6 +1091,17 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
     </message>
 </context>
 <context>
+    <name>PageTabs</name>
+    <message>
+        <source>Close page (Ctrl+W)</source>
+        <translation>Fechar página (Ctrl+W)</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Fechar</translation>
+    </message>
+</context>
+<context>
     <name>PenBar</name>
     <message>
         <source>Lasso</source>
@@ -2377,10 +2388,6 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
 <context>
     <name>TitleBar</name>
     <message>
-        <source>Untitled page</source>
-        <translation>Página sem título</translation>
-    </message>
-    <message>
         <source>Menu</source>
         <translation>Menu</translation>
     </message>
@@ -2471,10 +2478,6 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
     <message>
         <source>View</source>
         <translation>Exibir</translation>
-    </message>
-    <message>
-        <source>Close page (Ctrl+W)</source>
-        <translation>Fechar página (Ctrl+W)</translation>
     </message>
     <message>
         <source>Restart to update</source>

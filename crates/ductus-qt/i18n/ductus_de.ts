@@ -1091,6 +1091,17 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     </message>
 </context>
 <context>
+    <name>PageTabs</name>
+    <message>
+        <source>Close page (Ctrl+W)</source>
+        <translation>Seite schließen (Strg+W)</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Schließen</translation>
+    </message>
+</context>
+<context>
     <name>PenBar</name>
     <message>
         <source>Lasso</source>
@@ -2377,10 +2388,6 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
 <context>
     <name>TitleBar</name>
     <message>
-        <source>Untitled page</source>
-        <translation>Unbenannte Seite</translation>
-    </message>
-    <message>
         <source>Menu</source>
         <translation>Menü</translation>
     </message>
@@ -2471,10 +2478,6 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     <message>
         <source>View</source>
         <translation>Ansicht</translation>
-    </message>
-    <message>
-        <source>Close page (Ctrl+W)</source>
-        <translation>Seite schließen (Strg+W)</translation>
     </message>
     <message>
         <source>Restart to update</source>

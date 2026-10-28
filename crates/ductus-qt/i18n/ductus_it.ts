@@ -1091,6 +1091,17 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
     </message>
 </context>
 <context>
+    <name>PageTabs</name>
+    <message>
+        <source>Close page (Ctrl+W)</source>
+        <translation>Chiudi pagina (Ctrl+W)</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Chiudi</translation>
+    </message>
+</context>
+<context>
     <name>PenBar</name>
     <message>
         <source>Lasso</source>
@@ -2377,10 +2388,6 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
 <context>
     <name>TitleBar</name>
     <message>
-        <source>Untitled page</source>
-        <translation>Pagina senza titolo</translation>
-    </message>
-    <message>
         <source>Menu</source>
         <translation>Menu</translation>
     </message>
@@ -2471,10 +2478,6 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
     <message>
         <source>View</source>
         <translation>Visualizza</translation>
-    </message>
-    <message>
-        <source>Close page (Ctrl+W)</source>
-        <translation>Chiudi pagina (Ctrl+W)</translation>
     </message>
     <message>
         <source>Restart to update</source>

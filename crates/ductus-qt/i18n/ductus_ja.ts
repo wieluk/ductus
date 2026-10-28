@@ -1086,6 +1086,17 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     </message>
 </context>
 <context>
+    <name>PageTabs</name>
+    <message>
+        <source>Close page (Ctrl+W)</source>
+        <translation>ページを閉じる（Ctrl+W）</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>閉じる</translation>
+    </message>
+</context>
+<context>
     <name>PenBar</name>
     <message>
         <source>Lasso</source>
@@ -2372,10 +2383,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>TitleBar</name>
     <message>
-        <source>Untitled page</source>
-        <translation>無題のページ</translation>
-    </message>
-    <message>
         <source>Menu</source>
         <translation>メニュー</translation>
     </message>
@@ -2466,10 +2473,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>View</source>
         <translation>表示</translation>
-    </message>
-    <message>
-        <source>Close page (Ctrl+W)</source>
-        <translation>ページを閉じる（Ctrl+W）</translation>
     </message>
     <message>
         <source>Restart to update</source>

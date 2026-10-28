@@ -1091,6 +1091,17 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
     </message>
 </context>
 <context>
+    <name>PageTabs</name>
+    <message>
+        <source>Close page (Ctrl+W)</source>
+        <translation>Cerrar página (Ctrl+W)</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Cerrar</translation>
+    </message>
+</context>
+<context>
     <name>PenBar</name>
     <message>
         <source>Lasso</source>
@@ -2377,10 +2388,6 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
 <context>
     <name>TitleBar</name>
     <message>
-        <source>Untitled page</source>
-        <translation>Página sin título</translation>
-    </message>
-    <message>
         <source>Menu</source>
         <translation>Menú</translation>
     </message>
@@ -2471,10 +2478,6 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
     <message>
         <source>View</source>
         <translation>Ver</translation>
-    </message>
-    <message>
-        <source>Close page (Ctrl+W)</source>
-        <translation>Cerrar página (Ctrl+W)</translation>
     </message>
     <message>
         <source>Restart to update</source>

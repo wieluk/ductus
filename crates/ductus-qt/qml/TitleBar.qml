@@ -12,7 +12,6 @@ Rectangle {
     // A tab name saved by an older version falls back to Draw.
     onCurrentTabChanged: if (["file", "draw", "insert", "page", "view"].indexOf(currentTab) < 0)
                              currentTab = "draw"
-    property string pageTitle: qsTr("Untitled page")
     /// A narrow window, such as a phone: less text, more scrolling.
     property bool compact: false
     readonly property bool mobile: Qt.platform.os === "android" || Qt.platform.os === "ios"
@@ -233,106 +232,7 @@ Rectangle {
                 }
             }
 
-            Item {
-                id: titleArea
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                // A lone page is named by the location bar on a narrow screen.
-                visible: !bar.compact || AppController.openPages.length > 1
-                implicitWidth: bar.compact ? pageTabs.contentWidth : 0
-
-                ListView {
-                    id: pageTabs
-                    objectName: "pageTabs"
-                    anchors.centerIn: parent
-                    width: Math.min(parent.width, contentWidth)
-                    height: Theme.titleHeight - 8
-                    orientation: ListView.Horizontal
-                    spacing: 2
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds
-                    interactive: contentWidth > width
-                    model: AppController.openPages
-                    function showCurrent() {
-                        const at = AppController.openPages.indexOf(AppController.currentPage)
-                        if (at >= 0)
-                            positionViewAtIndex(at, ListView.Contain)
-                    }
-                    Connections {
-                        target: AppController
-                        function onCurrentPageChanged() { Qt.callLater(pageTabs.showCurrent) }
-                    }
-
-                    delegate: AbstractButton {
-                        id: pageTab
-                        required property string modelData
-                        required property int index
-                        readonly property bool active: modelData === AppController.currentPage
-                        objectName: "pageTab_" + modelData
-                        height: ListView.view.height
-                        width: Math.min(220, tabTitle.implicitWidth + tabClose.width + 18)
-                        focusPolicy: Qt.NoFocus
-                        hoverEnabled: true
-                        onClicked: AppController.openPage(modelData)
-                        ToolTip.visible: hovered && !tabClose.hovered
-                        ToolTip.delay: 600
-                        ToolTip.text: AppController.displayName(AppController.parentOf(modelData))
-
-                        TapHandler {
-                            acceptedButtons: Qt.MiddleButton
-                            onTapped: AppController.closeTab(pageTab.modelData)
-                        }
-
-                        background: Rectangle {
-                            radius: Theme.radius
-                            color: pageTab.active ? Theme.titleHover
-                                 : pageTab.hovered ? Qt.alpha(Theme.titleHover, 0.5) : "transparent"
-                        }
-                        contentItem: Item {
-                            Label {
-                                id: tabTitle
-                                objectName: pageTab.active ? "pageTitle" : ""
-                                anchors.left: parent.left
-                                anchors.leftMargin: 10
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: Math.min(implicitWidth, parent.width - tabClose.width - 12)
-                                // The open one carries the unsaved mark.
-                                text: pageTab.active ? bar.pageTitle : pageTab.modelData.split("/").pop()
-                                color: pageTab.active ? Theme.titleText : Theme.titleTextMuted
-                                font.pixelSize: 13
-                                elide: Text.ElideRight
-                            }
-                            ToolButton {
-                                id: tabClose
-                                objectName: pageTab.active ? "closePage" : "closeTab_" + pageTab.modelData
-                                anchors.right: parent.right
-                                anchors.rightMargin: 2
-                                anchors.verticalCenter: parent.verticalCenter
-                                implicitWidth: 22
-                                implicitHeight: 22
-                                focusPolicy: Qt.NoFocus
-                                display: AbstractButton.IconOnly
-                                icon.source: Qt.resolvedUrl("icons/close.svg")
-                                icon.width: 10
-                                icon.height: 10
-                                icon.color: Theme.titleTextMuted
-                                // Hidden once pressed, until the pointer leaves.
-                                property bool tipDismissed: false
-                                onPressed: tipDismissed = true
-                                onHoveredChanged: if (!hovered) tipDismissed = false
-                                ToolTip.visible: hovered && !tipDismissed
-                                ToolTip.delay: 600
-                                ToolTip.text: pageTab.active ? qsTr("Close page (Ctrl+W)") : qsTr("Close")
-                                onClicked: AppController.closeTab(pageTab.modelData)
-                                background: Rectangle {
-                                    radius: Theme.radius
-                                    color: tabClose.hovered ? Theme.titleHover : "transparent"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            Item { Layout.fillWidth: true }
 
             RibbonButton {
                 objectName: "updateButton"

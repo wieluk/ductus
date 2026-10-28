@@ -275,7 +275,6 @@ ApplicationWindow {
             Layout.fillWidth: true
             window: window
             canvas: canvas
-            pageTitle: window.pageTitle
             compact: window.compact
             visible: window.visibility !== Window.FullScreen
             onAboutRequested: aboutDialog.open()
@@ -386,6 +385,12 @@ ApplicationWindow {
                 width: parent.width - (body.besidePage ? tree.width : 0)
                 height: parent.height
                 spacing: 0
+
+                PageTabs {
+                    Layout.fillWidth: true
+                    visible: AppController.openPages.length > 0
+                    pageTitle: window.pageTitle
+                }
 
                 LocationBar {
                     objectName: "locationBar"

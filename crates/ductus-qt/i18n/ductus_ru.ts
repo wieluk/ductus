@@ -1096,6 +1096,17 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     </message>
 </context>
 <context>
+    <name>PageTabs</name>
+    <message>
+        <source>Close page (Ctrl+W)</source>
+        <translation>Закрыть страницу (Ctrl+W)</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Закрыть</translation>
+    </message>
+</context>
+<context>
     <name>PenBar</name>
     <message>
         <source>Lasso</source>
@@ -2382,10 +2393,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>TitleBar</name>
     <message>
-        <source>Untitled page</source>
-        <translation>Страница без названия</translation>
-    </message>
-    <message>
         <source>Menu</source>
         <translation>Меню</translation>
     </message>
@@ -2476,10 +2483,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>View</source>
         <translation>Вид</translation>
-    </message>
-    <message>
-        <source>Close page (Ctrl+W)</source>
-        <translation>Закрыть страницу (Ctrl+W)</translation>
     </message>
     <message>
         <source>Restart to update</source>
