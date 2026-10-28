@@ -18,6 +18,15 @@ Rectangle {
     }
     property bool onRight: false
 
+    /// Row menus open now; their rows must not be rebuilt under them.
+    property int openMenus: 0
+    HoverHandler { id: sidebarHover }
+    Binding {
+        target: AppController
+        property: "holdRecent"
+        value: sidebarHover.hovered || sidebar.openMenus > 0
+    }
+
     // Dragging a row with mouse or pen (touch scrolls).
     property string dragging: ""
     property string draggingName: ""
@@ -704,7 +713,12 @@ Rectangle {
                     objectName: "rowMenu"
 
                     property int moves: 0
-                    onAboutToShow: moves = AppController.moveOptions(row.path)
+                    onAboutToShow: {
+                        moves = AppController.moveOptions(row.path)
+                        sidebar.openMenus++
+                    }
+                    onAboutToHide: sidebar.openMenus--
+                    Component.onDestruction: if (visible) sidebar.openMenus--
 
                     AppMenuItem {
                         visible: row.isPage

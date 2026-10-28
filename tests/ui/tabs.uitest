@@ -49,3 +49,11 @@ click-item closePage
 click-item closePage
 click-item closePage
 expect-prop noPage visible true
+# Recent keeps its order while the pointer is over the sidebar, so rows don't move under it.
+click-item viewNotebooks
+expect-prop recent_Physics/Optics index 3
+click-item recent_Physics/Optics
+expect-text pageTitle Optics
+expect-prop recent_Physics/Optics index 3
+click-item tab_draw
+expect-prop recent_Physics/Optics index 0

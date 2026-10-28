@@ -126,6 +126,8 @@ class AppController : public QObject
     Q_PROPERTY(bool converting READ converting NOTIFY convertingChanged)
     Q_PROPERTY(bool importing READ importing NOTIFY importingChanged)
     Q_PROPERTY(bool notebookView READ notebookView WRITE setNotebookView NOTIFY treeViewChanged)
+    /// While the pointer is over the sidebar, Recent keeps its order so rows don't move under it.
+    Q_PROPERTY(bool holdRecent READ holdRecent WRITE setHoldRecent NOTIFY holdRecentChanged)
     /// The shown view's: a folder under Folders, a notebook under Notebooks; "" for everything.
     Q_PROPERTY(QString treeFocus READ treeFocus WRITE setTreeFocus NOTIFY treeViewChanged)
     /// Milliseconds after the last edit; 0 saves only on Ctrl+S, page switches and quitting.
@@ -141,6 +143,8 @@ public:
     QString currentPage() const;
     QString currentTitle() const;
     QStringList openPages() const { return m_openPages; }
+    bool holdRecent() const { return m_holdRecent; }
+    void setHoldRecent(bool hold);
     InkCanvas *canvas() const { return m_canvas; }
     QString pdfProblem() const;
     bool indexing() const { return m_indexing; }
@@ -272,6 +276,7 @@ Q_SIGNALS:
     void libraryChanged();
     void currentPageChanged();
     void openPagesChanged();
+    void holdRecentChanged();
     void canvasChanged();
     void errorOccurred(const QString &message);
     void notice(const QString &message);
@@ -385,6 +390,9 @@ private:
     QString m_folderFocus;
     QString m_notebookFocus;
     QStringList m_openPages;
+    bool m_holdRecent = false;
+    /// Pages opened while Recent was held, oldest first.
+    QStringList m_heldRecent;
     struct View { double zoom, x, y; };
     /// Where each tab was scrolled to, kept while it is open.
     QHash<QString, View> m_views;

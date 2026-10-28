@@ -351,6 +351,7 @@ void AppController::setCanvas(InkCanvas *canvas)
 
 void AppController::openLibrary(const QString &pathOrUrl)
 {
+    m_heldRecent.clear();
     saveNow();
     const QString path = PlatformFiles::folderPath(pathOrUrl);
     if (path.isEmpty()) {
@@ -528,6 +529,20 @@ void AppController::closePage()
     refreshTree();
     rewatch();
     Q_EMIT currentPageChanged();
+}
+
+void AppController::setHoldRecent(bool hold)
+{
+    if (hold == m_holdRecent)
+        return;
+    m_holdRecent = hold;
+    Q_EMIT holdRecentChanged();
+    if (hold || m_heldRecent.isEmpty() || !m_library)
+        return;
+    for (const QString &page : std::as_const(m_heldRecent))
+        attempt([&] { (*m_library)->add_recent(toStd(page)); });
+    m_heldRecent.clear();
+    refreshTree();
 }
 
 void AppController::openInNewTab(const QString &path)
@@ -712,7 +727,10 @@ void AppController::showPage(const QString &path, bool newTab)
         }
         setOpenPages(tabs);
     }
-    attempt([&] { (*m_library)->add_recent(toStd(path)); });
+    if (m_holdRecent)
+        m_heldRecent << path;
+    else
+        attempt([&] { (*m_library)->add_recent(toStd(path)); });
     expandTo(path);
     // The open page is always in the sidebar.
     clearFocusOutside(path);
