@@ -51,7 +51,8 @@ type Analysis
 key Return
 expect-file Mathematics/Analysis/Untitled page.svg
 # A section dropped onto another makes that a section group.
-drag-item row_Mathematics/Analysis | row_Mathematics/Algebra
+# As a laptop touchpad reports it, which the pen also arrives through.
+touchpad-drag-item row_Mathematics/Analysis | row_Mathematics/Algebra
 expect-file Mathematics/Algebra/Analysis/Untitled page.svg
 expect-prop row_Mathematics/Algebra kind group
 expect-prop row_Mathematics/Algebra/Analysis kind section
@@ -64,3 +65,13 @@ expect-file My Notebook/Lab 18.05.2026.svg
 click-item row_Mathematics/Algebra/Untitled page
 click-item row_My Notebook/Lab 18.05.2026
 expect-text pageTitle Lab 18.05.2026
+# Full screen: only the page and the pen bar, which also leads back.
+key F11
+expect-hidden locationBar
+expect-hidden row_My Notebook/Lab 18.05.2026
+expect-prop penBar visible true
+click-item penBarFullScreen
+expect-prop locationBar visible true
+key F11
+key Escape
+expect-prop locationBar visible true

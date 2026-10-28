@@ -1163,6 +1163,10 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>ペンまたはツールを追加</translation>
     </message>
     <message>
+        <source>Full screen (F11)</source>
+        <translation>全画面表示（F11）</translation>
+    </message>
+    <message>
         <source>Add the current pen</source>
         <translation>現在のペンを追加</translation>
     </message>

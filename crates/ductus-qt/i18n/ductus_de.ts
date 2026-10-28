@@ -1168,6 +1168,10 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Stift oder Werkzeug hinzufügen</translation>
     </message>
     <message>
+        <source>Full screen (F11)</source>
+        <translation>Vollbild (F11)</translation>
+    </message>
+    <message>
         <source>Add the current pen</source>
         <translation>Aktuellen Stift hinzufügen</translation>
     </message>

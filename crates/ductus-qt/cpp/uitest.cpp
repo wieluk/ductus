@@ -44,6 +44,20 @@ const QPointingDevice *stylus(QPointingDevice::PointerType type)
     return type == QPointingDevice::PointerType::Eraser ? eraser : pen;
 }
 
+// Laptops report their mouse this way.
+const QPointingDevice *touchpad()
+{
+    static const QPointingDevice *device = [] {
+        auto *d = new QPointingDevice(QStringLiteral("Test Touchpad"), 4203,
+                                      QInputDevice::DeviceType::TouchPad,
+                                      QPointingDevice::PointerType::Generic,
+                                      QInputDevice::Capability::Position, 1, 3);
+        QWindowSystemInterface::registerInputDevice(d);
+        return d;
+    }();
+    return device;
+}
+
 QPointingDevice *touchscreen()
 {
     static QPointingDevice *device = QTest::createTouchDevice();
@@ -100,7 +114,7 @@ public:
                    args);
                 } else if (cmd == u"click") {
             QTest::mouseClick(m_window, Qt::LeftButton, {}, parsePoint(args.value(0)).toPoint());
-        } else if (cmd == u"drag-item") {
+        } else if (cmd == u"drag-item" || cmd == u"touchpad-drag-item") {
             // `drag-item A | B`: the mouse from item A's middle to item B's.
             QQuickItem *from = findItem(m_window->contentItem(), rest.section(QLatin1Char('|'), 0, 0).trimmed());
             QQuickItem *to = findItem(m_window->contentItem(), rest.section(QLatin1Char('|'), 1).trimmed());
@@ -108,12 +122,16 @@ public:
                 return fail(QStringLiteral("drag-item: no such items in ") + rest);
             const QPoint a = from->mapToScene(QPointF(from->width() / 2, from->height() / 2)).toPoint();
             const QPoint b = to->mapToScene(QPointF(to->width() / 2, to->height() / 2)).toPoint();
-            QTest::mouseMove(m_window, a);
-            QTest::mousePress(m_window, Qt::LeftButton, {}, a);
-            for (int i = 1; i <= 20; ++i)
-                QTest::mouseMove(m_window, a + (b - a) * i / 20, 15);
-            QTest::mouseRelease(m_window, Qt::LeftButton, {}, b);
-            QTest::qWait(100);
+            if (cmd == u"touchpad-drag-item") {
+                touchpadDrag(a, b);
+            } else {
+                QTest::mouseMove(m_window, a);
+                QTest::mousePress(m_window, Qt::LeftButton, {}, a);
+                for (int i = 1; i <= 20; ++i)
+                    QTest::mouseMove(m_window, a + (b - a) * i / 20, 15);
+                QTest::mouseRelease(m_window, Qt::LeftButton, {}, b);
+                QTest::qWait(100);
+            }
         } else if (cmd == u"click-item" || cmd == u"right-click-item") {
             const Qt::MouseButton button = cmd == u"click-item" ? Qt::LeftButton : Qt::RightButton;
             if (!clickItem(rest, button))
@@ -326,6 +344,24 @@ private:
     {
         return qmlEngine(m_window)->singletonInstance<QObject *>(QStringLiteral("Ductus"),
                                                                  QStringLiteral("AppController"));
+    }
+
+    void touchpadDrag(QPoint a, QPoint b)
+    {
+        auto send = [this](QPointF pos, Qt::MouseButtons buttons, Qt::MouseButton button, QEvent::Type type) {
+            QWindowSystemInterface::handleMouseEvent(m_window, m_time += 15, touchpad(),
+                                                     QHighDpi::toNativeLocalPosition(pos, m_window),
+                                                     QHighDpi::toNativeGlobalPosition(m_window->mapToGlobal(pos), m_window),
+                                                     buttons, button, type);
+            QWindowSystemInterface::flushWindowSystemEvents();
+        };
+        send(a, Qt::LeftButton, Qt::LeftButton, QEvent::MouseButtonPress);
+        for (int i = 1; i <= 20; ++i) {
+            send(a + QPointF(b - a) * i / 20, Qt::LeftButton, Qt::NoButton, QEvent::MouseMove);
+            QTest::qWait(15);
+        }
+        send(b, Qt::NoButton, Qt::LeftButton, QEvent::MouseButtonRelease);
+        QTest::qWait(100);
     }
 
     // Through the platform input path, as a real tablet's events arrive.

@@ -1168,6 +1168,10 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Ajouter un stylo ou un outil</translation>
     </message>
     <message>
+        <source>Full screen (F11)</source>
+        <translation>Plein écran (F11)</translation>
+    </message>
+    <message>
         <source>Add the current pen</source>
         <translation>Ajouter le stylo actuel</translation>
     </message>

@@ -1168,6 +1168,10 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
         <translation>Adicionar uma caneta ou ferramenta</translation>
     </message>
     <message>
+        <source>Full screen (F11)</source>
+        <translation>Tela cheia (F11)</translation>
+    </message>
+    <message>
         <source>Add the current pen</source>
         <translation>Adicionar a caneta atual</translation>
     </message>

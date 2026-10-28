@@ -387,9 +387,25 @@ Rectangle {
             Layout.fillHeight: true
             clip: true
             boundsBehavior: Flickable.StopAtBounds
+            // Mouse and pen drag rows; touch and the wheel scroll.
+            acceptedButtons: Qt.NoButton
             model: AppController.tree
             spacing: 1
             ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+
+            // A row dragged to an edge scrolls the list towards rows out of view.
+            Timer {
+                readonly property int edge: 32
+                interval: 16
+                repeat: true
+                running: sidebar.dragging.length > 0
+                         && (sidebar.dragAt.y < edge || sidebar.dragAt.y > list.height - edge)
+                onTriggered: {
+                    const step = sidebar.dragAt.y < edge ? -12 : 12
+                    const end = list.originY + Math.max(0, list.contentHeight - list.height)
+                    list.contentY = Math.max(list.originY, Math.min(end, list.contentY + step))
+                }
+            }
 
             section.property: AppController.tree.hasSections ? "section" : ""
             section.delegate: Item {
@@ -493,7 +509,8 @@ Rectangle {
                     id: dragger
                     target: null
                     enabled: !row.quick && !row.placeholder && sidebar.renaming !== row.path
-                    acceptedDevices: PointerDevice.Mouse | PointerDevice.Stylus
+                    // Laptops report their pointer as a touchpad, and the pen arrives through it.
+                    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad | PointerDevice.Stylus
                     onActiveChanged: {
                         if (active) {
                             sidebar.dragging = row.path

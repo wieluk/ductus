@@ -1168,6 +1168,10 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
         <translation>Añadir un lápiz o una herramienta</translation>
     </message>
     <message>
+        <source>Full screen (F11)</source>
+        <translation>Pantalla completa (F11)</translation>
+    </message>
+    <message>
         <source>Add the current pen</source>
         <translation>Añadir el lápiz actual</translation>
     </message>

@@ -11,9 +11,11 @@ Rectangle {
     /// JSON: { type: pen|highlighter, color, width, pattern? } or { type: tool, tool }.
     property string presetsJson: ""
     property bool onRight: false
+    property bool fullScreen: false
 
     signal screenshotRequested()
     signal pictureRequested()
+    signal fullScreenToggled()
 
     readonly property var tools: [
         { tool: "lasso", icon: "lasso", label: qsTr("Lasso") },
@@ -47,8 +49,7 @@ Rectangle {
         try {
             const list = JSON.parse(presetsJson)
             if (Array.isArray(list))
-                // Older settings stored only pens, with the kind in "tool".
-                return list.map(i => i.type ? i : { type: i.tool, color: i.color, width: i.width })
+                return list
         } catch (e) {}
         return defaults
     }
@@ -225,7 +226,7 @@ Rectangle {
                                           : bar.openEditor(item.index, item)
                 }
                 TapHandler {
-                    acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Mouse
+                    acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Mouse | PointerDevice.TouchPad
                     onLongPressed: item.isTool ? toolMenu.show(item.index, item)
                                                : bar.openEditor(item.index, item)
                 }
@@ -282,6 +283,15 @@ Rectangle {
             iconName: "plus"
             tip: qsTr("Add a pen or a tool")
             onClicked: addMenu.popup(this, bar.onRight ? -addMenu.width : width, 0)
+        }
+        RibbonButton {
+            objectName: "penBarFullScreen"
+            visible: bar.fullScreen
+            iconName: "fullscreen"
+            tip: qsTr("Full screen (F11)")
+            checkable: true
+            checked: bar.fullScreen
+            onClicked: bar.fullScreenToggled()
         }
     }
 

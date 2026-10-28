@@ -14,6 +14,8 @@ ApplicationWindow {
     property bool sidebarVisible: true
     property int sidebarWidth: Theme.sidebarWidth
     property bool penBarVisible: true
+    /// Only the page and the pen bar.
+    readonly property bool fullScreen: visibility === Window.FullScreen
     property bool penBarRight: false
     property bool sidebarRight: false
     property alias currentTab: titleBar.currentTab
@@ -274,6 +276,11 @@ ApplicationWindow {
         enabled: canvas.selectionCount > 0
         onActivated: canvas.clearSelection()
     }
+    Shortcut {
+        sequence: "Escape"
+        enabled: window.fullScreen && canvas.selectionCount === 0
+        onActivated: window.toggleFullScreen()
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -285,7 +292,7 @@ ApplicationWindow {
             window: window
             canvas: canvas
             compact: window.compact
-            visible: window.visibility !== Window.FullScreen
+            visible: !window.fullScreen
             onAboutRequested: aboutDialog.open()
             onNewPageRequested: newPageDialog.show("")
             onNewNotebookRequested: newNotebookDialog.show(AppController.defaultNotebookLocation())
@@ -304,6 +311,7 @@ ApplicationWindow {
 
         Ribbon {
             Layout.fillWidth: true
+            visible: !window.fullScreen
             canvas: canvas
             window: window
             tab: titleBar.currentTab
@@ -351,7 +359,7 @@ ApplicationWindow {
                                       : Math.min(window.sidebarWidth, window.width * 0.6)
                 x: window.sidebarRight ? parent.width - width : 0
                 visible: window.compact ? window.drawerOpen
-                                        : window.sidebarVisible && window.visibility !== Window.FullScreen
+                                        : window.sidebarVisible && !window.fullScreen
                 onRight: window.sidebarRight
 
                 MouseArea {
@@ -397,14 +405,14 @@ ApplicationWindow {
 
                 PageTabs {
                     Layout.fillWidth: true
-                    visible: AppController.openPages.length > 0
+                    visible: AppController.openPages.length > 0 && !window.fullScreen
                     pageTitle: window.pageTitle
                 }
 
                 LocationBar {
                     objectName: "locationBar"
                     Layout.fillWidth: true
-                    visible: AppController.currentPage.length > 0
+                    visible: AppController.currentPage.length > 0 && !window.fullScreen
                     onShowRequested: (path, view) => window.showInSidebar(path, view)
                 }
 
@@ -482,7 +490,10 @@ ApplicationWindow {
                         onRight: window.penBarRight
                         onScreenshotRequested: window.takeScreenshot()
                         onPictureRequested: imageFileDialog.open()
-                        visible: window.penBarVisible && canvas.enabled
+                        fullScreen: window.fullScreen
+                        onFullScreenToggled: window.toggleFullScreen()
+                        // Full screen has no ribbon, so the bar is the way to the tools and back.
+                        visible: window.penBarVisible && canvas.enabled || window.fullScreen
                         x: window.penBarRight ? parent.width - width - 10 : 10
                         anchors.verticalCenter: parent.verticalCenter
                         height: Math.min(implicitHeight, parent.height - 20)

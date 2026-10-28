@@ -1173,6 +1173,10 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Добавить перо или инструмент</translation>
     </message>
     <message>
+        <source>Full screen (F11)</source>
+        <translation>Во весь экран (F11)</translation>
+    </message>
+    <message>
         <source>Add the current pen</source>
         <translation>Добавить текущее перо</translation>
     </message>

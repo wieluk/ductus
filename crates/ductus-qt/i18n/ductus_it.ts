@@ -1168,6 +1168,10 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
         <translation>Aggiungi una penna o uno strumento</translation>
     </message>
     <message>
+        <source>Full screen (F11)</source>
+        <translation>Schermo intero (F11)</translation>
+    </message>
+    <message>
         <source>Add the current pen</source>
         <translation>Aggiungi la penna attuale</translation>
     </message>
