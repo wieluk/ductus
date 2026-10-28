@@ -115,19 +115,11 @@ pub mod qobject {
         type RecognitionHandle;
         fn open_recognizer() -> Box<RecognitionHandle>;
         /// `kind`: "off", "server" or "fixed:<text>".
+        /// Built-in recognizers use about this share of the processor's cores, in percent.
+        fn set_processor_share(percent: u32);
+        /// Recognition pauses between lines while the user is busy.
+        fn user_active(self: &RecognitionHandle);
         fn configure(self: &RecognitionHandle, kind: &str, url: &str, model: &str, key: &str);
-        #[allow(clippy::too_many_arguments)]
-        fn submit(
-            self: &RecognitionHandle,
-            page: &str,
-            key: &str,
-            x: f64,
-            y: f64,
-            w: f64,
-            h: f64,
-            png: &[u8],
-            lang: &str,
-        );
         fn pending(self: &RecognitionHandle) -> usize;
         fn take_results(self: &RecognitionHandle) -> Vec<RecognitionResult>;
         fn last_error(self: &RecognitionHandle) -> String;
@@ -253,7 +245,14 @@ pub mod qobject {
         fn indexing(self: &SearchHandle) -> bool;
         fn index_progress(self: &SearchHandle) -> Vec<u64>;
         fn index_error(self: &SearchHandle) -> String;
-        fn search(self: &SearchHandle, query: &str, limit: usize) -> Vec<SearchHit>;
+        /// `scope`: "all", "names" or "page" (only `page`).
+        fn search(
+            self: &SearchHandle,
+            query: &str,
+            scope: &str,
+            page: &str,
+            limit: usize,
+        ) -> Vec<SearchHit>;
     }
 
     extern "Rust" {
@@ -348,7 +347,13 @@ pub mod qobject {
             canvas: &CanvasEngine,
             view_y: f64,
         ) -> Result<()>;
-        fn recognition_jobs(self: &LibraryHandle, canvas: &CanvasEngine) -> Vec<LineJob>;
+        /// Queues the open page's unread lines; their images are drawn on the recognizer's thread.
+        fn queue_recognition(
+            self: &LibraryHandle,
+            canvas: &CanvasEngine,
+            recognizer: &RecognitionHandle,
+            lang: &str,
+        ) -> usize;
         /// True when the line is on the open page, which then needs saving.
         #[allow(clippy::too_many_arguments)]
         fn apply_recognition(
@@ -536,3 +541,4 @@ pub use crate::models::{
 pub use crate::recognize::{RecognitionHandle, open_recognizer};
 pub use crate::search::{SearchHandle, open_search};
 pub use crate::update::{UpdateHandle, open_updater, update_is_newer};
+pub use ductus_hwr::set_processor_share;

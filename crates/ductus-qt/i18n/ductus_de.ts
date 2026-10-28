@@ -988,6 +988,10 @@ Bibliothek: %1</translation>
         <translation>Mehr</translation>
     </message>
     <message>
+        <source>Open in new tab</source>
+        <translation>In neuem Tab öffnen</translation>
+    </message>
+    <message>
         <source>Open with its program</source>
         <translation>Mit seinem Programm öffnen</translation>
     </message>
@@ -1084,6 +1088,17 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     <message>
         <source>Open library folder…</source>
         <translation>Bibliotheksordner öffnen…</translation>
+    </message>
+</context>
+<context>
+    <name>PageTabs</name>
+    <message>
+        <source>Close page (Ctrl+W)</source>
+        <translation>Seite schließen (Strg+W)</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Schließen</translation>
     </message>
 </context>
 <context>
@@ -1648,6 +1663,30 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
 <context>
     <name>SearchBox</name>
     <message>
+        <source>This page</source>
+        <translation>Diese Seite</translation>
+    </message>
+    <message>
+        <source>Text, formulas, PDF text and handwriting on the open page (Ctrl+F)</source>
+        <translation>Text, Formeln, PDF-Text und Handschrift auf der offenen Seite (Strg+F)</translation>
+    </message>
+    <message>
+        <source>Page names</source>
+        <translation>Seitennamen</translation>
+    </message>
+    <message>
+        <source>The names of all pages and PDFs</source>
+        <translation>Die Namen aller Seiten und PDFs</translation>
+    </message>
+    <message>
+        <source>All pages</source>
+        <translation>Alle Seiten</translation>
+    </message>
+    <message>
+        <source>Names and contents of all pages and PDFs (Ctrl+K)</source>
+        <translation>Namen und Inhalte aller Seiten und PDFs (Strg+K)</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Suchen (Strg+F)</translation>
     </message>
@@ -2123,6 +2162,18 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Server mit Bildmodell</translation>
     </message>
     <message>
+        <source>Processor use</source>
+        <translation>Prozessorauslastung</translation>
+    </message>
+    <message>
+        <source>How much of the processor reading handwriting may take. Less keeps the device cool and quiet; more reads faster.</source>
+        <translation>Wie viel vom Prozessor das Lesen der Handschrift nutzen darf. Weniger hält das Gerät kühl und leise, mehr liest schneller.</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
         <source>Languages</source>
         <translation>Sprachen</translation>
     </message>
@@ -2337,10 +2388,6 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
 <context>
     <name>TitleBar</name>
     <message>
-        <source>Untitled page</source>
-        <translation>Unbenannte Seite</translation>
-    </message>
-    <message>
         <source>Menu</source>
         <translation>Menü</translation>
     </message>
@@ -2433,10 +2480,6 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Ansicht</translation>
     </message>
     <message>
-        <source>Close page (Ctrl+W)</source>
-        <translation>Seite schließen (Strg+W)</translation>
-    </message>
-    <message>
         <source>Restart to update</source>
         <translation>Zum Aktualisieren neu starten</translation>
     </message>
@@ -2487,8 +2530,8 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
 <context>
     <name>Translations</name>
     <message>
-        <source>System</source>
-        <translation>System</translation>
+        <source>System (%1)</source>
+        <translation>System (%1)</translation>
     </message>
 </context>
 <context>

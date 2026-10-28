@@ -993,6 +993,10 @@ Library: %1</source>
         <translation>Ещё</translation>
     </message>
     <message>
+        <source>Open in new tab</source>
+        <translation>Открыть в новой вкладке</translation>
+    </message>
+    <message>
         <source>Open with its program</source>
         <translation>Открыть в своей программе</translation>
     </message>
@@ -1089,6 +1093,17 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Open library folder…</source>
         <translation>Открыть папку библиотеки…</translation>
+    </message>
+</context>
+<context>
+    <name>PageTabs</name>
+    <message>
+        <source>Close page (Ctrl+W)</source>
+        <translation>Закрыть страницу (Ctrl+W)</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Закрыть</translation>
     </message>
 </context>
 <context>
@@ -1653,6 +1668,30 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>SearchBox</name>
     <message>
+        <source>This page</source>
+        <translation>Эта страница</translation>
+    </message>
+    <message>
+        <source>Text, formulas, PDF text and handwriting on the open page (Ctrl+F)</source>
+        <translation>Текст, формулы, текст PDF и рукописный текст на открытой странице (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Page names</source>
+        <translation>Названия страниц</translation>
+    </message>
+    <message>
+        <source>The names of all pages and PDFs</source>
+        <translation>Названия всех страниц и PDF</translation>
+    </message>
+    <message>
+        <source>All pages</source>
+        <translation>Все страницы</translation>
+    </message>
+    <message>
+        <source>Names and contents of all pages and PDFs (Ctrl+K)</source>
+        <translation>Названия и содержимое всех страниц и PDF (Ctrl+K)</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Поиск (Ctrl+F)</translation>
     </message>
@@ -2128,6 +2167,18 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Сервер модели зрения</translation>
     </message>
     <message>
+        <source>Processor use</source>
+        <translation>Нагрузка на процессор</translation>
+    </message>
+    <message>
+        <source>How much of the processor reading handwriting may take. Less keeps the device cool and quiet; more reads faster.</source>
+        <translation>Какую долю процессора может занимать чтение рукописного текста. Меньше — устройство тише и холоднее, больше — читает быстрее.</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1%</translation>
+    </message>
+    <message>
         <source>Languages</source>
         <translation>Языки</translation>
     </message>
@@ -2342,10 +2393,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>TitleBar</name>
     <message>
-        <source>Untitled page</source>
-        <translation>Страница без названия</translation>
-    </message>
-    <message>
         <source>Menu</source>
         <translation>Меню</translation>
     </message>
@@ -2438,10 +2485,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Вид</translation>
     </message>
     <message>
-        <source>Close page (Ctrl+W)</source>
-        <translation>Закрыть страницу (Ctrl+W)</translation>
-    </message>
-    <message>
         <source>Restart to update</source>
         <translation>Перезапустить для обновления</translation>
     </message>
@@ -2492,8 +2535,8 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>Translations</name>
     <message>
-        <source>System</source>
-        <translation>Система</translation>
+        <source>System (%1)</source>
+        <translation>Система (%1)</translation>
     </message>
 </context>
 <context>

@@ -35,9 +35,10 @@ public:
     static bool installed(const QString &id);
     /// The models that read handwriting in `langs`, an `hwr/lang` list such as "de,en".
     Q_INVOKABLE static QStringList textModels(const QString &langs);
-    /// `hwr/lang` when unset: the system's language if handwriting in it can be read, else English.
-    Q_INVOKABLE static QString defaultLanguages();
-    /// `hwr/lang`, or its default.
+    /// The known languages in an `hwr/lang` list; when there are none ("" or the old "auto"),
+    /// the system's language if handwriting in it can be read, else English.
+    Q_INVOKABLE static QString chosenLanguages(const QString &langs);
+    /// `hwr/lang`, chosen as above.
     static QString languages();
 
     QVariantList entries() const;

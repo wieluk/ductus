@@ -12,7 +12,6 @@ Rectangle {
     // A tab name saved by an older version falls back to Draw.
     onCurrentTabChanged: if (["file", "draw", "insert", "page", "view"].indexOf(currentTab) < 0)
                              currentTab = "draw"
-    property string pageTitle: qsTr("Untitled page")
     /// A narrow window, such as a phone: less text, more scrolling.
     property bool compact: false
     readonly property bool mobile: Qt.platform.os === "android" || Qt.platform.os === "ios"
@@ -35,7 +34,7 @@ Rectangle {
     implicitHeight: Theme.titleHeight
     color: Theme.titleBar
 
-    function focusSearch() { searchBox.focusSearch() }
+    function focusSearch(page) { searchBox.focusSearch(page) }
 
     function toggleMaximized() {
         if (window.visibility === Window.Maximized)
@@ -233,54 +232,7 @@ Rectangle {
                 }
             }
 
-            Item {
-                id: titleArea
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                // The location bar names the page on a narrow screen.
-                visible: !bar.compact
-
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 4
-                    Label {
-                        objectName: "pageTitle"
-                        anchors.verticalCenter: parent.verticalCenter
-                        // Shortened only when the space between tabs and search runs out.
-                        width: Math.min(implicitWidth, titleArea.width - closePage.width - 4)
-                        text: bar.pageTitle
-                        color: Theme.titleTextMuted
-                        font.pixelSize: 13
-                        elide: Text.ElideRight
-                    }
-                    ToolButton {
-                        id: closePage
-                        objectName: "closePage"
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: AppController.currentPage.length > 0
-                        implicitWidth: 24
-                        implicitHeight: 24
-                        focusPolicy: Qt.NoFocus
-                        display: AbstractButton.IconOnly
-                        icon.source: Qt.resolvedUrl("icons/close.svg")
-                        icon.width: 12
-                        icon.height: 12
-                        icon.color: Theme.titleTextMuted
-                        // Hidden once pressed, until the pointer leaves.
-                        property bool tipDismissed: false
-                        onPressed: tipDismissed = true
-                        onHoveredChanged: if (!hovered) tipDismissed = false
-                        ToolTip.visible: hovered && !tipDismissed
-                        ToolTip.delay: 600
-                        ToolTip.text: qsTr("Close page (Ctrl+W)")
-                        onClicked: AppController.closePage()
-                        background: Rectangle {
-                            radius: Theme.radius
-                            color: closePage.hovered ? Theme.titleHover : "transparent"
-                        }
-                    }
-                }
-            }
+            Item { Layout.fillWidth: true }
 
             RibbonButton {
                 objectName: "updateButton"
@@ -300,7 +252,7 @@ Rectangle {
             SearchBox {
                 id: searchBox
                 objectName: "searchBox"
-                Layout.preferredWidth: !bar.compact ? Math.min(260, bar.width / 4) : active ? 200 : 32
+                Layout.preferredWidth: !bar.compact ? Math.min(300, bar.width / 4) : active ? 230 : 32
                 Layout.rightMargin: 8
             }
 

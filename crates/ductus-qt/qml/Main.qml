@@ -233,12 +233,19 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+\\"; onActivated: window.toggleSidebar() }
     Shortcut { sequences: [StandardKey.Open]; onActivated: openFileDialog.open() }
     Shortcut {
-        sequences: [StandardKey.Find, "Ctrl+K"]
-        onActivated: titleBar.focusSearch()
-        onActivatedAmbiguously: titleBar.focusSearch()
+        sequences: [StandardKey.Find]
+        onActivated: titleBar.focusSearch(true)
+        onActivatedAmbiguously: titleBar.focusSearch(true)
+    }
+    Shortcut {
+        sequence: "Ctrl+K"
+        onActivated: titleBar.focusSearch(false)
+        onActivatedAmbiguously: titleBar.focusSearch(false)
     }
     Shortcut { sequences: [StandardKey.Save]; onActivated: AppController.saveNow() }
     Shortcut { sequence: "Ctrl+W"; onActivated: AppController.closePage() }
+    Shortcut { sequences: [StandardKey.NextChild, "Ctrl+PgDown"]; onActivated: AppController.switchTab(1) }
+    Shortcut { sequences: [StandardKey.PreviousChild, "Ctrl+PgUp"]; onActivated: AppController.switchTab(-1) }
     // Not StandardKey.Quit: on Linux that is Ctrl+Q as well.
     Shortcut { sequence: "Ctrl+Q"; onActivated: Qt.quit() }
     Shortcut { sequences: [StandardKey.Print]; onActivated: AppController.print() }
@@ -268,7 +275,6 @@ ApplicationWindow {
             Layout.fillWidth: true
             window: window
             canvas: canvas
-            pageTitle: window.pageTitle
             compact: window.compact
             visible: window.visibility !== Window.FullScreen
             onAboutRequested: aboutDialog.open()
@@ -379,6 +385,12 @@ ApplicationWindow {
                 width: parent.width - (body.besidePage ? tree.width : 0)
                 height: parent.height
                 spacing: 0
+
+                PageTabs {
+                    Layout.fillWidth: true
+                    visible: AppController.openPages.length > 0
+                    pageTitle: window.pageTitle
+                }
 
                 LocationBar {
                     objectName: "locationBar"

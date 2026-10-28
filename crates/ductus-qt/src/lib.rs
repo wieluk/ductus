@@ -11,6 +11,7 @@ mod ffi;
 mod import;
 mod library;
 mod models;
+mod priority;
 mod recognize;
 mod search;
 mod update;

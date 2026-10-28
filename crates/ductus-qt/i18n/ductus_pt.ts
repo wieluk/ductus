@@ -988,6 +988,10 @@ Biblioteca: %1</translation>
         <translation>Mais</translation>
     </message>
     <message>
+        <source>Open in new tab</source>
+        <translation>Abrir em nova aba</translation>
+    </message>
+    <message>
         <source>Open with its program</source>
         <translation>Abrir com o programa dele</translation>
     </message>
@@ -1084,6 +1088,17 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
     <message>
         <source>Open library folder…</source>
         <translation>Abrir pasta da biblioteca…</translation>
+    </message>
+</context>
+<context>
+    <name>PageTabs</name>
+    <message>
+        <source>Close page (Ctrl+W)</source>
+        <translation>Fechar página (Ctrl+W)</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Fechar</translation>
     </message>
 </context>
 <context>
@@ -1648,6 +1663,30 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
 <context>
     <name>SearchBox</name>
     <message>
+        <source>This page</source>
+        <translation>Esta página</translation>
+    </message>
+    <message>
+        <source>Text, formulas, PDF text and handwriting on the open page (Ctrl+F)</source>
+        <translation>Texto, fórmulas, texto de PDF e escrita à mão na página aberta (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Page names</source>
+        <translation>Nomes das páginas</translation>
+    </message>
+    <message>
+        <source>The names of all pages and PDFs</source>
+        <translation>Os nomes de todas as páginas e PDFs</translation>
+    </message>
+    <message>
+        <source>All pages</source>
+        <translation>Todas as páginas</translation>
+    </message>
+    <message>
+        <source>Names and contents of all pages and PDFs (Ctrl+K)</source>
+        <translation>Nomes e conteúdos de todas as páginas e PDFs (Ctrl+K)</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Buscar (Ctrl+F)</translation>
     </message>
@@ -2123,6 +2162,18 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
         <translation>Servidor de modelo de visão</translation>
     </message>
     <message>
+        <source>Processor use</source>
+        <translation>Uso do processador</translation>
+    </message>
+    <message>
+        <source>How much of the processor reading handwriting may take. Less keeps the device cool and quiet; more reads faster.</source>
+        <translation>Quanto do processador a leitura da escrita à mão pode usar. Menos mantém o aparelho frio e silencioso; mais lê mais rápido.</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1%</translation>
+    </message>
+    <message>
         <source>Languages</source>
         <translation>Idiomas</translation>
     </message>
@@ -2337,10 +2388,6 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
 <context>
     <name>TitleBar</name>
     <message>
-        <source>Untitled page</source>
-        <translation>Página sem título</translation>
-    </message>
-    <message>
         <source>Menu</source>
         <translation>Menu</translation>
     </message>
@@ -2433,10 +2480,6 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
         <translation>Exibir</translation>
     </message>
     <message>
-        <source>Close page (Ctrl+W)</source>
-        <translation>Fechar página (Ctrl+W)</translation>
-    </message>
-    <message>
         <source>Restart to update</source>
         <translation>Reiniciar para atualizar</translation>
     </message>
@@ -2487,8 +2530,8 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
 <context>
     <name>Translations</name>
     <message>
-        <source>System</source>
-        <translation>Sistema</translation>
+        <source>System (%1)</source>
+        <translation>Sistema (%1)</translation>
     </message>
 </context>
 <context>

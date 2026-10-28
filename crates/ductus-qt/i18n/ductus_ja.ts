@@ -983,6 +983,10 @@ Library: %1</source>
         <translation>その他</translation>
     </message>
     <message>
+        <source>Open in new tab</source>
+        <translation>新しいタブで開く</translation>
+    </message>
+    <message>
         <source>Open with its program</source>
         <translation>対応するプログラムで開く</translation>
     </message>
@@ -1079,6 +1083,17 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Open library folder…</source>
         <translation>ライブラリフォルダーを開く…</translation>
+    </message>
+</context>
+<context>
+    <name>PageTabs</name>
+    <message>
+        <source>Close page (Ctrl+W)</source>
+        <translation>ページを閉じる（Ctrl+W）</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>閉じる</translation>
     </message>
 </context>
 <context>
@@ -1643,6 +1658,30 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>SearchBox</name>
     <message>
+        <source>This page</source>
+        <translation>このページ</translation>
+    </message>
+    <message>
+        <source>Text, formulas, PDF text and handwriting on the open page (Ctrl+F)</source>
+        <translation>開いているページのテキスト、数式、PDF のテキスト、手書き (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Page names</source>
+        <translation>ページ名</translation>
+    </message>
+    <message>
+        <source>The names of all pages and PDFs</source>
+        <translation>すべてのページと PDF の名前</translation>
+    </message>
+    <message>
+        <source>All pages</source>
+        <translation>すべてのページ</translation>
+    </message>
+    <message>
+        <source>Names and contents of all pages and PDFs (Ctrl+K)</source>
+        <translation>すべてのページと PDF の名前と内容 (Ctrl+K)</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>検索（Ctrl+F）</translation>
     </message>
@@ -2118,6 +2157,18 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>画像認識モデルのサーバー</translation>
     </message>
     <message>
+        <source>Processor use</source>
+        <translation>プロセッサーの使用量</translation>
+    </message>
+    <message>
+        <source>How much of the processor reading handwriting may take. Less keeps the device cool and quiet; more reads faster.</source>
+        <translation>手書きの読み取りが使えるプロセッサーの量です。少なくすると端末が熱くならず静かになり、多くすると速く読み取ります。</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1%</translation>
+    </message>
+    <message>
         <source>Languages</source>
         <translation>言語</translation>
     </message>
@@ -2332,10 +2383,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>TitleBar</name>
     <message>
-        <source>Untitled page</source>
-        <translation>無題のページ</translation>
-    </message>
-    <message>
         <source>Menu</source>
         <translation>メニュー</translation>
     </message>
@@ -2428,10 +2475,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>表示</translation>
     </message>
     <message>
-        <source>Close page (Ctrl+W)</source>
-        <translation>ページを閉じる（Ctrl+W）</translation>
-    </message>
-    <message>
         <source>Restart to update</source>
         <translation>再起動して更新</translation>
     </message>
@@ -2482,8 +2525,8 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>Translations</name>
     <message>
-        <source>System</source>
-        <translation>システム</translation>
+        <source>System (%1)</source>
+        <translation>システム（%1）</translation>
     </message>
 </context>
 <context>

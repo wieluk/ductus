@@ -41,6 +41,12 @@ click-item menuMoveUp
 expect-prop row_Uni/Mech/notebook index 5
 # Pages without a notebook at hand go to the Inbox.
 key Ctrl+W
+key Ctrl+W
+key Ctrl+W
+key Ctrl+W
+key Ctrl+W
+key Ctrl+W
+expect-prop noPage visible true
 key Ctrl+N
 type Idea
 key Return

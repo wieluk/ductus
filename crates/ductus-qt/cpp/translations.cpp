@@ -16,6 +16,23 @@ const QString dir = QStringLiteral(":/i18n");
 QTranslator *own = nullptr;
 QTranslator *qt = nullptr;
 
+QString nativeName(const QLocale &locale)
+{
+    QString name = locale.nativeLanguageName();
+    if (!name.isEmpty())
+        name[0] = name[0].toUpper();
+    return name;
+}
+
+/// The language "System" shows the app in: the system's if there's a translation, else English.
+QString systemName()
+{
+    QTranslator probe;
+    if (probe.load(QLocale::system(), QStringLiteral("ductus"), QStringLiteral("_"), dir))
+        return nativeName(QLocale(probe.language()));
+    return QStringLiteral("English");
+}
+
 QString saved()
 {
     return QSettings().value(QStringLiteral("app/language")).toString();
@@ -51,16 +68,14 @@ void Translations::apply()
 
 QVariantList Translations::languages() const
 {
-    QVariantList out{QVariantMap{{QStringLiteral("code"), QString()}, {QStringLiteral("name"), tr("System")}},
+    QVariantList out{QVariantMap{{QStringLiteral("code"), QString()},
+                                 {QStringLiteral("name"), tr("System (%1)").arg(systemName())}},
                      QVariantMap{{QStringLiteral("code"), QStringLiteral("en")},
                                  {QStringLiteral("name"), QStringLiteral("English")}}};
     QList<QPair<QString, QString>> found;
     for (const QString &file : QDir(dir).entryList({QStringLiteral("ductus_*.qm")})) {
         const QString code = file.mid(7, file.size() - 10);
-        QString name = QLocale(code).nativeLanguageName();
-        if (!name.isEmpty())
-            name[0] = name[0].toUpper();
-        found.append({name, code});
+        found.append({nativeName(QLocale(code)), code});
     }
     std::sort(found.begin(), found.end());
     for (const auto &[name, code] : found)

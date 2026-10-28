@@ -462,11 +462,24 @@ Rectangle {
                     }
                     onCentroidChanged: if (active) sidebar.dragAt = row.mapToItem(list, centroid.position)
                 }
+                readonly property bool isPage: !isFolder && !isFile && !placeholder
                 TapHandler {
                     acceptedButtons: Qt.LeftButton
+                    acceptedModifiers: Qt.NoModifier
                     onTapped: row.activate()
                     // At the touch point: touch does not move the cursor.
                     onLongPressed: rowMenu.popup(point.position.x, point.position.y)
+                }
+                // Like a link in a browser: Ctrl or the middle button opens a new tab.
+                TapHandler {
+                    acceptedButtons: Qt.LeftButton
+                    acceptedModifiers: Qt.ControlModifier
+                    onTapped: row.isPage ? AppController.openInNewTab(row.path) : row.activate()
+                }
+                TapHandler {
+                    acceptedButtons: Qt.MiddleButton
+                    enabled: row.isPage
+                    onTapped: AppController.openInNewTab(row.path)
                 }
                 TapHandler {
                     acceptedButtons: Qt.RightButton
@@ -633,6 +646,13 @@ Rectangle {
                     property int moves: 0
                     onAboutToShow: moves = AppController.moveOptions(row.path)
 
+                    AppMenuItem {
+                        visible: row.isPage
+                        height: visible ? implicitHeight : 0
+                        text: qsTr("Open in new tab")
+                        objectName: "menuOpenInNewTab"
+                        onTriggered: AppController.openInNewTab(row.path)
+                    }
                     AppMenuItem {
                         visible: row.isFile
                         height: visible ? implicitHeight : 0

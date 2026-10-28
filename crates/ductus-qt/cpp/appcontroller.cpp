@@ -199,6 +199,7 @@ AppController::AppController(QObject *parent)
         refreshIndex();
     });
     m_recognizer.emplace(open_recognizer());
+    qApp->installEventFilter(this);
     m_converter.emplace(open_converter());
     m_convertPoll.setInterval(200);
     connect(&m_convertPoll, &QTimer::timeout, this, &AppController::pollConversion);
@@ -248,6 +249,29 @@ AppController::AppController(QObject *parent)
 }
 
 AppController::~AppController() = default;
+
+bool AppController::eventFilter(QObject *watched, QEvent *event)
+{
+    switch (event->type()) {
+    case QEvent::TabletPress:
+    case QEvent::TabletMove:
+    case QEvent::TouchBegin:
+    case QEvent::TouchUpdate:
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseMove:
+    case QEvent::Wheel:
+    case QEvent::KeyPress:
+        // Every event would be thousands of calls a second while drawing.
+        if (m_recognizer && (!m_lastInput.isValid() || m_lastInput.elapsed() > 100)) {
+            m_lastInput.start();
+            (*m_recognizer)->user_active();
+        }
+        break;
+    default:
+        break;
+    }
+    return QObject::eventFilter(watched, event);
+}
 
 bool AppController::attempt(const std::function<void()> &action)
 {
@@ -347,9 +371,21 @@ void AppController::openLibrary(const QString &pathOrUrl)
     Q_EMIT libraryChanged();
 
     // A closed page stays closed; a new library starts on its starter page.
+    const auto exists = [this](const QString &page) {
+        return QFileInfo::exists(toQ((*m_library)->page_file(toStd(page))));
+    };
     QString last = starter.isEmpty() ? rememberedPage() : starter;
-    if (!last.isEmpty() && !QFileInfo::exists(toQ((*m_library)->page_file(toStd(last)))))
+    if (!last.isEmpty() && !exists(last))
         last.clear();
+    QStringList tabs;
+    if (!last.isEmpty()) {
+        const QVariantMap stored = QSettings().value(QStringLiteral("library/openPages")).toMap();
+        for (const QString &page : stored.value(libraryPath()).toStringList())
+            if (exists(page))
+                tabs << page;
+    }
+    m_views.clear();
+    setOpenPages(tabs);
     if (!last.isEmpty()) {
         openPage(last);
     } else {
@@ -466,8 +502,18 @@ QString AppController::rememberedPage() const
 
 void AppController::closePage()
 {
-    if (!m_library || !m_canvas || currentPage().isEmpty())
+    const QString page = currentPage();
+    if (!m_library || !m_canvas || page.isEmpty())
         return;
+    const qsizetype at = m_openPages.indexOf(page);
+    QStringList rest = m_openPages;
+    rest.removeAll(page);
+    if (!rest.isEmpty()) {
+        showPage(rest.at(qBound(qsizetype(0), at, rest.size() - 1)), false);
+        if (currentPage() != page)
+            closeTab(page);
+        return;
+    }
     m_canvas->finishTextEditing();
     saveNow();
     (*m_library)->close_page();
@@ -476,9 +522,73 @@ void AppController::closePage()
     m_savedRevision = m_canvas->revision();
     setDirty(false);
     rememberPage(QString());
+    m_views.clear();
+    setOpenPages({});
     refreshTree();
     rewatch();
     Q_EMIT currentPageChanged();
+}
+
+void AppController::openInNewTab(const QString &path)
+{
+    showPage(path, true);
+}
+
+void AppController::closeTab(const QString &path)
+{
+    if (path == currentPage()) {
+        closePage();
+        return;
+    }
+    m_views.remove(path);
+    QStringList tabs = m_openPages;
+    tabs.removeAll(path);
+    setOpenPages(tabs);
+}
+
+void AppController::switchTab(int delta)
+{
+    const qsizetype count = m_openPages.size();
+    if (count < 2)
+        return;
+    const qsizetype at = m_openPages.indexOf(currentPage());
+    showPage(m_openPages.at(((at + delta) % count + count) % count), false);
+}
+
+void AppController::setOpenPages(const QStringList &pages)
+{
+    const bool changed = pages != m_openPages;
+    m_openPages = pages;
+    QSettings settings;
+    QVariantMap stored = settings.value(QStringLiteral("library/openPages")).toMap();
+    if (pages.isEmpty())
+        stored.remove(libraryPath());
+    else
+        stored.insert(libraryPath(), pages);
+    settings.setValue(QStringLiteral("library/openPages"), stored);
+    if (changed)
+        Q_EMIT openPagesChanged();
+}
+
+QString AppController::moved(const QString &path, const QString &from, const QString &to)
+{
+    if (path == from)
+        return to;
+    if (path.startsWith(from + QLatin1Char('/')))
+        return to + path.mid(from.size());
+    return path;
+}
+
+void AppController::followMove(const QString &from, const QString &to)
+{
+    QStringList tabs;
+    for (const QString &page : std::as_const(m_openPages))
+        tabs << moved(page, from, to);
+    QHash<QString, View> views;
+    for (auto it = m_views.cbegin(); it != m_views.cend(); ++it)
+        views.insert(moved(it.key(), from, to), it.value());
+    m_views = views;
+    setOpenPages(tabs);
 }
 
 void AppController::insertBlankPage()
@@ -564,18 +674,43 @@ void AppController::rewatch()
 
 void AppController::openPage(const QString &path)
 {
+    showPage(path, false);
+}
+
+void AppController::showPage(const QString &path, bool newTab)
+{
     if (!m_library || !m_canvas)
         return;
     m_canvas->finishTextEditing();
     saveNow();
-    const bool ok = attempt([&] { (*m_library)->load_into(toStd(path), m_canvas->engine()); });
+    const QString before = currentPage();
+    CanvasEngine &engine = m_canvas->engine();
+    if (m_openPages.contains(before))
+        m_views.insert(before, {engine.zoom(), engine.offset_x(), engine.offset_y()});
+    const bool ok = attempt([&] { (*m_library)->load_into(toStd(path), engine); });
     if (!ok)
         return;
+    // A tab comes back scrolled where it was left.
+    if (const auto view = m_views.constFind(path); view != m_views.cend())
+        engine.set_view(view->zoom, view->x, view->y);
     m_canvas->documentReplaced();
     m_canvas->setPicturesAllowed((*m_library)->accepts_pictures());
     m_savedRevision = m_canvas->revision();
     setDirty(false);
     rememberPage(path);
+    if (!m_openPages.contains(path)) {
+        QStringList tabs = m_openPages;
+        const qsizetype at = tabs.indexOf(before);
+        if (at < 0) {
+            tabs << path;
+        } else if (newTab) {
+            tabs.insert(at + 1, path);
+        } else {
+            m_views.remove(before);
+            tabs[at] = path;
+        }
+        setOpenPages(tabs);
+    }
     attempt([&] { (*m_library)->add_recent(toStd(path)); });
     expandTo(path);
     // The open page is always in the sidebar.
@@ -654,7 +789,7 @@ QString AppController::addNotebook(const QString &location, const QString &name,
     m_expanded.insert(folder);
     storeExpanded();
     if (!page.isEmpty())
-        openPage(page);
+        openInNewTab(page);
     else
         refreshTree();
     Q_EMIT revealRequested(folder);
@@ -667,7 +802,7 @@ QString AppController::addPage(const QString &folder, const QString &name)
         return {};
     const QString path = createPage(folder, name);
     if (!path.isEmpty()) {
-        openPage(path);
+        openInNewTab(path);
         Q_EMIT revealRequested(path);
     }
     return path;
@@ -859,16 +994,11 @@ QString AppController::rename(const QString &path, const QString &name)
         m_keepVisible = renamed;
     // Keep expansion state for a renamed folder and everything inside it.
     QSet<QString> updated;
-    for (const QString &e : std::as_const(m_expanded)) {
-        if (e == path)
-            updated.insert(renamed);
-        else if (e.startsWith(path + QLatin1Char('/')))
-            updated.insert(renamed + e.mid(path.size()));
-        else
-            updated.insert(e);
-    }
+    for (const QString &e : std::as_const(m_expanded))
+        updated.insert(moved(e, path, renamed));
     m_expanded = updated;
     storeExpanded();
+    followMove(path, renamed);
     if (!currentPage().isEmpty())
         rememberPage(currentPage());
     refreshTree();
@@ -887,18 +1017,13 @@ QString AppController::moveTo(const QString &path, const QString &parent)
         return {};
     // Expansion follows the move; the new place opens.
     QSet<QString> updated;
-    for (const QString &e : std::as_const(m_expanded)) {
-        if (e == path)
-            updated.insert(moved);
-        else if (e.startsWith(path + QLatin1Char('/')))
-            updated.insert(moved + e.mid(path.size()));
-        else
-            updated.insert(e);
-    }
+    for (const QString &e : std::as_const(m_expanded))
+        updated.insert(AppController::moved(e, path, moved));
     for (QString folder = parent; !folder.isEmpty(); folder = parentOf(folder))
         updated.insert(folder);
     m_expanded = updated;
     storeExpanded();
+    followMove(path, moved);
     m_keepVisible = moved;
     if (!currentPage().isEmpty())
         rememberPage(currentPage());
@@ -915,12 +1040,23 @@ void AppController::remove(const QString &path)
     if (!m_library)
         return;
     const QString open = currentPage();
-    const bool openInside = open == path || open.startsWith(path + QLatin1Char('/'));
+    const bool openInside = inside(open, path) && !open.isEmpty();
     if (openInside)
         saveNow();
-    // Where to go instead: the next page beside it, else the one before.
+    // Where to go instead: the next tab, else the next page beside it, else the one before.
+    QStringList tabs;
+    for (const QString &page : std::as_const(m_openPages))
+        if (!inside(page, path))
+            tabs << page;
     QString neighbour;
-    if (openInside) {
+    if (openInside && !tabs.isEmpty()) {
+        const qsizetype at = m_openPages.indexOf(open);
+        for (qsizetype i = 1; i < m_openPages.size() && neighbour.isEmpty(); ++i)
+            if (tabs.contains(m_openPages.value(at + i)))
+                neighbour = m_openPages.at(at + i);
+        if (neighbour.isEmpty())
+            neighbour = tabs.last();
+    } else if (openInside) {
         const QString parent = parentOf(path);
         QStringList pages;
         for (const NotebookModel::Row &row : m_tree.rows()) {
@@ -943,6 +1079,10 @@ void AppController::remove(const QString &path)
     QString id;
     if (!attempt([&] { id = toQ((*m_library)->remove(toStd(path))); }))
         return;
+    for (const QString &page : std::as_const(m_openPages))
+        if (!tabs.contains(page))
+            m_views.remove(page);
+    setOpenPages(tabs);
     refreshTree();
     refreshIndex();
     if (openInside) {
@@ -957,6 +1097,7 @@ void AppController::remove(const QString &path)
 
 void AppController::unloadPage()
 {
+    setOpenPages({});
     m_canvas->engine().unload();
     m_canvas->documentReplaced();
     m_savedRevision = m_canvas->revision();
@@ -1001,7 +1142,7 @@ QString AppController::restoreFromTrash(const QString &id)
     if (QFileInfo(libraryPath() + QLatin1Char('/') + rel).isDir())
         reveal(rel);
     else
-        openPage(rel);
+        openInNewTab(rel);
     Q_EMIT notice(tr("\u201c%1\u201d is back.").arg(rel.section(QLatin1Char('/'), -1)));
     return rel;
 }
@@ -1068,7 +1209,7 @@ QString AppController::copyVersion(const QString &path, double saved)
     m_keepVisible = rel;
     refreshTree();
     refreshIndex();
-    openPage(rel);
+    openInNewTab(rel);
     return rel;
 }
 
@@ -1182,7 +1323,8 @@ void AppController::saveNow()
             (*m_search)->reindex(toStd(currentPage()));
             m_indexTimer.start();
         }
-        if (recognizerKind() != u"off")
+        // Lines still queued are not prepared again; the rest follow once they are read.
+        if (recognizerKind() != u"off" && (*m_recognizer)->pending() == 0)
             m_recognizeTimer.start();
         // An atomic save replaces the file, which ends the watch on it.
         QTimer::singleShot(0, this, &AppController::rewatch);
@@ -1237,7 +1379,7 @@ QString AppController::importPdf(const QString &fileOrUrl, bool annotate, const 
     attempt([&] { path = toQ((*m_library)->import_pdf(toStd(folder), toStd(file), annotate)); });
     if (path.isEmpty())
         return {};
-    openPage(path);
+    openInNewTab(path);
     Q_EMIT revealRequested(path);
     refreshIndex();
     Q_EMIT notice(annotate ? tr("PDF added. Your ink is saved into the PDF itself.")
@@ -1296,7 +1438,7 @@ void AppController::finishImport(const QString &folder, const QString &name)
     refreshTree();
     refreshIndex();
     if (!result.page.empty())
-        openPage(toQ(result.page));
+        openInNewTab(toQ(result.page));
     locate(root);
     const QString warnings = toQ(result.warnings);
     const QString place = tr("Imported into %1.").arg(placeLabel(folder));
@@ -1501,7 +1643,7 @@ QString AppController::openFile(const QString &fileOrUrl)
         QString rel = file.mid(root.size());
         if (suffix == u"svg")
             rel.chop(4);
-        openPage(rel);
+        openInNewTab(rel);
         return {};
     }
     if (suffix == u"pdf")
@@ -1511,7 +1653,7 @@ QString AppController::openFile(const QString &fileOrUrl)
     if (ensureFolder(folder))
         attempt([&] { path = toQ((*m_library)->import_page(toStd(folder), toStd(info.absoluteFilePath()))); });
     if (!path.isEmpty()) {
-        openPage(path);
+        openInNewTab(path);
         Q_EMIT revealRequested(path);
         Q_EMIT notice(tr("Page copied into %1.").arg(placeLabel(folder)));
     }
@@ -1541,7 +1683,8 @@ void AppController::pollIndex()
         status = tr("Indexing…");
     else if (const QString error = toQ((*m_search)->index_error()); !error.isEmpty())
         status = tr("Search index: %1").arg(error);
-    if (busy != m_indexing || status != m_indexStatus) {
+    // Also once when done: a quick job may finish between two polls, and open results go stale.
+    if (busy != m_indexing || status != m_indexStatus || !busy) {
         m_indexing = busy;
         m_indexStatus = status;
         Q_EMIT indexStatusChanged();
@@ -1550,12 +1693,19 @@ void AppController::pollIndex()
         m_indexTimer.stop();
 }
 
-QVariantList AppController::search(const QString &query, int limit)
+QVariantList AppController::search(const QString &query, const QString &scope, int limit)
 {
     QVariantList out;
     if (!m_search || query.trimmed().isEmpty())
         return out;
-    const rust::Vec<SearchHit> hits = (*m_search)->search(toStd(query), static_cast<std::size_t>(limit));
+    const bool onPage = scope == u"page";
+    if (onPage && currentPage().isEmpty())
+        return out;
+    // What was just written is found once this save is indexed.
+    if (onPage && m_dirty)
+        saveNow();
+    const rust::Vec<SearchHit> hits = (*m_search)->search(toStd(query), toStd(scope), toStd(currentPage()),
+                                                          static_cast<std::size_t>(limit));
     for (const SearchHit &h : hits) {
         QString snippet = toQ(h.snippet).toHtmlEscaped();
         snippet.replace(QChar(1), QStringLiteral("<b>")).replace(QChar(2), QStringLiteral("</b>"));
@@ -1644,17 +1794,11 @@ void AppController::recognizeOpenPage()
             return;
         }
     }
+    set_processor_share(settings.value(QStringLiteral("hwr/processor"), 50).toUInt());
     (*m_recognizer)->configure(toStd(kind), toStd(url), toStd(model),
                                toStd(settings.value(QStringLiteral("hwr/key")).toString()));
     const QString lang = Models::languages();
-    const QString page = currentPage();
-    const rust::Vec<LineJob> jobs = (*m_library)->recognition_jobs(m_canvas->engine());
-    for (const LineJob &job : jobs) {
-        (*m_recognizer)->submit(toStd(page), job.key, job.x, job.y, job.w, job.h,
-                                rust::Slice<const std::uint8_t>(job.png.data(), job.png.size()),
-                                toStd(lang));
-    }
-    if (!jobs.empty())
+    if ((*m_library)->queue_recognition(m_canvas->engine(), **m_recognizer, toStd(lang)) > 0)
         m_recognitionPoll.start();
     pollRecognition();
 }
@@ -1692,6 +1836,7 @@ void AppController::convertSelection(const QString &kind)
         Q_EMIT modelsNeeded(missing);
         return;
     }
+    set_processor_share(settings.value(QStringLiteral("hwr/processor"), 50).toUInt());
     rust::Vec<LineJob> jobs = m_canvas->engine().selection_jobs(math);
     if (jobs.empty()) {
         Q_EMIT notice(tr("Select some handwriting first."));
@@ -1749,9 +1894,11 @@ void AppController::pollRecognition()
             (*m_search)->reindex(r.page);
     }
     if (openPageChanged) {
-        // The text is stored with the page (and indexed when it is saved).
+        // The text is stored with the page (and indexed when it is saved); the autosave
+        // writes once the lines stop coming in, not while the user scrolls on.
         setDirty(true);
-        saveNow();
+        if (autosaveDelay() > 0)
+            m_saveTimer.start();
     }
     const QString error = toQ((*m_recognizer)->last_error());
     if (left > 0)

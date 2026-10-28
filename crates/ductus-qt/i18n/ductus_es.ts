@@ -988,6 +988,10 @@ Biblioteca: %1</translation>
         <translation>Más</translation>
     </message>
     <message>
+        <source>Open in new tab</source>
+        <translation>Abrir en una pestaña nueva</translation>
+    </message>
+    <message>
         <source>Open with its program</source>
         <translation>Abrir con su programa</translation>
     </message>
@@ -1084,6 +1088,17 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
     <message>
         <source>Open library folder…</source>
         <translation>Abrir carpeta de la biblioteca…</translation>
+    </message>
+</context>
+<context>
+    <name>PageTabs</name>
+    <message>
+        <source>Close page (Ctrl+W)</source>
+        <translation>Cerrar página (Ctrl+W)</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Cerrar</translation>
     </message>
 </context>
 <context>
@@ -1648,6 +1663,30 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
 <context>
     <name>SearchBox</name>
     <message>
+        <source>This page</source>
+        <translation>Esta página</translation>
+    </message>
+    <message>
+        <source>Text, formulas, PDF text and handwriting on the open page (Ctrl+F)</source>
+        <translation>Texto, fórmulas, texto de PDF y escritura a mano en la página abierta (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Page names</source>
+        <translation>Nombres de páginas</translation>
+    </message>
+    <message>
+        <source>The names of all pages and PDFs</source>
+        <translation>Los nombres de todas las páginas y PDF</translation>
+    </message>
+    <message>
+        <source>All pages</source>
+        <translation>Todas las páginas</translation>
+    </message>
+    <message>
+        <source>Names and contents of all pages and PDFs (Ctrl+K)</source>
+        <translation>Nombres y contenido de todas las páginas y PDF (Ctrl+K)</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Buscar (Ctrl+F)</translation>
     </message>
@@ -2123,6 +2162,18 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
         <translation>Servidor con modelo de visión</translation>
     </message>
     <message>
+        <source>Processor use</source>
+        <translation>Uso del procesador</translation>
+    </message>
+    <message>
+        <source>How much of the processor reading handwriting may take. Less keeps the device cool and quiet; more reads faster.</source>
+        <translation>Cuánto procesador puede usar la lectura de la escritura a mano. Menos mantiene el equipo frío y silencioso; más lee más rápido.</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
         <source>Languages</source>
         <translation>Idiomas</translation>
     </message>
@@ -2337,10 +2388,6 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
 <context>
     <name>TitleBar</name>
     <message>
-        <source>Untitled page</source>
-        <translation>Página sin título</translation>
-    </message>
-    <message>
         <source>Menu</source>
         <translation>Menú</translation>
     </message>
@@ -2433,10 +2480,6 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
         <translation>Ver</translation>
     </message>
     <message>
-        <source>Close page (Ctrl+W)</source>
-        <translation>Cerrar página (Ctrl+W)</translation>
-    </message>
-    <message>
         <source>Restart to update</source>
         <translation>Reiniciar para actualizar</translation>
     </message>
@@ -2487,8 +2530,8 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
 <context>
     <name>Translations</name>
     <message>
-        <source>System</source>
-        <translation>Sistema</translation>
+        <source>System (%1)</source>
+        <translation>Sistema (%1)</translation>
     </message>
 </context>
 <context>

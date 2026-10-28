@@ -111,14 +111,22 @@ QStringList Models::textModels(const QString &langs)
     return out;
 }
 
-QString Models::defaultLanguages()
+QString Models::chosenLanguages(const QString &langs)
 {
-    return toQ(locale_language(QLocale::system().name().toStdString()));
+    const QStringList codes = langs.split(u',');
+    QStringList out;
+    for (const LanguageRow &row : ::languages()) {
+        if (codes.contains(toQ(row.code)))
+            out.append(toQ(row.code));
+    }
+    if (out.isEmpty())
+        return toQ(locale_language(QLocale::system().name().toStdString()));
+    return out.join(u',');
 }
 
 QString Models::languages()
 {
-    return QSettings().value(QStringLiteral("hwr/lang"), defaultLanguages()).toString();
+    return chosenLanguages(QSettings().value(QStringLiteral("hwr/lang")).toString());
 }
 
 QVariantList Models::languageList() const
