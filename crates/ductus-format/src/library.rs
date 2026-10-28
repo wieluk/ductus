@@ -298,10 +298,11 @@ impl Library {
             .fold(self.root.clone(), |acc, p| acc.join(p))
     }
 
-    fn page_file(&self, rel: &str) -> PathBuf {
-        let mut p = self.abs(rel);
-        p.set_extension(PAGE_EXTENSION);
-        p
+    /// Appended, not replaced: a page may be called "18.05.2026".
+    pub fn page_file(&self, rel: &str) -> PathBuf {
+        let mut p = self.abs(rel).into_os_string();
+        p.push(format!(".{PAGE_EXTENSION}"));
+        p.into()
     }
 
     fn entry_path(&self, rel: &str) -> Result<(PathBuf, NodeKind), Error> {
@@ -701,25 +702,43 @@ impl Library {
         Ok(())
     }
 
+    /// A notebook takes the new name too, so it is called like its folder.
     pub fn rename(&self, rel: &str, new_name: &str) -> Result<String, Error> {
         let new_name = validate_name(new_name)?;
         let (from, kind, parent, old_name) = self.entry(rel)?;
-        if old_name == new_name {
-            return Ok(rel.to_owned());
+        let new_rel = if old_name == new_name {
+            rel.to_owned()
+        } else {
+            self.rename_entry(rel, &from, kind, &parent, &old_name, &new_name)?
+        };
+        if kind == NodeKind::Folder && self.is_notebook(&new_rel) {
+            self.set_notebook(&new_rel, Some(&new_name))?;
         }
+        Ok(new_rel)
+    }
+
+    fn rename_entry(
+        &self,
+        rel: &str,
+        from: &Path,
+        kind: NodeKind,
+        parent: &str,
+        old_name: &str,
+        new_name: &str,
+    ) -> Result<String, Error> {
         // Allow case-only renames on case-insensitive file systems.
-        if !old_name.eq_ignore_ascii_case(&new_name) {
-            self.ensure_free(&parent, &new_name)?;
+        if !old_name.eq_ignore_ascii_case(new_name) {
+            self.ensure_free(parent, new_name)?;
         }
-        let (new_rel, to) = self.target(&parent, &new_name, kind);
-        self.edit_order(&parent, |order| {
+        let (new_rel, to) = self.target(parent, new_name, kind);
+        self.edit_order(parent, |order| {
             for n in order.iter_mut() {
-                if *n == old_name {
-                    n.clone_from(&new_name);
+                if n == old_name {
+                    *n = new_name.to_owned();
                 }
             }
         })?;
-        self.relocate(rel, &from, kind, &new_rel, &to)?;
+        self.relocate(rel, from, kind, &new_rel, &to)?;
         self.path_lists_moved(rel, &new_rel)?;
         Ok(new_rel)
     }

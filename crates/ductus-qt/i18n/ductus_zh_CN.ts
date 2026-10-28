@@ -100,6 +100,10 @@
         <translation>无法把 PDF 保存到那里。</translation>
     </message>
     <message>
+        <source>New section</source>
+        <translation>新建分区</translation>
+    </message>
+    <message>
         <source>Exported to %1</source>
         <translation>已导出到 %1</translation>
     </message>
@@ -1037,10 +1041,6 @@ Library: %1</source>
     <message>
         <source>Show in file manager</source>
         <translation>在文件管理器中显示</translation>
-    </message>
-    <message>
-        <source>Rename notebook</source>
-        <translation>重命名笔记本</translation>
     </message>
     <message>
         <source>Rename</source>

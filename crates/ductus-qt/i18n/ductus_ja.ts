@@ -100,6 +100,10 @@
         <translation>そこに PDF を保存できませんでした。</translation>
     </message>
     <message>
+        <source>New section</source>
+        <translation>新しいセクション</translation>
+    </message>
+    <message>
         <source>Exported to %1</source>
         <translation>%1 にエクスポートしました</translation>
     </message>
@@ -1037,10 +1041,6 @@ Library: %1</source>
     <message>
         <source>Show in file manager</source>
         <translation>ファイルマネージャーで表示</translation>
-    </message>
-    <message>
-        <source>Rename notebook</source>
-        <translation>ノートの名前を変更</translation>
     </message>
     <message>
         <source>Rename</source>

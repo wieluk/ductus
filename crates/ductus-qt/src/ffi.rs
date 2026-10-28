@@ -45,8 +45,10 @@ pub mod qobject {
         is_notebook: bool,
         /// A notebook folder's name under Notebooks.
         notebook_name: String,
-        /// Stands in for an empty notebook's pages; `path` is the notebook's.
-        placeholder: bool,
+        /// Under Notebooks, a folder inside a notebook: "section", or "group" when it holds sections.
+        kind: String,
+        /// A row that adds to the notebook at `path`: "page" while it is empty, "section".
+        placeholder: String,
     }
 
     /// Something deleted; `deleted` is in milliseconds since the epoch.

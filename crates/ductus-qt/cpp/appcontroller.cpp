@@ -107,6 +107,8 @@ QVariant NotebookModel::data(const QModelIndex &index, int role) const
         return row.section;
     case NotebookNameRole:
         return row.notebookName;
+    case KindRole:
+        return row.kind;
     case PlaceholderRole:
         return row.placeholder;
     default:
@@ -134,6 +136,7 @@ QHash<int, QByteArray> NotebookModel::roleNames() const
         {IsNotebookRole, "isNotebook"},
         {SectionRole, "section"},
         {NotebookNameRole, "notebookName"},
+        {KindRole, "kind"},
         {PlaceholderRole, "placeholder"},
     };
 }
@@ -186,8 +189,8 @@ AppController::AppController(QObject *parent)
         QSettings().value(QStringLiteral("tree/expanded")).toStringList();
     m_expanded = QSet<QString>(expanded.begin(), expanded.end());
     m_treeFilter = QSettings().value(QStringLiteral("tree/filter"), 3).toInt();
-    m_notebookFilter = QSettings().value(QStringLiteral("tree/notebookFilter"), 1).toInt();
-    m_notebookView = QSettings().value(QStringLiteral("tree/notebooks"), false).toBool();
+    m_notebookFilter = QSettings().value(QStringLiteral("tree/notebookFilter"), 3).toInt();
+    m_notebookView = QSettings().value(QStringLiteral("tree/notebooks"), true).toBool();
     m_folderFocus = QSettings().value(QStringLiteral("tree/focus")).toString();
     m_notebookFocus = QSettings().value(QStringLiteral("tree/notebookFocus")).toString();
 
@@ -640,7 +643,7 @@ void AppController::refreshTree()
             out.append({toQ(r.name), toQ(r.path), int(r.depth), r.is_folder, r.is_pdf,
                         toQ(r.color), r.has_children, r.expanded, r.conflict, r.is_file,
                         toQ(r.subtitle), r.pinned, r.quick, r.is_notebook, toQ(r.section),
-                        toQ(r.notebook_name), r.placeholder});
+                        toQ(r.notebook_name), toQ(r.kind), toQ(r.placeholder)});
         }
         m_tree.setRows(std::move(out));
     });
@@ -754,17 +757,23 @@ void AppController::toggleExpanded(const QString &path)
     refreshTree();
 }
 
-QString AppController::newFolder(const QString &parent)
+QString AppController::newFolder(const QString &parent, bool section)
 {
     if (!m_library)
         return {};
     QString path;
     attempt([&] {
-        const rust::String name = (*m_library)->unique_name(toStd(parent), toStd(tr("New folder")));
+        const QString base = section ? tr("New section") : tr("New folder");
+        const rust::String name = (*m_library)->unique_name(toStd(parent), toStd(base));
         path = toQ((*m_library)->create_folder(toStd(parent), name));
     });
     if (path.isEmpty())
         return {};
+    // Like a new notebook, so it is never an empty, hidden folder.
+    if (section && !createPage(path).isEmpty()) {
+        m_expanded.insert(path);
+        storeExpanded();
+    }
     // Shown even while empty folders are hidden, to be named right away.
     m_keepVisible = path;
     expandTo(path);
@@ -1065,7 +1074,7 @@ void AppController::remove(const QString &path)
         const QString parent = parentOf(path);
         QStringList pages;
         for (const NotebookModel::Row &row : m_tree.rows()) {
-            if (!row.quick && !row.placeholder && !row.isFolder && !row.isFile
+            if (!row.quick && row.placeholder.isEmpty() && !row.isFolder && !row.isFile
                 && (row.path == path || parentOf(row.path) == parent) && !pages.contains(row.path))
                 pages << row.path;
         }
@@ -1239,7 +1248,7 @@ QStringList AppController::moveSiblings(const QString &path, bool *notebookList)
     }
     const QString parent = parentOf(path);
     for (const NotebookModel::Row &row : m_tree.rows())
-        if (!row.quick && !row.placeholder && parentOf(row.path) == parent && !siblings.contains(row.path))
+        if (!row.quick && row.placeholder.isEmpty() && parentOf(row.path) == parent && !siblings.contains(row.path))
             siblings << row.path;
     return siblings;
 }

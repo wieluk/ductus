@@ -4,6 +4,7 @@ put-file tests/fixtures/lecture.pdf | Uni/3. Semester/Statik/VO/Slides.PDF
 put-file tests/fixtures/lecture.pdf | Uni/3. Semester/EST 2/VO/Script.pdf
 put-file crates/ductus-qt/qml/icons/chevron.svg | Uni/Peda/template/logo.svg
 wait 600
+click-item viewFolders
 click-item row_Uni
 click-item row_Uni/3. Semester
 click-item row_Uni/3. Semester/Statik
@@ -39,7 +40,8 @@ click-item notebookSwitcher
 click-item switchNotebook_Uni/3. Semester/Biophysik
 expect-prop notebookTree focused true
 expect-text notebookSwitcherLabel Biophysik
-expect-prop notebookList count 1
+# Its one page, then the row that adds a section.
+expect-prop notebookList count 2
 expect-hidden quick_My Notebook/First page
 click-item focusClear
 expect-prop notebookTree focused false

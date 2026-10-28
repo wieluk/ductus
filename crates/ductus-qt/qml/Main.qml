@@ -231,6 +231,15 @@ ApplicationWindow {
     Shortcut { sequence: "F11"; onActivated: window.toggleFullScreen() }
     Shortcut { sequence: "Ctrl+N"; onActivated: newPageDialog.show("") }
     Shortcut { sequence: "Ctrl+\\"; onActivated: window.toggleSidebar() }
+    // Renames the open page where it is listed, like a file manager.
+    Shortcut {
+        sequence: "F2"
+        enabled: AppController.currentPage.length > 0
+        onActivated: {
+            window.showInSidebar(AppController.currentPage, "")
+            tree.renaming = AppController.currentPage
+        }
+    }
     Shortcut { sequences: [StandardKey.Open]; onActivated: openFileDialog.open() }
     Shortcut {
         sequences: [StandardKey.Find]

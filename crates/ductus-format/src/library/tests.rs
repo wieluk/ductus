@@ -87,6 +87,20 @@ fn rename_keeps_position_and_contents() {
 
     assert_eq!(lib.rename("Bee/Page", "Renamed").unwrap(), "Bee/Renamed");
     assert!(lib.load_page("Bee/Renamed").is_ok());
+
+    // Dots in a name are part of it, not an extension.
+    let dated = lib.rename("Bee/Renamed", "18.05.2026").unwrap();
+    let page = lib.load_page(&dated).unwrap();
+    lib.save_page(&dated, &page).unwrap();
+    assert_eq!(names(find(&lib.tree().unwrap(), "Bee")), ["18.05.2026"]);
+
+    // A notebook is called like its folder, even when it was named otherwise.
+    lib.set_notebook("A", Some("Physics")).unwrap();
+    assert_eq!(lib.rename("A", "Mechanics").unwrap(), "Mechanics");
+    assert_eq!(lib.notebook_name("Mechanics").as_deref(), Some("Mechanics"));
+    lib.set_notebook("C", Some("Physics")).unwrap();
+    lib.rename("C", "C").unwrap();
+    assert_eq!(lib.notebook_name("C").as_deref(), Some("C"));
 }
 
 #[test]

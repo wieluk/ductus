@@ -38,3 +38,29 @@ expect-no-file Mathematics/Limits.svg
 expect-no-file .ductus
 expect-no-file .ductus.json
 expect-no-file Mathematics/.ductus.json
+# Sections: added below a notebook or beside a section, each with a first page.
+click-item viewNotebooks
+click-item addSection_Mathematics
+type Algebra
+key Return
+expect-file Mathematics/Algebra/Untitled page.svg
+expect-prop row_Mathematics/Algebra kind section
+right-click-item row_Mathematics/Algebra
+click-item menuNewFolder
+type Analysis
+key Return
+expect-file Mathematics/Analysis/Untitled page.svg
+# A section dropped onto another makes that a section group.
+drag-item row_Mathematics/Analysis | row_Mathematics/Algebra
+expect-file Mathematics/Algebra/Analysis/Untitled page.svg
+expect-prop row_Mathematics/Algebra kind group
+expect-prop row_Mathematics/Algebra/Analysis kind section
+shot sections
+# F2 renames the open page; dots in its name stay part of it.
+key F2
+type Lab 18.05.2026
+key Return
+expect-file My Notebook/Lab 18.05.2026.svg
+click-item row_Mathematics/Algebra/Untitled page
+click-item row_My Notebook/Lab 18.05.2026
+expect-text pageTitle Lab 18.05.2026

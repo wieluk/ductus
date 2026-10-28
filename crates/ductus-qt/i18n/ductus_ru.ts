@@ -100,6 +100,10 @@
         <translation>Не удалось сохранить PDF туда.</translation>
     </message>
     <message>
+        <source>New section</source>
+        <translation>Новый раздел</translation>
+    </message>
+    <message>
         <source>Exported to %1</source>
         <translation>Экспортировано в %1</translation>
     </message>
@@ -1047,10 +1051,6 @@ Library: %1</source>
     <message>
         <source>Show in file manager</source>
         <translation>Показать в файловом менеджере</translation>
-    </message>
-    <message>
-        <source>Rename notebook</source>
-        <translation>Переименовать блокнот</translation>
     </message>
     <message>
         <source>Rename</source>

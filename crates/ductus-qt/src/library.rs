@@ -177,14 +177,7 @@ impl LibraryHandle {
         let single = !focus.is_empty();
         if single {
             let color = self.inherited_color(focus);
-            self.tree_rows(focus, 0, color, &view, &mut out);
-            if out.is_empty() {
-                out.push(TreeRow {
-                    path: focus.to_owned(),
-                    placeholder: true,
-                    ..TreeRow::default()
-                });
-            }
+            self.notebook_rows(focus, 0, color, &view, &mut out);
         } else {
             let recent = self.library.recent().into_iter().take(RECENT_SHOWN);
             for (section, path) in self
@@ -224,17 +217,7 @@ impl LibraryHandle {
             row.expanded = expanded.contains(folder.as_str());
             out.push(row);
             if row_open(&out) {
-                let before = out.len();
-                self.tree_rows(&folder, 1, color, &view, &mut out);
-                if out.len() == before {
-                    out.push(TreeRow {
-                        depth: 1,
-                        path: folder.clone(),
-                        section: "notebooks".into(),
-                        placeholder: true,
-                        ..TreeRow::default()
-                    });
-                }
+                self.notebook_rows(&folder, 1, color, &view, &mut out);
             }
         }
         // One notebook needs no headings.
@@ -244,6 +227,33 @@ impl LibraryHandle {
             }
         }
         Ok(out)
+    }
+
+    /// A notebook's sections and pages, then rows that add to it.
+    fn notebook_rows(
+        &self,
+        notebook: &str,
+        depth: u32,
+        color: Option<Rgba>,
+        view: &TreeView,
+        out: &mut Vec<TreeRow>,
+    ) {
+        let before = out.len();
+        self.tree_rows(notebook, depth, color, view, out);
+        let adders: &[&str] = if out.len() == before {
+            &["page", "section"]
+        } else {
+            &["section"]
+        };
+        for adder in adders {
+            out.push(TreeRow {
+                depth,
+                path: notebook.to_owned(),
+                section: "notebooks".into(),
+                placeholder: (*adder).into(),
+                ..TreeRow::default()
+            });
+        }
     }
 
     fn tree_rows(
@@ -283,6 +293,13 @@ impl LibraryHandle {
                 if let Some(name) = self.library.notebook_name(&node.path) {
                     row.is_notebook = true;
                     row.notebook_name = name;
+                } else if view.sections_only {
+                    row.kind = if self.holds_sections(&node.path, view.filter) {
+                        "group"
+                    } else {
+                        "section"
+                    }
+                    .into();
                 }
             }
             let open = row.expanded;
@@ -291,6 +308,16 @@ impl LibraryHandle {
                 self.tree_rows(&node.path, depth + 1, color, view, out);
             }
         }
+    }
+
+    fn holds_sections(&self, folder: &str, filter: Filter) -> bool {
+        self.library.list(folder).is_ok_and(|nodes| {
+            nodes.iter().any(|n| {
+                n.kind == NodeKind::Folder
+                    && self.library.is_shown(n, filter)
+                    && !self.library.is_notebook(&n.path)
+            })
+        })
     }
 
     fn row(
@@ -562,9 +589,7 @@ impl LibraryHandle {
         if is_pdf_path(path) {
             return self.library.abs(path).to_string_lossy().into_owned();
         }
-        let mut p = self.library.abs(path);
-        p.set_extension(ductus_format::library::PAGE_EXTENSION);
-        p.to_string_lossy().into_owned()
+        self.library.page_file(path).to_string_lossy().into_owned()
     }
 
     pub fn load_into(&mut self, path: &str, canvas: &mut CanvasEngine) -> Result<()> {
@@ -1023,7 +1048,39 @@ mod tests {
             .iter()
             .map(|r| (r.depth, r.section.as_str(), r.name.as_str()))
             .collect();
-        assert_eq!(summary, [(0, "", "Week 1")]);
+        assert_eq!(summary, [(0, "", "Week 1"), (0, "", "")]);
+        assert_eq!(rows[1].placeholder, "section");
+        // Folders inside a notebook are sections, or groups when they hold sections.
+        handle
+            .create_folder("Uni/Sem 3/Statik/VO", "Exams")
+            .unwrap();
+        handle
+            .create_folder("Uni/Sem 3/Statik/VO/Exams", "2025")
+            .unwrap();
+        handle.create_folder("Uni/Sem 3/Statik/VO", "Labs").unwrap();
+        let rows = handle
+            .rows(
+                "Uni/Sem 3/Statik/VO/Exams",
+                3,
+                true,
+                "Uni/Sem 3/Statik/VO",
+                "",
+            )
+            .unwrap();
+        let kinds: Vec<_> = rows
+            .iter()
+            .map(|r| (r.name.as_str(), r.kind.as_str(), r.placeholder.as_str()))
+            .collect();
+        assert_eq!(
+            kinds,
+            [
+                ("Week 1", "", ""),
+                ("Exams", "group", ""),
+                ("2025", "section", ""),
+                ("Labs", "section", ""),
+                ("", "", "section")
+            ]
+        );
         assert_eq!(relative("Uni/Sem 3", "Uni/Sem 3"), "");
         assert_eq!(relative("Uni/Sem 30/x", "Uni/Sem 3"), "Uni/Sem 30/x");
     }

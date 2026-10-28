@@ -100,6 +100,10 @@
         <translation>Impossibile salvare il PDF lì.</translation>
     </message>
     <message>
+        <source>New section</source>
+        <translation>Nuova sezione</translation>
+    </message>
+    <message>
         <source>Exported to %1</source>
         <translation>Esportato in %1</translation>
     </message>
@@ -1042,10 +1046,6 @@ Libreria: %1</translation>
     <message>
         <source>Show in file manager</source>
         <translation>Mostra nel gestore file</translation>
-    </message>
-    <message>
-        <source>Rename notebook</source>
-        <translation>Rinomina quaderno</translation>
     </message>
     <message>
         <source>Rename</source>

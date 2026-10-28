@@ -52,6 +52,7 @@ public:
         IsNotebookRole,
         SectionRole,
         NotebookNameRole,
+        KindRole,
         PlaceholderRole,
     };
 
@@ -72,7 +73,8 @@ public:
         bool isNotebook = false;
         QString section;
         QString notebookName;
-        bool placeholder = false;
+        QString kind;
+        QString placeholder;
     };
 
     using QAbstractListModel::QAbstractListModel;
@@ -147,7 +149,7 @@ public:
     bool importing() const { return m_importing; }
     QString indexStatus() const { return m_indexStatus; }
     int treeFilter() const { return m_notebookView ? m_notebookFilter : m_treeFilter; }
-    int defaultTreeFilter() const { return m_notebookView ? 1 : 3; }
+    int defaultTreeFilter() const { return 3; }
     void setTreeFilter(int flags);
     bool notebookView() const { return m_notebookView; }
     void setNotebookView(bool on);
@@ -194,7 +196,8 @@ public:
     Q_INVOKABLE QString notebookName(const QString &folder) const;
     /// The notebook a page or folder belongs to, or "".
     QString notebookOf(const QString &path) const;
-    Q_INVOKABLE QString newFolder(const QString &parent);
+    /// A section starts with a page and is called that.
+    Q_INVOKABLE QString newFolder(const QString &parent, bool section = false);
     /// The folder's name, or the library's for "".
     Q_INVOKABLE QString displayName(const QString &path) const;
     Q_INVOKABLE void showInNotebooks(const QString &path);
@@ -372,7 +375,7 @@ private:
     QPointer<InkCanvas> m_canvas;
     QSet<QString> m_expanded;
     int m_treeFilter = 3;
-    int m_notebookFilter = 1;
+    int m_notebookFilter = 3;
     /// Shown whatever the filter, until it changes.
     QString m_keepVisible;
     bool m_awaitingSnip = false;

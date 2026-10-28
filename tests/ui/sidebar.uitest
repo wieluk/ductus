@@ -20,28 +20,31 @@ click-item menuMakeNotebook
 type Mechanics
 key Return
 click-item viewNotebooks
-# An empty notebook offers to add its first page.
-click-item empty_Uni/Mech/notebook
+# Its PDF shows under Notebooks too; pages are added beside it.
+expect-prop row_Uni/Mech/notebook/slides.pdf visible true
+right-click-item row_Uni/Mech/notebook
+click-item menuNewPage
 type Week1
 key Return
 expect-file Uni/Mech/notebook/Week1.svg
 expect-text location_Uni/Mech/notebook Mechanics
 expect-prop recent_Uni/Mech/notebook/Week1 visible true
-# Renaming it under Notebooks leaves the folder as it is.
+# Renaming a notebook renames its folder: one name everywhere.
 right-click-item row_Uni/Mech/notebook
 click-item menuRename
 type Statics
 key Return
-expect-file Uni/Mech/notebook
-expect-text location_Uni/Mech/notebook Statics
+expect-file Uni/Mech/Statics
+expect-no-file Uni/Mech/notebook
+expect-text location_Uni/Mech/Statics Statics
 # Its own order, apart from the folders.
-expect-prop row_Uni/Mech/notebook index 7
-right-click-item row_Uni/Mech/notebook
+expect-prop row_Uni/Mech/Statics index 9
+right-click-item row_Uni/Mech/Statics
 click-item menuMoveUp
-expect-prop row_Uni/Mech/notebook index 5
+expect-prop row_Uni/Mech/Statics index 6
 # Recent pages can be cleared.
 click-item clearRecent
-expect-hidden recent_Uni/Mech/notebook/Week1
+expect-hidden recent_Uni/Mech/Statics/Week1
 # Pages without a notebook at hand go to the Inbox.
 key Ctrl+W
 key Ctrl+W
@@ -81,10 +84,10 @@ expect-prop row_Physics/Drafts visible true
 # Collapse and expand everything at once, nested folders too.
 click-item collapseAll
 expect-hidden row_Physics/Drafts
-expect-hidden row_Uni/Mech/notebook
+expect-hidden row_Uni/Mech/Statics
 click-item expandAll
 expect-prop row_Physics/Drafts visible true
-expect-prop row_Uni/Mech/notebook visible true
+expect-prop row_Uni/Mech/Statics visible true
 shot expanded
 # On the right, the list resizes from its left edge.
 click-item appMenuButton
