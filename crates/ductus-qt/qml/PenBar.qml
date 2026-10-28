@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Controls.impl
-import QtQuick.Dialogs
 import QtQuick.Layouts
 import Ductus
 
@@ -44,13 +43,6 @@ Rectangle {
         { type: "highlighter", color: "#ff8fd0", width: 18 },
         { type: "tool", tool: "math" }
     ]
-    readonly property var penColors: ["#1a1a1f", "#5f6368", "#1f4fd1", "#0a8a8a", "#1d8a3b",
-                                      "#7b2fd1", "#c2185b", "#d12f2f", "#e07b00", "#8d5524"]
-    readonly property var highlighterColors: ["#ffd91a", "#7ee07e", "#5cc8ff", "#ff8fd0",
-                                              "#ffa94d", "#c9a6ff"]
-    readonly property var penWidths: [1, 1.5, 2, 3, 4.5, 6]
-    readonly property var highlighterWidths: [8, 12, 18, 24, 32]
-
     readonly property var items: {
         try {
             const list = JSON.parse(presetsJson)
@@ -411,11 +403,6 @@ Rectangle {
         }
     }
 
-    ColorDialog {
-        id: moreColors
-        title: qsTr("Choose a color")
-        onAccepted: bar.update(editor.index, { color: selectedColor.toString() })
-    }
 
     Popup {
         id: editor
@@ -453,106 +440,21 @@ Rectangle {
                                 return
                             const hl = modelData.type === "highlighter"
                             bar.update(editor.index, { type: modelData.type,
-                                                       color: hl ? bar.highlighterColors[0] : bar.penColors[0],
+                                                       color: hl ? editorOptions.highlighterColors[0] : editorOptions.penColors[0],
                                                        width: hl ? 18 : 2 })
                         }
                     }
                 }
             }
 
-            Label {
-                text: qsTr("Color")
-                color: Theme.textMuted
-                font.pixelSize: 12
-            }
-            GridLayout {
-                columns: 6
-                rowSpacing: 2
-                columnSpacing: 2
-                Repeater {
-                    model: editor.highlighter ? bar.highlighterColors : bar.penColors
-                    delegate: ColorSwatch {
-                        required property string modelData
-                        required property int index
-                        objectName: "editorColor" + index
-                        swatch: modelData
-                        selected: editor.pen !== null && Qt.colorEqual(editor.pen.color, modelData)
-                        onClicked: bar.update(editor.index, { color: modelData })
-                    }
-                }
-                RibbonButton {
-                    objectName: "editorMoreColors"
-                    iconName: "color"
-                    tip: qsTr("More colors…")
-                    implicitWidth: 28
-                    implicitHeight: 28
-                    padding: 3
-                    onClicked: {
-                        moreColors.selectedColor = editor.pen.color
-                        moreColors.open()
-                    }
-                }
-            }
-
-            Label {
-                text: qsTr("Width")
-                color: Theme.textMuted
-                font.pixelSize: 12
-            }
-            RowLayout {
-                spacing: 2
-                Repeater {
-                    model: editor.highlighter ? bar.highlighterWidths : bar.penWidths
-                    delegate: RibbonButton {
-                        id: widthChoice
-                        required property real modelData
-                        required property int index
-                        objectName: "editorWidth" + index
-                        implicitWidth: 36
-                        checkable: true
-                        checked: editor.pen !== null && Math.abs(editor.pen.width - modelData) < 0.01
-                        tip: String(modelData)
-                        onClicked: bar.update(editor.index, { width: modelData })
-                        contentItem: Item {
-                            Rectangle {
-                                anchors.centerIn: parent
-                                width: editor.highlighter ? 22 : Math.max(3, widthChoice.modelData * 1.6)
-                                height: editor.highlighter ? widthChoice.modelData / 2.5
-                                                           : Math.max(3, widthChoice.modelData * 1.6)
-                                radius: editor.highlighter ? 2 : width / 2
-                                color: editor.pen !== null ? editor.pen.color : "black"
-                                opacity: editor.highlighter ? 0.6 : 1
-                            }
-                        }
-                    }
-                }
-            }
-
-            Label {
-                visible: !editor.highlighter
-                text: qsTr("Line")
-                color: Theme.textMuted
-                font.pixelSize: 12
-            }
-            RowLayout {
-                visible: !editor.highlighter
-                spacing: 2
-                Repeater {
-                    model: ["solid", "dashed", "dotted"]
-                    delegate: RibbonButton {
-                        id: patternChoice
-                        required property string modelData
-                        objectName: "editorLine_" + modelData
-                        implicitWidth: 44
-                        checkable: true
-                        checked: editor.pen !== null && (editor.pen.pattern || "solid") === modelData
-                        onClicked: bar.update(editor.index, { pattern: modelData })
-                        contentItem: LinePatternIcon {
-                            pattern: patternChoice.modelData
-                            color: editor.pen !== null ? editor.pen.color : "black"
-                        }
-                    }
-                }
+            PenOptions {
+                id: editorOptions
+                namePrefix: "editor"
+                highlighter: editor.highlighter
+                color: editor.pen !== null ? editor.pen.color : "black"
+                strokeWidth: editor.pen !== null ? editor.pen.width : 0
+                pattern: editor.pen !== null ? editor.pen.pattern || "solid" : "solid"
+                onPicked: (change) => bar.update(editor.index, change)
             }
 
             Rectangle {

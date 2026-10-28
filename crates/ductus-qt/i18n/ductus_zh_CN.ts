@@ -931,6 +931,10 @@ Library: %1</source>
         <translation>全部折叠</translation>
     </message>
     <message>
+        <source>Expand all</source>
+        <translation>全部展开</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>新建页面…</translation>
     </message>
@@ -957,6 +961,10 @@ Library: %1</source>
     <message>
         <source>Recent</source>
         <translation>最近</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>清除</translation>
     </message>
     <message>
         <source>Notebook “%1”</source>
@@ -1211,6 +1219,17 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>从栏中移除</translation>
     </message>
     <message>
+        <source>Up</source>
+        <translation>上移</translation>
+    </message>
+    <message>
+        <source>Down</source>
+        <translation>下移</translation>
+    </message>
+</context>
+<context>
+    <name>PenOptions</name>
+    <message>
         <source>Choose a color</source>
         <translation>选择颜色</translation>
     </message>
@@ -1229,14 +1248,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Line</source>
         <translation>直线</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>上移</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>下移</translation>
     </message>
 </context>
 <context>
@@ -1273,18 +1284,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>Ribbon</name>
     <message>
-        <source>Fine</source>
-        <translation>细</translation>
-    </message>
-    <message>
-        <source>Medium</source>
-        <translation>中</translation>
-    </message>
-    <message>
-        <source>Bold</source>
-        <translation>粗体</translation>
-    </message>
-    <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
         <translation>导入 Xournal++、Rnote 或 OneNote 的笔记：一个文件或整个笔记本文件夹</translation>
     </message>
@@ -1303,14 +1302,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>套索：圈住笔迹以选中，然后拖动、复制或删除</translation>
     </message>
     <message>
-        <source>Narrow</source>
-        <translation>窄</translation>
-    </message>
-    <message>
-        <source>Wide</source>
-        <translation>宽</translation>
-    </message>
-    <message>
         <source>Hand: drag text, formulas and pictures to move them, their corners to resize; elsewhere it scrolls</source>
         <translation>抓手：拖动文字、公式和图片可移动它们，拖动其角可调整大小；在其他位置则滚动</translation>
     </message>
@@ -1319,8 +1310,16 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>笔</translation>
     </message>
     <message>
+        <source>Pen color, width and line</source>
+        <translation>笔的颜色、粗细和线型</translation>
+    </message>
+    <message>
         <source>Highlighter</source>
         <translation>荧光笔</translation>
+    </message>
+    <message>
+        <source>Highlighter color and width</source>
+        <translation>荧光笔的颜色和粗细</translation>
     </message>
     <message>
         <source>Eraser: removes whole strokes (also: pen eraser end or barrel button)</source>
@@ -1369,10 +1368,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Extra large eraser</source>
         <translation>特大橡皮擦</translation>
-    </message>
-    <message>
-        <source>Choose a color</source>
-        <translation>选择颜色</translation>
     </message>
     <message>
         <source>New page</source>
@@ -1469,22 +1464,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>About Ductus</source>
         <translation>关于 Ductus</translation>
-    </message>
-    <message>
-        <source>More colors…</source>
-        <translation>更多颜色…</translation>
-    </message>
-    <message>
-        <source>Solid line</source>
-        <translation>实线</translation>
-    </message>
-    <message>
-        <source>Dashed line</source>
-        <translation>虚线</translation>
-    </message>
-    <message>
-        <source>Dotted line</source>
-        <translation>点线</translation>
     </message>
     <message>
         <source>Select everything on the page (Ctrl+A)</source>

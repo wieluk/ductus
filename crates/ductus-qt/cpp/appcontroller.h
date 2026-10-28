@@ -31,6 +31,7 @@ class NotebookModel : public QAbstractListModel
     QML_ANONYMOUS
     /// Notebooks view: Favorites, Recent and Notebooks headings.
     Q_PROPERTY(bool hasSections READ hasSections NOTIFY rowsChanged)
+    Q_PROPERTY(bool anyExpanded READ anyExpanded NOTIFY rowsChanged)
 
 public:
     enum Role {
@@ -84,6 +85,7 @@ public:
     void setCurrent(const QString &path);
     const QList<Row> &rows() const { return m_rows; }
     bool hasSections() const { return !m_rows.isEmpty() && !m_rows.first().section.isEmpty(); }
+    bool anyExpanded() const;
     Q_INVOKABLE int treeIndexOf(const QString &path) const;
 
 Q_SIGNALS:
@@ -227,6 +229,9 @@ public:
     /// Shows `path` in the sidebar: under Notebooks when it is in one, else under Folders.
     Q_INVOKABLE void locate(const QString &path);
     Q_INVOKABLE void collapseAll();
+    Q_INVOKABLE void clearRecent();
+    /// Every folder the sidebar shows, all the way down.
+    Q_INVOKABLE void expandAll();
     Q_INVOKABLE void saveNow();
     /// Closes the current tab; the one beside it opens.
     Q_INVOKABLE void closePage();

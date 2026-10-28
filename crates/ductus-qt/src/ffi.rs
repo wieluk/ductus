@@ -287,6 +287,7 @@ pub mod qobject {
         /// The notebook a page or folder belongs to, or "".
         fn notebook_of(self: &LibraryHandle, path: &str) -> String;
         fn add_recent(self: &LibraryHandle, page: &str) -> Result<()>;
+        fn clear_recent(self: &LibraryHandle) -> Result<()>;
         /// Where a new page can go: notebooks and their sections, as "path\tlabel" lines.
         fn page_targets(self: &LibraryHandle) -> String;
         /// Every notebook, as "path\tname" lines in the user's order.

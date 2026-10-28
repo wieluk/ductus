@@ -1,7 +1,7 @@
 # Notebooks are folders marked with a name of their own; Folders shows the disk as it is.
 size 1280 800
 # The pen drags the sidebar's edge like a mouse.
-pen 262,400 400,400
+pen 278,400 400,400
 expect-prop notebookTree width 402
 # A new notebook gets a folder and a first page; the location bar shows where.
 click-item sidebarNewNotebook
@@ -39,6 +39,9 @@ expect-prop row_Uni/Mech/notebook index 7
 right-click-item row_Uni/Mech/notebook
 click-item menuMoveUp
 expect-prop row_Uni/Mech/notebook index 5
+# Recent pages can be cleared.
+click-item clearRecent
+expect-hidden recent_Uni/Mech/notebook/Week1
 # Pages without a notebook at hand go to the Inbox.
 key Ctrl+W
 key Ctrl+W
@@ -75,6 +78,14 @@ type Drafts
 key Return
 expect-file Physics/Drafts
 expect-prop row_Physics/Drafts visible true
+# Collapse and expand everything at once, nested folders too.
+click-item collapseAll
+expect-hidden row_Physics/Drafts
+expect-hidden row_Uni/Mech/notebook
+click-item expandAll
+expect-prop row_Physics/Drafts visible true
+expect-prop row_Uni/Mech/notebook visible true
+shot expanded
 # On the right, the list resizes from its left edge.
 click-item appMenuButton
 click-item menuSettings

@@ -243,6 +243,10 @@ impl Library {
         self.set_paths(RECENT_FILE, &paths)
     }
 
+    pub fn clear_recent(&self) -> Result<(), Error> {
+        self.set_paths(RECENT_FILE, &[])
+    }
+
     fn stored_paths(&self, file: &str) -> Vec<String> {
         fs::read_to_string(self.data_dir().join(file))
             .ok()

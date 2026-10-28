@@ -936,6 +936,10 @@ Bibliothèque : %1</translation>
         <translation>Tout replier</translation>
     </message>
     <message>
+        <source>Expand all</source>
+        <translation>Tout déplier</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>Nouvelle page…</translation>
     </message>
@@ -962,6 +966,10 @@ Bibliothèque : %1</translation>
     <message>
         <source>Recent</source>
         <translation>Récents</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>Effacer</translation>
     </message>
     <message>
         <source>Notebook “%1”</source>
@@ -1216,6 +1224,17 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Retirer de la barre</translation>
     </message>
     <message>
+        <source>Up</source>
+        <translation>Vers le haut</translation>
+    </message>
+    <message>
+        <source>Down</source>
+        <translation>Vers le bas</translation>
+    </message>
+</context>
+<context>
+    <name>PenOptions</name>
+    <message>
         <source>Choose a color</source>
         <translation>Choisir une couleur</translation>
     </message>
@@ -1234,14 +1253,6 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     <message>
         <source>Line</source>
         <translation>Ligne</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>Vers le haut</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>Vers le bas</translation>
     </message>
 </context>
 <context>
@@ -1278,18 +1289,6 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
 <context>
     <name>Ribbon</name>
     <message>
-        <source>Fine</source>
-        <translation>Fin</translation>
-    </message>
-    <message>
-        <source>Medium</source>
-        <translation>Moyen</translation>
-    </message>
-    <message>
-        <source>Bold</source>
-        <translation>Gras</translation>
-    </message>
-    <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
         <translation>Importer des notes de Xournal++, Rnote ou OneNote : un fichier ou tout un dossier de carnet</translation>
     </message>
@@ -1308,14 +1307,6 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Lasso : entourez l’encre pour la sélectionner, puis faites-la glisser, copiez-la ou supprimez-la</translation>
     </message>
     <message>
-        <source>Narrow</source>
-        <translation>Étroit</translation>
-    </message>
-    <message>
-        <source>Wide</source>
-        <translation>Large</translation>
-    </message>
-    <message>
         <source>Hand: drag text, formulas and pictures to move them, their corners to resize; elsewhere it scrolls</source>
         <translation>Main : faites glisser textes, formules et images pour les déplacer, leurs coins pour les redimensionner ; ailleurs elle fait défiler</translation>
     </message>
@@ -1324,8 +1315,16 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Stylo</translation>
     </message>
     <message>
+        <source>Pen color, width and line</source>
+        <translation>Stylo : couleur, épaisseur et trait</translation>
+    </message>
+    <message>
         <source>Highlighter</source>
         <translation>Surligneur</translation>
+    </message>
+    <message>
+        <source>Highlighter color and width</source>
+        <translation>Surligneur : couleur et épaisseur</translation>
     </message>
     <message>
         <source>Eraser: removes whole strokes (also: pen eraser end or barrel button)</source>
@@ -1374,10 +1373,6 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     <message>
         <source>Extra large eraser</source>
         <translation>Très grande gomme</translation>
-    </message>
-    <message>
-        <source>Choose a color</source>
-        <translation>Choisir une couleur</translation>
     </message>
     <message>
         <source>New page</source>
@@ -1474,22 +1469,6 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     <message>
         <source>About Ductus</source>
         <translation>À propos de Ductus</translation>
-    </message>
-    <message>
-        <source>More colors…</source>
-        <translation>Plus de couleurs…</translation>
-    </message>
-    <message>
-        <source>Solid line</source>
-        <translation>Ligne continue</translation>
-    </message>
-    <message>
-        <source>Dashed line</source>
-        <translation>Ligne tiretée</translation>
-    </message>
-    <message>
-        <source>Dotted line</source>
-        <translation>Ligne pointillée</translation>
     </message>
     <message>
         <source>Select everything on the page (Ctrl+A)</source>

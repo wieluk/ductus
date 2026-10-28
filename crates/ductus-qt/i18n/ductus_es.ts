@@ -936,6 +936,10 @@ Biblioteca: %1</translation>
         <translation>Contraer todo</translation>
     </message>
     <message>
+        <source>Expand all</source>
+        <translation>Expandir todo</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>Nueva página…</translation>
     </message>
@@ -962,6 +966,10 @@ Biblioteca: %1</translation>
     <message>
         <source>Recent</source>
         <translation>Recientes</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>Borrar</translation>
     </message>
     <message>
         <source>Notebook “%1”</source>
@@ -1216,6 +1224,17 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
         <translation>Quitar de la barra</translation>
     </message>
     <message>
+        <source>Up</source>
+        <translation>Arriba</translation>
+    </message>
+    <message>
+        <source>Down</source>
+        <translation>Abajo</translation>
+    </message>
+</context>
+<context>
+    <name>PenOptions</name>
+    <message>
         <source>Choose a color</source>
         <translation>Elegir un color</translation>
     </message>
@@ -1234,14 +1253,6 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
     <message>
         <source>Line</source>
         <translation>Línea</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>Arriba</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>Abajo</translation>
     </message>
 </context>
 <context>
@@ -1278,18 +1289,6 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
 <context>
     <name>Ribbon</name>
     <message>
-        <source>Fine</source>
-        <translation>Fino</translation>
-    </message>
-    <message>
-        <source>Medium</source>
-        <translation>Medio</translation>
-    </message>
-    <message>
-        <source>Bold</source>
-        <translation>Negrita</translation>
-    </message>
-    <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
         <translation>Traer notas de Xournal++, Rnote u OneNote: un archivo o una carpeta de cuaderno entera</translation>
     </message>
@@ -1308,14 +1307,6 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
         <translation>Lazo: rodea la tinta para seleccionarla y luego arrástrala, cópiala o elimínala</translation>
     </message>
     <message>
-        <source>Narrow</source>
-        <translation>Estrecho</translation>
-    </message>
-    <message>
-        <source>Wide</source>
-        <translation>Ancho</translation>
-    </message>
-    <message>
         <source>Hand: drag text, formulas and pictures to move them, their corners to resize; elsewhere it scrolls</source>
         <translation>Mano: arrastra textos, fórmulas e imágenes para moverlos, sus esquinas para cambiar el tamaño; en otro sitio desplaza</translation>
     </message>
@@ -1324,8 +1315,16 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
         <translation>Lápiz</translation>
     </message>
     <message>
+        <source>Pen color, width and line</source>
+        <translation>Lápiz: color, grosor y línea</translation>
+    </message>
+    <message>
         <source>Highlighter</source>
         <translation>Resaltador</translation>
+    </message>
+    <message>
+        <source>Highlighter color and width</source>
+        <translation>Resaltador: color y grosor</translation>
     </message>
     <message>
         <source>Eraser: removes whole strokes (also: pen eraser end or barrel button)</source>
@@ -1374,10 +1373,6 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
     <message>
         <source>Extra large eraser</source>
         <translation>Borrador extragrande</translation>
-    </message>
-    <message>
-        <source>Choose a color</source>
-        <translation>Elegir un color</translation>
     </message>
     <message>
         <source>New page</source>
@@ -1474,22 +1469,6 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
     <message>
         <source>About Ductus</source>
         <translation>Acerca de Ductus</translation>
-    </message>
-    <message>
-        <source>More colors…</source>
-        <translation>Más colores…</translation>
-    </message>
-    <message>
-        <source>Solid line</source>
-        <translation>Línea continua</translation>
-    </message>
-    <message>
-        <source>Dashed line</source>
-        <translation>Línea discontinua</translation>
-    </message>
-    <message>
-        <source>Dotted line</source>
-        <translation>Línea punteada</translation>
     </message>
     <message>
         <source>Select everything on the page (Ctrl+A)</source>

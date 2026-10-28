@@ -936,6 +936,10 @@ Bibliothek: %1</translation>
         <translation>Alle zuklappen</translation>
     </message>
     <message>
+        <source>Expand all</source>
+        <translation>Alle aufklappen</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>Neue Seite…</translation>
     </message>
@@ -962,6 +966,10 @@ Bibliothek: %1</translation>
     <message>
         <source>Recent</source>
         <translation>Zuletzt</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>Leeren</translation>
     </message>
     <message>
         <source>Notebook “%1”</source>
@@ -1216,6 +1224,17 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Aus der Leiste entfernen</translation>
     </message>
     <message>
+        <source>Up</source>
+        <translation>Nach oben</translation>
+    </message>
+    <message>
+        <source>Down</source>
+        <translation>Nach unten</translation>
+    </message>
+</context>
+<context>
+    <name>PenOptions</name>
+    <message>
         <source>Choose a color</source>
         <translation>Farbe wählen</translation>
     </message>
@@ -1234,14 +1253,6 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     <message>
         <source>Line</source>
         <translation>Linie</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>Nach oben</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>Nach unten</translation>
     </message>
 </context>
 <context>
@@ -1278,18 +1289,6 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
 <context>
     <name>Ribbon</name>
     <message>
-        <source>Fine</source>
-        <translation>Fein</translation>
-    </message>
-    <message>
-        <source>Medium</source>
-        <translation>Mittel</translation>
-    </message>
-    <message>
-        <source>Bold</source>
-        <translation>Fett</translation>
-    </message>
-    <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
         <translation>Notizen aus Xournal++, Rnote oder OneNote übernehmen: eine Datei oder einen ganzen Notizbuchordner</translation>
     </message>
@@ -1308,14 +1307,6 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Lasso: Tinte umkreisen, um sie auszuwählen, dann ziehen, kopieren oder löschen</translation>
     </message>
     <message>
-        <source>Narrow</source>
-        <translation>Schmal</translation>
-    </message>
-    <message>
-        <source>Wide</source>
-        <translation>Breit</translation>
-    </message>
-    <message>
         <source>Hand: drag text, formulas and pictures to move them, their corners to resize; elsewhere it scrolls</source>
         <translation>Hand: Text, Formeln und Bilder ziehen, um sie zu verschieben, an den Ecken die Größe ändern; anderswo scrollt sie</translation>
     </message>
@@ -1324,8 +1315,16 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Stift</translation>
     </message>
     <message>
+        <source>Pen color, width and line</source>
+        <translation>Stift: Farbe, Breite und Linie</translation>
+    </message>
+    <message>
         <source>Highlighter</source>
         <translation>Textmarker</translation>
+    </message>
+    <message>
+        <source>Highlighter color and width</source>
+        <translation>Textmarker: Farbe und Breite</translation>
     </message>
     <message>
         <source>Eraser: removes whole strokes (also: pen eraser end or barrel button)</source>
@@ -1374,10 +1373,6 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     <message>
         <source>Extra large eraser</source>
         <translation>Sehr großer Radierer</translation>
-    </message>
-    <message>
-        <source>Choose a color</source>
-        <translation>Farbe wählen</translation>
     </message>
     <message>
         <source>New page</source>
@@ -1474,22 +1469,6 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     <message>
         <source>About Ductus</source>
         <translation>Über Ductus</translation>
-    </message>
-    <message>
-        <source>More colors…</source>
-        <translation>Weitere Farben…</translation>
-    </message>
-    <message>
-        <source>Solid line</source>
-        <translation>Durchgezogene Linie</translation>
-    </message>
-    <message>
-        <source>Dashed line</source>
-        <translation>Gestrichelte Linie</translation>
-    </message>
-    <message>
-        <source>Dotted line</source>
-        <translation>Gepunktete Linie</translation>
     </message>
     <message>
         <source>Select everything on the page (Ctrl+A)</source>

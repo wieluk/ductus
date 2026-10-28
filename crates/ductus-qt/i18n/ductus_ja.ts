@@ -931,6 +931,10 @@ Library: %1</source>
         <translation>すべて折りたたむ</translation>
     </message>
     <message>
+        <source>Expand all</source>
+        <translation>すべて展開</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>新しいページ…</translation>
     </message>
@@ -957,6 +961,10 @@ Library: %1</source>
     <message>
         <source>Recent</source>
         <translation>最近</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>クリア</translation>
     </message>
     <message>
         <source>Notebook “%1”</source>
@@ -1211,6 +1219,17 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>バーから削除</translation>
     </message>
     <message>
+        <source>Up</source>
+        <translation>上へ</translation>
+    </message>
+    <message>
+        <source>Down</source>
+        <translation>下へ</translation>
+    </message>
+</context>
+<context>
+    <name>PenOptions</name>
+    <message>
         <source>Choose a color</source>
         <translation>色を選択</translation>
     </message>
@@ -1229,14 +1248,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Line</source>
         <translation>直線</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>上へ</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>下へ</translation>
     </message>
 </context>
 <context>
@@ -1273,18 +1284,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>Ribbon</name>
     <message>
-        <source>Fine</source>
-        <translation>細</translation>
-    </message>
-    <message>
-        <source>Medium</source>
-        <translation>中</translation>
-    </message>
-    <message>
-        <source>Bold</source>
-        <translation>太字</translation>
-    </message>
-    <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
         <translation>Xournal++、Rnote、OneNote のノートを取り込む：ファイル、またはノートのフォルダー全体</translation>
     </message>
@@ -1303,14 +1302,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>投げなわ：インクを囲んで選択し、ドラッグ・コピー・削除</translation>
     </message>
     <message>
-        <source>Narrow</source>
-        <translation>細い</translation>
-    </message>
-    <message>
-        <source>Wide</source>
-        <translation>太い</translation>
-    </message>
-    <message>
         <source>Hand: drag text, formulas and pictures to move them, their corners to resize; elsewhere it scrolls</source>
         <translation>手のひら：テキスト・数式・画像をドラッグして移動、角をドラッグしてサイズ変更。それ以外の場所ではスクロール</translation>
     </message>
@@ -1319,8 +1310,16 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>ペン</translation>
     </message>
     <message>
+        <source>Pen color, width and line</source>
+        <translation>ペンの色・太さ・線種</translation>
+    </message>
+    <message>
         <source>Highlighter</source>
         <translation>蛍光ペン</translation>
+    </message>
+    <message>
+        <source>Highlighter color and width</source>
+        <translation>蛍光ペンの色・太さ</translation>
     </message>
     <message>
         <source>Eraser: removes whole strokes (also: pen eraser end or barrel button)</source>
@@ -1369,10 +1368,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Extra large eraser</source>
         <translation>特大の消しゴム</translation>
-    </message>
-    <message>
-        <source>Choose a color</source>
-        <translation>色を選択</translation>
     </message>
     <message>
         <source>New page</source>
@@ -1469,22 +1464,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>About Ductus</source>
         <translation>Ductus について</translation>
-    </message>
-    <message>
-        <source>More colors…</source>
-        <translation>その他の色…</translation>
-    </message>
-    <message>
-        <source>Solid line</source>
-        <translation>実線</translation>
-    </message>
-    <message>
-        <source>Dashed line</source>
-        <translation>破線</translation>
-    </message>
-    <message>
-        <source>Dotted line</source>
-        <translation>点線</translation>
     </message>
     <message>
         <source>Select everything on the page (Ctrl+A)</source>

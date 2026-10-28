@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Dialogs
 import QtQuick.Layouts
 import Ductus
 
@@ -35,35 +34,11 @@ Rectangle {
         color: Theme.ribbonBorder
     }
 
-    readonly property bool highlighting: canvas.tool === InkCanvas.Highlighter
-    readonly property var penColors: ["#1a1a1f", "#1f4fd1", "#d12f2f", "#1d8a3b", "#7b2fd1", "#e07b00"]
-    readonly property var highlighterColors: ["#ffd91a", "#7ee07e", "#5cc8ff", "#ff8fd0", "#ffa94d"]
-    readonly property var penWidths: [{ w: 1.5, label: qsTr("Fine") },
-                                      { w: 3, label: qsTr("Medium") },
-                                      { w: 6, label: qsTr("Bold") }]
-    readonly property var highlighterWidths: [{ w: 12, label: qsTr("Narrow") },
-                                              { w: 18, label: qsTr("Medium") },
-                                              { w: 28, label: qsTr("Wide") }]
-    readonly property color activeColor: highlighting ? canvas.highlighterColor : canvas.penColor
-    readonly property real activeWidth: highlighting ? canvas.highlighterWidth : canvas.penWidth
-
-    function pickColor(color) {
-        if (canvas.selectionCount > 0) {
-            canvas.recolorSelection(color)
-        } else if (highlighting) {
-            canvas.highlighterColor = color
-        } else {
-            canvas.penColor = color
-            if (canvas.tool !== InkCanvas.Pen)
-                canvas.tool = InkCanvas.Pen
-        }
-    }
-
-    function pickWidth(width) {
-        if (highlighting)
-            canvas.highlighterWidth = width
-        else
-            canvas.penWidth = width
+    function openBelow(popup, item) {
+        const at = item.mapToItem(ribbon, 0, item.height)
+        popup.x = at.x
+        popup.y = at.y
+        popup.open()
     }
 
     component Separator: Rectangle {
@@ -72,6 +47,25 @@ Rectangle {
         Layout.leftMargin: 6
         Layout.rightMargin: 6
         color: Theme.separator
+    }
+
+    // The color a pen draws in, under its icon.
+    component ColorMark: Rectangle {
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 4
+        width: 16
+        height: 3
+        radius: 1.5
+    }
+
+    component OptionsButton: RibbonButton {
+        iconName: "chevron"
+        implicitWidth: 18
+        padding: 0
+        icon.width: 12
+        icon.height: 12
+        rotation: 90
     }
 
     component ToolButtons: RowLayout {
@@ -99,6 +93,12 @@ Rectangle {
             checkable: true
             checked: ribbon.canvas.tool === InkCanvas.Pen
             onClicked: ribbon.canvas.tool = InkCanvas.Pen
+            ColorMark { color: ribbon.canvas.penColor }
+        }
+        OptionsButton {
+            objectName: "penOptions"
+            tip: qsTr("Pen color, width and line")
+            onClicked: ribbon.openBelow(penPopup, this)
         }
         RibbonButton {
             objectName: "toolHighlighter"
@@ -107,6 +107,12 @@ Rectangle {
             checkable: true
             checked: ribbon.canvas.tool === InkCanvas.Highlighter
             onClicked: ribbon.canvas.tool = InkCanvas.Highlighter
+            ColorMark { color: ribbon.canvas.highlighterColor }
+        }
+        OptionsButton {
+            objectName: "highlighterOptions"
+            tip: qsTr("Highlighter color and width")
+            onClicked: ribbon.openBelow(highlighterPopup, this)
         }
         RibbonButton {
             objectName: "toolEraser"
@@ -118,15 +124,9 @@ Rectangle {
             checked: ribbon.canvas.tool === InkCanvas.Eraser
             onClicked: ribbon.canvas.tool = InkCanvas.Eraser
         }
-        RibbonButton {
+        OptionsButton {
             objectName: "eraserOptions"
-            iconName: "chevron"
             tip: qsTr("Eraser options")
-            implicitWidth: 18
-            padding: 0
-            icon.width: 12
-            icon.height: 12
-            rotation: 90
             onClicked: eraserMenu.popup(this, 0, height)
         }
         RibbonButton {
@@ -193,11 +193,55 @@ Rectangle {
         }
     }
 
-    ColorDialog {
-        id: customColor
-        title: qsTr("Choose a color")
-        selectedColor: ribbon.activeColor
-        onAccepted: ribbon.pickColor(selectedColor)
+    component OptionsPopup: Popup {
+        padding: 12
+        // The press that closes it shouldn't also draw on the page.
+        modal: true
+        dim: false
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        background: Rectangle {
+            radius: 10
+            color: Theme.popup
+            border.width: 1
+            border.color: Theme.ribbonBorder
+        }
+    }
+
+    OptionsPopup {
+        id: penPopup
+        contentItem: PenOptions {
+            namePrefix: "pen"
+            color: ribbon.canvas.penColor
+            strokeWidth: ribbon.canvas.penWidth
+            pattern: ribbon.canvas.penPattern
+            onPicked: (change) => {
+                if (change.color !== undefined)
+                    ribbon.canvas.penColor = change.color
+                if (change.width !== undefined)
+                    ribbon.canvas.penWidth = change.width
+                if (change.pattern !== undefined)
+                    ribbon.canvas.penPattern = change.pattern
+                ribbon.canvas.tool = InkCanvas.Pen
+            }
+        }
+    }
+
+    OptionsPopup {
+        id: highlighterPopup
+        contentItem: PenOptions {
+            namePrefix: "highlighter"
+            highlighter: true
+            color: ribbon.canvas.highlighterColor
+            strokeWidth: ribbon.canvas.highlighterWidth
+            onPicked: (change) => {
+                if (change.color !== undefined)
+                    ribbon.canvas.highlighterColor = change.color
+                if (change.width !== undefined)
+                    ribbon.canvas.highlighterWidth = change.width
+                ribbon.canvas.tool = InkCanvas.Highlighter
+            }
+        }
     }
 
     // A narrow window (a phone) scrolls the buttons sideways instead of cutting them off.
@@ -332,74 +376,6 @@ Rectangle {
                 enabled: ribbon.canvas.enabled
                 spacing: 2
                 ToolButtons {}
-                Separator {}
-                Repeater {
-                    model: ribbon.highlighting ? ribbon.highlighterColors : ribbon.penColors
-                    delegate: ColorSwatch {
-                        required property string modelData
-                        required property int index
-                        objectName: "color" + index
-                        swatch: modelData
-                        selected: Qt.colorEqual(ribbon.activeColor, modelData)
-                        onClicked: ribbon.pickColor(modelData)
-                    }
-                }
-                RibbonButton {
-                    objectName: "customColor"
-                    iconName: "color"
-                    tip: qsTr("More colors…")
-                    onClicked: customColor.open()
-                }
-                Separator {}
-                Repeater {
-                    model: ribbon.highlighting ? ribbon.highlighterWidths : ribbon.penWidths
-                    delegate: RibbonButton {
-                        id: widthButton
-                        required property var modelData
-                        required property int index
-                        objectName: "width" + index
-                        tip: modelData.label
-                        checkable: true
-                        checked: Math.abs(ribbon.activeWidth - modelData.w) < 0.01
-                        onClicked: ribbon.pickWidth(modelData.w)
-                        contentItem: Item {
-                            Rectangle {
-                                anchors.centerIn: parent
-                                width: 20
-                                height: ribbon.highlighting ? widthButton.modelData.w / 2.5
-                                                            : Math.max(1.5, widthButton.modelData.w * 1.2)
-                                radius: ribbon.highlighting ? 1 : height / 2
-                                // Shows thickness, not color; the theme color stays visible in dark mode.
-                                color: Theme.text
-                                opacity: ribbon.highlighting ? 0.5 : 1
-                            }
-                        }
-                    }
-                }
-                Separator { visible: !ribbon.highlighting }
-                Repeater {
-                    model: [{ key: "solid", label: qsTr("Solid line") },
-                            { key: "dashed", label: qsTr("Dashed line") },
-                            { key: "dotted", label: qsTr("Dotted line") }]
-                    delegate: RibbonButton {
-                        id: patternButton
-                        required property var modelData
-                        objectName: "pattern" + modelData.key
-                        visible: !ribbon.highlighting
-                        tip: modelData.label
-                        checkable: true
-                        checked: ribbon.canvas.penPattern === modelData.key
-                        onClicked: {
-                            ribbon.canvas.penPattern = modelData.key
-                            if (ribbon.canvas.tool !== InkCanvas.Pen)
-                                ribbon.canvas.tool = InkCanvas.Pen
-                        }
-                        contentItem: LinePatternIcon {
-                            pattern: patternButton.modelData.key
-                            color: Theme.text
-                        }
-                    }
-                }
                 Separator {}
                 RibbonButton {
                     objectName: "selectAll"

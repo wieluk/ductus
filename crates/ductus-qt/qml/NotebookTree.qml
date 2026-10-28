@@ -126,7 +126,10 @@ Rectangle {
                     readonly property bool active: AppController.notebookView === modelData.notebooks
                     objectName: modelData.notebooks ? "viewNotebooks" : "viewFolders"
                     implicitHeight: 28
-                    implicitWidth: viewLabel.implicitWidth + 16
+                    implicitWidth: viewLabel.implicitWidth + 12
+                    // A narrow sidebar shortens the names rather than pushing the buttons out.
+                    Layout.fillWidth: true
+                    Layout.maximumWidth: implicitWidth
                     focusPolicy: Qt.NoFocus
                     onClicked: AppController.notebookView = modelData.notebooks
                     // Hidden once pressed, until the pointer leaves.
@@ -141,6 +144,7 @@ Rectangle {
                     contentItem: Label {
                         id: viewLabel
                         text: viewButton.modelData.label
+                        elide: Text.ElideRight
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                         color: viewButton.active ? Theme.accent : Theme.textMuted
@@ -153,13 +157,24 @@ Rectangle {
                     }
                 }
             }
+            RibbonButton {
+                objectName: AppController.tree.anyExpanded ? "collapseAll" : "expandAll"
+                iconName: AppController.tree.anyExpanded ? "collapse-all" : "expand-all"
+                tip: AppController.tree.anyExpanded ? qsTr("Collapse all") : qsTr("Expand all")
+                implicitHeight: 32
+                implicitWidth: 24
+                padding: 4
+                icon.width: 16
+                icon.height: 16
+                onClicked: AppController.tree.anyExpanded ? AppController.collapseAll() : AppController.expandAll()
+            }
             Item { Layout.fillWidth: true }
             RibbonButton {
                 objectName: "treeFilter"
                 iconName: "filter"
                 tip: qsTr("Show…")
                 implicitHeight: 32
-                implicitWidth: 32
+                implicitWidth: 28
                 checked: AppController.treeFilter !== AppController.defaultTreeFilter
                 onClicked: filterMenu.popup(this, 0, height)
 
@@ -196,12 +211,6 @@ Rectangle {
                         checked: sidebar.hasFilter(8)
                         onTriggered: sidebar.toggleFilter(8)
                     }
-                    AppMenuSeparator {}
-                    AppMenuItem {
-                        objectName: "collapseAll"
-                        text: qsTr("Collapse all")
-                        onTriggered: AppController.collapseAll()
-                    }
                 }
             }
             RibbonButton {
@@ -209,7 +218,7 @@ Rectangle {
                 iconName: "page-add"
                 tip: qsTr("New page…")
                 implicitHeight: 32
-                implicitWidth: 32
+                implicitWidth: 28
                 onClicked: sidebar.newPageRequested("")
             }
             RibbonButton {
@@ -217,7 +226,7 @@ Rectangle {
                 iconName: "plus"
                 tip: qsTr("New notebook…")
                 implicitHeight: 32
-                implicitWidth: 32
+                implicitWidth: 28
                 onClicked: sidebar.newNotebookRequested(AppController.defaultNotebookLocation())
             }
         }
@@ -383,17 +392,46 @@ Rectangle {
             ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
 
             section.property: AppController.tree.hasSections ? "section" : ""
-            section.delegate: Label {
+            section.delegate: Item {
+                id: heading
                 required property string section
+                width: ListView.view.width
                 height: 26
-                leftPadding: 14
-                topPadding: 6
-                text: ({ favorites: qsTr("Favorites"), recent: qsTr("Recent"),
-                         notebooks: qsTr("Notebooks") })[section] || ""
-                color: Theme.textMuted
-                font.pixelSize: 11
-                font.weight: Font.DemiBold
-                font.capitalization: Font.AllUppercase
+                Label {
+                    anchors.left: parent.left
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 2
+                    leftPadding: 14
+                    text: ({ favorites: qsTr("Favorites"), recent: qsTr("Recent"),
+                             notebooks: qsTr("Notebooks") })[heading.section] || ""
+                    color: Theme.textMuted
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    font.capitalization: Font.AllUppercase
+                }
+                AbstractButton {
+                    objectName: "clearRecent"
+                    visible: heading.section === "recent"
+                    anchors.right: parent.right
+                    anchors.rightMargin: 12
+                    anchors.bottom: parent.bottom
+                    height: 22
+                    implicitWidth: clearLabel.implicitWidth + 12
+                    focusPolicy: Qt.NoFocus
+                    onClicked: AppController.clearRecent()
+                    contentItem: Label {
+                        id: clearLabel
+                        text: qsTr("Clear")
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        color: parent.hovered ? Theme.accent : Theme.textMuted
+                        font.pixelSize: 11
+                    }
+                    background: Rectangle {
+                        radius: Theme.radius
+                        color: parent.hovered ? Theme.hover : "transparent"
+                    }
+                }
             }
 
             delegate: Item {

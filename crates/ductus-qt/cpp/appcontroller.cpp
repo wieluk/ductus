@@ -138,6 +138,11 @@ QHash<int, QByteArray> NotebookModel::roleNames() const
     };
 }
 
+bool NotebookModel::anyExpanded() const
+{
+    return std::any_of(m_rows.cbegin(), m_rows.cend(), [](const Row &row) { return !row.quick && row.expanded; });
+}
+
 void NotebookModel::setRows(QList<Row> rows)
 {
     // Same rows: update in place so views keep their scroll position.
@@ -1564,6 +1569,30 @@ void AppController::collapseAll()
     m_expanded.clear();
     storeExpanded();
     refreshTree();
+}
+
+void AppController::clearRecent()
+{
+    if (m_library && attempt([&] { (*m_library)->clear_recent(); }))
+        refreshTree();
+}
+
+void AppController::expandAll()
+{
+    // A level at a time: deeper folders only appear once their parent is open.
+    for (int depth = 0; depth < 64; ++depth) {
+        bool more = false;
+        for (const NotebookModel::Row &row : m_tree.rows()) {
+            if (!row.quick && row.isFolder && row.hasChildren && !row.expanded) {
+                m_expanded.insert(row.path);
+                more = true;
+            }
+        }
+        if (!more)
+            break;
+        refreshTree();
+    }
+    storeExpanded();
 }
 
 void AppController::locate(const QString &path)

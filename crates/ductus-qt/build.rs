@@ -31,6 +31,7 @@ fn main() {
         QmlFile::from("qml/TransferProgress.qml"),
         QmlFile::from("qml/LocationBar.qml"),
         QmlFile::from("qml/PageTabs.qml"),
+        QmlFile::from("qml/PenOptions.qml"),
         QmlFile::from("qml/NewPageDialog.qml"),
         QmlFile::from("qml/NewNotebookDialog.qml"),
         QmlFile::from("qml/TrashDialog.qml"),

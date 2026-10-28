@@ -356,6 +356,10 @@ impl LibraryHandle {
         self.library.add_recent(page)
     }
 
+    pub fn clear_recent(&self) -> Result<()> {
+        self.library.clear_recent()
+    }
+
     pub fn page_targets(&self) -> String {
         let mut lines = Vec::new();
         for notebook in self.library.notebooks("") {

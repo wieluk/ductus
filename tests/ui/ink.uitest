@@ -25,10 +25,14 @@ expect-prop canvas eraserSize 30
 expect-prop canvas tool Eraser
 # Line styles are saved with the stroke.
 click-item tab_draw
-click-item toolPen
-click-item patterndotted
+click-item penOptions
+click-item penLine_dotted
+expect-prop canvas tool Pen
+key Escape
 pen p=0.6 400,320 900,330
-click-item patternsolid
+click-item penOptions
+click-item penLine_solid
+key Escape
 expect-in-file My Notebook/First page.svg | dx:line="dotted"
 # Lasso, copy and paste.
 click-item toolLasso

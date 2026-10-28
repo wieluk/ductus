@@ -941,6 +941,10 @@ Library: %1</source>
         <translation>Свернуть всё</translation>
     </message>
     <message>
+        <source>Expand all</source>
+        <translation>Развернуть всё</translation>
+    </message>
+    <message>
         <source>New page…</source>
         <translation>Новая страница…</translation>
     </message>
@@ -967,6 +971,10 @@ Library: %1</source>
     <message>
         <source>Recent</source>
         <translation>Недавние</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>Очистить</translation>
     </message>
     <message>
         <source>Notebook “%1”</source>
@@ -1221,6 +1229,17 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Убрать с панели</translation>
     </message>
     <message>
+        <source>Up</source>
+        <translation>Вверх</translation>
+    </message>
+    <message>
+        <source>Down</source>
+        <translation>Вниз</translation>
+    </message>
+</context>
+<context>
+    <name>PenOptions</name>
+    <message>
         <source>Choose a color</source>
         <translation>Выбрать цвет</translation>
     </message>
@@ -1239,14 +1258,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Line</source>
         <translation>Линия</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>Вверх</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>Вниз</translation>
     </message>
 </context>
 <context>
@@ -1283,18 +1294,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>Ribbon</name>
     <message>
-        <source>Fine</source>
-        <translation>Тонкое</translation>
-    </message>
-    <message>
-        <source>Medium</source>
-        <translation>Средний</translation>
-    </message>
-    <message>
-        <source>Bold</source>
-        <translation>Жирный</translation>
-    </message>
-    <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
         <translation>Перенести заметки из Xournal++, Rnote или OneNote: файл или целую папку блокнота</translation>
     </message>
@@ -1313,14 +1312,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Лассо: обведите чернила, чтобы выделить, затем перетащите, скопируйте или удалите</translation>
     </message>
     <message>
-        <source>Narrow</source>
-        <translation>Узкий</translation>
-    </message>
-    <message>
-        <source>Wide</source>
-        <translation>Широкий</translation>
-    </message>
-    <message>
         <source>Hand: drag text, formulas and pictures to move them, their corners to resize; elsewhere it scrolls</source>
         <translation>Рука: перетаскивайте текст, формулы и изображения, чтобы переместить, за углы — чтобы изменить размер; в остальных местах она прокручивает</translation>
     </message>
@@ -1329,8 +1320,16 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Перо</translation>
     </message>
     <message>
+        <source>Pen color, width and line</source>
+        <translation>Перо: цвет, толщина и линия</translation>
+    </message>
+    <message>
         <source>Highlighter</source>
         <translation>Маркер</translation>
+    </message>
+    <message>
+        <source>Highlighter color and width</source>
+        <translation>Маркер: цвет и толщина</translation>
     </message>
     <message>
         <source>Eraser: removes whole strokes (also: pen eraser end or barrel button)</source>
@@ -1379,10 +1378,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Extra large eraser</source>
         <translation>Очень большой ластик</translation>
-    </message>
-    <message>
-        <source>Choose a color</source>
-        <translation>Выбрать цвет</translation>
     </message>
     <message>
         <source>New page</source>
@@ -1479,22 +1474,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>About Ductus</source>
         <translation>О Ductus</translation>
-    </message>
-    <message>
-        <source>More colors…</source>
-        <translation>Другие цвета…</translation>
-    </message>
-    <message>
-        <source>Solid line</source>
-        <translation>Сплошная линия</translation>
-    </message>
-    <message>
-        <source>Dashed line</source>
-        <translation>Штриховая линия</translation>
-    </message>
-    <message>
-        <source>Dotted line</source>
-        <translation>Пунктир</translation>
     </message>
     <message>
         <source>Select everything on the page (Ctrl+A)</source>
