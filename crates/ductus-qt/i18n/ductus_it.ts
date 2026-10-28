@@ -556,6 +556,10 @@
         <translation>Nuova pagina…</translation>
     </message>
     <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Mostra o nascondi i quaderni (%1)</translation>
+    </message>
+    <message>
         <source>Choose a library folder</source>
         <translation>Scegli una cartella della libreria</translation>
     </message>
@@ -1092,6 +1096,10 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
     <message>
         <source>Show all files</source>
         <translation>Mostra tutti i file</translation>
+    </message>
+    <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Mostra o nascondi i quaderni (%1)</translation>
     </message>
     <message>
         <source>Open library folder…</source>

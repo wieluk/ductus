@@ -556,6 +556,10 @@
         <translation>Nova página…</translation>
     </message>
     <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Mostrar ou ocultar cadernos (%1)</translation>
+    </message>
+    <message>
         <source>Choose a library folder</source>
         <translation>Escolher uma pasta de biblioteca</translation>
     </message>
@@ -1092,6 +1096,10 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
     <message>
         <source>Show all files</source>
         <translation>Mostrar todos os arquivos</translation>
+    </message>
+    <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Mostrar ou ocultar cadernos (%1)</translation>
     </message>
     <message>
         <source>Open library folder…</source>

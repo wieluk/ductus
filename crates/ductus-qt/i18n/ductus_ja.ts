@@ -551,6 +551,10 @@
         <translation>新しいページ…</translation>
     </message>
     <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>ノートの表示／非表示（%1）</translation>
+    </message>
+    <message>
         <source>Choose a library folder</source>
         <translation>ライブラリフォルダーを選択</translation>
     </message>
@@ -1087,6 +1091,10 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Show all files</source>
         <translation>すべてのファイルを表示</translation>
+    </message>
+    <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>ノートの表示／非表示（%1）</translation>
     </message>
     <message>
         <source>Open library folder…</source>

@@ -556,6 +556,10 @@
         <translation>Nouvelle page…</translation>
     </message>
     <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Afficher ou masquer les carnets (%1)</translation>
+    </message>
+    <message>
         <source>Choose a library folder</source>
         <translation>Choisir un dossier de bibliothèque</translation>
     </message>
@@ -1092,6 +1096,10 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     <message>
         <source>Show all files</source>
         <translation>Afficher tous les fichiers</translation>
+    </message>
+    <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Afficher ou masquer les carnets (%1)</translation>
     </message>
     <message>
         <source>Open library folder…</source>

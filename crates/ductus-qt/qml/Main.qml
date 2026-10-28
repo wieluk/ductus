@@ -389,6 +389,7 @@ ApplicationWindow {
                     deleteDialog.open()
                 }
                 onOpenFolderRequested: folderDialog.open()
+                onCollapseRequested: window.toggleSidebar()
                 onNewPageRequested: (folder) => newPageDialog.show(folder)
                 onNewNotebookRequested: (location) => newNotebookDialog.show(location)
                 onMakeNotebookRequested: (folder) => newNotebookDialog.showForFolder(folder)
@@ -496,8 +497,33 @@ ApplicationWindow {
                         visible: window.penBarVisible && canvas.enabled || window.fullScreen
                         x: window.penBarRight ? parent.width - width - 10 : 10
                         anchors.verticalCenter: parent.verticalCenter
-                        height: Math.min(implicitHeight, parent.height - 20)
+                        // Clear of the corner button on its side.
+                        height: Math.min(implicitHeight, parent.height - 20
+                                         - (sidebarOpener.visible && window.penBarRight === window.sidebarRight
+                                            ? 2 * (sidebarOpener.height + 8) : 0))
                         clip: true
+                    }
+
+                    // The hidden sidebar comes back from where it was collapsed.
+                    Rectangle {
+                        id: sidebarOpener
+                        visible: !window.compact && !window.sidebarVisible && !window.fullScreen
+                        x: window.sidebarRight ? parent.width - width - 10 : 10
+                        y: parent.height - height - 10
+                        width: opener.implicitWidth + 8
+                        height: opener.implicitHeight + 8
+                        radius: 10
+                        color: Theme.popup
+                        border.width: 1
+                        border.color: Theme.ribbonBorder
+                        RibbonButton {
+                            id: opener
+                            objectName: "sidebarExpand"
+                            anchors.centerIn: parent
+                            iconName: "sidebar"
+                            tip: qsTr("Show or hide notebooks (%1)").arg("Ctrl+\\")
+                            onClicked: window.toggleSidebar()
+                        }
                     }
 
                     SelectionBar {

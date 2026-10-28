@@ -551,6 +551,10 @@
         <translation>新建页面…</translation>
     </message>
     <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>显示或隐藏笔记本（%1）</translation>
+    </message>
+    <message>
         <source>Choose a library folder</source>
         <translation>选择资料库文件夹</translation>
     </message>
@@ -1087,6 +1091,10 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Show all files</source>
         <translation>显示所有文件</translation>
+    </message>
+    <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>显示或隐藏笔记本（%1）</translation>
     </message>
     <message>
         <source>Open library folder…</source>

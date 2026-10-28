@@ -556,6 +556,10 @@
         <translation>Nueva página…</translation>
     </message>
     <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Mostrar u ocultar los cuadernos (%1)</translation>
+    </message>
+    <message>
         <source>Choose a library folder</source>
         <translation>Elegir una carpeta de biblioteca</translation>
     </message>
@@ -1092,6 +1096,10 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
     <message>
         <source>Show all files</source>
         <translation>Mostrar todos los archivos</translation>
+    </message>
+    <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Mostrar u ocultar los cuadernos (%1)</translation>
     </message>
     <message>
         <source>Open library folder…</source>

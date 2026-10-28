@@ -98,3 +98,10 @@ click-item settingsClose
 expect-prop notebookTree x 878
 pen 880,400 780,400
 expect-prop notebookTree width 502
+# The sidebar folds away from its own bottom and comes back from the same corner.
+click-item sidebarCollapse
+expect-hidden notebookTree
+shot collapsed
+click-item sidebarExpand
+expect-prop notebookTree visible true
+expect-hidden sidebarExpand

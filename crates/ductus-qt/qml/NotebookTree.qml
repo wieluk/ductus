@@ -51,6 +51,7 @@ Rectangle {
 
     signal deleteRequested(string path, string name, bool isFolder)
     signal openFolderRequested()
+    signal collapseRequested()
     /// "" for the default place.
     signal newPageRequested(string folder)
     signal newNotebookRequested(string location)
@@ -909,10 +910,18 @@ Rectangle {
         }
         RowLayout {
             Layout.fillWidth: true
-            Layout.leftMargin: 14
+            Layout.leftMargin: 6
             Layout.rightMargin: 6
             Layout.topMargin: 4
             Layout.bottomMargin: 4
+            RibbonButton {
+                objectName: "sidebarCollapse"
+                iconName: "sidebar"
+                tip: qsTr("Show or hide notebooks (%1)").arg("Ctrl+\\")
+                implicitHeight: 30
+                implicitWidth: 30
+                onClicked: sidebar.collapseRequested()
+            }
             Label {
                 objectName: "libraryLabel"
                 Layout.fillWidth: true

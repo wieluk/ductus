@@ -561,6 +561,10 @@
         <translation>Новая страница…</translation>
     </message>
     <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Показать или скрыть блокноты (%1)</translation>
+    </message>
+    <message>
         <source>Choose a library folder</source>
         <translation>Выбрать папку библиотеки</translation>
     </message>
@@ -1097,6 +1101,10 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Show all files</source>
         <translation>Показывать все файлы</translation>
+    </message>
+    <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Показать или скрыть блокноты (%1)</translation>
     </message>
     <message>
         <source>Open library folder…</source>

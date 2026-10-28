@@ -556,6 +556,10 @@
         <translation>Neue Seite…</translation>
     </message>
     <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Notizbücher ein- oder ausblenden (%1)</translation>
+    </message>
+    <message>
         <source>Choose a library folder</source>
         <translation>Bibliotheksordner wählen</translation>
     </message>
@@ -1092,6 +1096,10 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     <message>
         <source>Show all files</source>
         <translation>Alle Dateien anzeigen</translation>
+    </message>
+    <message>
+        <source>Show or hide notebooks (%1)</source>
+        <translation>Notizbücher ein- oder ausblenden (%1)</translation>
     </message>
     <message>
         <source>Open library folder…</source>
