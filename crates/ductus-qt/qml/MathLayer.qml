@@ -73,6 +73,9 @@ Item {
     function commit() {
         if (!editing)
             return
+        // The word a phone keyboard (or an input method) is still composing belongs to the formula.
+        if (sourceField.activeFocus)
+            Qt.inputMethod.commit()
         finish()
         canvas.commitMath()
     }

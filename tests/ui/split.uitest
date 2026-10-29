@@ -26,6 +26,13 @@ pen p=0.6 450,400 650,420
 expect-text pageTitle Waves
 key Ctrl+S
 expect-in-file Physics/Waves.svg | dx:ink
+# The divider moves: what was the left half's x=700 is now the right half.
+mouse 780,450 600,450
+pen p=0.6 650,500 750,520
+expect-text pageTitle Optics
+shot divider
+pen p=0.6 450,600 500,620
+expect-text pageTitle Waves
 # A tab dragged onto the other half moves there.
 drag-item pageTab_Physics/Untitled page | otherCanvas
 expect-text pageTitle Untitled page

@@ -65,6 +65,8 @@ Dialog {
         focusPolicy: Qt.NoFocus
         font.pixelSize: 13
         font.weight: Font.DemiBold
+        // Disabled until the dialog can do it, e.g. while a name can't be used.
+        opacity: enabled ? 1 : 0.45
         contentItem: Label {
             text: button.text
             font: button.font

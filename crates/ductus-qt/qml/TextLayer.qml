@@ -26,6 +26,9 @@ Item {
         const edit = activeEdit
         if (!edit)
             return
+        // The word a phone keyboard (or an input method) is still composing belongs to the text.
+        if (edit.activeFocus)
+            Qt.inputMethod.commit()
         // Markdown of our own: Qt's would drop underline, colors and sizes.
         const markdown = formatter.markdown(edit.textDocument)
         if (editingId === -1) {

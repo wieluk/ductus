@@ -122,16 +122,13 @@ public:
                 return fail(QStringLiteral("drag-item: no such items in ") + rest);
             const QPoint a = from->mapToScene(QPointF(from->width() / 2, from->height() / 2)).toPoint();
             const QPoint b = to->mapToScene(QPointF(to->width() / 2, to->height() / 2)).toPoint();
-            if (cmd == u"touchpad-drag-item") {
+            if (cmd == u"touchpad-drag-item")
                 touchpadDrag(a, b);
-            } else {
-                QTest::mouseMove(m_window, a);
-                QTest::mousePress(m_window, Qt::LeftButton, {}, a);
-                for (int i = 1; i <= 20; ++i)
-                    QTest::mouseMove(m_window, a + (b - a) * i / 20, 15);
-                QTest::mouseRelease(m_window, Qt::LeftButton, {}, b);
-                QTest::qWait(100);
-            }
+            else
+                mouseDrag(a, b);
+        } else if (cmd == u"mouse") {
+            // `mouse x,y x,y`: a left-button drag between two window points.
+            mouseDrag(parsePoint(args.value(0)).toPoint(), parsePoint(args.value(1)).toPoint());
         } else if (cmd == u"click-item" || cmd == u"right-click-item") {
             const Qt::MouseButton button = cmd == u"click-item" ? Qt::LeftButton : Qt::RightButton;
             if (!clickItem(rest, button))
@@ -344,6 +341,16 @@ private:
     {
         return qmlEngine(m_window)->singletonInstance<QObject *>(QStringLiteral("Ductus"),
                                                                  QStringLiteral("AppController"));
+    }
+
+    void mouseDrag(QPoint a, QPoint b)
+    {
+        QTest::mouseMove(m_window, a);
+        QTest::mousePress(m_window, Qt::LeftButton, {}, a);
+        for (int i = 1; i <= 20; ++i)
+            QTest::mouseMove(m_window, a + (b - a) * i / 20, 15);
+        QTest::mouseRelease(m_window, Qt::LeftButton, {}, b);
+        QTest::qWait(100);
     }
 
     void touchpadDrag(QPoint a, QPoint b)

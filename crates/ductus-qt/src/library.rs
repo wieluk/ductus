@@ -780,7 +780,6 @@ impl LibraryHandle {
         }
     }
 
-    /// PDFs written on directly can't hold pictures yet.
     /// Queues the open page's lines that haven't been read yet; returns how many were added.
     pub fn queue_recognition(
         &self,

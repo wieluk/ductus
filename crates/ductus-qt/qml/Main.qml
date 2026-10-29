@@ -48,17 +48,19 @@ ApplicationWindow {
     }
 
     // Smaller than the screen even on small ones, so restoring from maximized visibly does something.
-    width: Math.min(1280, Math.round(Screen.desktopAvailableWidth * 0.9))
-    height: Math.min(820, Math.round(Screen.desktopAvailableHeight * 0.9))
+    // Android shows apps on the whole screen, however large.
+    readonly property bool mobile: Qt.platform.os === "android"
+    width: mobile ? Screen.desktopAvailableWidth : Math.min(1280, Math.round(Screen.desktopAvailableWidth * 0.9))
+    height: mobile ? Screen.desktopAvailableHeight : Math.min(820, Math.round(Screen.desktopAvailableHeight * 0.9))
     /// Saved: a window maximized when Ductus closed opens maximized again.
     property bool maximized: false
     /// The left half's share of a split.
     property real splitRatio: 0.5
     // Showing the window reports "windowed" before the saved value is applied.
     property bool shown: false
-    onVisibilityChanged: {
-        if (shown && (visibility === Window.Maximized || visibility === Window.Windowed))
-            maximized = visibility === Window.Maximized
+    onVisibilityChanged: (state) => {
+        if (shown && (state === Window.Maximized || state === Window.Windowed))
+            maximized = state === Window.Maximized
     }
     minimumWidth: 480
     minimumHeight: 320
@@ -344,7 +346,8 @@ ApplicationWindow {
         anchors.fill: parent
         spacing: 0
         // Android's Back goes up: from the page to the notebook list, from there out of the app.
-        // Open dialogs and menus take it first.
+        // Open dialogs and menus take it first. Focus here, so Back arrives when nothing else has it.
+        focus: true
         Keys.onBackPressed: (event) => {
             if (Qt.platform.os !== "android")
                 event.accepted = false
@@ -549,6 +552,8 @@ ApplicationWindow {
                         Layout.fillHeight: true
                         Layout.preferredWidth: 7
                         visible: window.split
+                        // Above the halves: its grip reaches into them, wide enough for a finger or pen.
+                        z: 1
                         Rectangle {
                             anchors.horizontalCenter: parent.horizontalCenter
                             width: dividerDrag.containsMouse || dividerDrag.pressed ? 3 : 1
@@ -558,6 +563,8 @@ ApplicationWindow {
                         MouseArea {
                             id: dividerDrag
                             anchors.fill: parent
+                            anchors.leftMargin: -6
+                            anchors.rightMargin: -6
                             hoverEnabled: true
                             cursorShape: Qt.SplitHCursor
                             onPositionChanged: (mouse) => {
