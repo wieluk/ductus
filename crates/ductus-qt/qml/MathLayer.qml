@@ -15,7 +15,6 @@ Item {
     property bool editing: false
     property string problem: ""
 
-    signal noticeRequested(string message)
 
     property string category: "favorites"
     /// As JSON in the settings: [{ label, latex, typst }, …].
@@ -119,10 +118,6 @@ Item {
         target: maths.canvas
         function onMathRequested(position, id) {
             maths.commit()
-            if (!maths.canvas.picturesAllowed) {
-                maths.noticeRequested(qsTr("Formulas can't be added to a PDF you write on directly yet. Import the PDF as note pages to write formulas on it."))
-                return
-            }
             if (id > 0) {
                 const found = maths.canvas.editMath(id)
                 if (found.length === 2)

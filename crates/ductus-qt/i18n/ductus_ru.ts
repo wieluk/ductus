@@ -332,10 +332,6 @@
 <context>
     <name>InkCanvas</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to add pictures.</source>
-        <translation>В PDF, на котором вы пишете напрямую, пока нельзя добавлять изображения. Импортируйте PDF как страницы заметок, чтобы добавить изображения.</translation>
-    </message>
-    <message>
         <source>%1 isn&apos;t a picture Ductus can read.</source>
         <translation>%1 — не изображение, которое Ductus может прочитать.</translation>
     </message>
@@ -541,10 +537,6 @@
 <context>
     <name>Main</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet.</source>
-        <translation>В PDF, на котором вы пишете напрямую, пока нельзя добавлять изображения.</translation>
-    </message>
-    <message>
         <source>“%1” is in the trash.</source>
         <translation>«%1» в корзине.</translation>
     </message>
@@ -713,10 +705,6 @@ Library: %1</source>
 </context>
 <context>
     <name>MathLayer</name>
-    <message>
-        <source>Formulas can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to write formulas on it.</source>
-        <translation>В PDF, на котором вы пишете напрямую, пока нельзя добавлять формулы. Импортируйте PDF как страницы заметок, чтобы писать на нём формулы.</translation>
-    </message>
     <message>
         <source>Reset the math favorites?</source>
         <translation>Сбросить избранные формулы?</translation>
@@ -1570,10 +1558,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Добавить файл изображения; изображения можно также перетащить на страницу</translation>
     </message>
     <message>
-        <source>PDFs written on directly can&apos;t hold pictures yet</source>
-        <translation>В PDF, на которых вы пишете напрямую, пока нельзя добавлять изображения</translation>
-    </message>
-    <message>
         <source>PDF…</source>
         <translation>PDF…</translation>
     </message>
@@ -2377,10 +2361,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 </context>
 <context>
     <name>TextLayer</name>
-    <message>
-        <source>Text boxes can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to type on it.</source>
-        <translation>В PDF, на котором вы пишете напрямую, пока нельзя добавлять текстовые поля. Импортируйте PDF как страницы заметок, чтобы печатать на нём.</translation>
-    </message>
     <message>
         <source>Bold (Ctrl+B)</source>
         <translation>Жирный (Ctrl+B)</translation>

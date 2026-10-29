@@ -895,7 +895,6 @@ void AppController::showPage(const QString &path, bool newTab)
     if (const auto view = m_views.constFind(path); view != m_views.cend())
         engine.set_view(view->zoom, view->x, view->y);
     m_canvas->documentReplaced();
-    m_canvas->setPicturesAllowed((*m_library)->accepts_pictures());
     m_savedRevision = m_canvas->revision();
     setDirty(false);
     storePanes();

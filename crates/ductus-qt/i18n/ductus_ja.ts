@@ -322,10 +322,6 @@
 <context>
     <name>InkCanvas</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to add pictures.</source>
-        <translation>直接書き込む PDF にはまだ画像を追加できません。画像を追加するには PDF をノートページとして取り込んでください。</translation>
-    </message>
-    <message>
         <source>%1 isn&apos;t a picture Ductus can read.</source>
         <translation>%1 は Ductus で読み込める画像ではありません。</translation>
     </message>
@@ -531,10 +527,6 @@
 <context>
     <name>Main</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet.</source>
-        <translation>直接書き込む PDF にはまだ画像を追加できません。</translation>
-    </message>
-    <message>
         <source>“%1” is in the trash.</source>
         <translation>「%1」をごみ箱に移動しました。</translation>
     </message>
@@ -703,10 +695,6 @@ Library: %1</source>
 </context>
 <context>
     <name>MathLayer</name>
-    <message>
-        <source>Formulas can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to write formulas on it.</source>
-        <translation>直接書き込む PDF にはまだ数式を追加できません。数式を書くには PDF をノートページとして取り込んでください。</translation>
-    </message>
     <message>
         <source>Reset the math favorites?</source>
         <translation>数式のお気に入りをリセットしますか？</translation>
@@ -1560,10 +1548,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>画像ファイルを追加します。画像をページにドロップすることもできます</translation>
     </message>
     <message>
-        <source>PDFs written on directly can&apos;t hold pictures yet</source>
-        <translation>直接書き込む PDF にはまだ画像を入れられません</translation>
-    </message>
-    <message>
         <source>PDF…</source>
         <translation>PDF…</translation>
     </message>
@@ -2367,10 +2351,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 </context>
 <context>
     <name>TextLayer</name>
-    <message>
-        <source>Text boxes can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to type on it.</source>
-        <translation>直接書き込む PDF にはまだテキストボックスを追加できません。入力するには PDF をノートページとして取り込んでください。</translation>
-    </message>
     <message>
         <source>Bold (Ctrl+B)</source>
         <translation>太字（Ctrl+B）</translation>

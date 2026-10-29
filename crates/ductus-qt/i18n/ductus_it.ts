@@ -327,10 +327,6 @@
 <context>
     <name>InkCanvas</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to add pictures.</source>
-        <translation>Non è ancora possibile aggiungere immagini a un PDF su cui scrivi direttamente. Importa il PDF come pagine di appunti per aggiungere immagini.</translation>
-    </message>
-    <message>
         <source>%1 isn&apos;t a picture Ductus can read.</source>
         <translation>%1 non è un’immagine che Ductus sa leggere.</translation>
     </message>
@@ -536,10 +532,6 @@
 <context>
     <name>Main</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet.</source>
-        <translation>Non è ancora possibile aggiungere immagini a un PDF su cui scrivi direttamente.</translation>
-    </message>
-    <message>
         <source>“%1” is in the trash.</source>
         <translation>«%1» è nel cestino.</translation>
     </message>
@@ -708,10 +700,6 @@ Libreria: %1</translation>
 </context>
 <context>
     <name>MathLayer</name>
-    <message>
-        <source>Formulas can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to write formulas on it.</source>
-        <translation>Non è ancora possibile aggiungere formule a un PDF su cui scrivi direttamente. Importa il PDF come pagine di appunti per scriverci formule.</translation>
-    </message>
     <message>
         <source>Reset the math favorites?</source>
         <translation>Reimpostare i preferiti delle formule?</translation>
@@ -1565,10 +1553,6 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
         <translation>Aggiungi un file immagine; puoi anche trascinare le immagini sulla pagina</translation>
     </message>
     <message>
-        <source>PDFs written on directly can&apos;t hold pictures yet</source>
-        <translation>I PDF su cui scrivi direttamente non possono ancora contenere immagini</translation>
-    </message>
-    <message>
         <source>PDF…</source>
         <translation>PDF…</translation>
     </message>
@@ -2372,10 +2356,6 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
 </context>
 <context>
     <name>TextLayer</name>
-    <message>
-        <source>Text boxes can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to type on it.</source>
-        <translation>Non è ancora possibile aggiungere caselle di testo a un PDF su cui scrivi direttamente. Importa il PDF come pagine di appunti per scriverci.</translation>
-    </message>
     <message>
         <source>Bold (Ctrl+B)</source>
         <translation>Grassetto (Ctrl+B)</translation>

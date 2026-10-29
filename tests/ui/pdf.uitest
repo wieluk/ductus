@@ -11,10 +11,28 @@ export-pdf lecture-flat.pdf
 expect-file lecture-flat.pdf
 print-pdf printed.pdf
 expect-file printed.pdf
-# Pictures can't go into a PDF written on directly.
+# Pictures, text boxes and formulas go into a PDF written on directly, as annotations.
 clipboard-image tests/fixtures/screenshot.png
 key Ctrl+V
-expect-prop canvas selectionCount 0
+expect-prop canvas selectionCount 1
+key Escape
+click-item tab_insert
+click-item insertText
+click 500,600
+type Notes on slides
+key Escape
+click-item insertMath
+click 500,700
+type x^2+1
+key Return
+expect-in-file My Notebook/lecture.pdf | Notes on slides
+expect-in-file My Notebook/lecture.pdf | x^2+1
+# They come back when the PDF opens again, and go into its export.
+click-item row_My Notebook/First page
+click-item row_My Notebook/lecture.pdf
+export-pdf lecture-objects.pdf
+expect-pdf-text lecture-objects.pdf | Notes on slides
+shot pdf-objects
 import-pdf pages tests/fixtures/lecture.pdf
 expect-file My Notebook/lecture 2.svg
 expect-file My Notebook/lecture 2.assets/source.pdf

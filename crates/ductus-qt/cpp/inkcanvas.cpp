@@ -533,24 +533,10 @@ void InkCanvas::paste()
     afterEdit();
 }
 
-void InkCanvas::setPicturesAllowed(bool allowed)
-{
-    if (allowed == m_picturesAllowed)
-        return;
-    m_picturesAllowed = allowed;
-    Q_EMIT picturesAllowedChanged();
-}
-
 bool InkCanvas::insertImage(const QImage &image, QPointF at)
 {
     if (image.isNull())
         return false;
-    if (!m_picturesAllowed) {
-        Q_EMIT notice(tr("Pictures can't be added to a PDF you write on directly yet. "
-                         "Import the PDF as note pages to add pictures."),
-                      true);
-        return false;
-    }
     QImage picture = image;
     if (qMax(picture.width(), picture.height()) > kMaxPictureSide)
         picture = picture.scaled(kMaxPictureSide, kMaxPictureSide, Qt::KeepAspectRatio,

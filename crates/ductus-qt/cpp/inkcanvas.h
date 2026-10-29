@@ -98,7 +98,6 @@ class InkCanvas : public QQuickItem
     Q_PROPERTY(QRectF mathDraftRect READ mathDraftRect NOTIFY mathDraftChanged)
     Q_PROPERTY(bool selectionHasInk READ selectionHasInk NOTIFY selectionChanged)
     Q_PROPERTY(QRectF selectionRect READ selectionRect NOTIFY selectionChanged)
-    Q_PROPERTY(bool picturesAllowed READ picturesAllowed WRITE setPicturesAllowed NOTIFY picturesAllowedChanged)
     Q_PROPERTY(int holdDelay READ holdDelay WRITE setHoldDelay NOTIFY inputSettingsChanged)
     /// Touch is ignored this long (ms) after pen activity, so a resting palm doesn't scroll.
     Q_PROPERTY(int palmRejection READ palmRejection WRITE setPalmRejection NOTIFY inputSettingsChanged)
@@ -157,8 +156,6 @@ public:
     void setEraserWholeStrokes(bool on);
     bool shapeAssist() const { return m_shapeAssist; }
     void setShapeAssist(bool on);
-    bool picturesAllowed() const { return m_picturesAllowed; }
-    void setPicturesAllowed(bool allowed);
     int selectionCount() const { return m_selectionCount; }
     TextBoxModel *texts() { return &m_texts; }
     QRectF mathDraftRect() const { return m_mathDraftRect; }
@@ -218,7 +215,6 @@ Q_SIGNALS:
     void eraserSizeChanged();
     void shapeAssistChanged();
     void selectionChanged();
-    void picturesAllowedChanged();
     void textRequested(QPointF position, qint64 id);
     void mathRequested(QPointF position, qint64 id);
     void mathDraftChanged();
@@ -312,7 +308,6 @@ private:
     QTimer m_holdTimer;
     QTimer m_markTimer;
     QPointF m_holdAnchor;
-    bool m_picturesAllowed = true;
     bool m_textTool = false;
     bool m_mathTool = false;
     QRectF m_mathDraftRect;

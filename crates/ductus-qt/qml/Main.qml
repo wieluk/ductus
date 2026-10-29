@@ -118,10 +118,6 @@ ApplicationWindow {
     property int visibilityBeforeScreenshot: Window.Windowed
 
     function takeScreenshot() {
-        if (!canvas.picturesAllowed) {
-            toast.show(qsTr("Pictures can't be added to a PDF you write on directly yet."), true)
-            return
-        }
         visibilityBeforeScreenshot = visibility
         showMinimized()
         // Give the window manager time to hide us before the capture starts.
@@ -535,7 +531,6 @@ ApplicationWindow {
                                     ? pageArea.width - penBar.x + 8 : 8
                         onShowInSidebar: (path, view) => window.showInSidebar(path, view)
                         onNewPageRequested: newPageDialog.show("")
-                        onNoticeRequested: (message, error) => toast.show(message, error)
                         onTabDragged: (path, scenePosition, dropped) => pageArea.tabDragged(paneA, path, scenePosition, dropped)
 
                         InkCanvas {
@@ -594,7 +589,6 @@ ApplicationWindow {
                                     ? width - (penBar.x - x) + 8 : 8
                         onShowInSidebar: (path, view) => window.showInSidebar(path, view)
                         onNewPageRequested: newPageDialog.show("")
-                        onNoticeRequested: (message, error) => toast.show(message, error)
                         onTabDragged: (path, scenePosition, dropped) => pageArea.tabDragged(paneB, path, scenePosition, dropped)
 
                         InkCanvas {

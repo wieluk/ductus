@@ -327,10 +327,6 @@
 <context>
     <name>InkCanvas</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to add pictures.</source>
-        <translation>Ainda não é possível adicionar imagens a um PDF em que você escreve diretamente. Importe o PDF como páginas de notas para adicionar imagens.</translation>
-    </message>
-    <message>
         <source>%1 isn&apos;t a picture Ductus can read.</source>
         <translation>%1 não é uma imagem que o Ductus consiga ler.</translation>
     </message>
@@ -536,10 +532,6 @@
 <context>
     <name>Main</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet.</source>
-        <translation>Ainda não é possível adicionar imagens a um PDF em que você escreve diretamente.</translation>
-    </message>
-    <message>
         <source>“%1” is in the trash.</source>
         <translation>“%1” está na lixeira.</translation>
     </message>
@@ -708,10 +700,6 @@ Biblioteca: %1</translation>
 </context>
 <context>
     <name>MathLayer</name>
-    <message>
-        <source>Formulas can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to write formulas on it.</source>
-        <translation>Ainda não é possível adicionar fórmulas a um PDF em que você escreve diretamente. Importe o PDF como páginas de notas para escrever fórmulas nele.</translation>
-    </message>
     <message>
         <source>Reset the math favorites?</source>
         <translation>Redefinir os favoritos de fórmulas?</translation>
@@ -1565,10 +1553,6 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
         <translation>Adicionar um arquivo de imagem; você também pode soltar imagens na página</translation>
     </message>
     <message>
-        <source>PDFs written on directly can&apos;t hold pictures yet</source>
-        <translation>PDFs em que você escreve diretamente ainda não podem conter imagens</translation>
-    </message>
-    <message>
         <source>PDF…</source>
         <translation>PDF…</translation>
     </message>
@@ -2372,10 +2356,6 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
 </context>
 <context>
     <name>TextLayer</name>
-    <message>
-        <source>Text boxes can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to type on it.</source>
-        <translation>Ainda não é possível adicionar caixas de texto a um PDF em que você escreve diretamente. Importe o PDF como páginas de notas para digitar nele.</translation>
-    </message>
     <message>
         <source>Bold (Ctrl+B)</source>
         <translation>Negrito (Ctrl+B)</translation>

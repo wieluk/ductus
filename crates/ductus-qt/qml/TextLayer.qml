@@ -18,8 +18,6 @@ Item {
     property point newAt
     property real newWidth: 400
 
-    signal noticeRequested(string message)
-
     /// Text on paper is dark in both themes, like ink.
     readonly property color ink: "#1a1a1f"
     readonly property int fontSize: 16
@@ -59,10 +57,6 @@ Item {
         target: overlay.canvas
         function onTextRequested(position, id) {
             overlay.commit()
-            if (!overlay.canvas.picturesAllowed) {
-                overlay.noticeRequested(qsTr("Text boxes can't be added to a PDF you write on directly yet. Import the PDF as note pages to type on it."))
-                return
-            }
             if (id > 0) {
                 overlay.editingId = id
                 for (let i = 0; i < boxes.count; ++i) {

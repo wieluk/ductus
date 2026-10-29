@@ -285,3 +285,64 @@ fn a_second_overlay_keeps_the_first() {
         "the first overlay is still drawn"
     );
 }
+
+#[test]
+fn other_readers_show_text_formulas_and_pictures() {
+    if !pdfium_or_skip() {
+        return;
+    }
+    use ductus_core::{Image, MathBox, TextBox};
+    let mut red = Pixmap::new(4, 4).unwrap();
+    red.fill(tiny_skia::Color::from_rgba8(220, 20, 20, 255));
+    let mut math = MathBox {
+        id: StrokeId(0),
+        source: r"\int_0^1 x\,dx".into(),
+        syntax: "latex".into(),
+        x: 60.0,
+        y: 500.0,
+        width: 0.0,
+        height: 0.0,
+        scale: 3.0,
+        color: Rgba::rgb(0.1, 0.2, 0.9),
+    };
+    (math.width, math.height) = ductus_math::size(&math).unwrap();
+    let objects = [
+        PageObject::Picture(
+            Image {
+                id: StrokeId(0),
+                source: "img.png".into(),
+                x: 60.0,
+                y: 60.0,
+                width: 120.0,
+                height: 120.0,
+            },
+            red.encode_png().unwrap(),
+        ),
+        PageObject::Text(TextBox {
+            id: StrokeId(0),
+            markdown: "**Hello** readers".into(),
+            x: 60.0,
+            y: 300.0,
+            width: 400.0,
+            height: 50.0,
+            scale: 1.0,
+        }),
+        PageObject::Math(math),
+    ]
+    .map(|object| PlacedObject { page: 0, object });
+    let pdf = make_pdf(&[(595.0, 842.0, 0)]);
+    // Rendered at one pixel per document unit.
+    let page = render(&write_annotations(&pdf, &[], &objects).unwrap(), 0);
+    let count = |x0: u32, y0: u32, w: u32, h: u32, f: &dyn Fn((u8, u8, u8)) -> bool| {
+        (x0..x0 + w)
+            .flat_map(|x| (y0..y0 + h).map(move |y| (x, y)))
+            .filter(|&(x, y)| f(rgb(&page, x, y)))
+            .count()
+    };
+    let (r, g, _) = rgb(&page, 120, 120);
+    assert!(r > 200 && g < 60, "the picture");
+    let dark = |(r, g, b): (u8, u8, u8)| r < 100 && g < 100 && b < 100;
+    assert!(count(60, 300, 300, 50, &dark) > 30, "the text");
+    let blue = |(r, _, b): (u8, u8, u8)| b > 150 && r < 100;
+    assert!(count(60, 500, 200, 120, &blue) > 30, "the formula");
+}

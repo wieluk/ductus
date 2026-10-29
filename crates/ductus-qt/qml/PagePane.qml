@@ -32,7 +32,6 @@ ColumnLayout {
 
     signal showInSidebar(string path, string view)
     signal newPageRequested()
-    signal noticeRequested(string message, bool error)
     signal tabDragged(string path, point scenePosition, bool dropped)
 
     spacing: 0
@@ -107,7 +106,6 @@ ColumnLayout {
             canvas: pane.canvas
             leftInset: pane.leftInset
             rightInset: pane.rightInset
-            onNoticeRequested: (message) => pane.noticeRequested(message, true)
         }
 
         MathLayer {
@@ -117,7 +115,6 @@ ColumnLayout {
             canvas: pane.canvas
             leftInset: pane.leftInset
             rightInset: pane.rightInset
-            onNoticeRequested: (message) => pane.noticeRequested(message, true)
         }
 
         SelectionBar {

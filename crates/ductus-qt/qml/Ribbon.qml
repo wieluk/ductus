@@ -425,17 +425,15 @@ Rectangle {
                     iconName: "screenshot"
                     text: qsTr("Screenshot")
                     tip: qsTr("Take a screenshot of an area of the screen and put it on the page. Pictures already on the clipboard paste with Ctrl+V.")
-                    enabled: ribbon.canvas.picturesAllowed && ribbon.canvas.enabled
+                    enabled: ribbon.canvas.enabled
                     onClicked: ribbon.window.takeScreenshot()
                 }
                 RibbonButton {
                     objectName: "insertImage"
                     iconName: "image"
                     text: qsTr("Picture…")
-                    tip: ribbon.canvas.picturesAllowed
-                         ? qsTr("Add a picture file; you can also drop pictures onto the page")
-                         : qsTr("PDFs written on directly can't hold pictures yet")
-                    enabled: ribbon.canvas.picturesAllowed && ribbon.canvas.enabled
+                    tip: qsTr("Add a picture file; you can also drop pictures onto the page")
+                    enabled: ribbon.canvas.enabled
                     onClicked: ribbon.imageInsertRequested()
                 }
                 RibbonButton {
@@ -455,7 +453,7 @@ Rectangle {
                     tip: qsTr("Type on the page: click where the text should go")
                     checkable: true
                     checked: ribbon.canvas.tool === InkCanvas.Text
-                    enabled: ribbon.canvas.picturesAllowed && ribbon.canvas.enabled
+                    enabled: ribbon.canvas.enabled
                     onClicked: ribbon.canvas.tool = InkCanvas.Text
                 }
                 RibbonButton {
@@ -465,7 +463,7 @@ Rectangle {
                     tip: qsTr("Write a formula in LaTeX or Typst: click where it should go, or on a formula to change it")
                     checkable: true
                     checked: ribbon.canvas.tool === InkCanvas.Math
-                    enabled: ribbon.canvas.picturesAllowed && ribbon.canvas.enabled
+                    enabled: ribbon.canvas.enabled
                     onClicked: ribbon.canvas.tool = InkCanvas.Math
                 }
                 Item { Layout.fillWidth: true }

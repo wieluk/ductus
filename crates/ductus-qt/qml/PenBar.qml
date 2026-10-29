@@ -108,7 +108,6 @@ Rectangle {
         switch (name) {
         case "undo": return canvas.canUndo
         case "redo": return canvas.canRedo
-        case "screenshot": case "picture": case "text": case "math": return canvas.picturesAllowed
         default: return true
         }
     }

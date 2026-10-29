@@ -611,18 +611,33 @@ impl LibraryHandle {
         if is_pdf_path(path) {
             let bytes = self.library.read_pdf(path)?;
             let ink = ductus_pdf::read_ink(&bytes).map_err(pdf_error)?;
-            // pdfium shows the PDF without our ink, which the canvas draws.
+            let placed = ductus_pdf::read_objects(&bytes).map_err(pdf_error)?;
+            // pdfium shows the PDF without our ink and objects, which the canvas draws.
             let display = ductus_pdf::strip_ductus_annotations(&bytes).map_err(pdf_error)?;
             let file = open_pdf(display)?;
             let sizes = file.page_sizes().to_vec();
             let strokes = ductus_pdf::document_strokes(&sizes, ink);
+            let (mut texts, mut maths, mut images) = (Vec::new(), Vec::new(), Vec::new());
+            for object in ductus_pdf::document_objects(&sizes, placed) {
+                match object {
+                    ductus_pdf::PageObject::Text(t) => texts.push(t),
+                    ductus_pdf::PageObject::Math(m) => maths.push(m),
+                    ductus_pdf::PageObject::Picture(image, png) => {
+                        canvas.canvas_mut().add_picture(&image.source, png);
+                        images.push(image);
+                    }
+                }
+            }
             let mut doc = Document::with_contents(
                 PageSettings {
                     kind: PageKind::Pdf,
                     ..PageSettings::default()
                 },
                 strokes,
-            );
+            )
+            .with_texts(texts)
+            .with_maths(maths)
+            .with_images(images);
             doc.set_pdf_sheets(sizes);
             let c = canvas.canvas_mut();
             c.set_sheet_painter(Some(Box::new(PdfPainter(file))));
@@ -705,8 +720,14 @@ impl LibraryHandle {
             }
             OpenKind::Pdf => {
                 let current = self.library.read_pdf(&path)?;
-                let updated = ductus_pdf::write_ink(&current, &ductus_pdf::ink_by_page(doc))
-                    .map_err(pdf_error)?;
+                let picture = |name: &str| Some(canvas.canvas().picture_bytes(name)?.to_vec());
+                let objects = ductus_pdf::objects_by_page(doc, &picture);
+                let updated = ductus_pdf::write_annotations(
+                    &current,
+                    &ductus_pdf::ink_by_page(doc),
+                    &objects,
+                )
+                .map_err(pdf_error)?;
                 self.library.save_pdf(&path, &updated)?;
                 // Rewriting the PDF parsed all of it.
                 drop((current, updated));
@@ -760,16 +781,6 @@ impl LibraryHandle {
     }
 
     /// PDFs written on directly can't hold pictures yet.
-    pub fn accepts_pictures(&self) -> bool {
-        matches!(
-            self.open,
-            Some(OpenPage {
-                kind: OpenKind::Svg { .. },
-                ..
-            })
-        )
-    }
-
     /// Queues the open page's lines that haven't been read yet; returns how many were added.
     pub fn queue_recognition(
         &self,
@@ -924,7 +935,7 @@ impl LibraryHandle {
         let mut bytes = self.flattened(canvas)?;
         // Notes pages draw formulas themselves; pages over a PDF get them on top.
         if let Some(OpenPage {
-            kind: OpenKind::Svg { pdf: Some(_), .. },
+            kind: OpenKind::Svg { pdf: Some(_), .. } | OpenKind::Pdf,
             ..
         }) = &self.open
         {
@@ -957,7 +968,8 @@ impl LibraryHandle {
         match &open.kind {
             OpenKind::Pdf => {
                 let current = self.library.read_pdf(&open.path)?;
-                ductus_pdf::flatten(&current, &ductus_pdf::ink_by_page(doc), &[])
+                let pictures = ductus_pdf::pictures_by_page(doc, &picture);
+                ductus_pdf::flatten(&current, &ductus_pdf::ink_by_page(doc), &pictures)
             }
             OpenKind::Svg {
                 pdf: Some(name), ..

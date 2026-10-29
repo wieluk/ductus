@@ -322,10 +322,6 @@
 <context>
     <name>InkCanvas</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to add pictures.</source>
-        <translation>暂时无法在直接书写的 PDF 中添加图片。请将 PDF 作为笔记页面导入后再添加图片。</translation>
-    </message>
-    <message>
         <source>%1 isn&apos;t a picture Ductus can read.</source>
         <translation>%1 不是 Ductus 能读取的图片。</translation>
     </message>
@@ -531,10 +527,6 @@
 <context>
     <name>Main</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet.</source>
-        <translation>暂时无法在直接书写的 PDF 中添加图片。</translation>
-    </message>
-    <message>
         <source>“%1” is in the trash.</source>
         <translation>“%1”已移到回收站。</translation>
     </message>
@@ -703,10 +695,6 @@ Library: %1</source>
 </context>
 <context>
     <name>MathLayer</name>
-    <message>
-        <source>Formulas can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to write formulas on it.</source>
-        <translation>暂时无法在直接书写的 PDF 中添加公式。请将 PDF 作为笔记页面导入后再书写公式。</translation>
-    </message>
     <message>
         <source>Reset the math favorites?</source>
         <translation>重置数学收藏？</translation>
@@ -1560,10 +1548,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>添加图片文件；也可以把图片拖到页面上</translation>
     </message>
     <message>
-        <source>PDFs written on directly can&apos;t hold pictures yet</source>
-        <translation>直接书写的 PDF 暂时不能包含图片</translation>
-    </message>
-    <message>
         <source>PDF…</source>
         <translation>PDF…</translation>
     </message>
@@ -2367,10 +2351,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 </context>
 <context>
     <name>TextLayer</name>
-    <message>
-        <source>Text boxes can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to type on it.</source>
-        <translation>暂时无法在直接书写的 PDF 中添加文本框。请将 PDF 作为笔记页面导入后再输入文字。</translation>
-    </message>
     <message>
         <source>Bold (Ctrl+B)</source>
         <translation>粗体（Ctrl+B）</translation>

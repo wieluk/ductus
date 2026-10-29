@@ -327,10 +327,6 @@
 <context>
     <name>InkCanvas</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to add pictures.</source>
-        <translation>Bilder lassen sich noch nicht in ein PDF einfügen, auf das du direkt schreibst. Importiere das PDF als Notizseiten, um Bilder hinzuzufügen.</translation>
-    </message>
-    <message>
         <source>%1 isn&apos;t a picture Ductus can read.</source>
         <translation>%1 ist kein Bild, das Ductus lesen kann.</translation>
     </message>
@@ -536,10 +532,6 @@
 <context>
     <name>Main</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet.</source>
-        <translation>Bilder lassen sich noch nicht in ein PDF einfügen, auf das du direkt schreibst.</translation>
-    </message>
-    <message>
         <source>“%1” is in the trash.</source>
         <translation>„%1“ liegt im Papierkorb.</translation>
     </message>
@@ -708,10 +700,6 @@ Bibliothek: %1</translation>
 </context>
 <context>
     <name>MathLayer</name>
-    <message>
-        <source>Formulas can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to write formulas on it.</source>
-        <translation>Formeln lassen sich noch nicht in ein PDF einfügen, auf das du direkt schreibst. Importiere das PDF als Notizseiten, um Formeln darauf zu schreiben.</translation>
-    </message>
     <message>
         <source>Reset the math favorites?</source>
         <translation>Mathe-Favoriten zurücksetzen?</translation>
@@ -1565,10 +1553,6 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Eine Bilddatei hinzufügen; du kannst Bilder auch auf die Seite ziehen</translation>
     </message>
     <message>
-        <source>PDFs written on directly can&apos;t hold pictures yet</source>
-        <translation>PDFs, auf die du direkt schreibst, können noch keine Bilder enthalten</translation>
-    </message>
-    <message>
         <source>PDF…</source>
         <translation>PDF…</translation>
     </message>
@@ -2372,10 +2356,6 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
 </context>
 <context>
     <name>TextLayer</name>
-    <message>
-        <source>Text boxes can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to type on it.</source>
-        <translation>Textfelder lassen sich noch nicht in ein PDF einfügen, auf das du direkt schreibst. Importiere das PDF als Notizseiten, um darauf zu tippen.</translation>
-    </message>
     <message>
         <source>Bold (Ctrl+B)</source>
         <translation>Fett (Strg+B)</translation>

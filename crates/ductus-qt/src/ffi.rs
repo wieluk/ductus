@@ -348,7 +348,6 @@ pub mod qobject {
         /// The open page and the one in the other half of a split view trade places.
         fn swap_open(self: &mut LibraryHandle);
         fn parked_page(self: &LibraryHandle) -> String;
-        fn accepts_pictures(self: &LibraryHandle) -> bool;
         /// After the PDF page at `view_y`; reload the page afterwards.
         fn insert_blank_sheet(
             self: &mut LibraryHandle,

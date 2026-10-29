@@ -327,10 +327,6 @@
 <context>
     <name>InkCanvas</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to add pictures.</source>
-        <translation>Todavía no se pueden añadir imágenes a un PDF en el que escribes directamente. Importa el PDF como páginas de notas para añadir imágenes.</translation>
-    </message>
-    <message>
         <source>%1 isn&apos;t a picture Ductus can read.</source>
         <translation>%1 no es una imagen que Ductus pueda leer.</translation>
     </message>
@@ -536,10 +532,6 @@
 <context>
     <name>Main</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet.</source>
-        <translation>Todavía no se pueden añadir imágenes a un PDF en el que escribes directamente.</translation>
-    </message>
-    <message>
         <source>“%1” is in the trash.</source>
         <translation>«%1» está en la papelera.</translation>
     </message>
@@ -708,10 +700,6 @@ Biblioteca: %1</translation>
 </context>
 <context>
     <name>MathLayer</name>
-    <message>
-        <source>Formulas can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to write formulas on it.</source>
-        <translation>Todavía no se pueden añadir fórmulas a un PDF en el que escribes directamente. Importa el PDF como páginas de notas para escribir fórmulas en él.</translation>
-    </message>
     <message>
         <source>Reset the math favorites?</source>
         <translation>¿Restablecer los favoritos de fórmulas?</translation>
@@ -1565,10 +1553,6 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
         <translation>Añadir un archivo de imagen; también puedes soltar imágenes sobre la página</translation>
     </message>
     <message>
-        <source>PDFs written on directly can&apos;t hold pictures yet</source>
-        <translation>Los PDF en los que escribes directamente aún no pueden contener imágenes</translation>
-    </message>
-    <message>
         <source>PDF…</source>
         <translation>PDF…</translation>
     </message>
@@ -2372,10 +2356,6 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
 </context>
 <context>
     <name>TextLayer</name>
-    <message>
-        <source>Text boxes can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to type on it.</source>
-        <translation>Todavía no se pueden añadir cuadros de texto a un PDF en el que escribes directamente. Importa el PDF como páginas de notas para escribir en él.</translation>
-    </message>
     <message>
         <source>Bold (Ctrl+B)</source>
         <translation>Negrita (Ctrl+B)</translation>
