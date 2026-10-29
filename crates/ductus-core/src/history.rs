@@ -252,6 +252,9 @@ impl Command {
     }
 }
 
+/// Steps that can be undone, per page.
+pub const MAX_UNDO: usize = 1000;
+
 #[derive(Debug, Default)]
 pub struct History {
     undo: Vec<Command>,
@@ -267,14 +270,16 @@ impl History {
 
     pub fn apply(&mut self, doc: &mut Document, cmd: Command) {
         cmd.apply(doc);
-        self.undo.push(cmd);
-        self.redo.clear();
-        self.revision += 1;
+        self.record(cmd);
     }
 
     /// For commands the caller has already applied.
     pub fn record(&mut self, cmd: Command) {
         self.undo.push(cmd);
+        // Each step keeps copies of what it changed: a long session keeps only the newest ones.
+        if self.undo.len() > MAX_UNDO {
+            self.undo.drain(..self.undo.len() - MAX_UNDO);
+        }
         self.redo.clear();
         self.revision += 1;
     }
@@ -404,5 +409,21 @@ mod tests {
         assert_eq!(ids(&doc), [1, 2, 3]);
         h.redo(&mut doc);
         assert_eq!(ids(&doc), [1, 5]);
+    }
+
+    #[test]
+    fn only_the_newest_steps_are_kept() {
+        let mut doc = Document::new();
+        let mut h = History::new();
+        for _ in 0..MAX_UNDO + 5 {
+            let s = stroke(&mut doc);
+            h.apply(&mut doc, Command::AddStroke(s));
+        }
+        let mut undone = 0;
+        while h.undo(&mut doc) {
+            undone += 1;
+        }
+        assert_eq!(undone, MAX_UNDO);
+        assert_eq!(doc.strokes().len(), 5, "the oldest strokes stay");
     }
 }

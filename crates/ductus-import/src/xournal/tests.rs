@@ -153,3 +153,48 @@ fn other_files_are_refused() {
     std::fs::write(&file, "<svg/>").unwrap();
     assert!(read(&file).is_err());
 }
+
+#[test]
+fn a_notebook_only_brings_in_pdfs_and_pictures_it_may_reach() {
+    let pdf = ductus_pdf::compose(
+        &[],
+        &[ductus_pdf::SheetSource::Blank {
+            width: 300.0,
+            height: 200.0,
+        }],
+    )
+    .unwrap();
+    let root = tempfile::tempdir().unwrap();
+    std::fs::write(root.path().join("outside.pdf"), &pdf).unwrap();
+    std::fs::write(root.path().join("secret.txt"), "not for notes").unwrap();
+    let dir = root.path().join("notes");
+    std::fs::create_dir(&dir).unwrap();
+    let secret = root.path().join("secret.txt");
+    // Each would be a readable PDF or file, but neither may come in.
+    for (name, background) in [
+        (
+            "climbs",
+            r#"domain="attach" filename="../outside.pdf""#.to_owned(),
+        ),
+        (
+            "text",
+            format!(r#"domain="absolute" filename="{}""#, secret.display()),
+        ),
+    ] {
+        let xml = format!(
+            r#"<xournal><page width="300" height="200"><background type="pdf" {background} pageno="1"/></page></xournal>"#
+        );
+        let file = dir.join(format!("{name}.xopp"));
+        std::fs::write(&file, xml).unwrap();
+        let import = read(&file).unwrap();
+        assert_eq!(import.warnings.len(), 1, "{name}: {:?}", import.warnings);
+    }
+    // The same PDF by its absolute path is what Xournal++ itself writes.
+    let xml = format!(
+        r#"<xournal><page width="300" height="200"><background type="pdf" domain="absolute" filename="{}" pageno="1"/></page></xournal>"#,
+        root.path().join("outside.pdf").display()
+    );
+    let file = dir.join("absolute.xopp");
+    std::fs::write(&file, xml).unwrap();
+    assert!(read(&file).unwrap().warnings.is_empty());
+}

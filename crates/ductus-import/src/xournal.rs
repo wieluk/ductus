@@ -12,7 +12,7 @@ use ductus_format::Error;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use std::collections::HashMap;
-use std::io::{Cursor, Read as _};
+use std::io::Cursor;
 use std::path::Path;
 
 const K: f64 = UNITS_PER_POINT;
@@ -31,18 +31,18 @@ pub(crate) fn read(path: &Path) -> Result<Import, Error> {
             let mut entry = zip.by_index(i).map_err(bad)?;
             let name = entry.name().to_owned();
             if name == "content.xml" {
-                entry.read_to_string(&mut xml)?;
+                xml = String::from_utf8(crate::read_unpacked(&mut entry)?)
+                    .map_err(|_| Error::Invalid("The file isn't text.".into()))?;
             } else if name.starts_with("attachments/") && entry.is_file() {
-                let mut bytes = Vec::new();
-                entry.read_to_end(&mut bytes)?;
-                attachments.insert(name, bytes);
+                attachments.insert(name, crate::read_unpacked(&mut entry)?);
             }
         }
         xml
     } else if raw.starts_with(&[0x1f, 0x8b]) {
-        let mut out = String::new();
-        flate2::read::MultiGzDecoder::new(&raw[..]).read_to_string(&mut out)?;
-        out
+        String::from_utf8(crate::read_unpacked(flate2::read::MultiGzDecoder::new(
+            &raw[..],
+        ))?)
+        .map_err(|_| Error::Invalid("The file isn't text.".into()))?
     } else {
         String::from_utf8(raw).map_err(|_| Error::Invalid("The file isn't text.".into()))?
     };
@@ -300,14 +300,22 @@ impl Parser<'_> {
                 candidates.push(dir.join(name));
             }
         }
-        // Joining keeps absolute paths and resolves relative ones against the notebook.
-        candidates.push(dir.join(filename));
-        if let Some(base) = Path::new(filename).file_name() {
+        // Xournal++ keeps the PDF or picture a page is drawn over by its absolute path; relative
+        // names stay next to the notebook.
+        let path = Path::new(filename);
+        let climbs = path
+            .components()
+            .any(|c| matches!(c, std::path::Component::ParentDir));
+        if path.is_absolute() && domain == "absolute" || path.is_relative() && !climbs {
+            candidates.push(dir.join(filename));
+        }
+        if let Some(base) = path.file_name() {
             candidates.push(dir.join(base));
         }
         let path = candidates.into_iter().find(|p| p.is_file())?;
         let bytes = std::fs::read(&path).ok()?;
-        Some((path.to_string_lossy().into_owned(), bytes))
+        // A notebook may only bring in PDFs and pictures, not any file it names.
+        is_pdf_or_picture(&bytes).then(|| (path.to_string_lossy().into_owned(), bytes))
     }
 
     /// An element's base64 data, or the attachment it points to.
@@ -577,6 +585,21 @@ fn formula(source: &str, (x, y, _, h): Rect) -> Option<MathBox> {
         scale,
         color: Rgba::BLACK,
     })
+}
+
+fn is_pdf_or_picture(bytes: &[u8]) -> bool {
+    let webp = bytes.len() > 12 && bytes.starts_with(b"RIFF") && &bytes[8..12] == b"WEBP";
+    [
+        &b"%PDF-"[..],
+        b"\x89PNG\r\n\x1a\n",
+        b"\xff\xd8\xff",
+        b"GIF87a",
+        b"GIF89a",
+        b"BM",
+    ]
+    .iter()
+    .any(|magic| bytes.starts_with(magic))
+        || webp
 }
 
 #[cfg(test)]

@@ -70,7 +70,8 @@ pub fn open_recognizer() -> Box<RecognitionHandle> {
                 }
                 let png = ductus_hwr::line_png(&job.ink, &job.line, 96);
                 let outcome = match (current.as_ref().and_then(|(_, r)| r.as_ref()), png) {
-                    (Some(r), Some(png)) => r.recognize(&png, &job.lang),
+                    // One unreadable line must not end reading for the rest of the session.
+                    (Some(r), Some(png)) => crate::guarded(|| r.recognize(&png, &job.lang)),
                     _ => Err(String::new()), // turned off meanwhile, or no ink to see
                 };
                 let Ok(mut s) = worker.lock() else { break };

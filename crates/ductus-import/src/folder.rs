@@ -68,7 +68,11 @@ fn entries(dir: &Path, warnings: &mut Vec<String>) -> Result<Vec<Entry>, Error> 
         if file_name.starts_with('.') && !is(&path, "onetoc2") || file_name == RECYCLE_BIN {
             continue;
         }
-        if path.is_dir() {
+        // A linked folder can lead back up: links are followed as files only.
+        let linked = path
+            .symlink_metadata()
+            .is_ok_and(|m| m.file_type().is_symlink());
+        if path.is_dir() && !linked {
             out.extend(folder(&path, false, warnings)?);
         } else if crate::supports(&path) && !is(&path, "onetoc2") {
             // One unreadable file shouldn't stop the rest.
@@ -132,5 +136,18 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         std::fs::write(dir.path().join("readme.txt"), "ignored").unwrap();
         assert!(read(dir.path()).is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_folder_linking_back_to_itself_ends() {
+        let dir = tempfile::tempdir().unwrap();
+        let notes = dir.path().join("Notes");
+        std::fs::create_dir(&notes).unwrap();
+        let xopp = r##"<xournal><page width="595.27559" height="841.88976"><layer>
+            <stroke tool="pen" color="#000000ff" width="1.4">10 10 50 50</stroke></layer></page></xournal>"##;
+        std::fs::write(notes.join("Week 1.xopp"), xopp).unwrap();
+        std::os::unix::fs::symlink(&notes, notes.join("loop")).unwrap();
+        assert!(read(&notes).is_ok());
     }
 }

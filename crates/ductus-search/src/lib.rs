@@ -524,35 +524,51 @@ fn collect(library: &Library, folder: &str, depth: usize, out: &mut Vec<String>)
     }
 }
 
+/// `text` lowercased, and for each of its bytes the index of the character in `text` it came from:
+/// lowercasing changes byte lengths (ẞ, İ), so positions must be mapped back.
+fn lowered(text: &str) -> (String, Vec<usize>) {
+    let mut lower = String::with_capacity(text.len());
+    let mut origin = Vec::with_capacity(text.len());
+    for (i, c) in text.chars().enumerate() {
+        let start = lower.len();
+        lower.extend(c.to_lowercase());
+        origin.resize(origin.len() + lower.len() - start, i);
+    }
+    (lower, origin)
+}
+
+/// The characters of `text` that `word` matches, ignoring case.
+fn find_chars(text: &str, word: &str) -> Option<(usize, usize)> {
+    let word = word.to_lowercase();
+    if word.is_empty() {
+        return None;
+    }
+    let (lower, origin) = lowered(text);
+    let at = lower.find(&word)?;
+    Some((origin[at], origin[at + word.len() - 1] + 1))
+}
+
 fn mark(text: &str, words: &[&str]) -> String {
-    let lower = text.to_lowercase();
-    let first = words
-        .first()
-        .and_then(|w| lower.find(&w.to_lowercase()))
-        .unwrap_or(0);
     let chars: Vec<char> = text.chars().collect();
-    let at = text[..first].chars().count();
+    let at = words
+        .first()
+        .and_then(|w| find_chars(text, w))
+        .map_or(0, |(start, _)| start);
     let start = at.saturating_sub(30);
     let end = (at + 50).min(chars.len());
-    let mut excerpt: String = chars[start..end].iter().collect();
+    let mut excerpt: Vec<char> = chars[start..end].to_vec();
     for w in words {
-        let lw = w.to_lowercase();
-        if let Some(i) = excerpt.to_lowercase().find(&lw) {
-            if excerpt.is_char_boundary(i) && excerpt.is_char_boundary(i + w.len()) {
-                excerpt = format!(
-                    "{}\u{1}{}\u{2}{}",
-                    &excerpt[..i],
-                    &excerpt[i..i + w.len()],
-                    &excerpt[i + w.len()..]
-                );
-            }
+        let current: String = excerpt.iter().collect();
+        if let Some((a, b)) = find_chars(&current, w) {
+            excerpt.insert(b, '\u{2}');
+            excerpt.insert(a, '\u{1}');
         }
     }
     let mut out = String::new();
     if start > 0 {
         out.push('…');
     }
-    out.push_str(&excerpt);
+    out.extend(excerpt);
     if end < chars.len() {
         out.push('…');
     }

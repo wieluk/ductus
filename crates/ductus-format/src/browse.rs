@@ -247,11 +247,7 @@ impl Library {
     }
 
     fn stored_paths(&self, file: &str) -> Vec<String> {
-        fs::read_to_string(self.data_dir().join(file))
-            .ok()
-            .and_then(|s| serde_json::from_str::<PathList>(&s).ok())
-            .map(|q| q.paths)
-            .unwrap_or_default()
+        crate::library::read_data::<PathList>(&self.data_dir().join(file)).paths
     }
 
     fn set_paths(&self, file: &str, paths: &[String]) -> Result<(), Error> {

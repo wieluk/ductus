@@ -164,13 +164,16 @@ pub fn write_atomic(path: &Path, bytes: &[u8]) -> Result<(), Error> {
         .file_name()
         .map(|n| n.to_string_lossy())
         .unwrap_or_default();
-    let tmp = dir.join(format!(".{name}.tmp-{}", std::process::id()));
-    {
-        let mut file = fs::File::create(&tmp)?;
+    // Unique per write, so two saves of one file never share a temporary file.
+    static WRITES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let n = WRITES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let tmp = dir.join(format!(".{name}.tmp-{}-{n}", std::process::id()));
+    let written = fs::File::create(&tmp).and_then(|mut file| {
         file.write_all(bytes)?;
-        file.sync_all()?;
-    }
-    if let Err(e) = fs::rename(&tmp, path) {
+        file.sync_all()
+    });
+    // A full disk must not leave half-written files in a folder that syncs.
+    if let Err(e) = written.and_then(|()| fs::rename(&tmp, path)) {
         let _ = fs::remove_file(&tmp);
         return Err(e.into());
     }
@@ -181,6 +184,20 @@ pub fn write_atomic(path: &Path, bytes: &[u8]) -> Result<(), Error> {
     Ok(())
 }
 
+/// One of Ductus's own data files, or the default when there is none. One that can't be read is
+/// kept beside it as `<name>.broken` first, since the next save replaces it.
+pub(crate) fn read_data<T: serde::de::DeserializeOwned + Default>(file: &Path) -> T {
+    let Ok(bytes) = fs::read(file) else {
+        return T::default();
+    };
+    serde_json::from_slice(&bytes).unwrap_or_else(|_| {
+        let mut broken = file.as_os_str().to_owned();
+        broken.push(".broken");
+        let _ = fs::copy(file, PathBuf::from(broken));
+        T::default()
+    })
+}
+
 /// Stable per library path; the search index uses it too.
 pub fn library_key(root: &Path) -> String {
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
@@ -189,6 +206,15 @@ pub fn library_key(root: &Path) -> String {
         h = h.wrapping_mul(0x0100_0000_01b3);
     }
     format!("{h:016x}")
+}
+
+fn plain_file(name: &str) -> Result<&str, Error> {
+    match crate::page::is_plain_file_name(name) {
+        true => Ok(name),
+        false => Err(Error::Invalid(format!(
+            "\u{201c}{name}\u{201d} isn't a file name."
+        ))),
+    }
 }
 
 /// Rename where possible; across file systems, copy and then delete.
@@ -206,6 +232,18 @@ fn move_path(from: &Path, to: &Path) -> Result<(), Error> {
 }
 
 fn copy_tree(from: &Path, to: &Path) -> Result<(), Error> {
+    // A linked folder could lead back into itself: links are copied as links.
+    if fs::symlink_metadata(from)?.file_type().is_symlink() {
+        #[cfg(unix)]
+        return Ok(std::os::unix::fs::symlink(fs::read_link(from)?, to)?);
+        #[cfg(not(unix))]
+        if from.is_file() {
+            fs::copy(from, to)?;
+            return Ok(());
+        }
+        #[cfg(not(unix))]
+        return Ok(());
+    }
     if from.is_dir() {
         fs::create_dir_all(to)?;
         for entry in fs::read_dir(from)? {
@@ -226,7 +264,7 @@ fn merge_into(old: &Path, new: &Path) -> Result<(), Error> {
         let target = new.join(entry.file_name());
         if !target.exists() {
             move_path(&entry.path(), &target)?;
-        } else if entry.path().is_dir() && target.is_dir() {
+        } else if entry.file_type()?.is_dir() && target.is_dir() {
             merge_into(&entry.path(), &target)?;
         }
     }
@@ -292,9 +330,10 @@ impl Library {
         &self.root
     }
 
+    /// A library path on disk. It never leads out of the library: "." and ".." parts are dropped.
     pub fn abs(&self, rel: &str) -> PathBuf {
         rel.split('/')
-            .filter(|p| !p.is_empty())
+            .filter(|p| !p.is_empty() && *p != "." && *p != "..")
             .fold(self.root.clone(), |acc, p| acc.join(p))
     }
 
@@ -359,10 +398,7 @@ impl Library {
         if stamp.is_some() && stamp == self.folders_stamp.get() {
             return;
         }
-        *self.folders.borrow_mut() = fs::read_to_string(&file)
-            .ok()
-            .and_then(|s| serde_json::from_str(&s).ok())
-            .unwrap_or_default();
+        *self.folders.borrow_mut() = read_data(&file);
         self.folders_stamp.set(stamp);
     }
 
@@ -857,13 +893,14 @@ impl Library {
 
     /// Replaces the PDF a notes page is written over.
     pub fn save_page_pdf(&self, rel: &str, file: &str, bytes: &[u8]) -> Result<(), Error> {
+        let file = plain_file(file)?;
         let dir = self.assets_dir(rel);
         fs::create_dir_all(&dir)?;
         write_atomic(&dir.join(file), bytes)
     }
 
     pub fn read_page_pdf(&self, rel: &str, file: &str) -> Result<Vec<u8>, Error> {
-        Ok(fs::read(self.assets_dir(rel).join(file))?)
+        Ok(fs::read(self.assets_dir(rel).join(plain_file(file)?))?)
     }
 
     pub fn read_pdf(&self, rel: &str) -> Result<Vec<u8>, Error> {

@@ -16,6 +16,19 @@ mod recognize;
 mod search;
 mod update;
 
+/// Work on a worker thread: a panic (a parser choking on a broken file, say) becomes an error
+/// message, so the worker still finishes and the UI never waits for it forever.
+pub(crate) fn guarded<T>(work: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(work)).unwrap_or_else(|panic| {
+        let why = panic
+            .downcast_ref::<&str>()
+            .map(|s| (*s).to_owned())
+            .or_else(|| panic.downcast_ref::<String>().cloned())
+            .unwrap_or_default();
+        Err(format!("an internal error stopped it ({why})"))
+    })
+}
+
 pub fn run() -> i32 {
     ffi::qobject::run_app("")
 }

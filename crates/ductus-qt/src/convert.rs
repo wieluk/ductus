@@ -75,7 +75,7 @@ impl ConvertHandle {
                 match &recognizer {
                     Some((_, r)) => {
                         for job in &jobs {
-                            match r.recognize(&job.png, &lang) {
+                            match crate::guarded(|| r.recognize(&job.png, &lang)) {
                                 Ok(text) if text.trim().is_empty() => {}
                                 Ok(text) => {
                                     lines.push(text);

@@ -56,10 +56,18 @@ impl UpdateHandle {
         std::thread::Builder::new()
             .name("update".into())
             .spawn(move || {
-                job(&shared, &cancel);
-                if let Ok(mut s) = shared.lock() {
-                    s.busy = false;
+                let outcome = crate::guarded(|| {
+                    job(&shared, &cancel);
+                    Ok(())
+                });
+                // Also after a panic while it held the lock.
+                let mut s = shared
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
+                if let Err(e) = outcome {
+                    s.error = e;
                 }
+                s.busy = false;
             })
             .expect("a thread can be started");
     }

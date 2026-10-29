@@ -45,7 +45,9 @@ impl ImportHandle {
         std::thread::Builder::new()
             .name("import".into())
             .spawn(move || {
-                let outcome = ductus_import::read(Path::new(&file)).map_err(|e| e.to_string());
+                let outcome = crate::guarded(|| {
+                    ductus_import::read(Path::new(&file)).map_err(|e| e.to_string())
+                });
                 if let Ok(mut s) = shared.lock() {
                     s.outcome = Some(outcome);
                     s.busy = false;

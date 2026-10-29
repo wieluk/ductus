@@ -136,15 +136,22 @@ fn agent() -> ureq::Agent {
         .into()
 }
 
-/// Plain paths and file:// URLs are read from disk, for tests.
+/// Plain paths and file:// URLs are read from disk, but only for tests (a feed set in
+/// DUCTUS_UPDATE_FEED); releases always come over HTTPS.
 fn open(url: &str) -> Result<(Box<dyn Read + Send>, u64), String> {
     if let Some(path) = url
         .strip_prefix("file://")
         .or((!url.contains("://")).then_some(url))
     {
+        if !cfg!(test) && std::env::var_os("DUCTUS_UPDATE_FEED").is_none() {
+            return Err(format!("{url} isn't a web address"));
+        }
         let file = std::fs::File::open(path).map_err(|e| format!("{path}: {e}"))?;
         let size = file.metadata().map(|m| m.len()).unwrap_or(0);
         return Ok((Box::new(file), size));
+    }
+    if !url.starts_with("https://") && std::env::var_os("DUCTUS_UPDATE_FEED").is_none() {
+        return Err(format!("{url} isn't a secure web address"));
     }
     let response = agent()
         .get(url)

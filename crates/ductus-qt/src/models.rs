@@ -86,10 +86,12 @@ impl ModelsHandle {
         std::thread::Builder::new()
             .name("models".into())
             .spawn(move || {
-                let outcome = ductus_hwr::builtin::install(&dir, &id, &cancel, |done, total| {
-                    if let Ok(mut s) = shared.lock() {
-                        (s.received, s.total) = (done, total);
-                    }
+                let outcome = crate::guarded(|| {
+                    ductus_hwr::builtin::install(&dir, &id, &cancel, |done, total| {
+                        if let Ok(mut s) = shared.lock() {
+                            (s.received, s.total) = (done, total);
+                        }
+                    })
                 });
                 if let Ok(mut s) = shared.lock() {
                     // A cancel is no error to report.

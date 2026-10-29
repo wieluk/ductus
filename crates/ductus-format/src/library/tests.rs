@@ -473,3 +473,19 @@ fn a_library_moves_with_its_history_and_notebooks() {
     assert_eq!(lib.trash().unwrap()[0].id, trashed);
     assert_eq!(lib.restore(&trashed).unwrap(), "Physics/Optics");
 }
+
+#[test]
+fn an_unreadable_data_file_is_kept_aside() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("folders.json");
+    fs::write(&file, b"{ not json").unwrap();
+    let read: Vec<String> = read_data(&file);
+    assert!(read.is_empty());
+    assert_eq!(
+        fs::read(dir.path().join("folders.json.broken")).unwrap(),
+        b"{ not json"
+    );
+    let missing: Vec<String> = read_data(&dir.path().join("none.json"));
+    assert!(missing.is_empty());
+    assert!(!dir.path().join("none.json.broken").exists());
+}
