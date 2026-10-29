@@ -64,7 +64,14 @@ pub fn strip_delimiters(source: &str) -> &str {
 pub fn render(source: &str, syntax: Syntax, size: f64) -> Result<Formula, String> {
     let math = match syntax {
         Syntax::Typst => strip_delimiters(source).to_owned(),
-        Syntax::Latex => tylax::latex_to_typst(strip_delimiters(source)),
+        Syntax::Latex => {
+            // `a/b` glues what follows onto the denominator: `\frac{1}{a}e` became `1/ae`.
+            let options = tylax::L2TOptions {
+                frac_to_slash: false,
+                ..Default::default()
+            };
+            tylax::latex_to_typst_with_options(strip_delimiters(source), &options)
+        }
     };
     if math.trim().is_empty() {
         return Err("The formula is empty.".into());
@@ -121,22 +128,46 @@ pub fn layout(math: &MathBox) -> Arc<Result<Formula, String>> {
     result
 }
 
-pub fn size(math: &MathBox) -> Option<(f64, f64)> {
+/// What gets drawn: a formula with mistakes shows its source in red, so it never vanishes.
+fn drawn(math: &MathBox) -> (Arc<Result<Formula, String>>, Option<Rgba>) {
     let formula = layout(math);
+    if formula.is_ok() || math.source.trim().is_empty() {
+        return (formula, None);
+    }
+    let quoted = strip_delimiters(&math.source)
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"");
+    let source = MathBox {
+        source: format!("\"{quoted}\""),
+        syntax: Syntax::Typst.name().into(),
+        ..math.clone()
+    };
+    (layout(&source), Some(MISTAKE))
+}
+
+const MISTAKE: Rgba = Rgba {
+    r: 0.8,
+    g: 0.1,
+    b: 0.1,
+    a: 1.0,
+};
+
+pub fn size(math: &MathBox) -> Option<(f64, f64)> {
+    let formula = drawn(math).0;
     let f = formula.as_ref().as_ref().ok()?;
     let k = UNITS_PER_POINT * math.scale;
     Some((f.width * k, f.height * k))
 }
 
 pub fn outlines(math: &MathBox) -> Vec<(BezPath, Rgba)> {
-    let formula = layout(math);
+    let (formula, mistake) = drawn(math);
     let Ok(f) = formula.as_ref() else {
         return Vec::new();
     };
     let m = Affine::translate((math.x, math.y)) * Affine::scale(UNITS_PER_POINT * math.scale);
     f.shapes
         .iter()
-        .map(|(path, _)| (m * path.clone(), math.color))
+        .map(|(path, _)| (m * path.clone(), mistake.unwrap_or(math.color)))
         .collect()
 }
 
@@ -342,6 +373,37 @@ mod tests {
         let err = render("frac(a, ", Syntax::Typst, 12.0).unwrap_err();
         assert!(!err.is_empty());
         assert!(render("   ", Syntax::Latex, 12.0).is_err());
+    }
+
+    #[test]
+    fn fractions_keep_what_follows_them() {
+        for (latex, fraction) in [
+            (r"\frac{1}{a}e", r"\frac{1}{a}"),
+            (r"\frac{a}{b}\pi", r"\frac{a}{b}"),
+            (r"\frac12x", r"\frac12"),
+        ] {
+            let width = |s| render(s, Syntax::Latex, 12.0).unwrap().width;
+            assert!(width(latex) > width(fraction), "{latex}");
+        }
+    }
+
+    #[test]
+    fn a_formula_with_mistakes_shows_its_source() {
+        let math = MathBox {
+            id: ductus_core::StrokeId(1),
+            source: "frac(a, \"b".into(),
+            syntax: "typst".into(),
+            x: 0.0,
+            y: 0.0,
+            width: 0.0,
+            height: 0.0,
+            scale: 1.0,
+            color: Rgba::BLACK,
+        };
+        assert!(layout(&math).is_err());
+        assert!(size(&math).is_some_and(|(w, _)| w > 0.0));
+        assert!(outlines(&math).iter().all(|(_, c)| *c == MISTAKE));
+        assert!(!outlines(&math).is_empty());
     }
 
     #[test]

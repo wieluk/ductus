@@ -36,6 +36,9 @@ namespace {
 
 constexpr double kWheelZoomStep = 1.15;
 constexpr double kWheelScrollStep = 50.0;
+// A finger that moves less than this, this quickly, tapped rather than scrolled.
+constexpr double kTapSlop = 12.0;
+constexpr qint64 kTapTime = 500;
 constexpr double kMinZoom = 0.1;
 constexpr double kMaxZoom = 10.0;
 /// Larger pictures are scaled down to this many pixels on their long side.
@@ -456,9 +459,9 @@ void InkCanvas::setShapeAssist(bool on)
     Q_EMIT shapeAssistChanged();
 }
 
-bool InkCanvas::replaceInk(const QString &content, bool math)
+bool InkCanvas::replaceInk(const QString &content, bool math, const QString &strokes)
 {
-    const rust::Vec<double> added = m_engine->replace_ink(content.toStdString(), math);
+    const rust::Vec<double> added = m_engine->replace_ink(content.toStdString(), math, strokes.toStdString());
     if (added.empty())
         return false;
     afterEdit();
@@ -1103,6 +1106,7 @@ void InkCanvas::touchEvent(QTouchEvent *event)
     }
 
     if (active.size() >= 2) {
+        m_tapCandidate = false;
         // A second finger turns an accidental finger stroke into navigation.
         if (m_touchDrawing) {
             m_engine->pointer_cancel();
@@ -1137,11 +1141,16 @@ void InkCanvas::touchEvent(QTouchEvent *event)
             if (m_touchDrawing)
                 trackHold(point.position());
             m_lastTouchPosition = point.position();
+            m_tapCandidate = !m_touchDrawing && (m_textTool || m_mathTool);
+            m_tapStart = point.position();
+            m_tapTime.start();
         } else if (m_touchDrawing) {
             const PointerSample sample = sampleAt(point.position(), point.timestamp());
             m_engine->pointer_move(rust::Slice<const PointerSample>(&sample, 1));
             trackHold(point.position());
         } else {
+            if (QLineF(point.position(), m_tapStart).length() > kTapSlop)
+                m_tapCandidate = false;
             const QPointF delta = point.position() - m_lastTouchPosition;
             m_lastTouchPosition = point.position();
             m_engine->pan_by(delta.x(), delta.y());
@@ -1153,8 +1162,17 @@ void InkCanvas::touchEvent(QTouchEvent *event)
             m_engine->pointer_up();
             afterEdit();
         }
+        const bool tap = m_tapCandidate && !m_pinching && m_tapTime.elapsed() < kTapTime;
+        m_tapCandidate = false;
         m_touchDrawing = false;
         m_pinching = false;
+        if (tap) {
+            const QPointF p = m_tapStart;
+            if (m_textTool)
+                Q_EMIT textRequested(p, static_cast<qint64>(m_engine->text_at(p.x(), p.y())));
+            else if (m_mathTool)
+                Q_EMIT mathRequested(p, static_cast<qint64>(m_engine->math_at(p.x(), p.y())));
+        }
     }
     update();
 }

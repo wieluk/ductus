@@ -47,9 +47,19 @@ ApplicationWindow {
             AppController.locate(path)
     }
 
-    // Small tablet screens (or large scaling) get a window that fits above the taskbar.
-    width: Math.min(1280, Screen.desktopAvailableWidth)
-    height: Math.min(820, Screen.desktopAvailableHeight)
+    // Smaller than the screen even on small ones, so restoring from maximized visibly does something.
+    width: Math.min(1280, Math.round(Screen.desktopAvailableWidth * 0.9))
+    height: Math.min(820, Math.round(Screen.desktopAvailableHeight * 0.9))
+    /// Saved: a window maximized when Ductus closed opens maximized again.
+    property bool maximized: false
+    /// The left half's share of a split.
+    property real splitRatio: 0.5
+    // Showing the window reports "windowed" before the saved value is applied.
+    property bool shown: false
+    onVisibilityChanged: {
+        if (shown && (visibility === Window.Maximized || visibility === Window.Windowed))
+            maximized = visibility === Window.Maximized
+    }
     minimumWidth: 480
     minimumHeight: 320
     visible: true
@@ -90,6 +100,12 @@ ApplicationWindow {
         Theme.dark = darkMode
         AppController.otherCanvas = canvasB
         AppController.canvas = canvasA
+        // After the settings are read.
+        Qt.callLater(() => {
+            if (maximized)
+                showMaximized()
+            shown = true
+        })
         if (AppController.storageQuestionPending())
             storageDialog.open()
     }
@@ -138,6 +154,8 @@ ApplicationWindow {
     Settings {
         category: "ui"
         property alias themeMode: window.themeMode
+        property alias maximized: window.maximized
+        property alias splitRatio: window.splitRatio
         property alias sidebarVisible: window.sidebarVisible
         property alias sidebarWidth: window.sidebarWidth
         property alias penBarRight: window.penBarRight
@@ -170,6 +188,8 @@ ApplicationWindow {
         function onErrorOccurred(message) { toast.show(message, true) }
         function onNotice(message) { toast.show(message, false) }
         function onImportReady(kind, name, pages, sections, location) {
+            // "Importing…" is over: the dialog says what was read.
+            toast.hide()
             importDialog.show(kind, name, pages, sections, location)
         }
         function onTrashed(name, trashId) {
@@ -218,9 +238,9 @@ ApplicationWindow {
     }
     Connections {
         target: AppController
+        // Settings opens scrolled to the download, which sits below a long list of languages.
         function onModelsNeeded(id) {
-            settingsDialog.section = 4
-            settingsDialog.open()
+            settingsDialog.showModels()
             const model = Models.entries.find(e => e.id === id)
             toast.show(model ? qsTr("Download \u201c%1\u201d first, then try again.").arg(model.title)
                              : qsTr("Download the recognizer for this first."), false)
@@ -228,7 +248,13 @@ ApplicationWindow {
     }
     Connections {
         target: Updater
-        function onUpdateFound() { updateDialog.open() }
+        // One question at a time: the update waits for the storage question.
+        function onUpdateFound() {
+            if (storageDialog.visible)
+                storageDialog.updateWaiting = true
+            else
+                updateDialog.open()
+        }
     }
 
     UpdateDialog {
@@ -321,6 +347,16 @@ ApplicationWindow {
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
+        // Android's Back goes up: from the page to the notebook list, from there out of the app.
+        // Open dialogs and menus take it first.
+        Keys.onBackPressed: (event) => {
+            if (Qt.platform.os !== "android")
+                event.accepted = false
+            else if (window.compact && !window.drawerOpen && AppController.currentPage.length > 0)
+                window.drawerOpen = true
+            else
+                AppController.moveToBack()
+        }
 
         TitleBar {
             id: titleBar
@@ -482,15 +518,17 @@ ApplicationWindow {
                     PagePane {
                         id: paneA
                         canvas: canvasA
-                        Layout.fillWidth: true
+                        // In a split, the divider sets this half's share; the other half takes the rest.
+                        Layout.fillWidth: !window.split
                         Layout.fillHeight: true
-                        Layout.preferredWidth: 1
+                        Layout.preferredWidth: window.split ? Math.round((pageArea.width - divider.width) * window.splitRatio) : -1
                         // An emptied half gives way; a phone shows only the active one.
                         visible: (pages.length > 0 || paneB.pages.length === 0)
                                  && (!window.compact || active || paneB.pages.length === 0)
                         split: window.split
                         pageTitle: window.pageTitle
                         fullScreen: window.fullScreen
+                        lowWindow: window.height < 560
                         leftInset: pageArea.leftPane === paneA && penBar.visible && !window.penBarRight
                                    ? penBar.x + penBar.width + 8 : 8
                         rightInset: pageArea.rightPane === paneA && penBar.visible && window.penBarRight
@@ -510,11 +548,34 @@ ApplicationWindow {
                         }
                     }
 
-                    Rectangle {
+                    Item {
+                        id: divider
+                        objectName: "splitDivider"
                         Layout.fillHeight: true
-                        Layout.preferredWidth: 1
+                        Layout.preferredWidth: 7
                         visible: window.split
-                        color: Theme.ribbonBorder
+                        Rectangle {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: dividerDrag.containsMouse || dividerDrag.pressed ? 3 : 1
+                            height: parent.height
+                            color: dividerDrag.containsMouse || dividerDrag.pressed ? Theme.accent : Theme.ribbonBorder
+                        }
+                        MouseArea {
+                            id: dividerDrag
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.SplitHCursor
+                            onPositionChanged: (mouse) => {
+                                if (!pressed)
+                                    return
+                                const x = mapToItem(pageArea, mouse.x, 0).x
+                                window.splitRatio = Math.max(0.2, Math.min(0.8, x / pageArea.width))
+                            }
+                            onDoubleClicked: window.splitRatio = 0.5
+                            ToolTip.visible: containsMouse && !pressed
+                            ToolTip.delay: 800
+                            ToolTip.text: qsTr("Drag to resize the halves; double-click for equal halves")
+                        }
                     }
 
                     PagePane {
@@ -522,11 +583,11 @@ ApplicationWindow {
                         canvas: canvasB
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        Layout.preferredWidth: 1
                         visible: pages.length > 0 && (!window.compact || active)
                         split: window.split
                         pageTitle: window.pageTitle
                         fullScreen: window.fullScreen
+                        lowWindow: window.height < 560
                         leftInset: pageArea.leftPane === paneB && penBar.visible && !window.penBarRight
                                    ? penBar.x + penBar.width + 8 : 8
                         rightInset: pageArea.rightPane === paneB && penBar.visible && window.penBarRight
@@ -683,9 +744,9 @@ ApplicationWindow {
             Repeater {
                 model: [
                     { annotate: true, label: qsTr("Write on the PDF"),
-                      hint: qsTr("Ink is saved into the PDF as annotations. Other PDF readers show it too.") },
+                      hint: qsTr("A copy goes into the notebook; your ink is saved in that copy as annotations, so other PDF readers show it too.") },
                     { annotate: false, label: qsTr("Import as note pages"),
-                      hint: qsTr("The PDF becomes the background of a notes page. The original stays untouched.") }
+                      hint: qsTr("The PDF becomes the background of a notes page.") }
                 ]
                 delegate: AbstractButton {
                     id: option
@@ -724,6 +785,13 @@ ApplicationWindow {
             PlacePicker {
                 id: pdfPlace
                 width: pdfModeDialog.availableWidth
+            }
+            Label {
+                width: pdfModeDialog.availableWidth
+                text: qsTr("The original file is only read, never changed.")
+                color: Theme.textMuted
+                font.pixelSize: 11
+                wrapMode: Text.WordWrap
             }
         }
     }
@@ -776,6 +844,7 @@ ApplicationWindow {
     AppDialog {
         id: storageDialog
         objectName: "storageDialog"
+        property bool updateWaiting: false
         title: qsTr("Keep your notes in Documents?")
         message: qsTr("In Documents/Ductus your notebooks stay when the app is removed, and backups and sync apps such as Nextcloud or Syncthing find them. Ductus needs access to your files for that (\u201cAll files access\u201d).")
         acceptText: qsTr("Allow access")
@@ -785,6 +854,12 @@ ApplicationWindow {
             AppController.useSharedStorage()
         }
         onRejected: AppController.storageQuestionAnswered()
+        onClosed: {
+            if (updateWaiting) {
+                updateWaiting = false
+                updateDialog.open()
+            }
+        }
     }
 
     TrashDialog {
@@ -839,7 +914,7 @@ ApplicationWindow {
         id: aboutDialog
         objectName: "aboutDialog"
         title: qsTr("About Ductus")
-        message: qsTr("Handwritten notebooks for Linux, Windows and Android.\nDevelopment preview · GPL-3.0-or-later\n\nLibrary: %1").arg(AppController.libraryPath)
+        message: qsTr("Handwritten notebooks for Linux, Windows and Android.\nDevelopment preview · GPL-3.0-or-later\n\nLibrary: %1").arg(AppController.libraryDisplayPath)
         acceptText: qsTr("Close")
         rejectText: ""
     }

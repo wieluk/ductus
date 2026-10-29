@@ -107,6 +107,7 @@ Item {
     AbstractButton {
         id: chip
         objectName: "searchScope"
+        Accessible.name: qsTr("Search in: %1").arg(box.current.label)
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.bottom: parent.bottom
@@ -176,7 +177,9 @@ Item {
         background: null
         font.pixelSize: 13
         color: activeFocus ? Theme.text : Theme.titleText
-        placeholderText: qsTr("Search (Ctrl+F)")
+        // The key for the scope shown; phones have no keyboard to press it on.
+        placeholderText: Qt.platform.os === "android" ? qsTr("Search")
+                                                      : box.onPage ? qsTr("Search (Ctrl+F)") : qsTr("Search (Ctrl+K)")
         placeholderTextColor: activeFocus ? Theme.textMuted : Theme.titleTextMuted
         selectByMouse: true
         onTextEdited: debounce.restart()

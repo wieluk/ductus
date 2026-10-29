@@ -23,11 +23,8 @@ AppDialog {
     objectName: "newPageDialog"
     title: qsTr("New page")
     acceptText: qsTr("Create")
-    acceptButton.enabled: nameField.text.trim().length > 0
-    onOpened: {
-        nameField.forceActiveFocus()
-        nameField.selectAll()
-    }
+    acceptButton.enabled: nameField.valid
+    onOpened: nameField.focusAll()
     onAccepted: AppController.addPage(folder, nameField.text)
 
     contentItem: ColumnLayout {
@@ -37,11 +34,10 @@ AppDialog {
             color: Theme.textMuted
             font.pixelSize: 12
         }
-        TextField {
+        NameField {
             id: nameField
-            objectName: "newPageName"
+            fieldName: "newPageName"
             Layout.fillWidth: true
-            selectByMouse: true
             onAccepted: if (dialog.acceptButton.enabled) dialog.accept()
         }
         Label {
@@ -50,7 +46,7 @@ AppDialog {
             color: Theme.textMuted
             font.pixelSize: 12
         }
-        ComboBox {
+        AppComboBox {
             objectName: "newPageWhere"
             Layout.fillWidth: true
             model: dialog.targets

@@ -43,6 +43,29 @@ fn releases_are_read_from_githubs_answer() {
 }
 
 #[test]
+fn notes_cover_every_version_since_the_installed_one() {
+    let json = r#"[
+        {"tag_name":"v0.1.12","body":"Twelve","draft":false,"prerelease":false,"assets":[]},
+        {"tag_name":"v0.1.13-rc.1","body":"Candidate","draft":false,"prerelease":true,"assets":[]},
+        {"tag_name":"v0.1.10","body":"Ten","draft":false,"prerelease":false,"assets":[]},
+        {"tag_name":"v0.1.11","body":"Eleven","draft":false,"prerelease":false,"assets":[]},
+        {"tag_name":"v0.1.9","body":"Nine","draft":false,"prerelease":false,"assets":[]}
+    ]"#;
+    let releases = parse_releases(json).unwrap();
+    assert_eq!(releases.len(), 4, "pre-releases are left out");
+    assert_eq!(
+        notes_since(&releases, "0.1.9"),
+        "## 0.1.12\n\nTwelve\n\n## 0.1.11\n\nEleven\n\n## 0.1.10\n\nTen"
+    );
+    assert_eq!(
+        notes_since(&releases, "0.1.11"),
+        "Twelve",
+        "one version needs no heading"
+    );
+    assert_eq!(notes_since(&releases, "0.1.12"), "");
+}
+
+#[test]
 fn signatures_from_ci_verify_with_the_built_in_key() {
     // Made with: openssl pkeyutl -sign -rawin -inkey <release key> (as release.yml does).
     let sums = include_bytes!("../tests-data/sample-sums.txt");

@@ -9,6 +9,9 @@ Item {
     id: overlay
 
     required property InkCanvas canvas
+    /// Room taken by the pen bar at the sides, which the format bar keeps clear of.
+    property real leftInset: 8
+    property real rightInset: 8
     /// The box being edited: its id, -1 for a new box, 0 for none.
     property real editingId: 0
     property TextEdit activeEdit: null
@@ -39,6 +42,9 @@ Item {
         }
         editingId = 0
         activeEdit = null
+        // A closed box must not keep the keyboard, or Ctrl+Z undoes its text instead of the page.
+        if (edit.activeFocus)
+            canvas.forceActiveFocus()
     }
 
     function beginNew(position) {
@@ -190,6 +196,12 @@ Item {
             scale: overlay.canvas.zoom
             enabled: newBox.visible
             onFinished: overlay.commit()
+            // An empty new box closes once the keyboard goes elsewhere, e.g. to search.
+            onActiveFocusChanged: if (!activeFocus && length === 0)
+                Qt.callLater(() => {
+                    if (!newEdit.activeFocus && newEdit.length === 0 && !sizeMenu.visible && !colorMenu.visible)
+                        overlay.commit()
+                })
             onBoldRequested: formatter.toggleBold()
             onItalicRequested: formatter.toggleItalic()
             onUnderlineRequested: formatter.toggleUnderline()
@@ -211,10 +223,10 @@ Item {
         readonly property Item target: overlay.editingId === -1 ? newBox
                                        : (overlay.activeEdit ? overlay.activeEdit.parent : null)
         visible: overlay.activeEdit !== null && target !== null
-        x: target ? Math.max(8, Math.min(target.x, overlay.width - width - 8)) : 0
+        x: target ? Math.max(overlay.leftInset, Math.min(target.x, overlay.width - width - overlay.rightInset)) : 0
         y: target ? (target.y - height - 12 >= 8 ? target.y - height - 12
                                                   : target.y + target.height + 12) : 0
-        width: Math.min(formatRow.implicitWidth + 12, overlay.width - 16)
+        width: Math.min(formatRow.implicitWidth + 12, overlay.width - overlay.leftInset - overlay.rightInset)
         height: formatRow.implicitHeight + 8
         radius: 10
         color: Theme.popup
@@ -401,6 +413,10 @@ Item {
                     onClicked: overlay.commit()
                 }
             }
+        }
+        ScrollArrows {
+            target: formatScroller
+            color: Theme.popup
         }
     }
 }

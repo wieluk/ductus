@@ -20,6 +20,9 @@ struct Deleted {
     deleted: u64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     assets: Option<String>,
+    /// Its place among the folder's entries, so it comes back there.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    position: Option<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -77,6 +80,7 @@ impl Library {
     /// Moves an entry (and a page's pictures) into the trash; returns its trash id.
     pub fn delete(&self, rel: &str) -> Result<String, Error> {
         let (from, kind, parent, name) = self.entry(rel)?;
+        let position = self.child_names(&parent)?.iter().position(|n| *n == name);
         let trash = self.trash_dir();
         fs::create_dir_all(&trash)?;
         let file_name = from
@@ -104,6 +108,7 @@ impl Library {
                 kind: kind_name(kind).into(),
                 deleted: stamp,
                 assets,
+                position,
             },
         );
         self.save_trash_index(&index)?;
@@ -156,6 +161,7 @@ impl Library {
         move_path(&self.trash_dir().join(id), &to)?;
         let mut index = self.trash_index();
         let assets = index.get(id).and_then(|d| d.assets.clone());
+        let position = index.get(id).and_then(|d| d.position);
         if let Some(assets) = assets {
             let from = self.trash_dir().join(&assets);
             if from.is_dir() {
@@ -166,7 +172,8 @@ impl Library {
         self.save_trash_index(&index)?;
         self.edit_order(&parent, |order| {
             order.retain(|n| *n != name);
-            order.push(name.clone());
+            let at = position.unwrap_or(order.len()).min(order.len());
+            order.insert(at, name.clone());
         })?;
         Ok(rel)
     }

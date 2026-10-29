@@ -12,6 +12,7 @@ struct Shared {
     done: usize,
     total: usize,
     result: String,
+    strokes: String,
     error: String,
     // The loaded model stays for the next conversion.
     recognizer: Option<(Config, Box<dyn Recognizer>)>,
@@ -29,6 +30,7 @@ pub fn open_converter() -> Box<ConvertHandle> {
 
 impl ConvertHandle {
     /// Reads `jobs` with the recognizer from `ductus_hwr::from_settings`; results joined by line breaks.
+    /// Lines read as nothing (a drawing, say) are left out, and so are their strokes.
     pub fn start(
         &self,
         kind: &str,
@@ -47,6 +49,7 @@ impl ConvertHandle {
             }
             (s.busy, s.done, s.total) = (true, 0, jobs.len());
             s.result.clear();
+            s.strokes.clear();
             s.error.clear();
         }
         let config = (
@@ -67,12 +70,17 @@ impl ConvertHandle {
                             .map(|r| (config.clone(), r));
                 }
                 let mut lines = Vec::new();
+                let mut strokes = Vec::new();
                 let mut error = String::new();
                 match &recognizer {
                     Some((_, r)) => {
                         for job in &jobs {
                             match r.recognize(&job.png, &lang) {
-                                Ok(text) => lines.push(text),
+                                Ok(text) if text.trim().is_empty() => {}
+                                Ok(text) => {
+                                    lines.push(text);
+                                    strokes.push(job.key.as_str());
+                                }
                                 Err(e) => {
                                     error = e;
                                     break;
@@ -87,6 +95,7 @@ impl ConvertHandle {
                 }
                 if let Ok(mut s) = shared.lock() {
                     s.result = lines.join("\n");
+                    s.strokes = strokes.join(" ");
                     s.error = error;
                     s.recognizer = recognizer;
                     s.busy = false;
@@ -104,6 +113,7 @@ impl ConvertHandle {
             done: s.done,
             total: s.total,
             result: s.result.clone(),
+            strokes: s.strokes.clone(),
             error: s.error.clone(),
         }
     }

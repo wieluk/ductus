@@ -88,10 +88,6 @@
         <translation>Importando %1…</translation>
     </message>
     <message>
-        <source>Imported into %1.</source>
-        <translation>Importado para %1.</translation>
-    </message>
-    <message>
         <source>Page copied into %1.</source>
         <translation>Página copiada para %1.</translation>
     </message>
@@ -100,8 +96,24 @@
         <translation>Não foi possível salvar o PDF ali.</translation>
     </message>
     <message>
+        <source>A name can&apos;t start with a dot.</source>
+        <translation>Um nome não pode começar com um ponto.</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t contain “%1”: Windows and sync apps don&apos;t allow it in file names.</source>
+        <translation>Um nome não pode conter “%1”: o Windows e os apps de sincronização não o permitem em nomes de arquivo.</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t end with a dot.</source>
+        <translation>Um nome não pode terminar com um ponto.</translation>
+    </message>
+    <message>
         <source>New section</source>
         <translation>Nova seção</translation>
+    </message>
+    <message>
+        <source>Imported “%1” into %2.</source>
+        <translation>“%1” importado para %2.</translation>
     </message>
     <message>
         <source>Exported to %1</source>
@@ -308,8 +320,8 @@
         <translation>“%1” já existe aí, por isso é salvo como “%2”. Nada é substituído.</translation>
     </message>
     <message>
-        <source>The original file is only read, never changed.</source>
-        <translation>O arquivo original é apenas lido, nunca alterado.</translation>
+        <source>What you import from is only read, never changed.</source>
+        <translation>O que você importa é apenas lido, nunca alterado.</translation>
     </message>
 </context>
 <context>
@@ -544,6 +556,10 @@
         <translation>Primeiro baixe o reconhecedor para isso.</translation>
     </message>
     <message>
+        <source>Drag to resize the halves; double-click for equal halves</source>
+        <translation>Arraste para redimensionar as metades; clique duplo para metades iguais</translation>
+    </message>
+    <message>
         <source>Show or hide notebooks (%1)</source>
         <translation>Mostrar ou ocultar cadernos (%1)</translation>
     </message>
@@ -616,16 +632,20 @@
         <translation>Escrever no PDF</translation>
     </message>
     <message>
-        <source>Ink is saved into the PDF as annotations. Other PDF readers show it too.</source>
-        <translation>A tinta é salva no PDF como anotações. Outros leitores de PDF também a mostram.</translation>
+        <source>A copy goes into the notebook; your ink is saved in that copy as annotations, so other PDF readers show it too.</source>
+        <translation>Uma cópia vai para o caderno; sua tinta é salva nessa cópia como anotações, então outros leitores de PDF também a mostram.</translation>
+    </message>
+    <message>
+        <source>The PDF becomes the background of a notes page.</source>
+        <translation>O PDF se torna o fundo de uma página de notas.</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>O arquivo original é apenas lido, nunca alterado.</translation>
     </message>
     <message>
         <source>Import as note pages</source>
         <translation>Importar como páginas de notas</translation>
-    </message>
-    <message>
-        <source>The PDF becomes the background of a notes page. The original stays untouched.</source>
-        <translation>O PDF vira o fundo de uma página de notas. O original não é alterado.</translation>
     </message>
     <message>
         <source>Page</source>
@@ -1310,6 +1330,13 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
     </message>
 </context>
 <context>
+    <name>PlatformFiles</name>
+    <message>
+        <source>Inside the app</source>
+        <translation>Dentro do app</translation>
+    </message>
+</context>
+<context>
     <name>Ribbon</name>
     <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
@@ -1663,6 +1690,17 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
     </message>
 </context>
 <context>
+    <name>ScrollArrows</name>
+    <message>
+        <source>More</source>
+        <translation>Mais</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Voltar</translation>
+    </message>
+</context>
+<context>
     <name>SearchBox</name>
     <message>
         <source>This page</source>
@@ -1689,8 +1727,20 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
         <translation>Nomes e conteúdos de todas as páginas e PDFs (Ctrl+K)</translation>
     </message>
     <message>
+        <source>Search in: %1</source>
+        <translation>Buscar em: %1</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>Buscar</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Buscar (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Search (Ctrl+K)</source>
+        <translation>Buscar (Ctrl+K)</translation>
     </message>
     <message>
         <source>page %1</source>
@@ -1789,6 +1839,14 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
     <message>
         <source>Normal</source>
         <translation>Normal</translation>
+    </message>
+    <message>
+        <source>Remove “%1”?</source>
+        <translation>Remover “%1”?</translation>
+    </message>
+    <message>
+        <source>Handwriting can&apos;t be read with it until it is downloaded again.</source>
+        <translation>Não será possível ler escrita à mão com ele até que seja baixado de novo.</translation>
     </message>
     <message>
         <source>Firm</source>

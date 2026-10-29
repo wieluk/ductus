@@ -496,6 +496,8 @@ Rectangle {
 
                 objectName: (placeholder === "section" ? "addSection_" : placeholder ? "empty_"
                              : section === "recent" ? "recent_" : quick ? "quick_" : "row_") + path
+                Accessible.role: Accessible.ListItem
+                Accessible.name: name
                 width: ListView.view.width
                 height: caption.length > 0 ? 42 : 34
 
@@ -642,17 +644,20 @@ Rectangle {
                     TextField {
                         id: nameField
                         objectName: "renameField"
+                        readonly property string problem: AppController.nameProblem(text)
                         visible: sidebar.renaming === row.path && !row.quick && !row.placeholder
                         Layout.fillWidth: true
                         text: row.name
                         font.pixelSize: 13
                         color: Theme.text
                         selectByMouse: true
+                        ToolTip.visible: visible && problem.length > 0
+                        ToolTip.text: problem
                         background: Rectangle {
                             radius: 4
                             color: Theme.popup
                             border.width: 1
-                            border.color: Theme.accent
+                            border.color: nameField.problem.length > 0 ? Theme.danger : Theme.accent
                         }
                         onVisibleChanged: {
                             if (visible) {
@@ -664,7 +669,8 @@ Rectangle {
                             }
                         }
                         function commit() {
-                            if (sidebar.renaming !== row.path)
+                            // Enter keeps a name that can't be used open for fixing.
+                            if (sidebar.renaming !== row.path || problem.length > 0)
                                 return
                             sidebar.renaming = ""
                             if (text.trim() === row.name)
@@ -672,7 +678,15 @@ Rectangle {
                             AppController.rename(row.path, text)
                         }
                         onAccepted: commit()
-                        onActiveFocusChanged: if (!activeFocus) commit()
+                        onActiveFocusChanged: {
+                            if (activeFocus)
+                                return
+                            // Clicking away from a name that can't be used keeps the old one.
+                            if (problem.length > 0 && sidebar.renaming === row.path)
+                                sidebar.renaming = ""
+                            else
+                                commit()
+                        }
                         Keys.onEscapePressed: sidebar.renaming = ""
                     }
 
@@ -947,12 +961,12 @@ Rectangle {
             Label {
                 objectName: "libraryLabel"
                 Layout.fillWidth: true
-                text: AppController.libraryPath
+                text: AppController.libraryDisplayPath
                 elide: Text.ElideMiddle
                 color: Theme.textMuted
                 font.pixelSize: 11
                 ToolTip.visible: libraryHover.hovered
-                ToolTip.text: AppController.libraryPath
+                ToolTip.text: AppController.libraryDisplayPath
                 HoverHandler { id: libraryHover }
             }
             RibbonButton {

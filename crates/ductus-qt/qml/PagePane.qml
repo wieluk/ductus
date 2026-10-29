@@ -20,6 +20,8 @@ ColumnLayout {
     readonly property string page: active ? AppController.currentPage : AppController.otherPage
     property string pageTitle
     property bool fullScreen: false
+    /// A short window (a phone held sideways) leaves out the location bar: the page needs the room.
+    property bool lowWindow: false
     /// Beside another half: the active one is outlined.
     property bool split: false
     /// Room the selection bar leaves for the pen bar.
@@ -42,7 +44,7 @@ ColumnLayout {
         current: pane.page
         preview: pane.active ? AppController.previewPage : AppController.otherPreview
         focused: pane.active
-        pageTitle: pane.active ? pane.pageTitle : pane.page.split("/").pop()
+        pageTitle: pane.active ? pane.pageTitle : AppController.displayName(pane.page)
         onTabDragged: (path, scenePosition, dropped) => pane.tabDragged(path, scenePosition, dropped)
     }
 
@@ -50,7 +52,7 @@ ColumnLayout {
         objectName: pane.active ? "locationBar" : ""
         Layout.fillWidth: true
         page: pane.page
-        visible: pane.page.length > 0 && !pane.fullScreen
+        visible: pane.page.length > 0 && !pane.fullScreen && !pane.lowWindow
         onShowRequested: (path, view) => pane.showInSidebar(path, view)
     }
 
@@ -103,6 +105,8 @@ ColumnLayout {
             objectName: pane.active ? "textLayer" : ""
             anchors.fill: parent
             canvas: pane.canvas
+            leftInset: pane.leftInset
+            rightInset: pane.rightInset
             onNoticeRequested: (message) => pane.noticeRequested(message, true)
         }
 
@@ -111,6 +115,8 @@ ColumnLayout {
             objectName: pane.active ? "mathLayer" : ""
             anchors.fill: parent
             canvas: pane.canvas
+            leftInset: pane.leftInset
+            rightInset: pane.rightInset
             onNoticeRequested: (message) => pane.noticeRequested(message, true)
         }
 

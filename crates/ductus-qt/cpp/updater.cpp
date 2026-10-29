@@ -183,7 +183,7 @@ void Updater::check()
     m_busy = true;
     m_task = Task::Check;
     setStatus(tr("Looking for updates…"));
-    (*m_handle)->check(toStd(m_feed));
+    (*m_handle)->check(toStd(m_feed), toStd(currentVersion()));
     m_poll.start();
 }
 

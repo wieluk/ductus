@@ -88,10 +88,6 @@
         <translation>正在导入 %1…</translation>
     </message>
     <message>
-        <source>Imported into %1.</source>
-        <translation>已导入到 %1。</translation>
-    </message>
-    <message>
         <source>Page copied into %1.</source>
         <translation>页面已复制到 %1。</translation>
     </message>
@@ -100,8 +96,24 @@
         <translation>无法把 PDF 保存到那里。</translation>
     </message>
     <message>
+        <source>A name can&apos;t start with a dot.</source>
+        <translation>名称不能以点开头。</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t contain “%1”: Windows and sync apps don&apos;t allow it in file names.</source>
+        <translation>名称不能包含“%1”：Windows 和同步应用不允许在文件名中使用它。</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t end with a dot.</source>
+        <translation>名称不能以点结尾。</translation>
+    </message>
+    <message>
         <source>New section</source>
         <translation>新建分区</translation>
+    </message>
+    <message>
+        <source>Imported “%1” into %2.</source>
+        <translation>已将“%1”导入到 %2。</translation>
     </message>
     <message>
         <source>Exported to %1</source>
@@ -303,8 +315,8 @@
         <translation>那里已有“%1”，因此保存为“%2”。不会覆盖任何内容。</translation>
     </message>
     <message>
-        <source>The original file is only read, never changed.</source>
-        <translation>只读取原始文件，绝不修改它。</translation>
+        <source>What you import from is only read, never changed.</source>
+        <translation>只读取导入来源，绝不修改它。</translation>
     </message>
 </context>
 <context>
@@ -539,6 +551,10 @@
         <translation>请先下载相应的识别器。</translation>
     </message>
     <message>
+        <source>Drag to resize the halves; double-click for equal halves</source>
+        <translation>拖动以调整两半的大小；双击恢复等分</translation>
+    </message>
+    <message>
         <source>Show or hide notebooks (%1)</source>
         <translation>显示或隐藏笔记本（%1）</translation>
     </message>
@@ -611,16 +627,20 @@
         <translation>在 PDF 上书写</translation>
     </message>
     <message>
-        <source>Ink is saved into the PDF as annotations. Other PDF readers show it too.</source>
-        <translation>笔迹会作为批注保存到 PDF 中，其他 PDF 阅读器也能显示。</translation>
+        <source>A copy goes into the notebook; your ink is saved in that copy as annotations, so other PDF readers show it too.</source>
+        <translation>副本会放入笔记本；你的笔迹以批注形式保存在副本中，其他 PDF 阅读器也能显示。</translation>
+    </message>
+    <message>
+        <source>The PDF becomes the background of a notes page.</source>
+        <translation>PDF 将成为笔记页面的背景。</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>只读取原始文件，绝不修改它。</translation>
     </message>
     <message>
         <source>Import as note pages</source>
         <translation>作为笔记页面导入</translation>
-    </message>
-    <message>
-        <source>The PDF becomes the background of a notes page. The original stays untouched.</source>
-        <translation>PDF 会成为笔记页面的背景。原文件保持不变。</translation>
     </message>
     <message>
         <source>Page</source>
@@ -1305,6 +1325,13 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     </message>
 </context>
 <context>
+    <name>PlatformFiles</name>
+    <message>
+        <source>Inside the app</source>
+        <translation>应用内部</translation>
+    </message>
+</context>
+<context>
     <name>Ribbon</name>
     <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
@@ -1658,6 +1685,17 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     </message>
 </context>
 <context>
+    <name>ScrollArrows</name>
+    <message>
+        <source>More</source>
+        <translation>更多</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>返回</translation>
+    </message>
+</context>
+<context>
     <name>SearchBox</name>
     <message>
         <source>This page</source>
@@ -1684,8 +1722,20 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>所有页面和 PDF 的名称与内容 (Ctrl+K)</translation>
     </message>
     <message>
+        <source>Search in: %1</source>
+        <translation>搜索范围：%1</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>搜索</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
-        <translation>搜索（Ctrl+F）</translation>
+        <translation>搜索 (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Search (Ctrl+K)</source>
+        <translation>搜索 (Ctrl+K)</translation>
     </message>
     <message>
         <source>page %1</source>
@@ -1784,6 +1834,14 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Normal</source>
         <translation>正常</translation>
+    </message>
+    <message>
+        <source>Remove “%1”?</source>
+        <translation>移除“%1”？</translation>
+    </message>
+    <message>
+        <source>Handwriting can&apos;t be read with it until it is downloaded again.</source>
+        <translation>重新下载之前，将无法用它识别手写内容。</translation>
     </message>
     <message>
         <source>Firm</source>

@@ -15,6 +15,11 @@ Rectangle {
         hideTimer.restart()
     }
 
+    function hide() {
+        hideTimer.stop()
+        opacity = 0
+    }
+
     property bool error: false
     property var action: null
 

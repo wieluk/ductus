@@ -16,6 +16,9 @@ fn main() {
         QmlFile::from("qml/AppMenu.qml"),
         QmlFile::from("qml/AppMenuItem.qml"),
         QmlFile::from("qml/AppMenuSeparator.qml"),
+        QmlFile::from("qml/AppComboBox.qml"),
+        QmlFile::from("qml/NameField.qml"),
+        QmlFile::from("qml/ScrollArrows.qml"),
         QmlFile::from("qml/NotebookTree.qml"),
         QmlFile::from("qml/Toast.qml"),
         QmlFile::from("qml/AppDialog.qml"),
@@ -96,6 +99,10 @@ fn main() {
             }
             if target_os == "linux" {
                 cc.define("DUCTUS_WAYLAND", None);
+            }
+            // MSVC reads sources as the system code page otherwise, which garbles translated text.
+            if std::env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("msvc") {
+                cc.flag("/utf-8");
             }
             // Development builds don't look for updates.
             if std::env::var("PROFILE").as_deref() == Ok("debug") {

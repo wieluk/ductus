@@ -88,10 +88,6 @@
         <translation>Importazione di %1…</translation>
     </message>
     <message>
-        <source>Imported into %1.</source>
-        <translation>Importato in %1.</translation>
-    </message>
-    <message>
         <source>Page copied into %1.</source>
         <translation>Pagina copiata in %1.</translation>
     </message>
@@ -100,8 +96,24 @@
         <translation>Impossibile salvare il PDF lì.</translation>
     </message>
     <message>
+        <source>A name can&apos;t start with a dot.</source>
+        <translation>Un nome non può iniziare con un punto.</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t contain “%1”: Windows and sync apps don&apos;t allow it in file names.</source>
+        <translation>Un nome non può contenere «%1»: Windows e le app di sincronizzazione non lo consentono nei nomi dei file.</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t end with a dot.</source>
+        <translation>Un nome non può terminare con un punto.</translation>
+    </message>
+    <message>
         <source>New section</source>
         <translation>Nuova sezione</translation>
+    </message>
+    <message>
+        <source>Imported “%1” into %2.</source>
+        <translation>«%1» importato in %2.</translation>
     </message>
     <message>
         <source>Exported to %1</source>
@@ -308,8 +320,8 @@
         <translation>«%1» esiste già lì, quindi viene salvato come «%2». Nulla viene sovrascritto.</translation>
     </message>
     <message>
-        <source>The original file is only read, never changed.</source>
-        <translation>Il file originale viene solo letto, mai modificato.</translation>
+        <source>What you import from is only read, never changed.</source>
+        <translation>Ciò da cui importi viene solo letto, mai modificato.</translation>
     </message>
 </context>
 <context>
@@ -544,6 +556,10 @@
         <translation>Prima scarica il riconoscimento per questo.</translation>
     </message>
     <message>
+        <source>Drag to resize the halves; double-click for equal halves</source>
+        <translation>Trascina per ridimensionare le metà; doppio clic per metà uguali</translation>
+    </message>
+    <message>
         <source>Show or hide notebooks (%1)</source>
         <translation>Mostra o nascondi i quaderni (%1)</translation>
     </message>
@@ -616,16 +632,20 @@
         <translation>Scrivi sul PDF</translation>
     </message>
     <message>
-        <source>Ink is saved into the PDF as annotations. Other PDF readers show it too.</source>
-        <translation>L’inchiostro viene salvato nel PDF come annotazioni. Anche altri lettori PDF lo mostrano.</translation>
+        <source>A copy goes into the notebook; your ink is saved in that copy as annotations, so other PDF readers show it too.</source>
+        <translation>Una copia va nel quaderno; l’inchiostro viene salvato nella copia come annotazioni, così lo mostrano anche altri lettori PDF.</translation>
+    </message>
+    <message>
+        <source>The PDF becomes the background of a notes page.</source>
+        <translation>Il PDF diventa lo sfondo di una pagina di appunti.</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>Il file originale viene solo letto, mai modificato.</translation>
     </message>
     <message>
         <source>Import as note pages</source>
         <translation>Importa come pagine di appunti</translation>
-    </message>
-    <message>
-        <source>The PDF becomes the background of a notes page. The original stays untouched.</source>
-        <translation>Il PDF diventa lo sfondo di una pagina di appunti. L’originale resta intatto.</translation>
     </message>
     <message>
         <source>Page</source>
@@ -1310,6 +1330,13 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
     </message>
 </context>
 <context>
+    <name>PlatformFiles</name>
+    <message>
+        <source>Inside the app</source>
+        <translation>Dentro l’app</translation>
+    </message>
+</context>
+<context>
     <name>Ribbon</name>
     <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
@@ -1663,6 +1690,17 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
     </message>
 </context>
 <context>
+    <name>ScrollArrows</name>
+    <message>
+        <source>More</source>
+        <translation>Altro</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Indietro</translation>
+    </message>
+</context>
+<context>
     <name>SearchBox</name>
     <message>
         <source>This page</source>
@@ -1689,8 +1727,20 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
         <translation>Nomi e contenuti di tutte le pagine e di tutti i PDF (Ctrl+K)</translation>
     </message>
     <message>
+        <source>Search in: %1</source>
+        <translation>Cerca in: %1</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>Cerca</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Cerca (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Search (Ctrl+K)</source>
+        <translation>Cerca (Ctrl+K)</translation>
     </message>
     <message>
         <source>page %1</source>
@@ -1789,6 +1839,14 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
     <message>
         <source>Normal</source>
         <translation>Normale</translation>
+    </message>
+    <message>
+        <source>Remove “%1”?</source>
+        <translation>Rimuovere «%1»?</translation>
+    </message>
+    <message>
+        <source>Handwriting can&apos;t be read with it until it is downloaded again.</source>
+        <translation>Non sarà possibile leggere la scrittura a mano con esso finché non lo scarichi di nuovo.</translation>
     </message>
     <message>
         <source>Firm</source>

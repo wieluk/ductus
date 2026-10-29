@@ -88,10 +88,6 @@
         <translation>Importation de %1…</translation>
     </message>
     <message>
-        <source>Imported into %1.</source>
-        <translation>Importé dans %1.</translation>
-    </message>
-    <message>
         <source>Page copied into %1.</source>
         <translation>Page copiée dans %1.</translation>
     </message>
@@ -100,8 +96,24 @@
         <translation>Impossible d’enregistrer le PDF à cet endroit.</translation>
     </message>
     <message>
+        <source>A name can&apos;t start with a dot.</source>
+        <translation>Un nom ne peut pas commencer par un point.</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t contain “%1”: Windows and sync apps don&apos;t allow it in file names.</source>
+        <translation>Un nom ne peut pas contenir « %1 » : Windows et les applications de synchronisation ne l’acceptent pas dans les noms de fichiers.</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t end with a dot.</source>
+        <translation>Un nom ne peut pas se terminer par un point.</translation>
+    </message>
+    <message>
         <source>New section</source>
         <translation>Nouvelle section</translation>
+    </message>
+    <message>
+        <source>Imported “%1” into %2.</source>
+        <translation>« %1 » importé dans %2.</translation>
     </message>
     <message>
         <source>Exported to %1</source>
@@ -308,8 +320,8 @@
         <translation>« %1 » existe déjà ici, l’import est donc enregistré sous « %2 ». Rien n’est écrasé.</translation>
     </message>
     <message>
-        <source>The original file is only read, never changed.</source>
-        <translation>Le fichier d’origine est seulement lu, jamais modifié.</translation>
+        <source>What you import from is only read, never changed.</source>
+        <translation>Ce que vous importez est seulement lu, jamais modifié.</translation>
     </message>
 </context>
 <context>
@@ -544,6 +556,10 @@
         <translation>Téléchargez d’abord la reconnaissance nécessaire.</translation>
     </message>
     <message>
+        <source>Drag to resize the halves; double-click for equal halves</source>
+        <translation>Faites glisser pour redimensionner les moitiés ; double-clic pour des moitiés égales</translation>
+    </message>
+    <message>
         <source>Show or hide notebooks (%1)</source>
         <translation>Afficher ou masquer les carnets (%1)</translation>
     </message>
@@ -616,16 +632,20 @@
         <translation>Écrire sur le PDF</translation>
     </message>
     <message>
-        <source>Ink is saved into the PDF as annotations. Other PDF readers show it too.</source>
-        <translation>L’encre est enregistrée dans le PDF sous forme d’annotations. D’autres lecteurs PDF l’affichent aussi.</translation>
+        <source>A copy goes into the notebook; your ink is saved in that copy as annotations, so other PDF readers show it too.</source>
+        <translation>Une copie va dans le bloc-notes ; votre encre y est enregistrée sous forme d’annotations, que les autres lecteurs PDF affichent aussi.</translation>
+    </message>
+    <message>
+        <source>The PDF becomes the background of a notes page.</source>
+        <translation>Le PDF devient l’arrière-plan d’une page de notes.</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>Le fichier d’origine est seulement lu, jamais modifié.</translation>
     </message>
     <message>
         <source>Import as note pages</source>
         <translation>Importer comme pages de notes</translation>
-    </message>
-    <message>
-        <source>The PDF becomes the background of a notes page. The original stays untouched.</source>
-        <translation>Le PDF devient l’arrière-plan d’une page de notes. L’original reste intact.</translation>
     </message>
     <message>
         <source>Page</source>
@@ -1310,6 +1330,13 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     </message>
 </context>
 <context>
+    <name>PlatformFiles</name>
+    <message>
+        <source>Inside the app</source>
+        <translation>Dans l’application</translation>
+    </message>
+</context>
+<context>
     <name>Ribbon</name>
     <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
@@ -1663,6 +1690,17 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     </message>
 </context>
 <context>
+    <name>ScrollArrows</name>
+    <message>
+        <source>More</source>
+        <translation>Plus</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Retour</translation>
+    </message>
+</context>
+<context>
     <name>SearchBox</name>
     <message>
         <source>This page</source>
@@ -1689,8 +1727,20 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Noms et contenus de toutes les pages et de tous les PDF (Ctrl+K)</translation>
     </message>
     <message>
+        <source>Search in: %1</source>
+        <translation>Rechercher dans : %1</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>Rechercher</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Rechercher (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Search (Ctrl+K)</source>
+        <translation>Rechercher (Ctrl+K)</translation>
     </message>
     <message>
         <source>page %1</source>
@@ -1789,6 +1839,14 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     <message>
         <source>Normal</source>
         <translation>Normal</translation>
+    </message>
+    <message>
+        <source>Remove “%1”?</source>
+        <translation>Supprimer « %1 » ?</translation>
+    </message>
+    <message>
+        <source>Handwriting can&apos;t be read with it until it is downloaded again.</source>
+        <translation>L’écriture manuscrite ne pourra plus être lue avec lui tant qu’il n’aura pas été retéléchargé.</translation>
     </message>
     <message>
         <source>Firm</source>

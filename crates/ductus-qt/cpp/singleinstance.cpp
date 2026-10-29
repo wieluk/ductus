@@ -43,6 +43,8 @@ bool SingleInstance::claim()
         running.write(token + '\n');
         running.waitForBytesWritten(1000);
         running.disconnectFromServer();
+        // Shows up in logs, so a start that seems to do nothing can be told apart from a crash.
+        qInfo("Ductus is already running (%s); it was asked to come to the front.", qPrintable(name));
         return false;
     }
     // Nobody answers: a copy that crashed may have left its socket behind.

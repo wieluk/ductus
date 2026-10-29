@@ -1,5 +1,4 @@
 #include "ductus-qt/cpp/app.h"
-#include "ductus-qt/cpp/singleinstance.h"
 #include "ductus-qt/cpp/translations.h"
 #include "ductus-qt/cpp/uitest.h"
 
@@ -9,6 +8,9 @@
 #include <QQuickWindow>
 #include <QSettings>
 #include <QStyleHints>
+#if !defined(Q_OS_ANDROID)
+#include "ductus-qt/cpp/singleinstance.h"
+#endif
 
 #include <string>
 

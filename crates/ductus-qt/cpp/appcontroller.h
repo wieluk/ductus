@@ -105,6 +105,7 @@ class AppController : public QObject
     QML_SINGLETON
 
     Q_PROPERTY(QString libraryPath READ libraryPath NOTIFY libraryChanged)
+    Q_PROPERTY(QString libraryDisplayPath READ libraryDisplayPath NOTIFY libraryChanged)
     /// Android: the notes are in the app's own folder, which uninstalling removes.
     Q_PROPERTY(bool notesInsideApp READ notesInsideApp NOTIFY libraryChanged)
     /// Draw without the graphics card; takes effect the next time Ductus starts.
@@ -146,6 +147,12 @@ public:
     ~AppController() override;
 
     QString libraryPath() const;
+    QString libraryDisplayPath() const;
+    /// Why a page, folder or notebook can't have this name, or "" when it can (or is still empty).
+    /// The same rules as the library's, which works on every system's file names.
+    Q_INVOKABLE QString nameProblem(const QString &name) const;
+    /// Android's Back on the first screen: the app goes to the background.
+    Q_INVOKABLE void moveToBack();
     NotebookModel *tree() { return &m_tree; }
     QString currentPage() const;
     QString currentTitle() const;

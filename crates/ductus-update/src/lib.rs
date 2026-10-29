@@ -10,6 +10,9 @@ use std::time::Duration;
 
 pub const LATEST_RELEASE_URL: &str = "https://api.github.com/repos/wieluk/ductus/releases/latest";
 
+/// The newest releases, for the notes of every version since the one installed.
+pub const RELEASES_URL: &str = "https://api.github.com/repos/wieluk/ductus/releases?per_page=30";
+
 pub const RELEASES_PAGE: &str = "https://github.com/wieluk/ductus/releases/latest";
 
 /// Signs every release's SHA256SUMS.txt (base64 of the raw Ed25519 key).
@@ -52,6 +55,47 @@ pub fn is_newer(latest: &str, current: &str) -> bool {
 pub fn parse_release(json: &str) -> Result<Option<Release>, String> {
     let value: serde_json::Value =
         serde_json::from_str(json).map_err(|e| format!("the release feed isn't JSON: {e}"))?;
+    release_from(&value)
+}
+
+/// Every published release in GitHub's list of releases.
+pub fn parse_releases(json: &str) -> Result<Vec<Release>, String> {
+    let value: serde_json::Value =
+        serde_json::from_str(json).map_err(|e| format!("the release list isn't JSON: {e}"))?;
+    let list = value.as_array().ok_or("the release list isn't a list")?;
+    Ok(list
+        .iter()
+        .filter_map(|v| release_from(v).ok().flatten())
+        .collect())
+}
+
+/// What changed since `current`: one newer release's notes, or each newer one's under its version.
+pub fn notes_since(releases: &[Release], current: &str) -> String {
+    let mut newer: Vec<&Release> = releases
+        .iter()
+        .filter(|r| is_newer(&r.version, current))
+        .collect();
+    newer.sort_by(|a, b| {
+        if is_newer(&a.version, &b.version) {
+            std::cmp::Ordering::Less
+        } else if is_newer(&b.version, &a.version) {
+            std::cmp::Ordering::Greater
+        } else {
+            std::cmp::Ordering::Equal
+        }
+    });
+    match newer.as_slice() {
+        [] => String::new(),
+        [one] => one.notes.clone(),
+        all => all
+            .iter()
+            .map(|r| format!("## {}\n\n{}", r.version, r.notes))
+            .collect::<Vec<_>>()
+            .join("\n\n"),
+    }
+}
+
+fn release_from(value: &serde_json::Value) -> Result<Option<Release>, String> {
     if value["draft"].as_bool() == Some(true) || value["prerelease"].as_bool() == Some(true) {
         return Ok(None);
     }
@@ -133,6 +177,11 @@ fn read_small(url: &str) -> Result<Vec<u8>, String> {
 pub fn latest_release(feed: &str) -> Result<Option<Release>, String> {
     let body = read_small(feed)?;
     parse_release(&String::from_utf8_lossy(&body))
+}
+
+pub fn releases(feed: &str) -> Result<Vec<Release>, String> {
+    let body = read_small(feed)?;
+    parse_releases(&String::from_utf8_lossy(&body))
 }
 
 pub fn parse_checksums(text: &str) -> HashMap<String, [u8; 32]> {

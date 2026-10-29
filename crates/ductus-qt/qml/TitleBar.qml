@@ -201,6 +201,8 @@ Rectangle {
                     required property var modelData
                     readonly property bool active: bar.currentTab === modelData.key
                     objectName: "tab_" + modelData.key
+                    Accessible.name: modelData.label
+                    Accessible.role: Accessible.PageTab
                     Layout.alignment: Qt.AlignBottom
                     implicitHeight: Theme.titleHeight - 6
                     implicitWidth: tabLabel.implicitWidth + (bar.compact ? 14 : 28)
@@ -285,6 +287,7 @@ Rectangle {
                     id: winButton
                     required property var modelData
                     objectName: "window_" + modelData.action
+                    Accessible.name: modelData.tip
                     // A phone's apps fill the screen and close through the system.
                     visible: !bar.mobile
                     implicitWidth: 46
@@ -308,5 +311,10 @@ Rectangle {
                 }
             }
         }
+    }
+    ScrollArrows {
+        target: scroller
+        color: Theme.titleBar
+        onTitleBar: true
     }
 }

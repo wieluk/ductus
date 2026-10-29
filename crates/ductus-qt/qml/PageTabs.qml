@@ -54,6 +54,8 @@ Rectangle {
             readonly property bool active: modelData === bar.current
             readonly property bool preview: modelData === bar.preview
             objectName: "pageTab_" + modelData
+            Accessible.name: AppController.displayName(modelData)
+            Accessible.role: Accessible.PageTab
             height: ListView.view.height
             width: Math.min(220, pageIcon.width + title.implicitWidth + close.width + 26)
             z: active ? 1 : 0
@@ -109,7 +111,7 @@ Rectangle {
                     anchors.leftMargin: 6
                     anchors.verticalCenter: parent.verticalCenter
                     width: Math.min(implicitWidth, close.x - x - 2)
-                    text: tab.active && bar.focused ? bar.pageTitle : tab.modelData.split("/").pop()
+                    text: tab.active && bar.focused ? bar.pageTitle : AppController.displayName(tab.modelData)
                     color: tab.active ? Theme.text : Theme.textMuted
                     font.pixelSize: 12
                     font.weight: tab.active ? Font.DemiBold : Font.Normal
@@ -119,6 +121,7 @@ Rectangle {
                 ToolButton {
                     id: close
                     objectName: tab.active && bar.focused ? "closePage" : "closeTab_" + tab.modelData
+                    Accessible.name: qsTr("Close")
                     anchors.right: parent.right
                     anchors.rightMargin: 2
                     anchors.verticalCenter: parent.verticalCenter

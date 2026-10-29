@@ -88,10 +88,6 @@
         <translation>Импорт %1…</translation>
     </message>
     <message>
-        <source>Imported into %1.</source>
-        <translation>Импортировано в %1.</translation>
-    </message>
-    <message>
         <source>Page copied into %1.</source>
         <translation>Страница скопирована в %1.</translation>
     </message>
@@ -100,8 +96,24 @@
         <translation>Не удалось сохранить PDF туда.</translation>
     </message>
     <message>
+        <source>A name can&apos;t start with a dot.</source>
+        <translation>Имя не может начинаться с точки.</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t contain “%1”: Windows and sync apps don&apos;t allow it in file names.</source>
+        <translation>Имя не может содержать «%1»: Windows и приложения синхронизации не допускают этот символ в именах файлов.</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t end with a dot.</source>
+        <translation>Имя не может заканчиваться точкой.</translation>
+    </message>
+    <message>
         <source>New section</source>
         <translation>Новый раздел</translation>
+    </message>
+    <message>
+        <source>Imported “%1” into %2.</source>
+        <translation>«%1» импортировано в %2.</translation>
     </message>
     <message>
         <source>Exported to %1</source>
@@ -313,8 +325,8 @@
         <translation>«%1» там уже есть, поэтому импорт сохранится как «%2». Ничего не перезаписывается.</translation>
     </message>
     <message>
-        <source>The original file is only read, never changed.</source>
-        <translation>Исходный файл только читается и никогда не меняется.</translation>
+        <source>What you import from is only read, never changed.</source>
+        <translation>Исходные файлы только читаются и никогда не меняются.</translation>
     </message>
 </context>
 <context>
@@ -549,6 +561,10 @@
         <translation>Сначала скачайте для этого распознаватель.</translation>
     </message>
     <message>
+        <source>Drag to resize the halves; double-click for equal halves</source>
+        <translation>Перетащите, чтобы изменить размер половин; двойной щелчок — поровну</translation>
+    </message>
+    <message>
         <source>Show or hide notebooks (%1)</source>
         <translation>Показать или скрыть блокноты (%1)</translation>
     </message>
@@ -621,16 +637,20 @@
         <translation>Писать на PDF</translation>
     </message>
     <message>
-        <source>Ink is saved into the PDF as annotations. Other PDF readers show it too.</source>
-        <translation>Чернила сохраняются в PDF как аннотации. Другие программы для PDF тоже их показывают.</translation>
+        <source>A copy goes into the notebook; your ink is saved in that copy as annotations, so other PDF readers show it too.</source>
+        <translation>Копия попадает в блокнот; рукописные заметки сохраняются в ней как аннотации, поэтому их видят и другие программы для PDF.</translation>
+    </message>
+    <message>
+        <source>The PDF becomes the background of a notes page.</source>
+        <translation>PDF становится фоном страницы заметок.</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>Исходный файл только читается и никогда не меняется.</translation>
     </message>
     <message>
         <source>Import as note pages</source>
         <translation>Импортировать как страницы заметок</translation>
-    </message>
-    <message>
-        <source>The PDF becomes the background of a notes page. The original stays untouched.</source>
-        <translation>PDF становится фоном страницы заметок. Оригинал не изменяется.</translation>
     </message>
     <message>
         <source>Page</source>
@@ -1315,6 +1335,13 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     </message>
 </context>
 <context>
+    <name>PlatformFiles</name>
+    <message>
+        <source>Inside the app</source>
+        <translation>Внутри приложения</translation>
+    </message>
+</context>
+<context>
     <name>Ribbon</name>
     <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
@@ -1668,6 +1695,17 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     </message>
 </context>
 <context>
+    <name>ScrollArrows</name>
+    <message>
+        <source>More</source>
+        <translation>Ещё</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Назад</translation>
+    </message>
+</context>
+<context>
     <name>SearchBox</name>
     <message>
         <source>This page</source>
@@ -1694,8 +1732,20 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Названия и содержимое всех страниц и PDF (Ctrl+K)</translation>
     </message>
     <message>
+        <source>Search in: %1</source>
+        <translation>Искать в: %1</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>Поиск</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Поиск (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Search (Ctrl+K)</source>
+        <translation>Поиск (Ctrl+K)</translation>
     </message>
     <message>
         <source>page %1</source>
@@ -1794,6 +1844,14 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Normal</source>
         <translation>Обычное</translation>
+    </message>
+    <message>
+        <source>Remove “%1”?</source>
+        <translation>Удалить «%1»?</translation>
+    </message>
+    <message>
+        <source>Handwriting can&apos;t be read with it until it is downloaded again.</source>
+        <translation>Пока вы не загрузите его снова, рукописный текст с ним распознаваться не будет.</translation>
     </message>
     <message>
         <source>Firm</source>

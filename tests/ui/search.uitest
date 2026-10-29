@@ -60,7 +60,7 @@ type lecture 3
 wait 400
 click-item searchResult0
 wait 300
-expect-text pageTitle lecture.pdf
+expect-text pageTitle lecture
 key Ctrl+K
 key Ctrl+A
 type grenzwert

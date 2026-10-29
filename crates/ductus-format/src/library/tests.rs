@@ -369,6 +369,12 @@ fn trash_restores_entries_where_they_were() {
 
     assert_eq!(lib.restore(&id).unwrap(), "Math/Limits");
     assert!(lib.exists("Math/Limits"));
+    let tree = lib.tree().unwrap();
+    assert_eq!(
+        names(find(&tree, "Math")),
+        ["Limits", "Series"],
+        "back in its place"
+    );
     assert_eq!(
         lib.read_page_pdf("Math/Limits", "source.pdf").unwrap(),
         b"pdf"

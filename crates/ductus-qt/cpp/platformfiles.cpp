@@ -153,6 +153,11 @@ void requestSharedAccess()
     env->DeleteLocalRef(array);
 }
 
+void moveToBack()
+{
+    context().callMethod<jboolean>("moveTaskToBack", "(Z)Z", jboolean(true));
+}
+
 QString sharedLibraryPath()
 {
     const QJniObject dir = QJniObject::callStaticObjectMethod(
@@ -170,6 +175,8 @@ bool hasSharedAccess()
 
 void requestSharedAccess() {}
 
+void moveToBack() {}
+
 QString sharedLibraryPath()
 {
     return QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + QStringLiteral("/Ductus");
@@ -185,6 +192,20 @@ bool insideApp(const QString &path)
 #else
     Q_UNUSED(path);
     return false;
+#endif
+}
+
+QString displayPath(const QString &path)
+{
+#if defined(Q_OS_ANDROID)
+    if (insideApp(path))
+        return QCoreApplication::translate("PlatformFiles", "Inside the app");
+    const QString storage = QStringLiteral("/storage/emulated/0/");
+    if (path.startsWith(storage))
+        return path.mid(storage.size());
+    return path;
+#else
+    return QDir::toNativeSeparators(path);
 #endif
 }
 

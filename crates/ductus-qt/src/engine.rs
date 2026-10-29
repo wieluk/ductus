@@ -393,9 +393,14 @@ impl CanvasEngine {
     /// The selected ink as images to read: one per line of text, or one for a formula.
     pub fn selection_jobs(&self, math: bool) -> Vec<LineJob> {
         let ink = self.0.selected_ink();
-        let job = |png, rect: kurbo::Rect| LineJob {
+        let job = |png, rect: kurbo::Rect, strokes: &[usize]| LineJob {
             png,
-            key: String::new(),
+            // The line's strokes, so only lines that were read get replaced.
+            key: strokes
+                .iter()
+                .map(|&i| ink[i].id.0.to_string())
+                .collect::<Vec<_>>()
+                .join(" "),
             x: rect.x0,
             y: rect.y0,
             w: rect.width(),
@@ -405,20 +410,28 @@ impl CanvasEngine {
             let all: Vec<usize> = (0..ink.len()).collect();
             let rect = ink.iter().map(ductus_ink::bounds).reduce(|a, b| a.union(b));
             return match (ductus_hwr::ink_png(&ink, &all, 896), rect) {
-                (Some(png), Some(rect)) => vec![job(png, rect)],
+                (Some(png), Some(rect)) => vec![job(png, rect, &all)],
                 _ => Vec::new(),
             };
         }
         ductus_hwr::find_lines(&ink)
             .into_iter()
-            .filter_map(|line| Some(job(ductus_hwr::line_png(&ink, &line, 96)?, line.rect)))
+            .filter_map(|line| {
+                let png = ductus_hwr::line_png(&ink, &line, 96)?;
+                Some(job(png, line.rect, &line.strokes))
+            })
             .collect()
     }
 
     /// The new box's id and bottom-right corner in document units; empty when nothing changed.
-    pub fn replace_ink(&mut self, content: &str, math: bool) -> Vec<f64> {
+    /// `strokes` are the space-separated ids of the ink that was read.
+    pub fn replace_ink(&mut self, content: &str, math: bool, strokes: &str) -> Vec<f64> {
+        let only: Vec<StrokeId> = strokes
+            .split_whitespace()
+            .filter_map(|id| id.parse().ok().map(StrokeId))
+            .collect();
         self.0
-            .replace_ink(content, math)
+            .replace_ink(content, math, &only)
             .map_or_else(Vec::new, |(id, p)| vec![id.0 as f64, p.x, p.y])
     }
 

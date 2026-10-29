@@ -7,6 +7,9 @@ Item {
     id: maths
 
     required property InkCanvas canvas
+    /// Room taken by the pen bar at the sides, which the editor keeps clear of.
+    property real leftInset: 8
+    property real rightInset: 8
     /// "latex" or "typst"; the last choice is kept for the next formula.
     property string syntax: "latex"
     property bool editing: false
@@ -73,6 +76,12 @@ Item {
             return
         finish()
         canvas.commitMath()
+    }
+
+    // Enter and Done wait for a formula that lays out; leaving another way keeps it, drawn as source.
+    function done() {
+        if (problem.length === 0)
+            commit()
     }
 
     function cancel() {
@@ -149,9 +158,9 @@ Item {
         objectName: "mathEditor"
         readonly property rect target: maths.canvas.mathDraftRect
         visible: maths.editing
-        width: Math.min(460, maths.width - 16)
+        width: Math.min(460, maths.width - maths.leftInset - maths.rightInset)
         height: column.implicitHeight + 20
-        x: Math.max(8, Math.min(target.x, maths.width - width - 8))
+        x: Math.max(maths.leftInset, Math.min(target.x, maths.width - width - maths.rightInset))
         y: target.y + target.height + 12 + height <= maths.height - 8
            ? target.y + target.height + 12
            : Math.max(8, target.y - height - 12)
@@ -304,9 +313,9 @@ Item {
                         if (event.modifiers & Qt.ShiftModifier)
                             event.accepted = false
                         else
-                            maths.commit()
+                            maths.done()
                     }
-                    Keys.onEnterPressed: maths.commit()
+                    Keys.onEnterPressed: maths.done()
                     // Tab jumps into the next empty {} or () left by a quick insert.
                     Keys.onTabPressed: {
                         const rest = sourceField.text.slice(sourceField.cursorPosition)
@@ -356,7 +365,8 @@ Item {
                     objectName: "mathDone"
                     text: qsTr("Done")
                     checked: true
-                    onClicked: maths.commit()
+                    enabled: maths.problem.length === 0
+                    onClicked: maths.done()
                 }
             }
         }

@@ -10,7 +10,7 @@ click-item row_Uni/3. Semester
 click-item row_Uni/3. Semester/Statik
 click-item row_Uni/3. Semester/Statik/VO
 click-item row_Uni/3. Semester/Statik/VO/Slides.PDF
-expect-text pageTitle Slides.PDF
+expect-text pageTitle Slides
 # The filter hides kinds of files in Folders.
 click-item treeFilter
 click-item filterPdfs

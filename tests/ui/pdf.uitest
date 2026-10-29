@@ -6,7 +6,7 @@ pen p=0.3-0.9 450,300 650,330 850,300
 click-item row_My Notebook/First page
 expect-text pageTitle First page
 click-item row_My Notebook/lecture.pdf
-expect-text pageTitle lecture.pdf
+expect-text pageTitle lecture
 export-pdf lecture-flat.pdf
 expect-file lecture-flat.pdf
 print-pdf printed.pdf

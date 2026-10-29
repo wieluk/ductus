@@ -28,6 +28,8 @@ ToolButton {
     property bool tipDismissed: false
     onPressed: tipDismissed = true
     onHoveredChanged: if (!hovered) tipDismissed = false
+    // Screen readers name icon-only buttons by their tip.
+    Accessible.name: text.length > 0 ? text : tip
     ToolTip.visible: hovered && tip.length > 0 && !tipDismissed
     ToolTip.delay: 600
     ToolTip.text: tip

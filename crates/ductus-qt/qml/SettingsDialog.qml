@@ -11,6 +11,17 @@ Dialog {
     required property ApplicationWindow window
     property int section: 0
 
+    /// Handwriting, scrolled down to the recognizers to download.
+    function showModels() {
+        section = 4
+        open()
+        Qt.callLater(() => {
+            const flick = handwritingSection.contentItem
+            const y = modelsAnchor.mapToItem(flick.contentItem, 0, 0).y - 8
+            flick.contentY = Math.max(0, Math.min(y, flick.contentHeight - flick.height))
+        })
+    }
+
     signal openFolderRequested()
     signal updateRequested()
     signal trashRequested()
@@ -32,6 +43,24 @@ Dialog {
         radius: 12
         border.width: 1
         border.color: Theme.ribbonBorder
+    }
+
+    // Downloading it again takes a while: removing asks first.
+    AppDialog {
+        id: removeModelDialog
+        objectName: "removeModelDialog"
+        property string modelId
+        property string modelTitle
+        function ask(model) {
+            modelId = model.id
+            modelTitle = model.title
+            open()
+        }
+        title: qsTr("Remove \u201c%1\u201d?").arg(modelTitle)
+        message: qsTr("Handwriting can't be read with it until it is downloaded again.")
+        acceptText: qsTr("Remove")
+        destructive: true
+        onAccepted: Models.remove(modelId)
     }
 
     // AppController reads these keys too (pages/, hwr/).
@@ -436,7 +465,7 @@ Dialog {
                         label: qsTr("App language")
                         hint: qsTr("The language of menus and messages. Handwriting languages are under Handwriting.")
                     }
-                    ComboBox {
+                    AppComboBox {
                         objectName: "appLanguage"
                         Layout.preferredWidth: 240
                         Layout.fillWidth: dialog.narrow
@@ -507,7 +536,7 @@ Dialog {
             Section {
                 Heading { text: qsTr("Library folder") }
                 Described {
-                    label: AppController.libraryPath
+                    label: AppController.libraryDisplayPath
                     hint: qsTr("Your notebooks are ordinary folders and files here. Sync this folder with Nextcloud, Syncthing or similar to use it on several devices.")
                 }
                 Flow {
@@ -577,6 +606,7 @@ Dialog {
             }
 
             Section {
+                id: handwritingSection
                 Heading { text: qsTr("Recognizer") }
                 Described {
                     label: qsTr("Turns handwriting into text or formulas.")
@@ -697,6 +727,10 @@ Dialog {
                         }
                     }
                 }
+                Item {
+                    id: modelsAnchor
+                    Layout.fillWidth: true
+                }
                 Repeater {
                     model: Models.entries
                     delegate: RowLayout {
@@ -720,7 +754,7 @@ Dialog {
                             visible: !modelRow.loading
                             text: modelRow.modelData.installed ? qsTr("Remove") : qsTr("Download")
                             enabled: Models.busy === ""
-                            onClicked: modelRow.modelData.installed ? Models.remove(modelRow.modelData.id)
+                            onClicked: modelRow.modelData.installed ? removeModelDialog.ask(modelRow.modelData)
                                 : Models.download(modelRow.modelData.id)
                         }
                     }

@@ -47,3 +47,12 @@ key End
 type !
 key Escape
 expect-in-file My Notebook/First page.svg | <u>Watch out: special *chars* stay!</u>
+# A finger tap places a box too, for phones without a pen.
+click-item insertText
+touch 700,660
+type Tapped
+key Escape
+expect-in-file My Notebook/First page.svg | Tapped
+# Esc hands the keys back to the page: Ctrl+Z undoes the box instead of its text.
+key Ctrl+Z
+expect-prop canvas canRedo true

@@ -177,7 +177,7 @@ public:
     Q_INVOKABLE void setPageStyle(const QString &kind, bool landscape, const QString &pattern);
     Q_INVOKABLE void selectAll();
     /// Replaces the selected ink with recognized text or a LaTeX formula (one undo step).
-    bool replaceInk(const QString &content, bool math);
+    bool replaceInk(const QString &content, bool math, const QString &strokes);
     Q_INVOKABLE void clearSelection();
     Q_INVOKABLE void deleteSelection();
     Q_INVOKABLE void copySelection();
@@ -293,6 +293,10 @@ private:
     QPointF m_pinchStartCenter;
     qreal m_pinchStartDistance = 1;
     QPointF m_lastTouchPosition;
+    // A finger tap with the text or formula tool places a box, as a pen tap does.
+    QPointF m_tapStart;
+    QElapsedTimer m_tapTime;
+    bool m_tapCandidate = false;
     QTimer m_settleTimer;
 
     bool m_shapeAssist = true;

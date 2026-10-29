@@ -179,119 +179,132 @@ Rectangle {
     border.width: 1
     border.color: Theme.ribbonBorder
 
-    ColumnLayout {
-        id: column
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
+    // A short window (a phone held sideways) scrolls the tools instead of cutting them off.
+    Flickable {
+        id: barScroller
+        anchors.fill: parent
         anchors.topMargin: 6
-        spacing: 2
+        anchors.bottomMargin: 6
+        clip: true
+        contentWidth: width
+        contentHeight: column.implicitHeight
+        boundsBehavior: Flickable.StopAtBounds
+        interactive: contentHeight > height
+        ScrollIndicator.vertical: ScrollIndicator {}
 
-        Repeater {
-            model: bar.items
-            delegate: AbstractButton {
-                id: item
-                required property var modelData
-                required property int index
-                readonly property bool isTool: modelData.type === "tool"
-                readonly property bool highlighter: modelData.type === "highlighter"
-                readonly property var info: isTool ? bar.toolInfo(modelData.tool) : null
-                readonly property bool active: isTool ? bar.toolChecked(modelData.tool)
-                                                      : bar.isActive(modelData)
-                objectName: "preset" + index
-                Layout.preferredWidth: Theme.buttonSize
-                Layout.preferredHeight: Theme.buttonSize
-                focusPolicy: Qt.NoFocus
-                enabled: !isTool || bar.toolEnabled(modelData.tool)
-                onClicked: {
-                    if (isTool && modelData.tool === "eraser" && active)
-                        toolMenu.show(index, item)   // Tapping the active eraser sets it up.
-                    else if (isTool)
-                        bar.runTool(modelData.tool)
-                    else if (active)
-                        bar.openEditor(index, item)   // Tapping the active pen edits it.
-                    else
-                        bar.apply(modelData)
-                }
-                property bool tipDismissed: false
-                onPressed: tipDismissed = true
-                onHoveredChanged: if (!hovered) tipDismissed = false
-                ToolTip.visible: hovered && !tipDismissed
-                ToolTip.delay: 600
-                ToolTip.text: isTool ? info.label
-                                     : (highlighter ? qsTr("Highlighter") : qsTr("Pen")) + " · " + modelData.width
+        ColumnLayout {
+            id: column
+            x: (barScroller.width - width) / 2
+            spacing: 2
 
-                TapHandler {
-                    acceptedButtons: Qt.RightButton
-                    onTapped: item.isTool ? toolMenu.show(item.index, item)
-                                          : bar.openEditor(item.index, item)
-                }
-                TapHandler {
-                    acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Mouse | PointerDevice.TouchPad
-                    onLongPressed: item.isTool ? toolMenu.show(item.index, item)
-                                               : bar.openEditor(item.index, item)
-                }
+            Repeater {
+                model: bar.items
+                delegate: AbstractButton {
+                    id: item
+                    required property var modelData
+                    required property int index
+                    readonly property bool isTool: modelData.type === "tool"
+                    readonly property bool highlighter: modelData.type === "highlighter"
+                    readonly property var info: isTool ? bar.toolInfo(modelData.tool) : null
+                    readonly property bool active: isTool ? bar.toolChecked(modelData.tool)
+                                                          : bar.isActive(modelData)
+                    objectName: "preset" + index
+                    Layout.preferredWidth: Theme.buttonSize
+                    Layout.preferredHeight: Theme.buttonSize
+                    focusPolicy: Qt.NoFocus
+                    enabled: !isTool || bar.toolEnabled(modelData.tool)
+                    onClicked: {
+                        if (isTool && modelData.tool === "eraser" && active)
+                            toolMenu.show(index, item)   // Tapping the active eraser sets it up.
+                        else if (isTool)
+                            bar.runTool(modelData.tool)
+                        else if (active)
+                            bar.openEditor(index, item)   // Tapping the active pen edits it.
+                        else
+                            bar.apply(modelData)
+                    }
+                    property bool tipDismissed: false
+                    onPressed: tipDismissed = true
+                    onHoveredChanged: if (!hovered) tipDismissed = false
+                    ToolTip.visible: hovered && !tipDismissed
+                    ToolTip.delay: 600
+                    ToolTip.text: isTool ? info.label
+                                         : (highlighter ? qsTr("Highlighter") : qsTr("Pen")) + " · " + modelData.width
+                    Accessible.name: ToolTip.text
 
-                background: Rectangle {
-                    radius: Theme.radius
-                    color: item.active ? Theme.checked : (item.hovered ? Theme.hover : "transparent")
-                    border.width: item.active ? 1 : 0
-                    border.color: Theme.accent
-                }
-                contentItem: Item {
-                    Rectangle {
-                        visible: Theme.dark && !item.isTool
-                        anchors.fill: parent
-                        anchors.margins: 2
+                    TapHandler {
+                        acceptedButtons: Qt.RightButton
+                        onTapped: item.isTool ? toolMenu.show(item.index, item)
+                                              : bar.openEditor(item.index, item)
+                    }
+                    TapHandler {
+                        acceptedDevices: PointerDevice.TouchScreen | PointerDevice.Mouse | PointerDevice.TouchPad
+                        onLongPressed: item.isTool ? toolMenu.show(item.index, item)
+                                                   : bar.openEditor(item.index, item)
+                    }
+
+                    background: Rectangle {
                         radius: Theme.radius
-                        color: Theme.swatchPaper
+                        color: item.active ? Theme.checked : (item.hovered ? Theme.hover : "transparent")
+                        border.width: item.active ? 1 : 0
+                        border.color: Theme.accent
                     }
-                    LinePatternIcon {
-                        visible: !item.isTool && !item.highlighter
-                                 && (item.modelData.pattern || "solid") !== "solid"
-                        anchors.centerIn: parent
-                        rotation: -35
-                        pattern: item.modelData.pattern || "solid"
-                        color: item.isTool ? "transparent" : item.modelData.color
-                    }
-                    Rectangle {
-                        visible: !item.isTool && (item.highlighter
-                                 || (item.modelData.pattern || "solid") === "solid")
-                        anchors.centerIn: parent
-                        width: 22
-                        height: item.highlighter ? Math.min(12, item.modelData.width / 2)
-                                                 : Math.max(2, Math.min(8, item.modelData.width * 1.3))
-                        radius: item.highlighter ? 2 : height / 2
-                        rotation: -35
-                        color: item.isTool ? "transparent" : item.modelData.color
-                        opacity: item.highlighter ? 0.6 : 1
-                    }
-                    IconImage {
-                        visible: item.isTool
-                        anchors.centerIn: parent
-                        width: 20
-                        height: 20
-                        sourceSize: Qt.size(20, 20)
-                        source: item.isTool ? Qt.resolvedUrl("icons/" + item.info.icon + ".svg") : ""
-                        color: item.enabled ? Theme.text : Theme.textDisabled
+                    contentItem: Item {
+                        Rectangle {
+                            visible: Theme.dark && !item.isTool
+                            anchors.fill: parent
+                            anchors.margins: 2
+                            radius: Theme.radius
+                            color: Theme.swatchPaper
+                        }
+                        LinePatternIcon {
+                            visible: !item.isTool && !item.highlighter
+                                     && (item.modelData.pattern || "solid") !== "solid"
+                            anchors.centerIn: parent
+                            rotation: -35
+                            pattern: item.modelData.pattern || "solid"
+                            color: item.isTool ? "transparent" : item.modelData.color
+                        }
+                        Rectangle {
+                            visible: !item.isTool && (item.highlighter
+                                     || (item.modelData.pattern || "solid") === "solid")
+                            anchors.centerIn: parent
+                            width: 22
+                            height: item.highlighter ? Math.min(12, item.modelData.width / 2)
+                                                     : Math.max(2, Math.min(8, item.modelData.width * 1.3))
+                            radius: item.highlighter ? 2 : height / 2
+                            rotation: -35
+                            color: item.isTool ? "transparent" : item.modelData.color
+                            opacity: item.highlighter ? 0.6 : 1
+                        }
+                        IconImage {
+                            visible: item.isTool
+                            anchors.centerIn: parent
+                            width: 20
+                            height: 20
+                            sourceSize: Qt.size(20, 20)
+                            source: item.isTool ? Qt.resolvedUrl("icons/" + item.info.icon + ".svg") : ""
+                            color: item.enabled ? Theme.text : Theme.textDisabled
+                        }
                     }
                 }
             }
-        }
 
-        RibbonButton {
-            objectName: "presetAdd"
-            iconName: "plus"
-            tip: qsTr("Add a pen or a tool")
-            onClicked: addMenu.popup(this, bar.onRight ? -addMenu.width : width, 0)
-        }
-        RibbonButton {
-            objectName: "penBarFullScreen"
-            visible: bar.fullScreen
-            iconName: "fullscreen"
-            tip: qsTr("Full screen (F11)")
-            checkable: true
-            checked: bar.fullScreen
-            onClicked: bar.fullScreenToggled()
+            RibbonButton {
+                objectName: "presetAdd"
+                iconName: "plus"
+                tip: qsTr("Add a pen or a tool")
+                onClicked: addMenu.popup(this, bar.onRight ? -addMenu.width : width, 0)
+            }
+            RibbonButton {
+                objectName: "penBarFullScreen"
+                visible: bar.fullScreen
+                iconName: "fullscreen"
+                tip: qsTr("Full screen (F11)")
+                checkable: true
+                checked: bar.fullScreen
+                onClicked: bar.fullScreenToggled()
+            }
         }
     }
 

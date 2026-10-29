@@ -88,10 +88,6 @@
         <translation>%1 wird importiert…</translation>
     </message>
     <message>
-        <source>Imported into %1.</source>
-        <translation>Importiert nach %1.</translation>
-    </message>
-    <message>
         <source>Page copied into %1.</source>
         <translation>Seite nach %1 kopiert.</translation>
     </message>
@@ -100,8 +96,24 @@
         <translation>Das PDF konnte dort nicht gespeichert werden.</translation>
     </message>
     <message>
+        <source>A name can&apos;t start with a dot.</source>
+        <translation>Ein Name darf nicht mit einem Punkt beginnen.</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t contain “%1”: Windows and sync apps don&apos;t allow it in file names.</source>
+        <translation>Ein Name darf kein „%1“ enthalten: Windows und Sync-Apps erlauben es nicht in Dateinamen.</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t end with a dot.</source>
+        <translation>Ein Name darf nicht mit einem Punkt enden.</translation>
+    </message>
+    <message>
         <source>New section</source>
         <translation>Neuer Abschnitt</translation>
+    </message>
+    <message>
+        <source>Imported “%1” into %2.</source>
+        <translation>„%1“ nach %2 importiert.</translation>
     </message>
     <message>
         <source>Exported to %1</source>
@@ -308,8 +320,8 @@
         <translation>„%1“ gibt es dort schon, darum wird es als „%2“ gespeichert. Nichts wird überschrieben.</translation>
     </message>
     <message>
-        <source>The original file is only read, never changed.</source>
-        <translation>Die Originaldatei wird nur gelesen, nie verändert.</translation>
+        <source>What you import from is only read, never changed.</source>
+        <translation>Woraus du importierst, wird nur gelesen, nie verändert.</translation>
     </message>
 </context>
 <context>
@@ -544,6 +556,10 @@
         <translation>Lade zuerst die Erkennung dafür herunter.</translation>
     </message>
     <message>
+        <source>Drag to resize the halves; double-click for equal halves</source>
+        <translation>Ziehen, um die Hälften anzupassen; Doppelklick für gleiche Hälften</translation>
+    </message>
+    <message>
         <source>Show or hide notebooks (%1)</source>
         <translation>Notizbücher ein- oder ausblenden (%1)</translation>
     </message>
@@ -616,16 +632,20 @@
         <translation>Auf das PDF schreiben</translation>
     </message>
     <message>
-        <source>Ink is saved into the PDF as annotations. Other PDF readers show it too.</source>
-        <translation>Die Tinte wird als Anmerkungen im PDF gespeichert. Andere PDF-Programme zeigen sie ebenfalls.</translation>
+        <source>A copy goes into the notebook; your ink is saved in that copy as annotations, so other PDF readers show it too.</source>
+        <translation>Eine Kopie kommt ins Notizbuch; deine Tinte wird darin als Anmerkungen gespeichert, sodass auch andere PDF-Programme sie zeigen.</translation>
+    </message>
+    <message>
+        <source>The PDF becomes the background of a notes page.</source>
+        <translation>Das PDF wird zum Hintergrund einer Notizseite.</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>Die Originaldatei wird nur gelesen, nie verändert.</translation>
     </message>
     <message>
         <source>Import as note pages</source>
         <translation>Als Notizseiten importieren</translation>
-    </message>
-    <message>
-        <source>The PDF becomes the background of a notes page. The original stays untouched.</source>
-        <translation>Das PDF wird zum Hintergrund einer Notizseite. Das Original bleibt unverändert.</translation>
     </message>
     <message>
         <source>Page</source>
@@ -1310,6 +1330,13 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     </message>
 </context>
 <context>
+    <name>PlatformFiles</name>
+    <message>
+        <source>Inside the app</source>
+        <translation>In der App</translation>
+    </message>
+</context>
+<context>
     <name>Ribbon</name>
     <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
@@ -1663,6 +1690,17 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     </message>
 </context>
 <context>
+    <name>ScrollArrows</name>
+    <message>
+        <source>More</source>
+        <translation>Mehr</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Zurück</translation>
+    </message>
+</context>
+<context>
     <name>SearchBox</name>
     <message>
         <source>This page</source>
@@ -1689,8 +1727,20 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Namen und Inhalte aller Seiten und PDFs (Strg+K)</translation>
     </message>
     <message>
+        <source>Search in: %1</source>
+        <translation>Suchen in: %1</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>Suchen</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Suchen (Strg+F)</translation>
+    </message>
+    <message>
+        <source>Search (Ctrl+K)</source>
+        <translation>Suchen (Strg+K)</translation>
     </message>
     <message>
         <source>page %1</source>
@@ -1789,6 +1839,14 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     <message>
         <source>Normal</source>
         <translation>Normal</translation>
+    </message>
+    <message>
+        <source>Remove “%1”?</source>
+        <translation>„%1“ entfernen?</translation>
+    </message>
+    <message>
+        <source>Handwriting can&apos;t be read with it until it is downloaded again.</source>
+        <translation>Bis du es erneut herunterlädst, kann damit keine Handschrift gelesen werden.</translation>
     </message>
     <message>
         <source>Firm</source>

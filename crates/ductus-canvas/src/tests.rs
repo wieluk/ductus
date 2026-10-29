@@ -434,7 +434,7 @@ fn recognized_ink_becomes_text_or_a_formula_in_one_undo_step() {
     let mut c = canvas();
     draw_wave(&mut c, 50.0, 250.0, 100.0);
     c.select_all();
-    let (id, corner) = c.replace_ink("x^2", true).unwrap();
+    let (id, corner) = c.replace_ink("x^2", true, &[]).unwrap();
     let math = &c.document().maths()[0];
     assert_eq!(math.id, id);
     assert_eq!(
@@ -447,7 +447,7 @@ fn recognized_ink_becomes_text_or_a_formula_in_one_undo_step() {
     assert_eq!(c.document().strokes().len(), 1);
     assert!(c.document().maths().is_empty());
     c.select_all();
-    assert!(c.replace_ink("Grenzwert", false).is_some());
+    assert!(c.replace_ink("Grenzwert", false, &[]).is_some());
     assert_eq!(c.document().texts()[0].markdown, "Grenzwert");
 }
 
@@ -508,4 +508,25 @@ fn the_rotation_grip_turns_ink_and_keeps_boxes_upright() {
     );
     c.undo();
     assert_eq!(c.document().strokes()[0].points[0].x, b0.x);
+}
+
+#[test]
+fn reading_the_page_keeps_ink_that_was_not_read() {
+    let mut c = canvas();
+    draw_wave(&mut c, 40.0, 160.0, 60.0);
+    draw_wave(&mut c, 40.0, 160.0, 200.0);
+    let [drawing, line] = [0, 1].map(|i| c.document().strokes()[i].id);
+    c.select_all();
+    let (_, corner) = c.replace_ink("hello", false, &[line]).expect("replaced");
+    assert_eq!(c.document().strokes().len(), 1);
+    assert_eq!(c.document().strokes()[0].id, drawing);
+    let kept = ductus_ink::bounds(&c.document().strokes()[0]);
+    let text = &c.document().texts()[0];
+    assert!(
+        text.y > kept.y1 && corner.y > text.y,
+        "placed on the line it replaces"
+    );
+    c.undo();
+    assert_eq!(c.document().strokes().len(), 2);
+    assert!(c.document().texts().is_empty());
 }

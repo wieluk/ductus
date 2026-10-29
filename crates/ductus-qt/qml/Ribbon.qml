@@ -619,4 +619,9 @@ Rectangle {
             }
         }
     }
+
+    ScrollArrows {
+        target: scroller
+        color: Theme.ribbon
+    }
 }

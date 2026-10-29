@@ -88,10 +88,6 @@
         <translation>%1 を取り込み中…</translation>
     </message>
     <message>
-        <source>Imported into %1.</source>
-        <translation>%1 に取り込みました。</translation>
-    </message>
-    <message>
         <source>Page copied into %1.</source>
         <translation>ページを %1 にコピーしました。</translation>
     </message>
@@ -100,8 +96,24 @@
         <translation>そこに PDF を保存できませんでした。</translation>
     </message>
     <message>
+        <source>A name can&apos;t start with a dot.</source>
+        <translation>名前の先頭にピリオドは使えません。</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t contain “%1”: Windows and sync apps don&apos;t allow it in file names.</source>
+        <translation>名前に「%1」は使えません。Windows や同期アプリはファイル名にこの文字を使えません。</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t end with a dot.</source>
+        <translation>名前の末尾にピリオドは使えません。</translation>
+    </message>
+    <message>
         <source>New section</source>
         <translation>新しいセクション</translation>
+    </message>
+    <message>
+        <source>Imported “%1” into %2.</source>
+        <translation>「%1」を %2 に取り込みました。</translation>
     </message>
     <message>
         <source>Exported to %1</source>
@@ -303,8 +315,8 @@
         <translation>「%1」は既にあるため、「%2」として保存します。上書きはされません。</translation>
     </message>
     <message>
-        <source>The original file is only read, never changed.</source>
-        <translation>元のファイルは読み取るだけで、変更しません。</translation>
+        <source>What you import from is only read, never changed.</source>
+        <translation>取り込み元は読み取るだけで、変更しません。</translation>
     </message>
 </context>
 <context>
@@ -539,6 +551,10 @@
         <translation>まずこのための認識エンジンをダウンロードしてください。</translation>
     </message>
     <message>
+        <source>Drag to resize the halves; double-click for equal halves</source>
+        <translation>ドラッグで左右の幅を変更、ダブルクリックで半分ずつ</translation>
+    </message>
+    <message>
         <source>Show or hide notebooks (%1)</source>
         <translation>ノートの表示／非表示（%1）</translation>
     </message>
@@ -611,16 +627,20 @@
         <translation>PDF に書き込む</translation>
     </message>
     <message>
-        <source>Ink is saved into the PDF as annotations. Other PDF readers show it too.</source>
-        <translation>インクは注釈として PDF に保存されます。ほかの PDF リーダーでも表示されます。</translation>
+        <source>A copy goes into the notebook; your ink is saved in that copy as annotations, so other PDF readers show it too.</source>
+        <translation>コピーがノートブックに入り、インクはそのコピーに注釈として保存されるので、他の PDF リーダーでも表示されます。</translation>
+    </message>
+    <message>
+        <source>The PDF becomes the background of a notes page.</source>
+        <translation>PDF がノートページの背景になります。</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>元のファイルは読み取るだけで、変更しません。</translation>
     </message>
     <message>
         <source>Import as note pages</source>
         <translation>ノートページとして取り込む</translation>
-    </message>
-    <message>
-        <source>The PDF becomes the background of a notes page. The original stays untouched.</source>
-        <translation>PDF はノートページの背景になります。元のファイルはそのままです。</translation>
     </message>
     <message>
         <source>Page</source>
@@ -1305,6 +1325,13 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     </message>
 </context>
 <context>
+    <name>PlatformFiles</name>
+    <message>
+        <source>Inside the app</source>
+        <translation>アプリ内</translation>
+    </message>
+</context>
+<context>
     <name>Ribbon</name>
     <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
@@ -1658,6 +1685,17 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     </message>
 </context>
 <context>
+    <name>ScrollArrows</name>
+    <message>
+        <source>More</source>
+        <translation>その他</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>戻る</translation>
+    </message>
+</context>
+<context>
     <name>SearchBox</name>
     <message>
         <source>This page</source>
@@ -1684,8 +1722,20 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>すべてのページと PDF の名前と内容 (Ctrl+K)</translation>
     </message>
     <message>
+        <source>Search in: %1</source>
+        <translation>検索範囲: %1</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>検索</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
-        <translation>検索（Ctrl+F）</translation>
+        <translation>検索 (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Search (Ctrl+K)</source>
+        <translation>検索 (Ctrl+K)</translation>
     </message>
     <message>
         <source>page %1</source>
@@ -1784,6 +1834,14 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Normal</source>
         <translation>標準</translation>
+    </message>
+    <message>
+        <source>Remove “%1”?</source>
+        <translation>「%1」を削除しますか？</translation>
+    </message>
+    <message>
+        <source>Handwriting can&apos;t be read with it until it is downloaded again.</source>
+        <translation>再びダウンロードするまで、これで手書きを読み取れなくなります。</translation>
     </message>
     <message>
         <source>Firm</source>
