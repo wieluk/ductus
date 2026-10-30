@@ -609,24 +609,6 @@ fn rotate_turns_the_selection_a_quarter_turn() {
 }
 
 #[test]
-fn align_moves_items_to_the_same_edge() {
-    let mut c = canvas();
-    draw_wave(&mut c, 40.0, 160.0, 80.0);
-    draw_wave(&mut c, 220.0, 360.0, 220.0);
-    c.set_tool(ToolMode::Lasso);
-    lasso(&mut c, (20.0, 40.0, 380.0, 300.0));
-    assert_eq!(c.selection_count(), 2);
-    c.align_selection(0); // left
-    let strokes = c.document().strokes();
-    let left0 = ductus_ink::bounds(&strokes[0]).x0;
-    let left1 = ductus_ink::bounds(&strokes[1]).x0;
-    assert!(
-        (left0 - left1).abs() < 0.5,
-        "both left edges align: {left0} vs {left1}"
-    );
-}
-
-#[test]
 fn layering_brings_a_stroke_to_the_front_and_undoes() {
     let mut c = canvas();
     draw_wave(&mut c, 40.0, 160.0, 80.0);

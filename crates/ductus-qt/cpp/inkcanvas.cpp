@@ -681,12 +681,6 @@ void InkCanvas::rotateSelection(int quarterTurns)
     afterEdit();
 }
 
-void InkCanvas::alignSelection(int mode)
-{
-    m_engine->align_selection(static_cast<std::uint8_t>(mode));
-    afterEdit();
-}
-
 void InkCanvas::reorderSelection(int mode)
 {
     m_engine->reorder_selection(static_cast<std::uint8_t>(mode));

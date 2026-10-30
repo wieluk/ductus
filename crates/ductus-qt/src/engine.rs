@@ -490,11 +490,6 @@ impl CanvasEngine {
         self.0.rotate_selection(quarter_turns);
     }
 
-    /// Aligns the selected items: 0 left, 1 center, 2 right, 3 top, 4 middle, 5 bottom.
-    pub fn align_selection(&mut self, mode: u8) {
-        self.0.align_selection(mode);
-    }
-
     /// Moves the selection up or down within its categories:
     /// 0 bring to front, 1 bring forward, 2 send backward, 3 send to back.
     pub fn reorder_selection(&mut self, mode: u8) {

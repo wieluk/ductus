@@ -510,8 +510,6 @@ pub mod qobject {
         fn flip_selection(self: &mut CanvasEngine, horizontal: bool);
         /// Turns the selection by quarter turns; positive turns clockwise.
         fn rotate_selection(self: &mut CanvasEngine, quarter_turns: i32);
-        /// Aligns the selected items: 0 left, 1 center, 2 right, 3 top, 4 middle, 5 bottom.
-        fn align_selection(self: &mut CanvasEngine, mode: u8);
         /// Moves the selection up or down within its categories:
         /// 0 bring to front, 1 bring forward, 2 send backward, 3 send to back.
         fn reorder_selection(self: &mut CanvasEngine, mode: u8);

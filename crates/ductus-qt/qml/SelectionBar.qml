@@ -134,12 +134,6 @@ Rectangle {
                 onClicked: bar.canvas.flipSelection(false)
             }
             RibbonButton {
-                objectName: "selectionAlign"
-                iconName: "align"
-                tip: qsTr("Align…")
-                onClicked: alignMenu.popup(this, 0, height)
-            }
-            RibbonButton {
                 objectName: "selectionLayer"
                 iconName: "layers"
                 tip: qsTr("Layering…")
@@ -181,41 +175,6 @@ Rectangle {
         id: moreColors
         title: qsTr("Choose a color")
         onAccepted: bar.canvas.recolorSelection(selectedColor)
-    }
-
-    AppMenu {
-        id: alignMenu
-        AppMenuItem {
-            objectName: "selectionAlignLeft"
-            text: qsTr("Align left")
-            onTriggered: bar.canvas.alignSelection(0)
-        }
-        AppMenuItem {
-            objectName: "selectionAlignCenterH"
-            text: qsTr("Align center")
-            onTriggered: bar.canvas.alignSelection(1)
-        }
-        AppMenuItem {
-            objectName: "selectionAlignRight"
-            text: qsTr("Align right")
-            onTriggered: bar.canvas.alignSelection(2)
-        }
-        AppMenuSeparator {}
-        AppMenuItem {
-            objectName: "selectionAlignTop"
-            text: qsTr("Align top")
-            onTriggered: bar.canvas.alignSelection(3)
-        }
-        AppMenuItem {
-            objectName: "selectionAlignMiddle"
-            text: qsTr("Align middle")
-            onTriggered: bar.canvas.alignSelection(4)
-        }
-        AppMenuItem {
-            objectName: "selectionAlignBottom"
-            text: qsTr("Align bottom")
-            onTriggered: bar.canvas.alignSelection(5)
-        }
     }
 
     AppMenu {

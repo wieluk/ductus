@@ -188,7 +188,6 @@ public:
     Q_INVOKABLE void recolorSelection(const QColor &color);
     Q_INVOKABLE void flipSelection(bool horizontal);
     Q_INVOKABLE void rotateSelection(int quarterTurns);
-    Q_INVOKABLE void alignSelection(int mode);
     Q_INVOKABLE void reorderSelection(int mode);
     Q_INVOKABLE QPointF toDoc(QPointF itemPoint) const;
     Q_INVOKABLE QPointF toScreen(QPointF docPoint) const;
