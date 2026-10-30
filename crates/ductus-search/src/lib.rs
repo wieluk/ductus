@@ -1,5 +1,6 @@
 //! The index is only a cache of the library: it can be deleted any time and is rebuilt from the files.
 
+use ductus_format::library::online_only;
 use ductus_format::{Library, NodeKind};
 use rusqlite::{Connection, OptionalExtension, params};
 use std::path::{Path, PathBuf};
@@ -39,6 +40,8 @@ impl From<std::io::Error> for Error {
 
 /// Bumped when what is indexed changes; older indexes are rebuilt.
 const SCHEMA: i64 = 1;
+/// The stamp of a file indexed by name only, so the next scan looks at it again.
+const UNREAD: i64 = -1;
 /// Deeper folders are skipped, which also stops symlink loops.
 const MAX_DEPTH: usize = 48;
 
@@ -111,6 +114,8 @@ pub struct Index {
     conn: Connection,
     /// The PDF text read last: a page being written on is saved again and again.
     pdf_memo: Option<PdfMemo>,
+    /// A placeholder was left unread while indexing the current file.
+    skipped: bool,
 }
 
 struct PdfMemo {
@@ -177,6 +182,7 @@ impl Index {
         let index = Self {
             conn,
             pdf_memo: None,
+            skipped: false,
         };
         index.ensure_schema()?;
         Ok(index)
@@ -298,6 +304,10 @@ impl Index {
 
     /// `saved`: Ductus wrote the file, which changes ink but not text, unless pages were added.
     fn pdf_text(&mut self, path: &Path, saved: bool) -> Vec<Entry> {
+        if std::fs::metadata(path).is_ok_and(|m| online_only(&m)) {
+            self.skipped = true;
+            return Vec::new();
+        }
         let stamp = modified(path);
         if let Some(memo) = &self.pdf_memo {
             if memo.file == path && memo.stamp == stamp {
@@ -341,7 +351,10 @@ impl Index {
             return self.remove(path);
         }
         let stamp = modified(&file);
-        if !saved && self.stamp_of(path)? == Some(stamp) {
+        // Reading a placeholder would download it: only its name is found until it is here.
+        let online = std::fs::metadata(&file).is_ok_and(|m| online_only(&m));
+        let known = self.stamp_of(path)?;
+        if !saved && (known == Some(stamp) || online && known == Some(UNREAD)) {
             return Ok(());
         }
         let name = path.rsplit('/').next().unwrap_or(path);
@@ -356,11 +369,16 @@ impl Index {
             page: None,
             rect: None,
         }];
-        if is_pdf {
+        self.skipped = online;
+        if online {
+            // Only the title.
+        } else if is_pdf {
             entries.extend(self.pdf_text(&file, saved));
         } else {
             entries.extend(self.page_entries(library, path, saved));
         }
+        // Read again once downloaded, which leaves the timestamp as it was.
+        let stamp = if self.skipped { UNREAD } else { stamp };
         self.set_entries(path, stamp, &entries)
     }
 

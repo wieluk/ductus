@@ -123,10 +123,27 @@ pub fn validate_name(name: &str) -> Result<String, Error> {
     Ok(name.to_owned())
 }
 
+/// A sync client's placeholder (OneDrive, Nextcloud): the first read downloads it, and waits for that.
+#[cfg(windows)]
+pub fn online_only(meta: &fs::Metadata) -> bool {
+    use std::os::windows::fs::MetadataExt;
+    // FILE_ATTRIBUTE_OFFLINE, FILE_ATTRIBUTE_RECALL_ON_OPEN, FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS
+    meta.file_attributes() & (0x1000 | 0x4_0000 | 0x40_0000) != 0
+}
+
+#[cfg(not(windows))]
+pub fn online_only(_meta: &fs::Metadata) -> bool {
+    false
+}
+
 /// Pages declare the Ductus namespace; other SVGs (template logos, figures) are plain files.
-fn is_page_file(path: &Path) -> bool {
+/// A placeholder counts as a page unread: listing a library must not download all of it.
+fn is_page_file(entry: &fs::DirEntry) -> bool {
+    if entry.metadata().is_ok_and(|m| online_only(&m)) {
+        return true;
+    }
     let mut head = Vec::new();
-    fs::File::open(path)
+    fs::File::open(entry.path())
         .and_then(|f| f.take(4096).read_to_end(&mut head))
         .is_ok()
         && head.windows(DX_NS.len()).any(|w| w == DX_NS.as_bytes())
@@ -592,7 +609,7 @@ impl Library {
                 nodes.push(node(stem, path, NodeKind::Pdf));
             } else if let Some(stem) = file_name
                 .strip_suffix(&format!(".{PAGE_EXTENSION}"))
-                .filter(|_| is_page_file(&entry.path()))
+                .filter(|_| is_page_file(&entry))
             {
                 nodes.push(node(stem, Self::join(folder, stem), NodeKind::Page));
             } else if file_type.is_file() {
