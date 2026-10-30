@@ -292,7 +292,12 @@ public:
             if (actual != rest)
                 return fail(QStringLiteral("cursor is ") + actual);
         } else if (cmd == u"expect-prop") {
+            // A list adds the item of a new row with its next frame.
             QQuickItem *item = findItem(m_window->contentItem(), args.value(0));
+            for (int i = 0; !item && i < 50; ++i) {
+                QTest::qWait(20);
+                item = findItem(m_window->contentItem(), args.value(0));
+            }
             const QString actual = item ? item->property(args.value(1).toUtf8().constData()).toString()
                                         : QStringLiteral("(no item)");
             const QString expected = rest.section(QLatin1Char(' '), 2);

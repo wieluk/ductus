@@ -34,7 +34,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <optional>
 #include <string>
 
 namespace {
@@ -84,7 +83,7 @@ void setPenCursor(QWindow *window, const QCursor &cursor)
 // Qt on Windows reads a pen's buttons from the mouse, which lags behind the pen: a lifted pen still
 // holds the left button until it moves on, or for good once it leaves. A tap on a button then never
 // clicks and the next touch is no press. Windows' own pen-down and pen-up messages decide instead.
-std::optional<QTabletEvent> penContactFixed(const QTabletEvent *event)
+QEvent::Type penContactType(const QTabletEvent *event)
 {
     static bool down = false;
     const int change = WinPen::contactChangeAt(event->timestamp());
@@ -95,18 +94,22 @@ std::optional<QTabletEvent> penContactFixed(const QTabletEvent *event)
                               : contact       ? QEvent::TabletPress
                                               : QEvent::TabletRelease;
     down = contact;
-    if (type == event->type())
-        return std::nullopt;
+    return type;
+}
+
+// Returned as a prvalue: tablet events can't be copied or moved.
+QTabletEvent penEventAs(const QTabletEvent *event, QEvent::Type type)
+{
+    const bool contact = type != QEvent::TabletRelease
+        && (type == QEvent::TabletPress || event->buttons() != Qt::NoButton);
     const Qt::MouseButtons held = event->buttons() ? event->buttons() : Qt::MouseButtons(Qt::LeftButton);
     const Qt::MouseButton button = type == QEvent::TabletMove ? Qt::NoButton
                                    : held & Qt::RightButton   ? Qt::RightButton
                                                               : Qt::LeftButton;
-    QTabletEvent fixed(type, event->pointingDevice(), event->position(), event->globalPosition(),
-                       contact ? event->pressure() : 0.0, event->xTilt(), event->yTilt(),
-                       event->tangentialPressure(), event->rotation(), event->z(), event->modifiers(),
-                       button, contact ? held : Qt::NoButton);
-    fixed.setTimestamp(event->timestamp());
-    return fixed;
+    return QTabletEvent(type, event->pointingDevice(), event->position(), event->globalPosition(),
+                        contact ? event->pressure() : 0.0, event->xTilt(), event->yTilt(),
+                        event->tangentialPressure(), event->rotation(), event->z(), event->modifiers(),
+                        button, contact ? held : Qt::NoButton);
 }
 #endif
 
@@ -857,9 +860,11 @@ bool InkCanvas::eventFilter(QObject *watched, QEvent *event)
                 return false;
             }
 #ifdef Q_OS_WIN
-            if (std::optional<QTabletEvent> fixed = penContactFixed(tablet)) {
+            if (const QEvent::Type type = penContactType(tablet); type != tablet->type()) {
+                QTabletEvent fixed = penEventAs(tablet, type);
+                fixed.setTimestamp(tablet->timestamp());
                 tablet->accept();
-                return handleTablet(&*fixed);
+                return handleTablet(&fixed);
             }
 #endif
             return handleTablet(tablet);
