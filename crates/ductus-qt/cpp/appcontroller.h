@@ -438,6 +438,8 @@ private:
     Pane m_other;
     quint64 m_savedRevision = 0;
     bool m_dirty = false;
+    /// Read handwriting not yet saved: a cache, so it is saved once a batch is read, not per line.
+    bool m_recognitionUnsaved = false;
     void setDirty(bool dirty);
     QTimer m_saveTimer;
     QTimer m_refreshTimer;

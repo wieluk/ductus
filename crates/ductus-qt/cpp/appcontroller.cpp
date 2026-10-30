@@ -441,6 +441,7 @@ void AppController::activate(InkCanvas *canvas)
     if (m_library)
         (*m_library)->swap_open();
     setDirty(false);
+    m_recognitionUnsaved = false;
     storePanes();
     refreshTree();
     Q_EMIT canvasChanged();
@@ -1568,11 +1569,12 @@ void AppController::setAutosaveDelay(int ms)
 void AppController::saveNow()
 {
     m_saveTimer.stop();
-    if (!m_dirty || !m_library || !m_canvas)
+    if ((!m_dirty && !m_recognitionUnsaved) || !m_library || !m_canvas)
         return;
     if (attempt([&] { (*m_library)->save_from(m_canvas->engine()); })) {
         m_savedRevision = m_canvas->revision();
         setDirty(false);
+        m_recognitionUnsaved = false;
         m_lastSavedFile = toQ((*m_library)->page_file(toStd(currentPage())));
         m_lastSavedTime = QFileInfo(m_lastSavedFile).lastModified();
         if (m_search) {
@@ -1609,9 +1611,11 @@ void AppController::onFileChanged(const QString &file)
         saveNow();
         return;
     }
+    // Handwriting read meanwhile is only a cache: the other device's ink wins.
     if (attempt([&] { (*m_library)->load_into(toStd(page), m_canvas->engine()); })) {
         m_canvas->documentReplaced();
         m_savedRevision = m_canvas->revision();
+        m_recognitionUnsaved = false;
         Q_EMIT notice(tr("Page updated from another device."));
     }
     QTimer::singleShot(0, this, &AppController::rewatch);
@@ -1982,7 +1986,7 @@ QVariantList AppController::search(const QString &query, const QString &scope, i
     if (onPage && currentPage().isEmpty())
         return out;
     // What was just written is found once this save is indexed.
-    if (onPage && m_dirty)
+    if (onPage && (m_dirty || m_recognitionUnsaved))
         saveNow();
     const rust::Vec<SearchHit> hits = (*m_search)->search(toStd(query), toStd(scope), toStd(currentPage()),
                                                           static_cast<std::size_t>(limit));
@@ -2173,13 +2177,12 @@ void AppController::pollRecognition()
         else if (m_search)
             (*m_search)->reindex(r.page);
     }
-    if (openPageChanged) {
-        // The text is stored with the page (and indexed when it is saved); the autosave
-        // writes once the lines stop coming in, not while the user scrolls on.
-        setDirty(true);
-        if (autosaveDelay() > 0)
-            m_saveTimer.start();
-    }
+    // The text is stored with the page (and indexed when it is saved) once the batch is read:
+    // saving a big page per line kept the interface busy. Unsaved ink waits for the user's save.
+    if (openPageChanged)
+        m_recognitionUnsaved = true;
+    if (left == 0 && m_recognitionUnsaved && (!m_dirty || autosaveDelay() > 0))
+        saveNow();
     const QString error = toQ((*m_recognizer)->last_error());
     if (left > 0)
         setRecognitionStatus(tr("Reading handwriting: %n line(s) left", nullptr, int(left)));

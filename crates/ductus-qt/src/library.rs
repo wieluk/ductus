@@ -694,10 +694,14 @@ impl LibraryHandle {
                 recognized,
             } => {
                 // Text read from ink that has changed since is dropped.
-                let current: HashSet<String> = ductus_hwr::find_lines(doc.strokes())
-                    .into_iter()
-                    .map(|l| l.key)
-                    .collect();
+                let current: HashSet<String> = if recognized.is_empty() {
+                    HashSet::new()
+                } else {
+                    ductus_hwr::find_lines(doc.strokes())
+                        .into_iter()
+                        .map(|l| l.key)
+                        .collect()
+                };
                 let page = PageFile {
                     id: id.clone(),
                     document: doc.clone(),
