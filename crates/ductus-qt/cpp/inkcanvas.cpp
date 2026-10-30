@@ -929,7 +929,10 @@ QQuickItem *InkCanvas::inputItemAt(QQuickItem *item, QPointF scenePosition) cons
     const bool inside = item->contains(item->mapFromScene(scenePosition));
     if (item->clip() && !inside)
         return nullptr;
-    const QList<QQuickItem *> children = item->childItems();
+    // In painting order, like Qt Quick: the canvas is declared after the layers above it, at z -1.
+    QList<QQuickItem *> children = item->childItems();
+    std::stable_sort(children.begin(), children.end(),
+                     [](const QQuickItem *a, const QQuickItem *b) { return a->z() < b->z(); });
     for (auto it = children.crbegin(); it != children.crend(); ++it) {
         if (QQuickItem *hit = inputItemAt(*it, scenePosition))
             return hit;
