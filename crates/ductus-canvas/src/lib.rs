@@ -164,7 +164,7 @@ pub struct Canvas {
     gesture: Option<Gesture>,
     /// Hidden until the gesture ends, then removed in one undo step.
     erased: HashSet<StrokeId>,
-    paths: HashMap<StrokeId, StrokePath>,
+    paths: HashMap<StrokeId, Outline>,
     active: Option<StrokePath>,
     /// Pens report faster than the screen refreshes, so the live outline is built per frame.
     active_stale: bool,
@@ -688,7 +688,7 @@ impl Canvas {
                 if let Some(stroke) = builder.finish(id) {
                     if let Some(path) = StrokePath::new(&stroke) {
                         self.tiles.invalidate(TileLayer::Base, path.bounds);
-                        self.paths.insert(id, path);
+                        self.paths.insert(id, Outline::Built(Some(path)));
                     }
                     self.history
                         .apply(&mut self.doc, Command::AddStroke(stroke));
@@ -720,7 +720,7 @@ impl Canvas {
     fn commit_stroke(&mut self, stroke: Stroke) {
         if let Some(path) = StrokePath::new(&stroke) {
             self.tiles.invalidate(TileLayer::Base, path.bounds);
-            self.paths.insert(stroke.id, path);
+            self.paths.insert(stroke.id, Outline::Built(Some(path)));
         }
         self.history
             .apply(&mut self.doc, Command::AddStroke(stroke));
@@ -750,8 +750,8 @@ impl Canvas {
         }
         if self.gesture.take().is_some() {
             for id in std::mem::take(&mut self.erased) {
-                if let Some(path) = self.paths.get(&id) {
-                    self.tiles.invalidate(TileLayer::Base, path.bounds);
+                if let Some(outline) = self.paths.get(&id) {
+                    self.tiles.invalidate(TileLayer::Base, outline.bounds());
                 }
             }
             self.end_live_layer();
@@ -831,16 +831,28 @@ impl Canvas {
                 self.active = StrokePath::from_points(builder.points(), builder.style());
             }
         }
+        let visible = self.view.visible_doc_rect();
+        let range = self.tiles.range(visible);
+        // Outlines are built once they show: a big page opens without outlining all of it.
+        let shown = self
+            .tiles
+            .tile_doc_rect(range.0, range.1)
+            .union(self.tiles.tile_doc_rect(range.2, range.3));
+        let moving = self.transforming();
         for stroke in self.doc.strokes() {
-            if let std::collections::hash_map::Entry::Vacant(slot) = self.paths.entry(stroke.id) {
-                if let Some(path) = StrokePath::new(stroke) {
-                    slot.insert(path);
+            let outline = self
+                .paths
+                .entry(stroke.id)
+                .or_insert_with(|| Outline::Pending(Outline::reach(stroke)));
+            if let Outline::Pending(reach) = *outline {
+                if ductus_render::overlaps(reach, shown)
+                    || (moving && self.selection.contains(&stroke.id))
+                {
+                    *outline = Outline::Built(StrokePath::new(stroke));
                 }
             }
         }
 
-        let visible = self.view.visible_doc_rect();
-        let range = self.tiles.range(visible);
         let mut out = Vec::new();
         for y in range.1..=range.3 {
             for x in range.0..=range.2 {
@@ -970,7 +982,7 @@ impl Canvas {
                 .strokes()
                 .iter()
                 .filter(|s| !self.is_hidden(s.id))
-                .filter_map(|s| self.paths.get(&s.id))
+                .filter_map(|s| self.paths.get(&s.id)?.built())
                 .filter(|p| p.layer == layer);
             ductus_render::render_strokes(pixmap, vp, strokes, clip.as_ref());
         }
@@ -1009,6 +1021,34 @@ impl Canvas {
             );
         }
         Some(target)
+    }
+}
+
+/// A stroke's outline, or until it is first shown, where it could reach.
+enum Outline {
+    Pending(Rect),
+    Built(Option<StrokePath>),
+}
+
+impl Outline {
+    /// Dotted lines draw their dots a little wider than the pen.
+    fn reach(stroke: &Stroke) -> Rect {
+        let extra = stroke.style.width * 0.1;
+        ductus_ink::bounds(stroke).inflate(extra, extra)
+    }
+
+    fn bounds(&self) -> Rect {
+        match self {
+            Outline::Pending(reach) => *reach,
+            Outline::Built(path) => path.as_ref().map_or(Rect::ZERO, |p| p.bounds),
+        }
+    }
+
+    fn built(&self) -> Option<&StrokePath> {
+        match self {
+            Outline::Built(path) => path.as_ref(),
+            Outline::Pending(_) => None,
+        }
     }
 }
 
