@@ -98,6 +98,7 @@ Rectangle {
                 onClicked: moreColors.open()
             }
         }
+        // Pictures and boxes stay upright: one alone has nothing to flip or turn.
         RowLayout {
             id: transforms
             spacing: 2
@@ -111,24 +112,28 @@ Rectangle {
             }
             RibbonButton {
                 objectName: "selectionRotateLeft"
+                visible: bar.canvas.selectionTurns
                 iconName: "rotate-left"
                 tip: qsTr("Rotate left")
                 onClicked: bar.canvas.rotateSelection(-1)
             }
             RibbonButton {
                 objectName: "selectionRotateRight"
+                visible: bar.canvas.selectionTurns
                 iconName: "rotate-right"
                 tip: qsTr("Rotate right")
                 onClicked: bar.canvas.rotateSelection(1)
             }
             RibbonButton {
                 objectName: "selectionFlipHorizontal"
+                visible: bar.canvas.selectionTurns
                 iconName: "flip-horizontal"
                 tip: qsTr("Flip horizontally")
                 onClicked: bar.canvas.flipSelection(true)
             }
             RibbonButton {
                 objectName: "selectionFlipVertical"
+                visible: bar.canvas.selectionTurns
                 iconName: "flip-vertical"
                 tip: qsTr("Flip vertically")
                 onClicked: bar.canvas.flipSelection(false)

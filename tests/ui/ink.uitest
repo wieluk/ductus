@@ -19,7 +19,7 @@ key Backspace
 expect-prop canvas selectionCount 0
 expect-prop canvas canUndo true
 # Eraser size from the pen bar.
-right-click-item preset4
+right-click-item barTool_eraser
 click-item barEraserSize30
 expect-prop canvas eraserSize 30
 expect-prop canvas tool Eraser
@@ -49,3 +49,13 @@ expect-text zoomLabel 125
 key Ctrl+0
 touch 600,500 500,400
 pinch 600,450 100 300
+# Arranging the pen bar: drag an item to another place, remove one, then done.
+click-item presetAdd
+click-item barArrange
+drag-item barTool_lasso | barTool_eraser
+expect-prop penBar presetsJson [{"type":"tool","tool":"hand"},{"type":"tool","tool":"eraser"},{"type":"tool","tool":"lasso"},{"type":"pen","color":"#1a1a1f","width":1.5},{"type":"pen","color":"#1f4fd1","width":2},{"type":"pen","color":"#d12f2f","width":2},{"type":"pen","color":"#1d8a3b","width":2},{"type":"pen","color":"#5f6368","width":2,"pattern":"dotted"},{"type":"highlighter","color":"#ffd91a","width":18},{"type":"highlighter","color":"#5cc8ff","width":18},{"type":"highlighter","color":"#ff8fd0","width":18},{"type":"tool","tool":"text"},{"type":"tool","tool":"math"}]
+click-item barTool_math_remove
+expect-hidden barTool_math
+click-item barArrangeDone
+expect-prop penBar arranging false
+expect-prop barUndo visible true

@@ -157,6 +157,9 @@ InkCanvas::InkCanvas(QQuickItem *parent)
     m_holdTimer.setInterval(m_holdDelay);
     connect(&m_holdTimer, &QTimer::timeout, this, &InkCanvas::onHold);
 
+    m_printoutPoll.setInterval(50);
+    connect(&m_printoutPoll, &QTimer::timeout, this, &InkCanvas::pollPrintout);
+
     m_penSeen.invalidate();
 }
 
@@ -612,23 +615,34 @@ bool InkCanvas::insertImageFile(const QString &fileOrUrl, QPointF at)
 
 bool InkCanvas::insertPdfFile(const QString &fileOrUrl)
 {
+    if (m_engine->printout_busy())
+        return false;
     QFile file(PlatformFiles::readable(fileOrUrl));
     const QByteArray pdf = file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray();
-    bool ok = false;
-    try {
-        ok = m_engine->insert_pdf(
-            rust::Slice<const std::uint8_t>(reinterpret_cast<const std::uint8_t *>(pdf.constData()),
-                                            static_cast<std::size_t>(pdf.size())),
-            width() / 2, height() / 2);
-    } catch (const rust::Error &) {
-    }
-    if (!ok) {
-        Q_EMIT notice(tr("%1 isn't a PDF Ductus can read.").arg(PlatformFiles::displayName(fileOrUrl)), true);
-        return false;
+    m_engine->start_printout(rust::Slice<const std::uint8_t>(
+        reinterpret_cast<const std::uint8_t *>(pdf.constData()), static_cast<std::size_t>(pdf.size())));
+    m_printoutName = PlatformFiles::displayName(fileOrUrl);
+    m_printoutPoll.start();
+    return true;
+}
+
+void InkCanvas::pollPrintout()
+{
+    const PrintoutState state = m_engine->take_printout(width() / 2, height() / 2);
+    if (!state.done)
+        return;
+    m_printoutPoll.stop();
+    if (state.error) {
+        Q_EMIT notice(tr("%1 isn't a PDF Ductus can read.").arg(m_printoutName), true);
+        return;
     }
     Q_EMIT toolChanged();
     afterEdit();
-    return true;
+    if (state.placed < state.total)
+        Q_EMIT notice(tr("The first %1 of %2 pages are in. For the whole PDF, import it as note pages.")
+                          .arg(state.placed)
+                          .arg(state.total),
+                      false);
 }
 
 bool InkCanvas::insertFromMime(const QMimeData *mime, QPointF at)
@@ -720,10 +734,13 @@ void InkCanvas::updateSelection()
     const rust::Vec<double> r = m_engine->selection_rect();
     const QRectF rect = r.size() == 4 ? QRectF(r[0], r[1], r[2], r[3]) : QRectF();
     const bool ink = count > 0 && m_engine->selection_has_ink();
-    if (count != m_selectionCount || rect != m_selectionRect || ink != m_selectionHasInk) {
+    const bool turns = count > 0 && m_engine->selection_turns();
+    if (count != m_selectionCount || rect != m_selectionRect || ink != m_selectionHasInk
+        || turns != m_selectionTurns) {
         m_selectionCount = count;
         m_selectionRect = rect;
         m_selectionHasInk = ink;
+        m_selectionTurns = turns;
         Q_EMIT selectionChanged();
     }
 }
@@ -748,6 +765,9 @@ quint64 InkCanvas::revision() const
 
 void InkCanvas::documentReplaced()
 {
+    // A printout still rendering was meant for the page before.
+    m_engine->cancel_printout();
+    m_printoutPoll.stop();
     m_revision = m_engine->revision();
     updateSelection();
     refreshTexts();
@@ -949,8 +969,10 @@ QQuickItem *InkCanvas::inputItemAt(QQuickItem *item, QPointF scenePosition) cons
         return nullptr;
     // In painting order, like Qt Quick: the canvas is declared after the layers above it, at z -1.
     QList<QQuickItem *> children = item->childItems();
-    std::stable_sort(children.begin(), children.end(),
-                     [](const QQuickItem *a, const QQuickItem *b) { return a->z() < b->z(); });
+    const auto byZ = [](const QQuickItem *a, const QQuickItem *b) { return a->z() < b->z(); };
+    // Most lists already are: this runs on every pen move.
+    if (!std::is_sorted(children.cbegin(), children.cend(), byZ))
+        std::stable_sort(children.begin(), children.end(), byZ);
     for (auto it = children.crbegin(); it != children.crend(); ++it) {
         if (QQuickItem *hit = inputItemAt(*it, scenePosition))
             return hit;

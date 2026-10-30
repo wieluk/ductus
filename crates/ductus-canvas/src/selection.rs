@@ -36,6 +36,18 @@ pub(crate) struct Clipboard {
     pictures: HashMap<String, Rc<[u8]>>,
 }
 
+impl Clipboard {
+    fn bounds(&self) -> Option<Rect> {
+        self.strokes
+            .iter()
+            .map(ductus_ink::bounds)
+            .chain(self.images.iter().map(image_rect))
+            .chain(self.texts.iter().map(text_rect))
+            .chain(self.maths.iter().map(math_rect))
+            .reduce(|a, b| a.union(b))
+    }
+}
+
 fn inside(polygon: &[Point], p: Point) -> bool {
     let mut result = false;
     let n = polygon.len();
@@ -133,45 +145,52 @@ fn picture_name(bytes: &[u8]) -> String {
     format!("{IMAGE_PREFIX}{h:016x}.png")
 }
 
+fn overlaps(a: Rect, b: Rect) -> bool {
+    a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1
+}
+
 /// New within-category order for layering: 0 bring to front, 1 bring forward,
 /// 2 send backward, 3 send to back. Later items draw on top.
-fn reorder_order(order: &[StrokeId], selected: &HashSet<StrokeId>, mode: u8) -> Vec<StrokeId> {
-    let chosen: Vec<StrokeId> = order
+fn reorder_order(
+    items: &[(StrokeId, Rect)],
+    selected: &HashSet<StrokeId>,
+    mode: u8,
+) -> Vec<StrokeId> {
+    let (chosen, rest): (Vec<StrokeId>, Vec<StrokeId>) = items
         .iter()
-        .copied()
-        .filter(|id| selected.contains(id))
-        .collect();
-    let rest: Vec<StrokeId> = order
-        .iter()
-        .copied()
-        .filter(|id| !selected.contains(id))
-        .collect();
+        .map(|(id, _)| *id)
+        .partition(|id| selected.contains(id));
     match mode {
         0 => rest.into_iter().chain(chosen).collect(),
         3 => chosen.into_iter().chain(rest).collect(),
-        1 => {
-            // Each selected item swaps with the unselected one above it, so a block moves together.
-            let mut out = order.to_vec();
-            for i in (0..out.len()).rev() {
-                if selected.contains(&out[i])
-                    && i + 1 < out.len()
-                    && !selected.contains(&out[i + 1])
-                {
-                    out.swap(i, i + 1);
+        _ => {
+            // A step goes past the next item that overlaps: passing one elsewhere on the page
+            // changes nothing to see. The item nearest that end moves first, keeping their order.
+            let forward = mode == 1;
+            let mut out = items.to_vec();
+            let picks: Vec<StrokeId> = if forward {
+                chosen.into_iter().rev().collect()
+            } else {
+                chosen
+            };
+            for id in picks {
+                let Some(i) = out.iter().position(|(o, _)| *o == id) else {
+                    continue;
+                };
+                let rect = out[i].1;
+                let past = |&(o, r): &(StrokeId, Rect)| !selected.contains(&o) && overlaps(r, rect);
+                let target = if forward {
+                    out[i + 1..].iter().position(past).map(|k| i + 1 + k)
+                } else {
+                    out[..i].iter().rposition(past)
+                };
+                if let Some(j) = target {
+                    let item = out.remove(i);
+                    out.insert(j, item);
                 }
             }
-            out
+            out.into_iter().map(|(id, _)| id).collect()
         }
-        2 => {
-            let mut out = order.to_vec();
-            for i in 0..out.len() {
-                if selected.contains(&out[i]) && i > 0 && !selected.contains(&out[i - 1]) {
-                    out.swap(i - 1, i);
-                }
-            }
-            out
-        }
-        _ => order.to_vec(),
     }
 }
 
@@ -537,7 +556,16 @@ impl Canvas {
         self.redraw_overlay();
     }
 
+    /// Flipping or turning changes something: ink turns, or several items trade places.
+    /// Pictures and boxes stay upright, so one alone stays as it is.
+    pub fn selection_turns(&self) -> bool {
+        self.selected_strokes().next().is_some() || self.selection.len() > 1
+    }
+
     pub fn flip_selection(&mut self, horizontal: bool) {
+        if !self.selection_turns() {
+            return;
+        }
         let Some(bounds) = self.selection_bounds() else {
             return;
         };
@@ -551,6 +579,9 @@ impl Canvas {
     }
 
     pub fn rotate_selection(&mut self, quarter_turns: i32) {
+        if !self.selection_turns() {
+            return;
+        }
         let Some(bounds) = self.selection_bounds() else {
             return;
         };
@@ -564,14 +595,41 @@ impl Canvas {
         if mode > 3 {
             return;
         }
-        let strokes_before: Vec<StrokeId> = self.doc.strokes().iter().map(|s| s.id).collect();
-        let strokes_after = reorder_order(&strokes_before, &self.selection, mode);
-        let images_before: Vec<StrokeId> = self.doc.images().iter().map(|i| i.id).collect();
-        let images_after = reorder_order(&images_before, &self.selection, mode);
-        let texts_before: Vec<StrokeId> = self.doc.texts().iter().map(|t| t.id).collect();
-        let texts_after = reorder_order(&texts_before, &self.selection, mode);
-        let maths_before: Vec<StrokeId> = self.doc.maths().iter().map(|m| m.id).collect();
-        let maths_after = reorder_order(&maths_before, &self.selection, mode);
+        let ids = |items: &[(StrokeId, Rect)]| items.iter().map(|(id, _)| *id).collect::<Vec<_>>();
+        let strokes: Vec<(StrokeId, Rect)> = self
+            .doc
+            .strokes()
+            .iter()
+            .map(|s| (s.id, ductus_ink::bounds(s)))
+            .collect();
+        let (strokes_before, strokes_after) = (
+            ids(&strokes),
+            reorder_order(&strokes, &self.selection, mode),
+        );
+        let images: Vec<(StrokeId, Rect)> = self
+            .doc
+            .images()
+            .iter()
+            .map(|i| (i.id, image_rect(i)))
+            .collect();
+        let (images_before, images_after) =
+            (ids(&images), reorder_order(&images, &self.selection, mode));
+        let texts: Vec<(StrokeId, Rect)> = self
+            .doc
+            .texts()
+            .iter()
+            .map(|t| (t.id, text_rect(t)))
+            .collect();
+        let (texts_before, texts_after) =
+            (ids(&texts), reorder_order(&texts, &self.selection, mode));
+        let maths: Vec<(StrokeId, Rect)> = self
+            .doc
+            .maths()
+            .iter()
+            .map(|m| (m.id, math_rect(m)))
+            .collect();
+        let (maths_before, maths_after) =
+            (ids(&maths), reorder_order(&maths, &self.selection, mode));
         let strokes = if strokes_after != strokes_before {
             Some((strokes_before, strokes_after))
         } else {
@@ -666,8 +724,13 @@ impl Canvas {
         if !self.can_paste() {
             return;
         }
-        let t = Affine::translate(Vec2::new(PASTE_OFFSET, PASTE_OFFSET));
         let clipboard = std::mem::take(&mut *self.clipboard.borrow_mut());
+        let visible = self.view.visible_doc_rect();
+        // Copied out of view (further down, or on another page), the paste lands in view.
+        let t = Affine::translate(match clipboard.bounds() {
+            Some(b) if !overlaps(b, visible) => visible.center() - b.center(),
+            _ => Vec2::new(PASTE_OFFSET, PASTE_OFFSET),
+        });
         let strokes: Vec<Stroke> = clipboard
             .strokes
             .iter()

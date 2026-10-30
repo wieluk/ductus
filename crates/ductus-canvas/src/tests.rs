@@ -627,18 +627,56 @@ fn layering_brings_a_stroke_to_the_front_and_undoes() {
 }
 
 #[test]
-fn layering_steps_one_item_at_a_time() {
+fn layering_steps_past_the_next_overlapping_item() {
     let mut c = canvas();
     draw_wave(&mut c, 40.0, 160.0, 80.0);
-    draw_wave(&mut c, 220.0, 360.0, 220.0);
-    let a = c.document().strokes()[0].id;
-    let b = c.document().strokes()[1].id;
+    draw_wave(&mut c, 220.0, 360.0, 220.0); // elsewhere on the page
+    draw_wave(&mut c, 130.0, 300.0, 100.0); // across the first one's corner
+    let [a, b, d] = [0, 1, 2].map(|i| c.document().strokes()[i].id);
     c.set_tool(ToolMode::Lasso);
-    lasso(&mut c, (20.0, 40.0, 180.0, 130.0)); // select the first wave
-    c.reorder_selection(1); // bring forward: it moves above the other
-    let ids: Vec<_> = c.document().strokes().iter().map(|s| s.id).collect();
-    assert_eq!(ids, [b, a]);
-    c.reorder_selection(2); // send backward again
-    let ids: Vec<_> = c.document().strokes().iter().map(|s| s.id).collect();
-    assert_eq!(ids, [a, b]);
+    lasso(&mut c, (20.0, 40.0, 180.0, 130.0)); // the first wave
+    assert_eq!(c.selection_count(), 1);
+    let order = |c: &Canvas| {
+        c.document()
+            .strokes()
+            .iter()
+            .map(|s| s.id)
+            .collect::<Vec<_>>()
+    };
+    c.reorder_selection(1); // bring forward: past the one it overlaps, not just the next one
+    assert_eq!(order(&c), [b, d, a]);
+    c.reorder_selection(2); // send backward: under the one it overlaps
+    assert_eq!(order(&c), [b, a, d]);
+    let revision = c.revision();
+    c.reorder_selection(2); // nothing else overlaps below: no change, no undo step
+    assert_eq!(order(&c), [b, a, d]);
+    assert_eq!(c.revision(), revision);
+}
+
+#[test]
+fn paste_lands_in_view_when_the_copy_is_out_of_it() {
+    let mut c = canvas();
+    draw_wave(&mut c, 40.0, 160.0, 80.0);
+    c.set_tool(ToolMode::Lasso);
+    lasso(&mut c, (20.0, 40.0, 180.0, 130.0));
+    c.copy_selection();
+    c.pan_by(0.0, -2000.0);
+    c.paste();
+    let pasted = ductus_ink::bounds(&c.document().strokes()[1]);
+    let visible = c.view.visible_doc_rect();
+    assert!(
+        (pasted.center() - visible.center()).hypot() < 1.0,
+        "{pasted:?} is centered in {visible:?}"
+    );
+}
+
+#[test]
+fn a_lone_picture_does_not_flip_or_turn() {
+    let mut c = canvas();
+    assert!(c.insert_picture(png(60, 40, tiny_skia::Color::BLACK), None));
+    let revision = c.revision();
+    assert!(!c.selection_turns());
+    c.flip_selection(true);
+    c.rotate_selection(1);
+    assert_eq!(c.revision(), revision, "no empty undo steps");
 }

@@ -334,6 +334,10 @@
         <source>%1 isn&apos;t a PDF Ductus can read.</source>
         <translation>%1 non è un PDF che Ductus può leggere.</translation>
     </message>
+    <message>
+        <source>The first %1 of %2 pages are in. For the whole PDF, import it as note pages.</source>
+        <translation>Sono state inserite le prime %1 di %2 pagine. Per l’intero PDF, importalo come pagine di appunti.</translation>
+    </message>
 </context>
 <context>
     <name>Language</name>
@@ -1193,6 +1197,10 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
         <translation>Aggiungi una penna o uno strumento</translation>
     </message>
     <message>
+        <source>Done</source>
+        <translation>Fatto</translation>
+    </message>
+    <message>
         <source>Full screen (F11)</source>
         <translation>Schermo intero (F11)</translation>
     </message>
@@ -1211,6 +1219,14 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
     <message>
         <source>Add %1</source>
         <translation>Aggiungi %1</translation>
+    </message>
+    <message>
+        <source>Rearrange…</source>
+        <translation>Riordina…</translation>
+    </message>
+    <message>
+        <source>Show undo and redo</source>
+        <translation>Mostra Annulla e Ripeti</translation>
     </message>
     <message>
         <source>Restore the default bar</source>
@@ -1241,24 +1257,8 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
         <translation>Gomma extra large</translation>
     </message>
     <message>
-        <source>Move up</source>
-        <translation>Sposta su</translation>
-    </message>
-    <message>
-        <source>Move down</source>
-        <translation>Sposta giù</translation>
-    </message>
-    <message>
         <source>Remove from the bar</source>
         <translation>Rimuovi dalla barra</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>Su</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>Giù</translation>
     </message>
 </context>
 <context>
@@ -1748,6 +1748,30 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
         <translation>Elimina (Canc)</translation>
     </message>
     <message>
+        <source>More colors…</source>
+        <translation>Altri colori…</translation>
+    </message>
+    <message>
+        <source>Rotate left</source>
+        <translation>Ruota a sinistra</translation>
+    </message>
+    <message>
+        <source>Rotate right</source>
+        <translation>Ruota a destra</translation>
+    </message>
+    <message>
+        <source>Flip horizontally</source>
+        <translation>Capovolgi orizzontalmente</translation>
+    </message>
+    <message>
+        <source>Flip vertically</source>
+        <translation>Capovolgi verticalmente</translation>
+    </message>
+    <message>
+        <source>Layering…</source>
+        <translation>Livelli…</translation>
+    </message>
+    <message>
         <source>Text</source>
         <translation>Testo</translation>
     </message>
@@ -1762,6 +1786,26 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
     <message>
         <source>Replace the handwriting with a formula</source>
         <translation>Sostituisci la scrittura con una formula</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>Scegli un colore</translation>
+    </message>
+    <message>
+        <source>Bring to front</source>
+        <translation>Porta in primo piano</translation>
+    </message>
+    <message>
+        <source>Bring forward</source>
+        <translation>Porta avanti</translation>
+    </message>
+    <message>
+        <source>Send backward</source>
+        <translation>Porta indietro</translation>
+    </message>
+    <message>
+        <source>Send to back</source>
+        <translation>Porta in secondo piano</translation>
     </message>
 </context>
 <context>

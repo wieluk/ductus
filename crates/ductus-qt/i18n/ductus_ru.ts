@@ -339,6 +339,10 @@
         <source>%1 isn&apos;t a PDF Ductus can read.</source>
         <translation>%1 — не PDF, который Ductus может прочитать.</translation>
     </message>
+    <message>
+        <source>The first %1 of %2 pages are in. For the whole PDF, import it as note pages.</source>
+        <translation>Вставлены первые %1 из %2 страниц. Чтобы получить весь PDF, импортируйте его как страницы заметок.</translation>
+    </message>
 </context>
 <context>
     <name>Language</name>
@@ -1198,6 +1202,10 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Добавить перо или инструмент</translation>
     </message>
     <message>
+        <source>Done</source>
+        <translation>Готово</translation>
+    </message>
+    <message>
         <source>Full screen (F11)</source>
         <translation>Во весь экран (F11)</translation>
     </message>
@@ -1216,6 +1224,14 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Add %1</source>
         <translation>Добавить %1</translation>
+    </message>
+    <message>
+        <source>Rearrange…</source>
+        <translation>Упорядочить…</translation>
+    </message>
+    <message>
+        <source>Show undo and redo</source>
+        <translation>Показывать «Отменить» и «Повторить»</translation>
     </message>
     <message>
         <source>Restore the default bar</source>
@@ -1246,24 +1262,8 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Очень большой ластик</translation>
     </message>
     <message>
-        <source>Move up</source>
-        <translation>Переместить вверх</translation>
-    </message>
-    <message>
-        <source>Move down</source>
-        <translation>Переместить вниз</translation>
-    </message>
-    <message>
         <source>Remove from the bar</source>
         <translation>Убрать с панели</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>Вверх</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>Вниз</translation>
     </message>
 </context>
 <context>
@@ -1753,6 +1753,30 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Удалить (Del)</translation>
     </message>
     <message>
+        <source>More colors…</source>
+        <translation>Другие цвета…</translation>
+    </message>
+    <message>
+        <source>Rotate left</source>
+        <translation>Повернуть влево</translation>
+    </message>
+    <message>
+        <source>Rotate right</source>
+        <translation>Повернуть вправо</translation>
+    </message>
+    <message>
+        <source>Flip horizontally</source>
+        <translation>Отразить по горизонтали</translation>
+    </message>
+    <message>
+        <source>Flip vertically</source>
+        <translation>Отразить по вертикали</translation>
+    </message>
+    <message>
+        <source>Layering…</source>
+        <translation>Порядок слоёв…</translation>
+    </message>
+    <message>
         <source>Text</source>
         <translation>Текст</translation>
     </message>
@@ -1767,6 +1791,26 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Replace the handwriting with a formula</source>
         <translation>Заменить рукописный текст формулой</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>Выбрать цвет</translation>
+    </message>
+    <message>
+        <source>Bring to front</source>
+        <translation>На передний план</translation>
+    </message>
+    <message>
+        <source>Bring forward</source>
+        <translation>Переместить вперёд</translation>
+    </message>
+    <message>
+        <source>Send backward</source>
+        <translation>Переместить назад</translation>
+    </message>
+    <message>
+        <source>Send to back</source>
+        <translation>На задний план</translation>
     </message>
 </context>
 <context>

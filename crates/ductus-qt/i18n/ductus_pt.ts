@@ -334,6 +334,10 @@
         <source>%1 isn&apos;t a PDF Ductus can read.</source>
         <translation>%1 não é um PDF que o Ductus consiga ler.</translation>
     </message>
+    <message>
+        <source>The first %1 of %2 pages are in. For the whole PDF, import it as note pages.</source>
+        <translation>As primeiras %1 de %2 páginas foram inseridas. Para o PDF inteiro, importe-o como páginas de notas.</translation>
+    </message>
 </context>
 <context>
     <name>Language</name>
@@ -1193,6 +1197,10 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
         <translation>Adicionar uma caneta ou ferramenta</translation>
     </message>
     <message>
+        <source>Done</source>
+        <translation>Concluído</translation>
+    </message>
+    <message>
         <source>Full screen (F11)</source>
         <translation>Tela cheia (F11)</translation>
     </message>
@@ -1211,6 +1219,14 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
     <message>
         <source>Add %1</source>
         <translation>Adicionar %1</translation>
+    </message>
+    <message>
+        <source>Rearrange…</source>
+        <translation>Reorganizar…</translation>
+    </message>
+    <message>
+        <source>Show undo and redo</source>
+        <translation>Mostrar desfazer e refazer</translation>
     </message>
     <message>
         <source>Restore the default bar</source>
@@ -1241,24 +1257,8 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
         <translation>Borracha extragrande</translation>
     </message>
     <message>
-        <source>Move up</source>
-        <translation>Mover para cima</translation>
-    </message>
-    <message>
-        <source>Move down</source>
-        <translation>Mover para baixo</translation>
-    </message>
-    <message>
         <source>Remove from the bar</source>
         <translation>Remover da barra</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>Para cima</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>Para baixo</translation>
     </message>
 </context>
 <context>
@@ -1748,6 +1748,30 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
         <translation>Excluir (Del)</translation>
     </message>
     <message>
+        <source>More colors…</source>
+        <translation>Mais cores…</translation>
+    </message>
+    <message>
+        <source>Rotate left</source>
+        <translation>Girar para a esquerda</translation>
+    </message>
+    <message>
+        <source>Rotate right</source>
+        <translation>Girar para a direita</translation>
+    </message>
+    <message>
+        <source>Flip horizontally</source>
+        <translation>Inverter horizontalmente</translation>
+    </message>
+    <message>
+        <source>Flip vertically</source>
+        <translation>Inverter verticalmente</translation>
+    </message>
+    <message>
+        <source>Layering…</source>
+        <translation>Camadas…</translation>
+    </message>
+    <message>
         <source>Text</source>
         <translation>Texto</translation>
     </message>
@@ -1762,6 +1786,26 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
     <message>
         <source>Replace the handwriting with a formula</source>
         <translation>Substituir a escrita por uma fórmula</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>Escolher uma cor</translation>
+    </message>
+    <message>
+        <source>Bring to front</source>
+        <translation>Trazer para a frente</translation>
+    </message>
+    <message>
+        <source>Bring forward</source>
+        <translation>Avançar</translation>
+    </message>
+    <message>
+        <source>Send backward</source>
+        <translation>Recuar</translation>
+    </message>
+    <message>
+        <source>Send to back</source>
+        <translation>Enviar para trás</translation>
     </message>
 </context>
 <context>

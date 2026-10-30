@@ -6,7 +6,7 @@ click 480,240
 type Limits of sequences
 key Escape
 click-item tab_draw
-pen-tap preset3
+pen-tap barTool_hand
 expect-prop canvas tool Hand
 pen 520,250 520,450
 expect-prop canvas selectionCount 1

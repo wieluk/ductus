@@ -334,6 +334,10 @@
         <source>%1 isn&apos;t a PDF Ductus can read.</source>
         <translation>%1 ist kein PDF, das Ductus lesen kann.</translation>
     </message>
+    <message>
+        <source>The first %1 of %2 pages are in. For the whole PDF, import it as note pages.</source>
+        <translation>Die ersten %1 von %2 Seiten sind eingefügt. Für das ganze PDF importiere es als Notizseiten.</translation>
+    </message>
 </context>
 <context>
     <name>Language</name>
@@ -1193,6 +1197,10 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Stift oder Werkzeug hinzufügen</translation>
     </message>
     <message>
+        <source>Done</source>
+        <translation>Fertig</translation>
+    </message>
+    <message>
         <source>Full screen (F11)</source>
         <translation>Vollbild (F11)</translation>
     </message>
@@ -1211,6 +1219,14 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     <message>
         <source>Add %1</source>
         <translation>%1 hinzufügen</translation>
+    </message>
+    <message>
+        <source>Rearrange…</source>
+        <translation>Neu anordnen…</translation>
+    </message>
+    <message>
+        <source>Show undo and redo</source>
+        <translation>Rückgängig und Wiederholen zeigen</translation>
     </message>
     <message>
         <source>Restore the default bar</source>
@@ -1241,24 +1257,8 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Sehr großer Radierer</translation>
     </message>
     <message>
-        <source>Move up</source>
-        <translation>Nach oben verschieben</translation>
-    </message>
-    <message>
-        <source>Move down</source>
-        <translation>Nach unten verschieben</translation>
-    </message>
-    <message>
         <source>Remove from the bar</source>
         <translation>Aus der Leiste entfernen</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>Nach oben</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>Nach unten</translation>
     </message>
 </context>
 <context>
@@ -1748,6 +1748,30 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Löschen (Entf)</translation>
     </message>
     <message>
+        <source>More colors…</source>
+        <translation>Weitere Farben…</translation>
+    </message>
+    <message>
+        <source>Rotate left</source>
+        <translation>Nach links drehen</translation>
+    </message>
+    <message>
+        <source>Rotate right</source>
+        <translation>Nach rechts drehen</translation>
+    </message>
+    <message>
+        <source>Flip horizontally</source>
+        <translation>Horizontal spiegeln</translation>
+    </message>
+    <message>
+        <source>Flip vertically</source>
+        <translation>Vertikal spiegeln</translation>
+    </message>
+    <message>
+        <source>Layering…</source>
+        <translation>Ebenen…</translation>
+    </message>
+    <message>
         <source>Text</source>
         <translation>Text</translation>
     </message>
@@ -1762,6 +1786,26 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     <message>
         <source>Replace the handwriting with a formula</source>
         <translation>Die Handschrift durch eine Formel ersetzen</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>Farbe wählen</translation>
+    </message>
+    <message>
+        <source>Bring to front</source>
+        <translation>In den Vordergrund</translation>
+    </message>
+    <message>
+        <source>Bring forward</source>
+        <translation>Eine Ebene nach vorne</translation>
+    </message>
+    <message>
+        <source>Send backward</source>
+        <translation>Eine Ebene nach hinten</translation>
+    </message>
+    <message>
+        <source>Send to back</source>
+        <translation>In den Hintergrund</translation>
     </message>
 </context>
 <context>

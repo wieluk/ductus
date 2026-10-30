@@ -12,8 +12,20 @@ QtObject {
     // A grey app color gives grey surfaces too.
     readonly property real chroma: Math.min(1, base.hslSaturation / 0.5)
     function tone(saturation, lightness) { return Qt.hsla(hue, saturation * chroma, lightness, 1) }
-    // White title text stays readable on a light color.
-    readonly property color accentLight: Qt.hsla(hue, base.hslSaturation, Math.min(base.hslLightness, 0.51), 1)
+    function luminance(c) {
+        const linear = v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+        return 0.2126 * linear(c.r) + 0.7152 * linear(c.g) + 0.0722 * linear(c.b)
+    }
+    // White title text stays readable: darker until it contrasts 3:1, which a yellow at half lightness doesn't.
+    readonly property color accentLight: {
+        let lightness = Math.min(base.hslLightness, 0.51)
+        let c = Qt.hsla(hue, base.hslSaturation, lightness, 1)
+        while (lightness > 0.05 && 1.05 / (luminance(c) + 0.05) < 3) {
+            lightness -= 0.02
+            c = Qt.hsla(hue, base.hslSaturation, lightness, 1)
+        }
+        return c
+    }
     readonly property color accentDark: Qt.hsla(hue, Math.min(1, base.hslSaturation * 1.5), 0.76, 1)
 
     readonly property color accent: dark ? accentDark : accentLight

@@ -97,6 +97,8 @@ class InkCanvas : public QQuickItem
     Q_PROPERTY(TextBoxModel *texts READ texts CONSTANT)
     Q_PROPERTY(QRectF mathDraftRect READ mathDraftRect NOTIFY mathDraftChanged)
     Q_PROPERTY(bool selectionHasInk READ selectionHasInk NOTIFY selectionChanged)
+    /// Flipping or rotating would change something.
+    Q_PROPERTY(bool selectionTurns READ selectionTurns NOTIFY selectionChanged)
     Q_PROPERTY(QRectF selectionRect READ selectionRect NOTIFY selectionChanged)
     Q_PROPERTY(int holdDelay READ holdDelay WRITE setHoldDelay NOTIFY inputSettingsChanged)
     /// Touch is ignored this long (ms) after pen activity, so a resting palm doesn't scroll.
@@ -160,6 +162,7 @@ public:
     TextBoxModel *texts() { return &m_texts; }
     QRectF mathDraftRect() const { return m_mathDraftRect; }
     bool selectionHasInk() const { return m_selectionHasInk; }
+    bool selectionTurns() const { return m_selectionTurns; }
     QRectF selectionRect() const { return m_selectionRect; }
 
     CanvasEngine &engine() { return *m_engine; }
@@ -183,7 +186,7 @@ public:
     Q_INVOKABLE void paste();
     Q_INVOKABLE bool insertImage(const QImage &image, QPointF at = QPointF(qQNaN(), qQNaN()));
     Q_INVOKABLE bool insertImageFile(const QString &fileOrUrl, QPointF at = QPointF(qQNaN(), qQNaN()));
-    /// Its pages as pictures, like a printout.
+    /// Its first pages as pictures, like a printout; they arrive once rendered.
     Q_INVOKABLE bool insertPdfFile(const QString &fileOrUrl);
     Q_INVOKABLE void recolorSelection(const QColor &color);
     Q_INVOKABLE void flipSelection(bool horizontal);
@@ -259,6 +262,7 @@ private:
     void stopHold();
     void onHold();
     void updateSelection();
+    void pollPrintout();
     void refreshTexts();
     bool insertFromMime(const QMimeData *mime, QPointF at);
     void viewMoved();
@@ -321,6 +325,9 @@ private:
     bool m_systemClipboardNewer = true;
     int m_selectionCount = 0;
     bool m_selectionHasInk = false;
+    bool m_selectionTurns = false;
+    QTimer m_printoutPoll;
+    QString m_printoutName;
     QRectF m_selectionRect;
 
     // Only touched in updatePaintNode (render thread, GUI thread blocked).

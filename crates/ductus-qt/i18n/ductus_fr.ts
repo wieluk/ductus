@@ -334,6 +334,10 @@
         <source>%1 isn&apos;t a PDF Ductus can read.</source>
         <translation>%1 n&apos;est pas un PDF que Ductus peut lire.</translation>
     </message>
+    <message>
+        <source>The first %1 of %2 pages are in. For the whole PDF, import it as note pages.</source>
+        <translation>Les %1 premières pages sur %2 sont insérées. Pour le PDF entier, importez-le comme pages de notes.</translation>
+    </message>
 </context>
 <context>
     <name>Language</name>
@@ -1193,6 +1197,10 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Ajouter un stylo ou un outil</translation>
     </message>
     <message>
+        <source>Done</source>
+        <translation>Terminé</translation>
+    </message>
+    <message>
         <source>Full screen (F11)</source>
         <translation>Plein écran (F11)</translation>
     </message>
@@ -1211,6 +1219,14 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     <message>
         <source>Add %1</source>
         <translation>Ajouter %1</translation>
+    </message>
+    <message>
+        <source>Rearrange…</source>
+        <translation>Réorganiser…</translation>
+    </message>
+    <message>
+        <source>Show undo and redo</source>
+        <translation>Afficher Annuler et Rétablir</translation>
     </message>
     <message>
         <source>Restore the default bar</source>
@@ -1241,24 +1257,8 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Très grande gomme</translation>
     </message>
     <message>
-        <source>Move up</source>
-        <translation>Monter</translation>
-    </message>
-    <message>
-        <source>Move down</source>
-        <translation>Descendre</translation>
-    </message>
-    <message>
         <source>Remove from the bar</source>
         <translation>Retirer de la barre</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>Vers le haut</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>Vers le bas</translation>
     </message>
 </context>
 <context>
@@ -1748,6 +1748,30 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Supprimer (Suppr)</translation>
     </message>
     <message>
+        <source>More colors…</source>
+        <translation>Plus de couleurs…</translation>
+    </message>
+    <message>
+        <source>Rotate left</source>
+        <translation>Faire pivoter à gauche</translation>
+    </message>
+    <message>
+        <source>Rotate right</source>
+        <translation>Faire pivoter à droite</translation>
+    </message>
+    <message>
+        <source>Flip horizontally</source>
+        <translation>Retourner horizontalement</translation>
+    </message>
+    <message>
+        <source>Flip vertically</source>
+        <translation>Retourner verticalement</translation>
+    </message>
+    <message>
+        <source>Layering…</source>
+        <translation>Superposition…</translation>
+    </message>
+    <message>
         <source>Text</source>
         <translation>Texte</translation>
     </message>
@@ -1762,6 +1786,26 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     <message>
         <source>Replace the handwriting with a formula</source>
         <translation>Remplacer l’écriture par une formule</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>Choisir une couleur</translation>
+    </message>
+    <message>
+        <source>Bring to front</source>
+        <translation>Mettre au premier plan</translation>
+    </message>
+    <message>
+        <source>Bring forward</source>
+        <translation>Avancer d’un plan</translation>
+    </message>
+    <message>
+        <source>Send backward</source>
+        <translation>Reculer d&apos;un plan</translation>
+    </message>
+    <message>
+        <source>Send to back</source>
+        <translation>Mettre à l’arrière-plan</translation>
     </message>
 </context>
 <context>
