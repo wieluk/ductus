@@ -153,7 +153,9 @@ fn reorder_order(order: &[StrokeId], selected: &HashSet<StrokeId>, mode: u8) -> 
             // Each selected item swaps with the unselected one above it, so a block moves together.
             let mut out = order.to_vec();
             for i in (0..out.len()).rev() {
-                if selected.contains(&out[i]) && i + 1 < out.len() && !selected.contains(&out[i + 1])
+                if selected.contains(&out[i])
+                    && i + 1 < out.len()
+                    && !selected.contains(&out[i + 1])
                 {
                     out.swap(i, i + 1);
                 }
@@ -702,7 +704,11 @@ impl Canvas {
         let images: Vec<Image> = self.selected_images().cloned().collect();
         let pictures = images
             .iter()
-            .filter_map(|i| self.pictures.get(&i.source).map(|p| (i.source.clone(), p.bytes.clone())))
+            .filter_map(|i| {
+                self.pictures
+                    .get(&i.source)
+                    .map(|p| (i.source.clone(), p.bytes.clone()))
+            })
             .collect();
         let texts = self.selected_texts().cloned().collect();
         let maths = self.selected_maths().cloned().collect();

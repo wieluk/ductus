@@ -620,7 +620,10 @@ fn align_moves_items_to_the_same_edge() {
     let strokes = c.document().strokes();
     let left0 = ductus_ink::bounds(&strokes[0]).x0;
     let left1 = ductus_ink::bounds(&strokes[1]).x0;
-    assert!((left0 - left1).abs() < 0.5, "both left edges align: {left0} vs {left1}");
+    assert!(
+        (left0 - left1).abs() < 0.5,
+        "both left edges align: {left0} vs {left1}"
+    );
 }
 
 #[test]
