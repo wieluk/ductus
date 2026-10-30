@@ -69,24 +69,36 @@ pub fn find_lines(strokes: &[Stroke]) -> Vec<InkLine> {
             None => lines.push((vec![index], b)),
         }
     }
-    // Lines that ended up on top of each other are one line.
-    let mut merged = true;
-    while merged {
-        merged = false;
-        'outer: for i in 0..lines.len() {
-            for j in i + 1..lines.len() {
-                let (a, b) = (lines[i].1, lines[j].1);
-                if vertical_overlap(a, b) > 0.6 * a.height().min(b.height())
-                    && horizontal_gap(a, b) < letter * 4.0
-                {
-                    let (strokes, rect) = lines.remove(j);
-                    lines[i].0.extend(strokes);
-                    lines[i].1 = lines[i].1.union(rect);
-                    merged = true;
-                    break 'outer;
-                }
+    // Lines that ended up on top of each other are one line. Always the first such pair, as
+    // a scan from the top would find it: pairs before line `i` stay apart until `i` grows.
+    let together = |a: Rect, b: Rect| {
+        vertical_overlap(a, b) > 0.6 * a.height().min(b.height())
+            && horizontal_gap(a, b) < letter * 4.0
+    };
+    let mut i = 0;
+    while i < lines.len() {
+        let mut j = i + 1;
+        while j < lines.len() {
+            if !together(lines[i].1, lines[j].1) {
+                j += 1;
+                continue;
             }
+            let (strokes, rect) = lines.remove(j);
+            lines[i].0.extend(strokes);
+            lines[i].1 = lines[i].1.union(rect);
+            while let Some(k) = (0..i).find(|&k| together(lines[k].1, lines[i].1)) {
+                let (strokes, rect) = lines.remove(i);
+                lines[k].0.extend(strokes);
+                lines[k].1 = lines[k].1.union(rect);
+                i = k;
+            }
+            j = i + 1;
         }
+        i += 1;
+    }
+    let mut left = vec![0.0; strokes.len()];
+    for (i, b) in &pens {
+        left[*i] = b.x0;
     }
     lines.sort_by(|a, b| {
         (a.1.y0 / letter)
@@ -97,11 +109,7 @@ pub fn find_lines(strokes: &[Stroke]) -> Vec<InkLine> {
     lines
         .into_iter()
         .map(|(mut indices, rect)| {
-            indices.sort_by(|a, b| {
-                ductus_ink::bounds(&strokes[*a])
-                    .x0
-                    .total_cmp(&ductus_ink::bounds(&strokes[*b]).x0)
-            });
+            indices.sort_by(|a, b| left[*a].total_cmp(&left[*b]));
             InkLine {
                 key: line_key(strokes, &indices),
                 strokes: indices,
