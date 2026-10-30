@@ -31,6 +31,8 @@ Rectangle {
         { tool: "shapes", icon: "shapes", label: qsTr("Shapes on/off") }
     ]
     readonly property var defaults: [
+        { type: "tool", tool: "undo" },
+        { type: "tool", tool: "redo" },
         { type: "tool", tool: "lasso" },
         { type: "tool", tool: "hand" },
         { type: "tool", tool: "eraser" },

@@ -148,20 +148,39 @@ bool NotebookModel::anyExpanded() const
 
 void NotebookModel::setRows(QList<Row> rows)
 {
-    // Same rows: update in place so views keep their scroll position.
-    bool sameShape = rows.size() == m_rows.size();
-    for (qsizetype i = 0; sameShape && i < rows.size(); ++i)
-        sameShape = rows[i].path == m_rows[i].path && rows[i].section == m_rows[i].section;
-    if (sameShape) {
+    // Only the rows that differ are removed and inserted, so views keep their scroll position
+    // when a folder opens or closes.
+    // Another view, with or without section headers: ListView crashes if they change under its rows.
+    if ((!rows.isEmpty() && !rows.first().section.isEmpty()) != hasSections()) {
+        beginResetModel();
         m_rows = std::move(rows);
-        if (!m_rows.isEmpty())
-            Q_EMIT dataChanged(index(0), index(static_cast<int>(m_rows.size()) - 1));
+        endResetModel();
         Q_EMIT rowsChanged();
         return;
     }
-    beginResetModel();
+    const auto same = [](const Row &a, const Row &b) { return a.path == b.path && a.section == b.section; };
+    const qsizetype shorter = std::min(rows.size(), m_rows.size());
+    qsizetype head = 0;
+    while (head < shorter && same(rows[head], m_rows[head]))
+        ++head;
+    qsizetype tail = 0;
+    while (tail < shorter - head && same(rows[rows.size() - 1 - tail], m_rows[m_rows.size() - 1 - tail]))
+        ++tail;
+    if (m_rows.size() - tail > head) {
+        beginRemoveRows({}, static_cast<int>(head), static_cast<int>(m_rows.size() - tail - 1));
+        m_rows.remove(head, m_rows.size() - tail - head);
+        endRemoveRows();
+    }
+    if (rows.size() - tail > head) {
+        beginInsertRows({}, static_cast<int>(head), static_cast<int>(rows.size() - tail - 1));
+        m_rows.insert(head, rows.size() - tail - head, Row());
+        for (qsizetype i = head; i < rows.size() - tail; ++i)
+            m_rows[i] = rows[i];
+        endInsertRows();
+    }
     m_rows = std::move(rows);
-    endResetModel();
+    if (!m_rows.isEmpty())
+        Q_EMIT dataChanged(index(0), index(static_cast<int>(m_rows.size()) - 1));
     Q_EMIT rowsChanged();
 }
 

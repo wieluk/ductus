@@ -183,6 +183,8 @@ public:
     Q_INVOKABLE void paste();
     Q_INVOKABLE bool insertImage(const QImage &image, QPointF at = QPointF(qQNaN(), qQNaN()));
     Q_INVOKABLE bool insertImageFile(const QString &fileOrUrl, QPointF at = QPointF(qQNaN(), qQNaN()));
+    /// Its pages as pictures, like a printout.
+    Q_INVOKABLE bool insertPdfFile(const QString &fileOrUrl);
     Q_INVOKABLE void recolorSelection(const QColor &color);
     Q_INVOKABLE QPointF toDoc(QPointF itemPoint) const;
     Q_INVOKABLE QPointF toScreen(QPointF docPoint) const;

@@ -11,6 +11,7 @@ ApplicationWindow {
     /// "system", "light" or "dark".
     property string themeMode: "system"
     property bool darkMode: false
+    property color appColor: Theme.colors[0]
     property bool sidebarVisible: true
     property int sidebarWidth: Theme.sidebarWidth
     property bool penBarVisible: true
@@ -97,9 +98,11 @@ ApplicationWindow {
 
     onThemeModeChanged: updateTheme()
     onDarkModeChanged: Theme.dark = darkMode
+    onAppColorChanged: Theme.base = appColor
     Component.onCompleted: {
         updateTheme()
         Theme.dark = darkMode
+        Theme.base = appColor
         AppController.otherCanvas = canvasB
         AppController.canvas = canvasA
         // After the settings are read.
@@ -152,6 +155,7 @@ ApplicationWindow {
     Settings {
         category: "ui"
         property alias themeMode: window.themeMode
+        property alias appColor: window.appColor
         property alias maximized: window.maximized
         property alias splitRatio: window.splitRatio
         property alias sidebarVisible: window.sidebarVisible
@@ -364,7 +368,6 @@ ApplicationWindow {
             canvas: window.canvas
             compact: window.compact
             visible: !window.fullScreen
-            onAboutRequested: aboutDialog.open()
             onNewPageRequested: newPageDialog.show("")
             onNewNotebookRequested: newNotebookDialog.show(AppController.defaultNotebookLocation())
             onHistoryRequested: historyDialog.show(AppController.currentPage)
@@ -395,7 +398,6 @@ ApplicationWindow {
             onExportRequested: exportDialog.show()
             onPrintRequested: AppController.print()
             onSettingsRequested: settingsDialog.open()
-            onAboutRequested: aboutDialog.open()
             onNewPageRequested: newPageDialog.show("")
             onNewNotebookRequested: newNotebookDialog.show(AppController.defaultNotebookLocation())
             onHistoryRequested: historyDialog.show(AppController.currentPage)
@@ -730,33 +732,45 @@ ApplicationWindow {
         objectName: "pdfModeDialog"
 
         property string file
-        property bool annotate: true
+        /// "annotate", "pages" or "printout".
+        property string mode: "annotate"
+        readonly property bool printout: mode === "printout"
 
         title: qsTr("How do you want to write on this PDF?")
-        acceptText: qsTr("Import")
+        acceptText: printout ? qsTr("Insert") : qsTr("Import")
         onAboutToShow: {
             pdfPlace.location = AppController.defaultPageFolder()
             pdfPlace.browsing = false
+            if (printout && !window.canvas.enabled)
+                mode = "annotate"
         }
-        onAccepted: AppController.importPdf(file, annotate, pdfPlace.location)
+        onAccepted: {
+            if (printout)
+                window.canvas.insertPdfFile(file)
+            else
+                AppController.importPdf(file, mode === "annotate", pdfPlace.location)
+        }
 
         contentItem: Column {
             spacing: 8
             Repeater {
                 model: [
-                    { annotate: true, label: qsTr("Write on the PDF"),
+                    { mode: "annotate", name: "pdfModeAnnotate", label: qsTr("Write on the PDF"),
                       hint: qsTr("A copy goes into the notebook; your ink is saved in that copy as annotations, so other PDF readers show it too.") },
-                    { annotate: false, label: qsTr("Import as note pages"),
-                      hint: qsTr("The PDF becomes the background of a notes page.") }
+                    { mode: "pages", name: "pdfModePages", label: qsTr("Import as note pages"),
+                      hint: qsTr("The PDF becomes the background of a notes page.") },
+                    { mode: "printout", name: "pdfModePrintout", label: qsTr("Insert into this page"),
+                      hint: qsTr("Its pages become pictures on the open page, to move and resize like any picture.") }
                 ]
                 delegate: AbstractButton {
                     id: option
                     required property var modelData
-                    readonly property bool chosen: pdfModeDialog.annotate === modelData.annotate
-                    objectName: modelData.annotate ? "pdfModeAnnotate" : "pdfModePages"
+                    readonly property bool chosen: pdfModeDialog.mode === modelData.mode
+                    objectName: modelData.name
+                    visible: modelData.mode !== "printout" || window.canvas.enabled
                     width: pdfModeDialog.availableWidth
-                    height: optionText.implicitHeight + 20
-                    onClicked: pdfModeDialog.annotate = modelData.annotate
+                    height: visible ? optionText.implicitHeight + 20 : 0
+                    onClicked: pdfModeDialog.mode = modelData.mode
                     background: Rectangle {
                         radius: 8
                         color: option.chosen ? Theme.checked : (option.hovered ? Theme.hover : "transparent")
@@ -785,6 +799,7 @@ ApplicationWindow {
             }
             PlacePicker {
                 id: pdfPlace
+                visible: !pdfModeDialog.printout
                 width: pdfModeDialog.availableWidth
             }
             Label {
@@ -910,13 +925,4 @@ ApplicationWindow {
     NewPageDialog { id: newPageDialog }
     ImportDialog { id: importDialog }
     NewNotebookDialog { id: newNotebookDialog }
-
-    AppDialog {
-        id: aboutDialog
-        objectName: "aboutDialog"
-        title: qsTr("About Ductus")
-        message: qsTr("Handwritten notebooks for Linux, Windows and Android.\nDevelopment preview · GPL-3.0-or-later\n\nLibrary: %1").arg(AppController.libraryDisplayPath)
-        acceptText: qsTr("Close")
-        rejectText: ""
-    }
 }

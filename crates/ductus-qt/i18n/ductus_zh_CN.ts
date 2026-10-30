@@ -325,6 +325,10 @@
         <source>%1 isn&apos;t a picture Ductus can read.</source>
         <translation>%1 不是 Ductus 能读取的图片。</translation>
     </message>
+    <message>
+        <source>%1 isn&apos;t a PDF Ductus can read.</source>
+        <translation>%1 不是 Ductus 能读取的 PDF。</translation>
+    </message>
 </context>
 <context>
     <name>Language</name>
@@ -615,6 +619,10 @@
         <translation>导入</translation>
     </message>
     <message>
+        <source>Insert</source>
+        <translation>插入</translation>
+    </message>
+    <message>
         <source>Write on the PDF</source>
         <translation>在 PDF 上书写</translation>
     </message>
@@ -625,6 +633,14 @@
     <message>
         <source>The PDF becomes the background of a notes page.</source>
         <translation>PDF 将成为笔记页面的背景。</translation>
+    </message>
+    <message>
+        <source>Insert into this page</source>
+        <translation>插入到此页面</translation>
+    </message>
+    <message>
+        <source>Its pages become pictures on the open page, to move and resize like any picture.</source>
+        <translation>它的各页会成为当前页面上的图片，可像其他图片一样移动和缩放。</translation>
     </message>
     <message>
         <source>The original file is only read, never changed.</source>
@@ -673,24 +689,6 @@
     <message>
         <source>Delete</source>
         <translation>删除</translation>
-    </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>关于 Ductus</translation>
-    </message>
-    <message>
-        <source>Handwritten notebooks for Linux, Windows and Android.
-Development preview · GPL-3.0-or-later
-
-Library: %1</source>
-        <translation>适用于 Linux、Windows 和 Android 的手写笔记本。
-开发预览版 · GPL-3.0-or-later
-
-资料库：%1</translation>
-    </message>
-    <message>
-        <source>Close</source>
-        <translation>关闭</translation>
     </message>
 </context>
 <context>
@@ -1500,10 +1498,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>设置</translation>
     </message>
     <message>
-        <source>About Ductus</source>
-        <translation>关于 Ductus</translation>
-    </message>
-    <message>
         <source>Select everything on the page (Ctrl+A)</source>
         <translation>选择页面上的所有内容（Ctrl+A）</translation>
     </message>
@@ -2053,6 +2047,22 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>深色</translation>
     </message>
     <message>
+        <source>App color</source>
+        <translation>应用颜色</translation>
+    </message>
+    <message>
+        <source>The title bar, buttons and highlights; the grays take on its tint.</source>
+        <translation>用于标题栏、按钮和高亮；灰色也会带上它的色调。</translation>
+    </message>
+    <message>
+        <source>More colors…</source>
+        <translation>更多颜色…</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>选择颜色</translation>
+    </message>
+    <message>
         <source>Around the page</source>
         <translation>页面周围</translation>
     </message>
@@ -2481,10 +2491,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Settings…</source>
         <translation>设置…</translation>
-    </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>关于 Ductus</translation>
     </message>
     <message>
         <source>Quit</source>

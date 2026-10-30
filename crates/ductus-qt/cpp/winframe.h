@@ -2,6 +2,8 @@
 #ifndef DUCTUS_WINFRAME_H
 #define DUCTUS_WINFRAME_H
 
+#include <QtGlobal>
+
 class QWindow;
 
 namespace WinFrame {
@@ -11,5 +13,12 @@ namespace WinFrame {
 void install(QWindow *window);
 
 } // namespace WinFrame
+
+namespace WinPen {
+
+/// +1 if the pen touched down with the native message of this time, -1 if it lifted, else 0.
+int contactChangeAt(quint64 timestamp);
+
+} // namespace WinPen
 
 #endif

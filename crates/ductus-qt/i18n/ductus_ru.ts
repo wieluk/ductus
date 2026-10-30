@@ -335,6 +335,10 @@
         <source>%1 isn&apos;t a picture Ductus can read.</source>
         <translation>%1 — не изображение, которое Ductus может прочитать.</translation>
     </message>
+    <message>
+        <source>%1 isn&apos;t a PDF Ductus can read.</source>
+        <translation>%1 — не PDF, который Ductus может прочитать.</translation>
+    </message>
 </context>
 <context>
     <name>Language</name>
@@ -625,6 +629,10 @@
         <translation>Импорт</translation>
     </message>
     <message>
+        <source>Insert</source>
+        <translation>Вставить</translation>
+    </message>
+    <message>
         <source>Write on the PDF</source>
         <translation>Писать на PDF</translation>
     </message>
@@ -635,6 +643,14 @@
     <message>
         <source>The PDF becomes the background of a notes page.</source>
         <translation>PDF становится фоном страницы заметок.</translation>
+    </message>
+    <message>
+        <source>Insert into this page</source>
+        <translation>Вставить на эту страницу</translation>
+    </message>
+    <message>
+        <source>Its pages become pictures on the open page, to move and resize like any picture.</source>
+        <translation>Его страницы становятся картинками на открытой странице: их можно перемещать и менять размер, как любую картинку.</translation>
     </message>
     <message>
         <source>The original file is only read, never changed.</source>
@@ -683,24 +699,6 @@
     <message>
         <source>Delete</source>
         <translation>Удалить</translation>
-    </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>О Ductus</translation>
-    </message>
-    <message>
-        <source>Handwritten notebooks for Linux, Windows and Android.
-Development preview · GPL-3.0-or-later
-
-Library: %1</source>
-        <translation>Рукописные блокноты для Linux, Windows и Android.
-Предварительная версия · GPL-3.0-or-later
-
-Библиотека: %1</translation>
-    </message>
-    <message>
-        <source>Close</source>
-        <translation>Закрыть</translation>
     </message>
 </context>
 <context>
@@ -1510,10 +1508,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Настройки</translation>
     </message>
     <message>
-        <source>About Ductus</source>
-        <translation>О Ductus</translation>
-    </message>
-    <message>
         <source>Select everything on the page (Ctrl+A)</source>
         <translation>Выделить всё на странице (Ctrl+A)</translation>
     </message>
@@ -2063,6 +2057,22 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Тёмная</translation>
     </message>
     <message>
+        <source>App color</source>
+        <translation>Цвет приложения</translation>
+    </message>
+    <message>
+        <source>The title bar, buttons and highlights; the grays take on its tint.</source>
+        <translation>Строка заголовка, кнопки и выделение; серые тона принимают его оттенок.</translation>
+    </message>
+    <message>
+        <source>More colors…</source>
+        <translation>Другие цвета…</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>Выберите цвет</translation>
+    </message>
+    <message>
         <source>Around the page</source>
         <translation>Вокруг страницы</translation>
     </message>
@@ -2491,10 +2501,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Settings…</source>
         <translation>Настройки…</translation>
-    </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>О Ductus</translation>
     </message>
     <message>
         <source>Quit</source>

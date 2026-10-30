@@ -391,6 +391,32 @@ fn red_in(p: &Pixmap, x: u32, y: u32) -> bool {
 }
 
 #[test]
+fn printout_pages_stack_and_undo_together() {
+    let mut c = canvas();
+    let page = |shade| png(60, 80, tiny_skia::Color::from_rgba8(shade, 30, 30, 255));
+    let pages = (0..3)
+        .map(|i| (page(100 + i * 40), Some((600.0, 800.0))))
+        .collect();
+    assert!(c.insert_pictures(pages, None));
+    let images = c.document().images().to_vec();
+    assert_eq!(images.len(), 3);
+    assert_eq!(c.selection_count(), 3);
+    // Shrunk alike to fit the view's width, keeping the pages' shape.
+    assert!(
+        images
+            .iter()
+            .all(|i| (i.width / i.height - 0.75).abs() < 1e-6 && i.width < 600.0)
+    );
+    assert!(
+        images
+            .windows(2)
+            .all(|w| w[1].y > w[0].y + w[0].height && w[1].x == w[0].x)
+    );
+    c.undo();
+    assert!(c.document().images().is_empty());
+}
+
+#[test]
 fn pictures_move_scale_and_undo() {
     let mut c = canvas();
     c.insert_picture(

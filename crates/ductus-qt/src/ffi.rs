@@ -504,6 +504,7 @@ pub mod qobject {
         fn paste(self: &mut CanvasEngine);
         fn can_paste(self: &CanvasEngine) -> bool;
         fn insert_picture(self: &mut CanvasEngine, png: &[u8], x: f64, y: f64) -> bool;
+        fn insert_pdf(self: &mut CanvasEngine, pdf: &[u8], x: f64, y: f64) -> Result<bool>;
         fn recolor_selection(self: &mut CanvasEngine, r: f32, g: f32, b: f32, a: f32);
         fn set_pen_color(self: &mut CanvasEngine, r: f32, g: f32, b: f32, a: f32);
         fn set_pen_width(self: &mut CanvasEngine, width: f64);

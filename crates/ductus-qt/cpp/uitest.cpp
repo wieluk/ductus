@@ -249,7 +249,12 @@ public:
             // File dialogs can't be scripted, so these call the controller directly.
             QString result;
             bool ok = false;
-            if (cmd == u"import-pdf") {
+            if (cmd == u"import-pdf" && args.value(0) == u"printout") {
+                QQuickItem *canvas = findItem(m_window->contentItem(), QStringLiteral("canvas"));
+                const QString file = QFileInfo(rest.section(QLatin1Char(' '), 1)).absoluteFilePath();
+                if (canvas)
+                    QMetaObject::invokeMethod(canvas, "insertPdfFile", Q_RETURN_ARG(bool, ok), Q_ARG(QString, file));
+            } else if (cmd == u"import-pdf") {
                 const bool annotate = args.value(0) == u"annotate";
                 const QString file = QFileInfo(rest.section(QLatin1Char(' '), 1)).absoluteFilePath();
                 QString folder;

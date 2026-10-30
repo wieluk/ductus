@@ -330,6 +330,10 @@
         <source>%1 isn&apos;t a picture Ductus can read.</source>
         <translation>%1 ist kein Bild, das Ductus lesen kann.</translation>
     </message>
+    <message>
+        <source>%1 isn&apos;t a PDF Ductus can read.</source>
+        <translation>%1 ist kein PDF, das Ductus lesen kann.</translation>
+    </message>
 </context>
 <context>
     <name>Language</name>
@@ -620,6 +624,10 @@
         <translation>Importieren</translation>
     </message>
     <message>
+        <source>Insert</source>
+        <translation>Einfügen</translation>
+    </message>
+    <message>
         <source>Write on the PDF</source>
         <translation>Auf das PDF schreiben</translation>
     </message>
@@ -630,6 +638,14 @@
     <message>
         <source>The PDF becomes the background of a notes page.</source>
         <translation>Das PDF wird zum Hintergrund einer Notizseite.</translation>
+    </message>
+    <message>
+        <source>Insert into this page</source>
+        <translation>In diese Seite einfügen</translation>
+    </message>
+    <message>
+        <source>Its pages become pictures on the open page, to move and resize like any picture.</source>
+        <translation>Seine Seiten werden Bilder auf der offenen Seite, die du wie jedes Bild verschieben und in der Größe ändern kannst.</translation>
     </message>
     <message>
         <source>The original file is only read, never changed.</source>
@@ -678,24 +694,6 @@
     <message>
         <source>Delete</source>
         <translation>Löschen</translation>
-    </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>Über Ductus</translation>
-    </message>
-    <message>
-        <source>Handwritten notebooks for Linux, Windows and Android.
-Development preview · GPL-3.0-or-later
-
-Library: %1</source>
-        <translation>Handgeschriebene Notizbücher für Linux, Windows und Android.
-Entwicklungsvorschau · GPL-3.0-or-later
-
-Bibliothek: %1</translation>
-    </message>
-    <message>
-        <source>Close</source>
-        <translation>Schließen</translation>
     </message>
 </context>
 <context>
@@ -1505,10 +1503,6 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Einstellungen</translation>
     </message>
     <message>
-        <source>About Ductus</source>
-        <translation>Über Ductus</translation>
-    </message>
-    <message>
         <source>Select everything on the page (Ctrl+A)</source>
         <translation>Alles auf der Seite auswählen (Strg+A)</translation>
     </message>
@@ -2058,6 +2052,22 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Dunkel</translation>
     </message>
     <message>
+        <source>App color</source>
+        <translation>App-Farbe</translation>
+    </message>
+    <message>
+        <source>The title bar, buttons and highlights; the grays take on its tint.</source>
+        <translation>Titelleiste, Schaltflächen und Hervorhebungen; die Grautöne nehmen ihren Farbton an.</translation>
+    </message>
+    <message>
+        <source>More colors…</source>
+        <translation>Weitere Farben…</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>Farbe wählen</translation>
+    </message>
+    <message>
         <source>Around the page</source>
         <translation>Rund um die Seite</translation>
     </message>
@@ -2486,10 +2496,6 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     <message>
         <source>Settings…</source>
         <translation>Einstellungen…</translation>
-    </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>Über Ductus</translation>
     </message>
     <message>
         <source>Quit</source>

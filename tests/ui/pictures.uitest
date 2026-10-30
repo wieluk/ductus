@@ -1,4 +1,4 @@
-# Pictures: paste, screenshot, move, saved inside the page, export, undo.
+# Pictures: paste, screenshot, PDF printout, move, saved inside the page, export, undo.
 size 1280 800
 clipboard-image tests/fixtures/screenshot.png
 key Ctrl+V
@@ -20,3 +20,8 @@ key Escape
 click-item row_My Notebook/First page
 export-pdf with-picture.pdf
 expect-file with-picture.pdf
+# A PDF's pages become pictures on the page, one undo step.
+import-pdf printout tests/fixtures/lecture.pdf
+expect-prop canvas selectionCount 3
+key Ctrl+Z
+expect-prop canvas selectionCount 0

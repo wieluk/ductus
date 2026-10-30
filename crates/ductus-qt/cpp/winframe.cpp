@@ -11,6 +11,9 @@ namespace {
 // Snap and the Win+arrow keys only work on windows with a caption and a resizable frame.
 constexpr LONG_PTR kFrameStyle = WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU;
 
+DWORD s_penDown = MAXDWORD;
+DWORD s_penUp = MAXDWORD;
+
 class Filter : public QAbstractNativeEventFilter
 {
 public:
@@ -22,6 +25,11 @@ public:
     bool nativeEventFilter(const QByteArray &, void *message, qintptr *result) override
     {
         const MSG *msg = static_cast<const MSG *>(message);
+        if (msg->message == WM_POINTERDOWN || msg->message == WM_POINTERUP) {
+            POINTER_INPUT_TYPE type = PT_POINTER;
+            if (GetPointerType(GET_POINTERID_WPARAM(msg->wParam), &type) && type == PT_PEN)
+                (msg->message == WM_POINTERDOWN ? s_penDown : s_penUp) = msg->time;
+        }
         if (msg->hwnd != m_hwnd)
             return false;
         if (msg->message == WM_NCCALCSIZE && msg->wParam == TRUE) {
@@ -65,4 +73,11 @@ void WinFrame::install(QWindow *window)
     SetWindowLongPtrW(hwnd, GWL_STYLE, (style & ~LONG_PTR(WS_POPUP)) | kFrameStyle);
     SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
                  SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+}
+
+int WinPen::contactChangeAt(quint64 timestamp)
+{
+    if (timestamp == s_penDown)
+        return 1;
+    return timestamp == s_penUp ? -1 : 0;
 }

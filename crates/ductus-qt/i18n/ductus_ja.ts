@@ -325,6 +325,10 @@
         <source>%1 isn&apos;t a picture Ductus can read.</source>
         <translation>%1 は Ductus で読み込める画像ではありません。</translation>
     </message>
+    <message>
+        <source>%1 isn&apos;t a PDF Ductus can read.</source>
+        <translation>%1 は Ductus で読める PDF ではありません。</translation>
+    </message>
 </context>
 <context>
     <name>Language</name>
@@ -615,6 +619,10 @@
         <translation>取り込み</translation>
     </message>
     <message>
+        <source>Insert</source>
+        <translation>挿入</translation>
+    </message>
+    <message>
         <source>Write on the PDF</source>
         <translation>PDF に書き込む</translation>
     </message>
@@ -625,6 +633,14 @@
     <message>
         <source>The PDF becomes the background of a notes page.</source>
         <translation>PDF がノートページの背景になります。</translation>
+    </message>
+    <message>
+        <source>Insert into this page</source>
+        <translation>このページに挿入</translation>
+    </message>
+    <message>
+        <source>Its pages become pictures on the open page, to move and resize like any picture.</source>
+        <translation>PDF の各ページが開いているページ上の画像になり、ほかの画像と同じように移動やサイズ変更ができます。</translation>
     </message>
     <message>
         <source>The original file is only read, never changed.</source>
@@ -673,24 +689,6 @@
     <message>
         <source>Delete</source>
         <translation>削除</translation>
-    </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>Ductus について</translation>
-    </message>
-    <message>
-        <source>Handwritten notebooks for Linux, Windows and Android.
-Development preview · GPL-3.0-or-later
-
-Library: %1</source>
-        <translation>Linux、Windows、Android 用の手書きノート。
-開発プレビュー · GPL-3.0-or-later
-
-ライブラリ：%1</translation>
-    </message>
-    <message>
-        <source>Close</source>
-        <translation>閉じる</translation>
     </message>
 </context>
 <context>
@@ -1500,10 +1498,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>設定</translation>
     </message>
     <message>
-        <source>About Ductus</source>
-        <translation>Ductus について</translation>
-    </message>
-    <message>
         <source>Select everything on the page (Ctrl+A)</source>
         <translation>ページ上のすべてを選択（Ctrl+A）</translation>
     </message>
@@ -2053,6 +2047,22 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>ダーク</translation>
     </message>
     <message>
+        <source>App color</source>
+        <translation>アプリの色</translation>
+    </message>
+    <message>
+        <source>The title bar, buttons and highlights; the grays take on its tint.</source>
+        <translation>タイトルバー、ボタン、強調表示に使われ、グレーにもその色味が付きます。</translation>
+    </message>
+    <message>
+        <source>More colors…</source>
+        <translation>その他の色…</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>色を選択</translation>
+    </message>
+    <message>
         <source>Around the page</source>
         <translation>ページの周り</translation>
     </message>
@@ -2481,10 +2491,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Settings…</source>
         <translation>設定…</translation>
-    </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>Ductus について</translation>
     </message>
     <message>
         <source>Quit</source>

@@ -455,6 +455,27 @@ impl CanvasEngine {
         self.0.insert_picture(png.to_vec(), Some(Point::new(x, y)))
     }
 
+    /// The pages of a PDF as pictures one below the other, like a printout.
+    pub fn insert_pdf(&mut self, pdf: &[u8], x: f64, y: f64) -> Result<bool, ductus_pdf::Error> {
+        // 1.5 pixels per unit is 144 dpi: small print stays readable when zoomed in.
+        const SCALE: f64 = 1.5;
+        const MAX_SIDE: f64 = 4096.0;
+        let file = ductus_pdf::PdfFile::open(pdf.to_vec())?;
+        let mut pages = Vec::new();
+        for (index, &(w, h)) in file.page_sizes().iter().enumerate() {
+            let scale = SCALE.min(MAX_SIDE / w.max(h));
+            let pixels = |v: f64| (v * scale).round().max(1.0) as u32;
+            let Some(mut pixmap) = tiny_skia::Pixmap::new(pixels(w), pixels(h)) else {
+                continue;
+            };
+            file.render_into(index, &mut pixmap, (0.0, 0.0), scale)?;
+            if let Ok(png) = pixmap.encode_png() {
+                pages.push((png, Some((w, h))));
+            }
+        }
+        Ok(self.0.insert_pictures(pages, Some(Point::new(x, y))))
+    }
+
     pub fn recolor_selection(&mut self, r: f32, g: f32, b: f32, a: f32) {
         self.0.recolor_selection(Rgba { r, g, b, a });
     }

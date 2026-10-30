@@ -4,6 +4,7 @@
 
 #include <QBuffer>
 #include <QClipboard>
+#include <QFile>
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QImage>
@@ -22,6 +23,9 @@
 #include <QWheelEvent>
 #include <private/qhighdpiscaling_p.h>
 #include <qpa/qwindowsysteminterface.h>
+#ifdef Q_OS_WIN
+#include "ductus-qt/cpp/winframe.h"
+#endif
 #ifdef DUCTUS_WAYLAND
 #include <QtWaylandClient/private/qwaylanddisplay_p.h>
 #include <QtWaylandClient/private/qwaylandinputdevice_p.h>
@@ -30,6 +34,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
 #include <string>
 
 namespace {
@@ -74,6 +79,36 @@ void setPenCursor(QWindow *window, const QCursor &cursor)
     Q_UNUSED(cursor);
 #endif
 }
+
+#ifdef Q_OS_WIN
+// Qt on Windows reads a pen's buttons from the mouse, which lags behind the pen: a lifted pen still
+// holds the left button until it moves on, or for good once it leaves. A tap on a button then never
+// clicks and the next touch is no press. Windows' own pen-down and pen-up messages decide instead.
+std::optional<QTabletEvent> penContactFixed(const QTabletEvent *event)
+{
+    static bool down = false;
+    const int change = WinPen::contactChangeAt(event->timestamp());
+    const bool contact = change != 0 ? change > 0
+                         : down       ? event->type() != QEvent::TabletRelease
+                                      : event->type() == QEvent::TabletPress;
+    const QEvent::Type type = contact == down ? QEvent::TabletMove
+                              : contact       ? QEvent::TabletPress
+                                              : QEvent::TabletRelease;
+    down = contact;
+    if (type == event->type())
+        return std::nullopt;
+    const Qt::MouseButtons held = event->buttons() ? event->buttons() : Qt::MouseButtons(Qt::LeftButton);
+    const Qt::MouseButton button = type == QEvent::TabletMove ? Qt::NoButton
+                                   : held & Qt::RightButton   ? Qt::RightButton
+                                                              : Qt::LeftButton;
+    QTabletEvent fixed(type, event->pointingDevice(), event->position(), event->globalPosition(),
+                       contact ? event->pressure() : 0.0, event->xTilt(), event->yTilt(),
+                       event->tangentialPressure(), event->rotation(), event->z(), event->modifiers(),
+                       button, contact ? held : Qt::NoButton);
+    fixed.setTimestamp(event->timestamp());
+    return fixed;
+}
+#endif
 
 bool isMouse(const QPointerEvent *event)
 {
@@ -572,6 +607,27 @@ bool InkCanvas::insertImageFile(const QString &fileOrUrl, QPointF at)
     return insertImage(image, at);
 }
 
+bool InkCanvas::insertPdfFile(const QString &fileOrUrl)
+{
+    QFile file(PlatformFiles::readable(fileOrUrl));
+    const QByteArray pdf = file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray();
+    bool ok = false;
+    try {
+        ok = m_engine->insert_pdf(
+            rust::Slice<const std::uint8_t>(reinterpret_cast<const std::uint8_t *>(pdf.constData()),
+                                            static_cast<std::size_t>(pdf.size())),
+            width() / 2, height() / 2);
+    } catch (const rust::Error &) {
+    }
+    if (!ok) {
+        Q_EMIT notice(tr("%1 isn't a PDF Ductus can read.").arg(PlatformFiles::displayName(fileOrUrl)), true);
+        return false;
+    }
+    Q_EMIT toolChanged();
+    afterEdit();
+    return true;
+}
+
 bool InkCanvas::insertFromMime(const QMimeData *mime, QPointF at)
 {
     if (!mime)
@@ -795,11 +851,18 @@ bool InkCanvas::eventFilter(QObject *watched, QEvent *event)
     case QEvent::TabletMove:
     case QEvent::TabletRelease:
         if (watched == window()) {
-            if (otherTakesPen(static_cast<QTabletEvent *>(event)->scenePosition())) {
+            auto *tablet = static_cast<QTabletEvent *>(event);
+            if (otherTakesPen(tablet->scenePosition())) {
                 hidePenTip();
                 return false;
             }
-            return handleTablet(static_cast<QTabletEvent *>(event));
+#ifdef Q_OS_WIN
+            if (std::optional<QTabletEvent> fixed = penContactFixed(tablet)) {
+                tablet->accept();
+                return handleTablet(&*fixed);
+            }
+#endif
+            return handleTablet(tablet);
         }
         break;
     case QEvent::MouseMove:

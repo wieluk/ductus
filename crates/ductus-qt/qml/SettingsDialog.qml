@@ -1,6 +1,7 @@
 import QtCore
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtQuick.Layouts
 import Ductus
 
@@ -485,6 +486,50 @@ Dialog {
                     options: [qsTr("System"), qsTr("Light"), qsTr("Dark")]
                     value: modes.indexOf(dialog.window.themeMode)
                     onPicked: (index) => dialog.window.themeMode = modes[index]
+                }
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: dialog.narrow ? 1 : 2
+                    rowSpacing: 6
+                    columnSpacing: 12
+                    Described {
+                        label: qsTr("App color")
+                        hint: qsTr("The title bar, buttons and highlights; the grays take on its tint.")
+                    }
+                    Flow {
+                        // The colors and More colors in one row.
+                        Layout.preferredWidth: 280
+                        Layout.fillWidth: dialog.narrow
+                        spacing: 2
+                        Repeater {
+                            model: Theme.colors
+                            delegate: ColorSwatch {
+                                required property string modelData
+                                required property int index
+                                objectName: "appColor" + index
+                                swatch: modelData
+                                selected: Qt.colorEqual(dialog.window.appColor, modelData)
+                                onClicked: dialog.window.appColor = modelData
+                            }
+                        }
+                        RibbonButton {
+                            objectName: "appColorMore"
+                            iconName: "color"
+                            tip: qsTr("More colors…")
+                            implicitWidth: 28
+                            implicitHeight: 28
+                            padding: 3
+                            onClicked: {
+                                appColorDialog.selectedColor = dialog.window.appColor
+                                appColorDialog.open()
+                            }
+                        }
+                        ColorDialog {
+                            id: appColorDialog
+                            title: qsTr("Choose a color")
+                            onAccepted: dialog.window.appColor = selectedColor
+                        }
+                    }
                 }
                 Heading { text: qsTr("Around the page") }
                 Toggle {

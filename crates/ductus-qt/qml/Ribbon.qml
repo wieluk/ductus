@@ -19,7 +19,6 @@ Rectangle {
     signal exportRequested()
     signal printRequested()
     signal settingsRequested()
-    signal aboutRequested()
     signal newPageRequested()
     signal newNotebookRequested()
     signal historyRequested()
@@ -361,12 +360,6 @@ Rectangle {
                     iconName: "settings"
                     text: qsTr("Settings")
                     onClicked: ribbon.settingsRequested()
-                }
-                RibbonButton {
-                    objectName: "fileAbout"
-                    iconName: "info"
-                    tip: qsTr("About Ductus")
-                    onClicked: ribbon.aboutRequested()
                 }
                 Item { Layout.fillWidth: true }
             }

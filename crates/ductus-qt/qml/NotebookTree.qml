@@ -73,7 +73,11 @@ Rectangle {
 
     Connections {
         target: AppController
-        function onRenameRequested(path) { sidebar.renaming = path }
+        function onRenameRequested(path) {
+            // A row just added gets its field now, so the field sees renaming start and takes focus.
+            list.forceLayout()
+            sidebar.renaming = path
+        }
         function onRevealRequested(path) {
             const i = AppController.tree.treeIndexOf(path)
             if (i >= 0)
@@ -841,7 +845,7 @@ Rectangle {
                             spacing: 0
                             leftPadding: 6
                             Repeater {
-                                model: ["#5a43c0", "#1f4fd1", "#0a8a8a", "#1d8a3b", "#e07b00", "#d12f2f", "#c2185b", "#6a6779"]
+                                model: Theme.colors
                                 delegate: ColorSwatch {
                                     required property string modelData
                                     required property int index

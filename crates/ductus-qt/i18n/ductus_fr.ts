@@ -330,6 +330,10 @@
         <source>%1 isn&apos;t a picture Ductus can read.</source>
         <translation>%1 n’est pas une image que Ductus sait lire.</translation>
     </message>
+    <message>
+        <source>%1 isn&apos;t a PDF Ductus can read.</source>
+        <translation>%1 n&apos;est pas un PDF que Ductus peut lire.</translation>
+    </message>
 </context>
 <context>
     <name>Language</name>
@@ -620,6 +624,10 @@
         <translation>Importer</translation>
     </message>
     <message>
+        <source>Insert</source>
+        <translation>Insérer</translation>
+    </message>
+    <message>
         <source>Write on the PDF</source>
         <translation>Écrire sur le PDF</translation>
     </message>
@@ -630,6 +638,14 @@
     <message>
         <source>The PDF becomes the background of a notes page.</source>
         <translation>Le PDF devient l’arrière-plan d’une page de notes.</translation>
+    </message>
+    <message>
+        <source>Insert into this page</source>
+        <translation>Insérer dans cette page</translation>
+    </message>
+    <message>
+        <source>Its pages become pictures on the open page, to move and resize like any picture.</source>
+        <translation>Ses pages deviennent des images sur la page ouverte, à déplacer et redimensionner comme toute image.</translation>
     </message>
     <message>
         <source>The original file is only read, never changed.</source>
@@ -678,24 +694,6 @@
     <message>
         <source>Delete</source>
         <translation>Supprimer</translation>
-    </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>À propos de Ductus</translation>
-    </message>
-    <message>
-        <source>Handwritten notebooks for Linux, Windows and Android.
-Development preview · GPL-3.0-or-later
-
-Library: %1</source>
-        <translation>Carnets manuscrits pour Linux, Windows et Android.
-Aperçu de développement · GPL-3.0-or-later
-
-Bibliothèque : %1</translation>
-    </message>
-    <message>
-        <source>Close</source>
-        <translation>Fermer</translation>
     </message>
 </context>
 <context>
@@ -1505,10 +1503,6 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Paramètres</translation>
     </message>
     <message>
-        <source>About Ductus</source>
-        <translation>À propos de Ductus</translation>
-    </message>
-    <message>
         <source>Select everything on the page (Ctrl+A)</source>
         <translation>Tout sélectionner sur la page (Ctrl+A)</translation>
     </message>
@@ -2058,6 +2052,22 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Sombre</translation>
     </message>
     <message>
+        <source>App color</source>
+        <translation>Couleur de l&apos;application</translation>
+    </message>
+    <message>
+        <source>The title bar, buttons and highlights; the grays take on its tint.</source>
+        <translation>La barre de titre, les boutons et les surlignages ; les gris prennent sa teinte.</translation>
+    </message>
+    <message>
+        <source>More colors…</source>
+        <translation>Plus de couleurs…</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>Choisir une couleur</translation>
+    </message>
+    <message>
         <source>Around the page</source>
         <translation>Autour de la page</translation>
     </message>
@@ -2486,10 +2496,6 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     <message>
         <source>Settings…</source>
         <translation>Paramètres…</translation>
-    </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>À propos de Ductus</translation>
     </message>
     <message>
         <source>Quit</source>

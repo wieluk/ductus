@@ -13,7 +13,6 @@ Rectangle {
     property bool compact: false
     readonly property bool mobile: Qt.platform.os === "android" || Qt.platform.os === "ios"
 
-    signal aboutRequested()
     signal settingsRequested()
     signal exportRequested()
     signal openFolderRequested()
@@ -159,11 +158,6 @@ Rectangle {
                         objectName: "menuSettings"
                         text: qsTr("Settings…")
                         onTriggered: bar.settingsRequested()
-                    }
-                    AppMenuItem {
-                        objectName: "menuAbout"
-                        text: qsTr("About Ductus")
-                        onTriggered: bar.aboutRequested()
                     }
                     AppMenuItem { text: qsTr("Quit"); onTriggered: Qt.quit() }
                 }
