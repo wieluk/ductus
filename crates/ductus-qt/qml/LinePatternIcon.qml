@@ -7,6 +7,9 @@ Item {
     property string pattern: "solid"
     property color color: Theme.text
 
+    // A light rim keeps dark pen colors visible on the dark theme.
+    readonly property color outline: Theme.dark ? Qt.rgba(1, 1, 1, 0.5) : "transparent"
+
     implicitWidth: 24
     implicitHeight: 24
 
@@ -21,6 +24,8 @@ Item {
                 height: 3
                 radius: 1.5
                 color: icon.color
+                border.width: Theme.dark ? 0.75 : 0
+                border.color: icon.outline
             }
         }
     }
@@ -31,5 +36,7 @@ Item {
         height: 3
         radius: 1.5
         color: icon.color
+        border.width: Theme.dark ? 0.75 : 0
+        border.color: icon.outline
     }
 }

@@ -206,6 +206,10 @@ Rectangle {
                     required property int index
                     readonly property bool isTool: modelData.type === "tool"
                     readonly property bool highlighter: modelData.type === "highlighter"
+                    /// The preview line's height, so the halo behind it can match.
+                    readonly property real swatchHeight: highlighter
+                        ? Math.min(12, modelData.width / 2)
+                        : Math.max(2, Math.min(8, modelData.width * 1.3))
                     readonly property var info: isTool ? bar.toolInfo(modelData.tool) : null
                     readonly property bool active: isTool ? bar.toolChecked(modelData.tool)
                                                           : bar.isActive(modelData)
@@ -251,13 +255,6 @@ Rectangle {
                         border.color: Theme.accent
                     }
                     contentItem: Item {
-                        Rectangle {
-                            visible: Theme.dark && !item.isTool
-                            anchors.fill: parent
-                            anchors.margins: 2
-                            radius: Theme.radius
-                            color: Theme.swatchPaper
-                        }
                         LinePatternIcon {
                             visible: !item.isTool && !item.highlighter
                                      && (item.modelData.pattern || "solid") !== "solid"
@@ -266,13 +263,23 @@ Rectangle {
                             pattern: item.modelData.pattern || "solid"
                             color: item.isTool ? "transparent" : item.modelData.color
                         }
+                        // A light halo keeps dark pens visible on the dark bar, without a white chip.
+                        Rectangle {
+                            visible: Theme.dark && !item.isTool
+                                     && (item.highlighter || (item.modelData.pattern || "solid") === "solid")
+                            anchors.centerIn: parent
+                            width: 26
+                            height: item.swatchHeight + 4
+                            radius: item.highlighter ? 4 : height / 2
+                            rotation: -35
+                            color: Qt.rgba(1, 1, 1, 0.32)
+                        }
                         Rectangle {
                             visible: !item.isTool && (item.highlighter
                                      || (item.modelData.pattern || "solid") === "solid")
                             anchors.centerIn: parent
                             width: 22
-                            height: item.highlighter ? Math.min(12, item.modelData.width / 2)
-                                                     : Math.max(2, Math.min(8, item.modelData.width * 1.3))
+                            height: item.swatchHeight
                             radius: item.highlighter ? 2 : height / 2
                             rotation: -35
                             color: item.isTool ? "transparent" : item.modelData.color
