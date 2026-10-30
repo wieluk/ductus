@@ -310,6 +310,56 @@ pub fn ink_by_page(doc: &Document) -> Vec<crate::PageInk> {
         .collect()
 }
 
+/// The sheet a thing starting at `y` belongs to, like ink: the gap below a sheet still counts.
+fn sheet_at(sheets: &[(f64, f64, f64, f64)], y: f64) -> Option<usize> {
+    sheets
+        .iter()
+        .position(|&(_, top, _, h)| y < top + h + SHEET_GAP / 2.0)
+        .or(sheets.len().checked_sub(1))
+}
+
+/// Text boxes, formulas and pictures of a PDF written in place, by page in page units.
+pub fn objects_by_page(
+    doc: &Document,
+    picture: &dyn Fn(&str) -> Option<Vec<u8>>,
+) -> Vec<crate::PlacedObject> {
+    use crate::PageObject;
+    let sheets = ductus_core::stack_sheets(doc.pdf_sheets());
+    let texts = doc.texts().iter().cloned().map(PageObject::Text);
+    let maths = doc.maths().iter().cloned().map(PageObject::Math);
+    let pictures = doc
+        .images()
+        .iter()
+        .filter_map(|i| Some(PageObject::Picture(i.clone(), picture(&i.source)?)));
+    texts
+        .chain(maths)
+        .chain(pictures)
+        .filter_map(|object| {
+            let page = sheet_at(&sheets, object.rect().y0)?;
+            let (x0, y0, _, _) = sheets[page];
+            Some(crate::PlacedObject {
+                page,
+                object: object.moved(-x0, -y0),
+            })
+        })
+        .collect()
+}
+
+/// Objects read from a PDF, placed on its stacked sheets.
+pub fn document_objects(
+    sizes: &[(f64, f64)],
+    placed: Vec<crate::PlacedObject>,
+) -> Vec<crate::PageObject> {
+    let sheets = ductus_core::stack_sheets(sizes);
+    placed
+        .into_iter()
+        .filter_map(|p| {
+            let &(x0, y0, _, _) = sheets.get(p.page)?;
+            Some(p.object.moved(x0, y0))
+        })
+        .collect()
+}
+
 pub fn document_strokes(
     sizes: &[(f64, f64)],
     ink: Vec<crate::PageInk>,

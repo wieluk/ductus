@@ -148,20 +148,39 @@ bool NotebookModel::anyExpanded() const
 
 void NotebookModel::setRows(QList<Row> rows)
 {
-    // Same rows: update in place so views keep their scroll position.
-    bool sameShape = rows.size() == m_rows.size();
-    for (qsizetype i = 0; sameShape && i < rows.size(); ++i)
-        sameShape = rows[i].path == m_rows[i].path && rows[i].section == m_rows[i].section;
-    if (sameShape) {
+    // Only the rows that differ are removed and inserted, so views keep their scroll position
+    // when a folder opens or closes.
+    // Another view, with or without section headers: ListView crashes if they change under its rows.
+    if ((!rows.isEmpty() && !rows.first().section.isEmpty()) != hasSections()) {
+        beginResetModel();
         m_rows = std::move(rows);
-        if (!m_rows.isEmpty())
-            Q_EMIT dataChanged(index(0), index(static_cast<int>(m_rows.size()) - 1));
+        endResetModel();
         Q_EMIT rowsChanged();
         return;
     }
-    beginResetModel();
+    const auto same = [](const Row &a, const Row &b) { return a.path == b.path && a.section == b.section; };
+    const qsizetype shorter = std::min(rows.size(), m_rows.size());
+    qsizetype head = 0;
+    while (head < shorter && same(rows[head], m_rows[head]))
+        ++head;
+    qsizetype tail = 0;
+    while (tail < shorter - head && same(rows[rows.size() - 1 - tail], m_rows[m_rows.size() - 1 - tail]))
+        ++tail;
+    if (m_rows.size() - tail > head) {
+        beginRemoveRows({}, static_cast<int>(head), static_cast<int>(m_rows.size() - tail - 1));
+        m_rows.remove(head, m_rows.size() - tail - head);
+        endRemoveRows();
+    }
+    if (rows.size() - tail > head) {
+        beginInsertRows({}, static_cast<int>(head), static_cast<int>(rows.size() - tail - 1));
+        m_rows.insert(head, rows.size() - tail - head, Row());
+        for (qsizetype i = head; i < rows.size() - tail; ++i)
+            m_rows[i] = rows[i];
+        endInsertRows();
+    }
     m_rows = std::move(rows);
-    endResetModel();
+    if (!m_rows.isEmpty())
+        Q_EMIT dataChanged(index(0), index(static_cast<int>(m_rows.size()) - 1));
     Q_EMIT rowsChanged();
 }
 
@@ -244,6 +263,14 @@ AppController::AppController(QObject *parent)
     });
     // Only open folders are watched; catch up on the rest when we come back.
     connect(qApp, &QGuiApplication::applicationStateChanged, this, [this](Qt::ApplicationState state) {
+        // Android ends apps in the background without notice: what's typed must be on disk by then.
+        if (state != Qt::ApplicationActive) {
+#if defined(Q_OS_ANDROID)
+            if (m_canvas)
+                m_canvas->finishTextEditing();
+#endif
+            saveNow();
+        }
         if (state == Qt::ApplicationActive) {
             // Back from the system page that gives access to shared storage.
             if (m_awaitingShared && PlatformFiles::hasSharedAccess()) {
@@ -297,6 +324,32 @@ QString AppController::libraryPath() const
     return m_library ? toQ((*m_library)->root()) : QString();
 }
 
+QString AppController::libraryDisplayPath() const
+{
+    return PlatformFiles::displayPath(libraryPath());
+}
+
+QString AppController::nameProblem(const QString &name) const
+{
+    const QString n = name.trimmed();
+    if (n.isEmpty())
+        return {};
+    if (n.startsWith(QLatin1Char('.')))
+        return tr("A name can't start with a dot.");
+    for (const QChar c : n) {
+        if (QStringLiteral("/\\:*?\"<>|").contains(c) || c.category() == QChar::Other_Control)
+            return tr("A name can't contain “%1”: Windows and sync apps don't allow it in file names.").arg(c);
+    }
+    if (n.endsWith(QLatin1Char('.')))
+        return tr("A name can't end with a dot.");
+    return {};
+}
+
+void AppController::moveToBack()
+{
+    PlatformFiles::moveToBack();
+}
+
 QString AppController::currentPage() const
 {
     return m_library ? toQ((*m_library)->open_page()) : QString();
@@ -304,8 +357,7 @@ QString AppController::currentPage() const
 
 QString AppController::currentTitle() const
 {
-    const QString page = currentPage();
-    return page.section(QLatin1Char('/'), -1);
+    return displayName(currentPage());
 }
 
 QString AppController::parentOf(const QString &path) const
@@ -862,7 +914,6 @@ void AppController::showPage(const QString &path, bool newTab)
     if (const auto view = m_views.constFind(path); view != m_views.cend())
         engine.set_view(view->zoom, view->x, view->y);
     m_canvas->documentReplaced();
-    m_canvas->setPicturesAllowed((*m_library)->accepts_pictures());
     m_savedRevision = m_canvas->revision();
     setDirty(false);
     storePanes();
@@ -1114,7 +1165,11 @@ void AppController::showLibraryData()
 
 QString AppController::displayName(const QString &path) const
 {
-    return (path.isEmpty() ? libraryPath() : path).section(QLatin1Char('/'), -1);
+    const QString name = (path.isEmpty() ? libraryPath() : path).section(QLatin1Char('/'), -1);
+    // PDFs show without their extension, as in the sidebar.
+    if (!path.isEmpty() && name.endsWith(QStringLiteral(".pdf"), Qt::CaseInsensitive))
+        return name.chopped(4);
+    return name;
 }
 
 void AppController::showInNotebooks(const QString &path)
@@ -1342,7 +1397,7 @@ QString AppController::restoreFromTrash(const QString &id)
         reveal(rel);
     else
         openInNewTab(rel);
-    Q_EMIT notice(tr("\u201c%1\u201d is back.").arg(rel.section(QLatin1Char('/'), -1)));
+    Q_EMIT notice(tr("“%1” is back.").arg(rel.section(QLatin1Char('/'), -1)));
     return rel;
 }
 
@@ -1642,7 +1697,7 @@ void AppController::finishImport(const QString &folder, const QString &name)
         openInNewTab(toQ(result.page));
     locate(root);
     const QString warnings = toQ(result.warnings);
-    const QString place = tr("Imported into %1.").arg(placeLabel(folder));
+    const QString place = tr("Imported “%1” into %2.").arg(root.section(QLatin1Char('/'), -1), placeLabel(folder));
     Q_EMIT notice(warnings.isEmpty() ? place : place + QLatin1Char(' ') + warnings);
 }
 
@@ -1680,7 +1735,7 @@ bool AppController::exportFolder(const QString &folder, const QString &fileOrUrl
     if (!attempt([&] { pages = (*m_library)->pages_in(toStd(folder)); }))
         return false;
     if (pages.empty()) {
-        Q_EMIT errorOccurred(tr("There are no pages in \u201c%1\u201d to export.").arg(displayName(folder)));
+        Q_EMIT errorOccurred(tr("There are no pages in “%1” to export.").arg(displayName(folder)));
         return false;
     }
     // Each page goes through the canvas engine, like a single page export.
@@ -2088,7 +2143,7 @@ void AppController::pollConversion()
     const QString error = toQ(state.error);
     if (!error.isEmpty())
         Q_EMIT errorOccurred(tr("The handwriting couldn't be read: %1").arg(error));
-    else if (!m_canvas || !m_canvas->replaceInk(toQ(state.result), m_convertMath))
+    else if (!m_canvas || !m_canvas->replaceInk(toQ(state.result), m_convertMath, toQ(state.strokes)))
         Q_EMIT notice(tr("No handwriting was recognized."));
 }
 

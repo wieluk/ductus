@@ -13,7 +13,6 @@ Rectangle {
     property bool compact: false
     readonly property bool mobile: Qt.platform.os === "android" || Qt.platform.os === "ios"
 
-    signal aboutRequested()
     signal settingsRequested()
     signal exportRequested()
     signal openFolderRequested()
@@ -160,11 +159,6 @@ Rectangle {
                         text: qsTr("Settings…")
                         onTriggered: bar.settingsRequested()
                     }
-                    AppMenuItem {
-                        objectName: "menuAbout"
-                        text: qsTr("About Ductus")
-                        onTriggered: bar.aboutRequested()
-                    }
                     AppMenuItem { text: qsTr("Quit"); onTriggered: Qt.quit() }
                 }
             }
@@ -201,6 +195,8 @@ Rectangle {
                     required property var modelData
                     readonly property bool active: bar.currentTab === modelData.key
                     objectName: "tab_" + modelData.key
+                    Accessible.name: modelData.label
+                    Accessible.role: Accessible.PageTab
                     Layout.alignment: Qt.AlignBottom
                     implicitHeight: Theme.titleHeight - 6
                     implicitWidth: tabLabel.implicitWidth + (bar.compact ? 14 : 28)
@@ -285,6 +281,7 @@ Rectangle {
                     id: winButton
                     required property var modelData
                     objectName: "window_" + modelData.action
+                    Accessible.name: modelData.tip
                     // A phone's apps fill the screen and close through the system.
                     visible: !bar.mobile
                     implicitWidth: 46
@@ -308,5 +305,10 @@ Rectangle {
                 }
             }
         }
+    }
+    ScrollArrows {
+        target: scroller
+        color: Theme.titleBar
+        onTitleBar: true
     }
 }

@@ -20,6 +20,9 @@ struct Deleted {
     deleted: u64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     assets: Option<String>,
+    /// Its place among the folder's entries, so it comes back there.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    position: Option<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -62,10 +65,7 @@ impl Library {
     }
 
     fn trash_index(&self) -> BTreeMap<String, Deleted> {
-        fs::read_to_string(self.data.join(TRASH_INDEX))
-            .ok()
-            .and_then(|s| serde_json::from_str(&s).ok())
-            .unwrap_or_default()
+        super::read_data(&self.data.join(TRASH_INDEX))
     }
 
     fn save_trash_index(&self, index: &BTreeMap<String, Deleted>) -> Result<(), Error> {
@@ -77,6 +77,7 @@ impl Library {
     /// Moves an entry (and a page's pictures) into the trash; returns its trash id.
     pub fn delete(&self, rel: &str) -> Result<String, Error> {
         let (from, kind, parent, name) = self.entry(rel)?;
+        let position = self.child_names(&parent)?.iter().position(|n| *n == name);
         let trash = self.trash_dir();
         fs::create_dir_all(&trash)?;
         let file_name = from
@@ -88,14 +89,11 @@ impl Library {
             stamp += 1;
         }
         let id = format!("{stamp} {file_name}");
-        move_path(&from, &trash.join(&id))?;
-        let mut assets = None;
         let assets_dir = self.assets_dir(rel);
-        if kind == NodeKind::Page && assets_dir.is_dir() {
-            let assets_id = format!("{stamp} {name}{ASSETS_SUFFIX}");
-            move_path(&assets_dir, &trash.join(&assets_id))?;
-            assets = Some(assets_id);
-        }
+        let assets = (kind == NodeKind::Page && assets_dir.is_dir())
+            .then(|| format!("{stamp} {name}{ASSETS_SUFFIX}"));
+        // Listed first: a crash right after moving must not leave the entry nowhere to be seen.
+        // The trash lists only what arrived, so an entry without its file stays hidden.
         let mut index = self.trash_index();
         index.insert(
             id.clone(),
@@ -103,10 +101,19 @@ impl Library {
                 original: Self::join(&parent, &name),
                 kind: kind_name(kind).into(),
                 deleted: stamp,
-                assets,
+                assets: assets.clone(),
+                position,
             },
         );
         self.save_trash_index(&index)?;
+        if let Err(e) = move_path(&from, &trash.join(&id)) {
+            index.remove(&id);
+            let _ = self.save_trash_index(&index);
+            return Err(e);
+        }
+        if let Some(assets_id) = &assets {
+            move_path(&assets_dir, &trash.join(assets_id))?;
+        }
         self.edit_order(&parent, |order| order.retain(|n| *n != name))?;
         self.path_lists_removed(rel)?;
         Ok(id)
@@ -156,6 +163,7 @@ impl Library {
         move_path(&self.trash_dir().join(id), &to)?;
         let mut index = self.trash_index();
         let assets = index.get(id).and_then(|d| d.assets.clone());
+        let position = index.get(id).and_then(|d| d.position);
         if let Some(assets) = assets {
             let from = self.trash_dir().join(&assets);
             if from.is_dir() {
@@ -166,7 +174,8 @@ impl Library {
         self.save_trash_index(&index)?;
         self.edit_order(&parent, |order| {
             order.retain(|n| *n != name);
-            order.push(name.clone());
+            let at = position.unwrap_or(order.len()).min(order.len());
+            order.insert(at, name.clone());
         })?;
         Ok(rel)
     }

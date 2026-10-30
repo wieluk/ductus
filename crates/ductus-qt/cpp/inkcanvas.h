@@ -98,7 +98,6 @@ class InkCanvas : public QQuickItem
     Q_PROPERTY(QRectF mathDraftRect READ mathDraftRect NOTIFY mathDraftChanged)
     Q_PROPERTY(bool selectionHasInk READ selectionHasInk NOTIFY selectionChanged)
     Q_PROPERTY(QRectF selectionRect READ selectionRect NOTIFY selectionChanged)
-    Q_PROPERTY(bool picturesAllowed READ picturesAllowed WRITE setPicturesAllowed NOTIFY picturesAllowedChanged)
     Q_PROPERTY(int holdDelay READ holdDelay WRITE setHoldDelay NOTIFY inputSettingsChanged)
     /// Touch is ignored this long (ms) after pen activity, so a resting palm doesn't scroll.
     Q_PROPERTY(int palmRejection READ palmRejection WRITE setPalmRejection NOTIFY inputSettingsChanged)
@@ -157,8 +156,6 @@ public:
     void setEraserWholeStrokes(bool on);
     bool shapeAssist() const { return m_shapeAssist; }
     void setShapeAssist(bool on);
-    bool picturesAllowed() const { return m_picturesAllowed; }
-    void setPicturesAllowed(bool allowed);
     int selectionCount() const { return m_selectionCount; }
     TextBoxModel *texts() { return &m_texts; }
     QRectF mathDraftRect() const { return m_mathDraftRect; }
@@ -177,7 +174,7 @@ public:
     Q_INVOKABLE void setPageStyle(const QString &kind, bool landscape, const QString &pattern);
     Q_INVOKABLE void selectAll();
     /// Replaces the selected ink with recognized text or a LaTeX formula (one undo step).
-    bool replaceInk(const QString &content, bool math);
+    bool replaceInk(const QString &content, bool math, const QString &strokes);
     Q_INVOKABLE void clearSelection();
     Q_INVOKABLE void deleteSelection();
     Q_INVOKABLE void copySelection();
@@ -186,6 +183,8 @@ public:
     Q_INVOKABLE void paste();
     Q_INVOKABLE bool insertImage(const QImage &image, QPointF at = QPointF(qQNaN(), qQNaN()));
     Q_INVOKABLE bool insertImageFile(const QString &fileOrUrl, QPointF at = QPointF(qQNaN(), qQNaN()));
+    /// Its pages as pictures, like a printout.
+    Q_INVOKABLE bool insertPdfFile(const QString &fileOrUrl);
     Q_INVOKABLE void recolorSelection(const QColor &color);
     Q_INVOKABLE QPointF toDoc(QPointF itemPoint) const;
     Q_INVOKABLE QPointF toScreen(QPointF docPoint) const;
@@ -218,7 +217,6 @@ Q_SIGNALS:
     void eraserSizeChanged();
     void shapeAssistChanged();
     void selectionChanged();
-    void picturesAllowedChanged();
     void textRequested(QPointF position, qint64 id);
     void mathRequested(QPointF position, qint64 id);
     void mathDraftChanged();
@@ -293,6 +291,10 @@ private:
     QPointF m_pinchStartCenter;
     qreal m_pinchStartDistance = 1;
     QPointF m_lastTouchPosition;
+    // A finger tap with the text or formula tool places a box, as a pen tap does.
+    QPointF m_tapStart;
+    QElapsedTimer m_tapTime;
+    bool m_tapCandidate = false;
     QTimer m_settleTimer;
 
     bool m_shapeAssist = true;
@@ -308,7 +310,6 @@ private:
     QTimer m_holdTimer;
     QTimer m_markTimer;
     QPointF m_holdAnchor;
-    bool m_picturesAllowed = true;
     bool m_textTool = false;
     bool m_mathTool = false;
     QRectF m_mathDraftRect;

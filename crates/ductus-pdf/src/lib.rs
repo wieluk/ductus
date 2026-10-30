@@ -9,10 +9,16 @@ mod pictures;
 #[cfg(test)]
 mod testpdf;
 
-pub use annot::{PageInk, flatten, read_ink, strip_ductus_annotations, write_ink};
+pub use annot::{
+    PageInk, PageObject, PlacedObject, flatten, read_ink, read_objects, strip_ductus_annotations,
+    write_annotations, write_ink,
+};
 pub use blank::insert_blank_page;
 pub use engine::{engine, pdfium_status};
-pub use export::{document_strokes, export_notes, ink_by_page, math_overlay, page_areas};
+pub use export::{
+    document_objects, document_strokes, export_notes, ink_by_page, math_overlay, objects_by_page,
+    page_areas,
+};
 pub use file::{PdfFile, PdfPainter};
 pub use merge::{SheetSource, compose, merge};
 pub use overlay::overlay_pages;

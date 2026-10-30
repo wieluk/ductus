@@ -35,11 +35,8 @@ AppDialog {
     title: qsTr("Import notes")
     acceptText: qsTr("Import")
     acceptButton.objectName: "importConfirm"
-    acceptButton.enabled: name.length > 0
-    onOpened: {
-        nameField.forceActiveFocus()
-        nameField.selectAll()
-    }
+    acceptButton.enabled: nameField.valid
+    onOpened: nameField.focusAll()
     onAccepted: {
         finished = true
         AppController.finishImport(place.location, name)
@@ -71,11 +68,10 @@ AppDialog {
             color: Theme.textMuted
             font.pixelSize: 12
         }
-        TextField {
+        NameField {
             id: nameField
-            objectName: "importName"
+            fieldName: "importName"
             Layout.fillWidth: true
-            selectByMouse: true
             onAccepted: if (dialog.acceptButton.enabled) dialog.accept()
         }
         PlacePicker {
@@ -89,7 +85,7 @@ AppDialog {
             text: dialog.savedAs.length > 0 && dialog.savedAs !== dialog.name
                   ? qsTr("“%1” already exists there, so this is saved as “%2”. Nothing is overwritten.")
                         .arg(dialog.name).arg(dialog.savedAs)
-                  : qsTr("The original file is only read, never changed.")
+                  : qsTr("What you import from is only read, never changed.")
             color: Theme.textMuted
             font.pixelSize: 11
         }

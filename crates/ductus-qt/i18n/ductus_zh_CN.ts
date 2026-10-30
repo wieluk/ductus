@@ -88,10 +88,6 @@
         <translation>正在导入 %1…</translation>
     </message>
     <message>
-        <source>Imported into %1.</source>
-        <translation>已导入到 %1。</translation>
-    </message>
-    <message>
         <source>Page copied into %1.</source>
         <translation>页面已复制到 %1。</translation>
     </message>
@@ -100,8 +96,24 @@
         <translation>无法把 PDF 保存到那里。</translation>
     </message>
     <message>
+        <source>A name can&apos;t start with a dot.</source>
+        <translation>名称不能以点开头。</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t contain “%1”: Windows and sync apps don&apos;t allow it in file names.</source>
+        <translation>名称不能包含“%1”：Windows 和同步应用不允许在文件名中使用它。</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t end with a dot.</source>
+        <translation>名称不能以点结尾。</translation>
+    </message>
+    <message>
         <source>New section</source>
         <translation>新建分区</translation>
+    </message>
+    <message>
+        <source>Imported “%1” into %2.</source>
+        <translation>已将“%1”导入到 %2。</translation>
     </message>
     <message>
         <source>Exported to %1</source>
@@ -303,19 +315,19 @@
         <translation>那里已有“%1”，因此保存为“%2”。不会覆盖任何内容。</translation>
     </message>
     <message>
-        <source>The original file is only read, never changed.</source>
-        <translation>只读取原始文件，绝不修改它。</translation>
+        <source>What you import from is only read, never changed.</source>
+        <translation>只读取导入来源，绝不修改它。</translation>
     </message>
 </context>
 <context>
     <name>InkCanvas</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to add pictures.</source>
-        <translation>暂时无法在直接书写的 PDF 中添加图片。请将 PDF 作为笔记页面导入后再添加图片。</translation>
-    </message>
-    <message>
         <source>%1 isn&apos;t a picture Ductus can read.</source>
         <translation>%1 不是 Ductus 能读取的图片。</translation>
+    </message>
+    <message>
+        <source>%1 isn&apos;t a PDF Ductus can read.</source>
+        <translation>%1 不是 Ductus 能读取的 PDF。</translation>
     </message>
 </context>
 <context>
@@ -519,10 +531,6 @@
 <context>
     <name>Main</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet.</source>
-        <translation>暂时无法在直接书写的 PDF 中添加图片。</translation>
-    </message>
-    <message>
         <source>“%1” is in the trash.</source>
         <translation>“%1”已移到回收站。</translation>
     </message>
@@ -537,6 +545,10 @@
     <message>
         <source>Download the recognizer for this first.</source>
         <translation>请先下载相应的识别器。</translation>
+    </message>
+    <message>
+        <source>Drag to resize the halves; double-click for equal halves</source>
+        <translation>拖动以调整两半的大小；双击恢复等分</translation>
     </message>
     <message>
         <source>Show or hide notebooks (%1)</source>
@@ -607,20 +619,36 @@
         <translation>导入</translation>
     </message>
     <message>
+        <source>Insert</source>
+        <translation>插入</translation>
+    </message>
+    <message>
         <source>Write on the PDF</source>
         <translation>在 PDF 上书写</translation>
     </message>
     <message>
-        <source>Ink is saved into the PDF as annotations. Other PDF readers show it too.</source>
-        <translation>笔迹会作为批注保存到 PDF 中，其他 PDF 阅读器也能显示。</translation>
+        <source>A copy goes into the notebook; your ink is saved in that copy as annotations, so other PDF readers show it too.</source>
+        <translation>副本会放入笔记本；你的笔迹以批注形式保存在副本中，其他 PDF 阅读器也能显示。</translation>
+    </message>
+    <message>
+        <source>The PDF becomes the background of a notes page.</source>
+        <translation>PDF 将成为笔记页面的背景。</translation>
+    </message>
+    <message>
+        <source>Insert into this page</source>
+        <translation>插入到此页面</translation>
+    </message>
+    <message>
+        <source>Its pages become pictures on the open page, to move and resize like any picture.</source>
+        <translation>它的各页会成为当前页面上的图片，可像其他图片一样移动和缩放。</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>只读取原始文件，绝不修改它。</translation>
     </message>
     <message>
         <source>Import as note pages</source>
         <translation>作为笔记页面导入</translation>
-    </message>
-    <message>
-        <source>The PDF becomes the background of a notes page. The original stays untouched.</source>
-        <translation>PDF 会成为笔记页面的背景。原文件保持不变。</translation>
     </message>
     <message>
         <source>Page</source>
@@ -662,31 +690,9 @@
         <source>Delete</source>
         <translation>删除</translation>
     </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>关于 Ductus</translation>
-    </message>
-    <message>
-        <source>Handwritten notebooks for Linux, Windows and Android.
-Development preview · GPL-3.0-or-later
-
-Library: %1</source>
-        <translation>适用于 Linux、Windows 和 Android 的手写笔记本。
-开发预览版 · GPL-3.0-or-later
-
-资料库：%1</translation>
-    </message>
-    <message>
-        <source>Close</source>
-        <translation>关闭</translation>
-    </message>
 </context>
 <context>
     <name>MathLayer</name>
-    <message>
-        <source>Formulas can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to write formulas on it.</source>
-        <translation>暂时无法在直接书写的 PDF 中添加公式。请将 PDF 作为笔记页面导入后再书写公式。</translation>
-    </message>
     <message>
         <source>Reset the math favorites?</source>
         <translation>重置数学收藏？</translation>
@@ -1305,6 +1311,13 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     </message>
 </context>
 <context>
+    <name>PlatformFiles</name>
+    <message>
+        <source>Inside the app</source>
+        <translation>应用内部</translation>
+    </message>
+</context>
+<context>
     <name>Ribbon</name>
     <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
@@ -1485,10 +1498,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>设置</translation>
     </message>
     <message>
-        <source>About Ductus</source>
-        <translation>关于 Ductus</translation>
-    </message>
-    <message>
         <source>Select everything on the page (Ctrl+A)</source>
         <translation>选择页面上的所有内容（Ctrl+A）</translation>
     </message>
@@ -1531,10 +1540,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Add a picture file; you can also drop pictures onto the page</source>
         <translation>添加图片文件；也可以把图片拖到页面上</translation>
-    </message>
-    <message>
-        <source>PDFs written on directly can&apos;t hold pictures yet</source>
-        <translation>直接书写的 PDF 暂时不能包含图片</translation>
     </message>
     <message>
         <source>PDF…</source>
@@ -1658,6 +1663,17 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     </message>
 </context>
 <context>
+    <name>ScrollArrows</name>
+    <message>
+        <source>More</source>
+        <translation>更多</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>返回</translation>
+    </message>
+</context>
+<context>
     <name>SearchBox</name>
     <message>
         <source>This page</source>
@@ -1684,8 +1700,20 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>所有页面和 PDF 的名称与内容 (Ctrl+K)</translation>
     </message>
     <message>
+        <source>Search in: %1</source>
+        <translation>搜索范围：%1</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>搜索</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
-        <translation>搜索（Ctrl+F）</translation>
+        <translation>搜索 (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Search (Ctrl+K)</source>
+        <translation>搜索 (Ctrl+K)</translation>
     </message>
     <message>
         <source>page %1</source>
@@ -1784,6 +1812,14 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Normal</source>
         <translation>正常</translation>
+    </message>
+    <message>
+        <source>Remove “%1”?</source>
+        <translation>移除“%1”？</translation>
+    </message>
+    <message>
+        <source>Handwriting can&apos;t be read with it until it is downloaded again.</source>
+        <translation>重新下载之前，将无法用它识别手写内容。</translation>
     </message>
     <message>
         <source>Firm</source>
@@ -2009,6 +2045,22 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Dark</source>
         <translation>深色</translation>
+    </message>
+    <message>
+        <source>App color</source>
+        <translation>应用颜色</translation>
+    </message>
+    <message>
+        <source>The title bar, buttons and highlights; the grays take on its tint.</source>
+        <translation>用于标题栏、按钮和高亮；灰色也会带上它的色调。</translation>
+    </message>
+    <message>
+        <source>More colors…</source>
+        <translation>更多颜色…</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>选择颜色</translation>
     </message>
     <message>
         <source>Around the page</source>
@@ -2310,10 +2362,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>TextLayer</name>
     <message>
-        <source>Text boxes can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to type on it.</source>
-        <translation>暂时无法在直接书写的 PDF 中添加文本框。请将 PDF 作为笔记页面导入后再输入文字。</translation>
-    </message>
-    <message>
         <source>Bold (Ctrl+B)</source>
         <translation>粗体（Ctrl+B）</translation>
     </message>
@@ -2443,10 +2491,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Settings…</source>
         <translation>设置…</translation>
-    </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>关于 Ductus</translation>
     </message>
     <message>
         <source>Quit</source>

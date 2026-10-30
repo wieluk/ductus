@@ -88,10 +88,6 @@
         <translation>%1 wird importiert…</translation>
     </message>
     <message>
-        <source>Imported into %1.</source>
-        <translation>Importiert nach %1.</translation>
-    </message>
-    <message>
         <source>Page copied into %1.</source>
         <translation>Seite nach %1 kopiert.</translation>
     </message>
@@ -100,8 +96,24 @@
         <translation>Das PDF konnte dort nicht gespeichert werden.</translation>
     </message>
     <message>
+        <source>A name can&apos;t start with a dot.</source>
+        <translation>Ein Name darf nicht mit einem Punkt beginnen.</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t contain “%1”: Windows and sync apps don&apos;t allow it in file names.</source>
+        <translation>Ein Name darf kein „%1“ enthalten: Windows und Sync-Apps erlauben es nicht in Dateinamen.</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t end with a dot.</source>
+        <translation>Ein Name darf nicht mit einem Punkt enden.</translation>
+    </message>
+    <message>
         <source>New section</source>
         <translation>Neuer Abschnitt</translation>
+    </message>
+    <message>
+        <source>Imported “%1” into %2.</source>
+        <translation>„%1“ nach %2 importiert.</translation>
     </message>
     <message>
         <source>Exported to %1</source>
@@ -308,19 +320,19 @@
         <translation>„%1“ gibt es dort schon, darum wird es als „%2“ gespeichert. Nichts wird überschrieben.</translation>
     </message>
     <message>
-        <source>The original file is only read, never changed.</source>
-        <translation>Die Originaldatei wird nur gelesen, nie verändert.</translation>
+        <source>What you import from is only read, never changed.</source>
+        <translation>Woraus du importierst, wird nur gelesen, nie verändert.</translation>
     </message>
 </context>
 <context>
     <name>InkCanvas</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to add pictures.</source>
-        <translation>Bilder lassen sich noch nicht in ein PDF einfügen, auf das du direkt schreibst. Importiere das PDF als Notizseiten, um Bilder hinzuzufügen.</translation>
-    </message>
-    <message>
         <source>%1 isn&apos;t a picture Ductus can read.</source>
         <translation>%1 ist kein Bild, das Ductus lesen kann.</translation>
+    </message>
+    <message>
+        <source>%1 isn&apos;t a PDF Ductus can read.</source>
+        <translation>%1 ist kein PDF, das Ductus lesen kann.</translation>
     </message>
 </context>
 <context>
@@ -524,10 +536,6 @@
 <context>
     <name>Main</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet.</source>
-        <translation>Bilder lassen sich noch nicht in ein PDF einfügen, auf das du direkt schreibst.</translation>
-    </message>
-    <message>
         <source>“%1” is in the trash.</source>
         <translation>„%1“ liegt im Papierkorb.</translation>
     </message>
@@ -542,6 +550,10 @@
     <message>
         <source>Download the recognizer for this first.</source>
         <translation>Lade zuerst die Erkennung dafür herunter.</translation>
+    </message>
+    <message>
+        <source>Drag to resize the halves; double-click for equal halves</source>
+        <translation>Ziehen, um die Hälften anzupassen; Doppelklick für gleiche Hälften</translation>
     </message>
     <message>
         <source>Show or hide notebooks (%1)</source>
@@ -612,20 +624,36 @@
         <translation>Importieren</translation>
     </message>
     <message>
+        <source>Insert</source>
+        <translation>Einfügen</translation>
+    </message>
+    <message>
         <source>Write on the PDF</source>
         <translation>Auf das PDF schreiben</translation>
     </message>
     <message>
-        <source>Ink is saved into the PDF as annotations. Other PDF readers show it too.</source>
-        <translation>Die Tinte wird als Anmerkungen im PDF gespeichert. Andere PDF-Programme zeigen sie ebenfalls.</translation>
+        <source>A copy goes into the notebook; your ink is saved in that copy as annotations, so other PDF readers show it too.</source>
+        <translation>Eine Kopie kommt ins Notizbuch; deine Tinte wird darin als Anmerkungen gespeichert, sodass auch andere PDF-Programme sie zeigen.</translation>
+    </message>
+    <message>
+        <source>The PDF becomes the background of a notes page.</source>
+        <translation>Das PDF wird zum Hintergrund einer Notizseite.</translation>
+    </message>
+    <message>
+        <source>Insert into this page</source>
+        <translation>In diese Seite einfügen</translation>
+    </message>
+    <message>
+        <source>Its pages become pictures on the open page, to move and resize like any picture.</source>
+        <translation>Seine Seiten werden Bilder auf der offenen Seite, die du wie jedes Bild verschieben und in der Größe ändern kannst.</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>Die Originaldatei wird nur gelesen, nie verändert.</translation>
     </message>
     <message>
         <source>Import as note pages</source>
         <translation>Als Notizseiten importieren</translation>
-    </message>
-    <message>
-        <source>The PDF becomes the background of a notes page. The original stays untouched.</source>
-        <translation>Das PDF wird zum Hintergrund einer Notizseite. Das Original bleibt unverändert.</translation>
     </message>
     <message>
         <source>Page</source>
@@ -667,31 +695,9 @@
         <source>Delete</source>
         <translation>Löschen</translation>
     </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>Über Ductus</translation>
-    </message>
-    <message>
-        <source>Handwritten notebooks for Linux, Windows and Android.
-Development preview · GPL-3.0-or-later
-
-Library: %1</source>
-        <translation>Handgeschriebene Notizbücher für Linux, Windows und Android.
-Entwicklungsvorschau · GPL-3.0-or-later
-
-Bibliothek: %1</translation>
-    </message>
-    <message>
-        <source>Close</source>
-        <translation>Schließen</translation>
-    </message>
 </context>
 <context>
     <name>MathLayer</name>
-    <message>
-        <source>Formulas can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to write formulas on it.</source>
-        <translation>Formeln lassen sich noch nicht in ein PDF einfügen, auf das du direkt schreibst. Importiere das PDF als Notizseiten, um Formeln darauf zu schreiben.</translation>
-    </message>
     <message>
         <source>Reset the math favorites?</source>
         <translation>Mathe-Favoriten zurücksetzen?</translation>
@@ -1310,6 +1316,13 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     </message>
 </context>
 <context>
+    <name>PlatformFiles</name>
+    <message>
+        <source>Inside the app</source>
+        <translation>In der App</translation>
+    </message>
+</context>
+<context>
     <name>Ribbon</name>
     <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
@@ -1490,10 +1503,6 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Einstellungen</translation>
     </message>
     <message>
-        <source>About Ductus</source>
-        <translation>Über Ductus</translation>
-    </message>
-    <message>
         <source>Select everything on the page (Ctrl+A)</source>
         <translation>Alles auf der Seite auswählen (Strg+A)</translation>
     </message>
@@ -1536,10 +1545,6 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     <message>
         <source>Add a picture file; you can also drop pictures onto the page</source>
         <translation>Eine Bilddatei hinzufügen; du kannst Bilder auch auf die Seite ziehen</translation>
-    </message>
-    <message>
-        <source>PDFs written on directly can&apos;t hold pictures yet</source>
-        <translation>PDFs, auf die du direkt schreibst, können noch keine Bilder enthalten</translation>
     </message>
     <message>
         <source>PDF…</source>
@@ -1663,6 +1668,17 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     </message>
 </context>
 <context>
+    <name>ScrollArrows</name>
+    <message>
+        <source>More</source>
+        <translation>Mehr</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Zurück</translation>
+    </message>
+</context>
+<context>
     <name>SearchBox</name>
     <message>
         <source>This page</source>
@@ -1689,8 +1705,20 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Namen und Inhalte aller Seiten und PDFs (Strg+K)</translation>
     </message>
     <message>
+        <source>Search in: %1</source>
+        <translation>Suchen in: %1</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>Suchen</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Suchen (Strg+F)</translation>
+    </message>
+    <message>
+        <source>Search (Ctrl+K)</source>
+        <translation>Suchen (Strg+K)</translation>
     </message>
     <message>
         <source>page %1</source>
@@ -1789,6 +1817,14 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     <message>
         <source>Normal</source>
         <translation>Normal</translation>
+    </message>
+    <message>
+        <source>Remove “%1”?</source>
+        <translation>„%1“ entfernen?</translation>
+    </message>
+    <message>
+        <source>Handwriting can&apos;t be read with it until it is downloaded again.</source>
+        <translation>Bis du es erneut herunterlädst, kann damit keine Handschrift gelesen werden.</translation>
     </message>
     <message>
         <source>Firm</source>
@@ -2014,6 +2050,22 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     <message>
         <source>Dark</source>
         <translation>Dunkel</translation>
+    </message>
+    <message>
+        <source>App color</source>
+        <translation>App-Farbe</translation>
+    </message>
+    <message>
+        <source>The title bar, buttons and highlights; the grays take on its tint.</source>
+        <translation>Titelleiste, Schaltflächen und Hervorhebungen; die Grautöne nehmen ihren Farbton an.</translation>
+    </message>
+    <message>
+        <source>More colors…</source>
+        <translation>Weitere Farben…</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>Farbe wählen</translation>
     </message>
     <message>
         <source>Around the page</source>
@@ -2315,10 +2367,6 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
 <context>
     <name>TextLayer</name>
     <message>
-        <source>Text boxes can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to type on it.</source>
-        <translation>Textfelder lassen sich noch nicht in ein PDF einfügen, auf das du direkt schreibst. Importiere das PDF als Notizseiten, um darauf zu tippen.</translation>
-    </message>
-    <message>
         <source>Bold (Ctrl+B)</source>
         <translation>Fett (Strg+B)</translation>
     </message>
@@ -2448,10 +2496,6 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     <message>
         <source>Settings…</source>
         <translation>Einstellungen…</translation>
-    </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>Über Ductus</translation>
     </message>
     <message>
         <source>Quit</source>

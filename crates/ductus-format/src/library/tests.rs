@@ -369,6 +369,12 @@ fn trash_restores_entries_where_they_were() {
 
     assert_eq!(lib.restore(&id).unwrap(), "Math/Limits");
     assert!(lib.exists("Math/Limits"));
+    let tree = lib.tree().unwrap();
+    assert_eq!(
+        names(find(&tree, "Math")),
+        ["Limits", "Series"],
+        "back in its place"
+    );
     assert_eq!(
         lib.read_page_pdf("Math/Limits", "source.pdf").unwrap(),
         b"pdf"
@@ -466,4 +472,20 @@ fn a_library_moves_with_its_history_and_notebooks() {
     assert_eq!(lib.notebook_name("Physics").as_deref(), Some("Physik"));
     assert_eq!(lib.trash().unwrap()[0].id, trashed);
     assert_eq!(lib.restore(&trashed).unwrap(), "Physics/Optics");
+}
+
+#[test]
+fn an_unreadable_data_file_is_kept_aside() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("folders.json");
+    fs::write(&file, b"{ not json").unwrap();
+    let read: Vec<String> = read_data(&file);
+    assert!(read.is_empty());
+    assert_eq!(
+        fs::read(dir.path().join("folders.json.broken")).unwrap(),
+        b"{ not json"
+    );
+    let missing: Vec<String> = read_data(&dir.path().join("none.json"));
+    assert!(missing.is_empty());
+    assert!(!dir.path().join("none.json.broken").exists());
 }

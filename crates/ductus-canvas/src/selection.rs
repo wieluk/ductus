@@ -14,6 +14,10 @@ const ROTATE_GRIP: f64 = 26.0;
 const TAP_LENGTH: f64 = 8.0;
 const TAP_REACH: f64 = 6.0;
 const INSERT_SHARE: f64 = 0.7;
+/// PNG bytes and, if not as large as its pixels, a size in document units.
+pub type NewPicture = (Vec<u8>, Option<(f64, f64)>);
+/// Between the pages of a printout, in document units.
+const PICTURE_GAP: f64 = 16.0;
 /// Must match ductus_format::library::IMAGE_PREFIX.
 const IMAGE_PREFIX: &str = "img-";
 
@@ -640,13 +644,27 @@ impl Canvas {
     }
 
     pub fn insert_picture(&mut self, bytes: Vec<u8>, at: Option<Point>) -> bool {
-        let name = picture_name(&bytes);
-        if !self.add_picture(&name, bytes) {
+        self.insert_pictures(vec![(bytes, None)], at)
+    }
+
+    /// Pictures one below the other (the pages of a PDF printout), as one step to undo.
+    pub fn insert_pictures(&mut self, pictures: Vec<NewPicture>, at: Option<Point>) -> bool {
+        let mut placed = Vec::new();
+        for (bytes, size) in pictures {
+            let name = picture_name(&bytes);
+            if !self.add_picture(&name, bytes) {
+                continue;
+            }
+            let size = size.unwrap_or_else(|| {
+                let (w, h) = self.pictures[&name].picture.size();
+                // Screenshots of high-density screens have more pixels than points.
+                (f64::from(w) / self.view.dpr, f64::from(h) / self.view.dpr)
+            });
+            placed.push((name, size));
+        }
+        if placed.is_empty() {
             return false;
         }
-        let (w, h) = self.pictures[&name].picture.size();
-        // Screenshots of high-density screens have more pixels than points.
-        let (mut width, mut height) = (f64::from(w) / self.view.dpr, f64::from(h) / self.view.dpr);
         let visible = self.view.visible_doc_rect();
         let mut room = (visible.width(), visible.height());
         if let PageKind::Paper { .. } | PageKind::Pdf = self.doc.settings().kind {
@@ -654,24 +672,41 @@ impl Canvas {
                 room.0 = room.0.min(sheet.width());
             }
         }
-        let fit = (room.0 * INSERT_SHARE / width)
-            .min(room.1 * INSERT_SHARE / height)
-            .min(1.0);
-        width *= fit;
-        height *= fit;
-        let center = at.map_or(visible.center(), |p| self.view.to_doc(p));
-        let image = Image {
-            id: self.doc.alloc_id(),
-            source: name,
-            x: (center.x - width / 2.0).round(),
-            y: (center.y - height / 2.0).round(),
-            width,
-            height,
+        let widest = placed.iter().map(|(_, (w, _))| *w).fold(0.0, f64::max);
+        let total: f64 = placed.iter().map(|(_, (_, h))| *h).sum::<f64>()
+            + PICTURE_GAP * (placed.len() - 1) as f64;
+        // A single picture fits the view; pages run on downwards.
+        let tall = if placed.len() == 1 {
+            room.1 * INSERT_SHARE / total
+        } else {
+            f64::INFINITY
         };
-        self.tiles.invalidate(TileLayer::Base, image_rect(&image));
-        self.selection = HashSet::from([image.id]);
+        let fit = (room.0 * INSERT_SHARE / widest).min(tall).min(1.0);
+        let center = at.map_or(visible.center(), |p| self.view.to_doc(p));
+        let mut y = if placed.len() == 1 {
+            center.y - total * fit / 2.0
+        } else {
+            (center.y - total * fit / 2.0).max(visible.y0 + PICTURE_GAP)
+        };
+        let mut images = Vec::new();
+        for (name, (w, h)) in placed {
+            let (width, height) = (w * fit, h * fit);
+            images.push(Image {
+                id: self.doc.alloc_id(),
+                source: name,
+                x: (center.x - width / 2.0).round(),
+                y: y.round(),
+                width,
+                height,
+            });
+            y += height + PICTURE_GAP * fit;
+        }
+        for image in &images {
+            self.tiles.invalidate(TileLayer::Base, image_rect(image));
+        }
+        self.selection = images.iter().map(|i| i.id).collect();
         self.history
-            .apply(&mut self.doc, Command::AddImages(vec![image]));
+            .apply(&mut self.doc, Command::AddImages(images));
         self.sync_layout();
         self.tool = ToolMode::Lasso;
         self.redraw_overlay();

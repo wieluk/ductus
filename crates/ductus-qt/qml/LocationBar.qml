@@ -26,7 +26,7 @@ Rectangle {
                 out.push({ name: notebook.length > 0 ? notebook : names[i], path: path,
                            folder: names[i], notebook: notebook.length > 0 })
             }
-            out.push({ name: names[names.length - 1], path: page, notebook: false, page: true })
+            out.push({ name: AppController.displayName(page), path: page, notebook: false, page: true })
         }
         parts = out
     }

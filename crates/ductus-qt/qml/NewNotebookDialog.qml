@@ -32,12 +32,10 @@ AppDialog {
     title: markOnly ? qsTr("Make this folder a notebook") : qsTr("New notebook")
     acceptText: markOnly ? qsTr("Make notebook") : qsTr("Create")
     // The library folder itself is no notebook.
-    acceptButton.enabled: nameField.text.trim().length > 0
-                          && (ownFolder.checked && !markOnly || location.length > 0)
-    onOpened: {
-        nameField.forceActiveFocus()
-        nameField.selectAll()
-    }
+    // Only a new folder takes the name on disk; a marked folder just shows it.
+    readonly property bool newFolder: ownFolder.checked && !markOnly
+    acceptButton.enabled: nameField.valid && (newFolder || location.length > 0)
+    onOpened: nameField.focusAll()
     onAccepted: AppController.addNotebook(location, nameField.text, ownFolder.checked && !markOnly)
 
     contentItem: ColumnLayout {
@@ -47,11 +45,11 @@ AppDialog {
             color: Theme.textMuted
             font.pixelSize: 12
         }
-        TextField {
+        NameField {
             id: nameField
-            objectName: "newNotebookName"
+            fieldName: "newNotebookName"
+            fileName: dialog.newFolder
             Layout.fillWidth: true
-            selectByMouse: true
             onAccepted: if (dialog.acceptButton.enabled) dialog.accept()
         }
         PlacePicker {

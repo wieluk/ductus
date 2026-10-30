@@ -29,7 +29,7 @@ impl PdfImage {
         })
     }
 
-    fn add_to(&self, pdf: &mut lopdf::Document) -> ObjectId {
+    pub(crate) fn add_to(&self, pdf: &mut lopdf::Document) -> ObjectId {
         let (w, h) = (i64::from(self.width), i64::from(self.height));
         let image = |color_space: &str| {
             dictionary! {

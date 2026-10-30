@@ -56,6 +56,15 @@ fn num(v: f64, decimals: usize) -> String {
     if s == "-0" { "0".into() } else { s.into() }
 }
 
+/// A name for a file in a page's folder, not a path into other folders.
+pub(crate) fn is_plain_file_name(name: &str) -> bool {
+    !name.is_empty()
+        && name != "."
+        && name != ".."
+        && !name.contains(['/', '\\', ':'])
+        && !name.chars().any(char::is_control)
+}
+
 pub(crate) fn escape_attr(s: &str) -> String {
     s.replace('&', "&amp;")
         .replace('"', "&quot;")
@@ -228,11 +237,29 @@ fn text_tag(tag: &str) -> Option<String> {
 
 /// Other raw HTML stays text, keeping the XML well formed; open tags close with their paragraph.
 fn markdown_html(markdown: &str) -> String {
-    use pulldown_cmark::{CowStr, Event, Options, Parser, TagEnd, html};
+    use pulldown_cmark::{CowStr, Event, Options, Parser, Tag, TagEnd, html};
     let mut open: Vec<&'static str> = Vec::new();
     let mut events = Vec::new();
+    // Browsers open these files too: links only to the web or mail, and no pictures from elsewhere.
+    let mut kept_links: Vec<bool> = Vec::new();
     for event in Parser::new_ext(markdown, Options::ENABLE_STRIKETHROUGH) {
         match event {
+            Event::Start(Tag::Link { ref dest_url, .. }) => {
+                let url = dest_url.trim_start().to_ascii_lowercase();
+                let safe = ["https://", "http://", "mailto:"]
+                    .iter()
+                    .any(|scheme| url.starts_with(scheme));
+                kept_links.push(safe);
+                if safe {
+                    events.push(event);
+                }
+            }
+            e @ Event::End(TagEnd::Link) => {
+                if kept_links.pop().unwrap_or(false) {
+                    events.push(e);
+                }
+            }
+            Event::Start(Tag::Image { .. }) | Event::End(TagEnd::Image) => {}
             Event::InlineHtml(t) => match text_tag(&t) {
                 Some(tag) if tag.starts_with("</") => {
                     let name = if tag == "</u>" { "u" } else { "span" };
@@ -314,7 +341,7 @@ pub fn write_page(page: &PageFile) -> String {
     write!(
         svg,
         r#"<svg xmlns="{SVG_NS}" xmlns:dx="{DX_NS}" dx:version="{FORMAT_VERSION}" dx:id="{}""#,
-        page.id
+        escape_attr(&page.id)
     )
     .unwrap();
     match settings.kind {
@@ -636,7 +663,8 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
                 if let Some(c) = dx.get("pattern-color").and_then(|c| parse_color(c)) {
                     background.ink = c;
                 }
-                pdf = dx.get("pdf").cloned();
+                // A file name next to the page, never a path: pages come from other devices and apps.
+                pdf = dx.get("pdf").filter(|p| is_plain_file_name(p)).cloned();
                 pdf_sheets = dx
                     .get("sheets")
                     .map(|s| {

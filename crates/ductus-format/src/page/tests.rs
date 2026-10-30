@@ -200,6 +200,18 @@ fn pdf_backed_pages_keep_their_sheets_and_source() {
         &[(793.7, 1122.5), (1122.5, 793.7)]
     );
     assert_eq!(back.pdf.as_deref(), Some("source.pdf"));
+    // Pages come from other devices and apps: their PDF is a name next to them, never a path.
+    for path in ["../../secret.pdf", "/etc/passwd", "C:x.pdf", ".."] {
+        let crafted = svg.replace(r#"dx:pdf="source.pdf""#, &format!(r#"dx:pdf="{path}""#));
+        assert_eq!(read_page(&crafted).unwrap().pdf, None, "{path}");
+    }
+    let mut crafted = page.clone();
+    crafted.id = r#"x" onload="alert(1)"#.into();
+    assert_eq!(
+        read_page(&write_page(&crafted)).unwrap().id,
+        crafted.id,
+        "the id stays one attribute"
+    );
     let height = 1122.5 + SHEET_GAP + 793.7;
     assert!(
         svg.contains(&format!("{} {}", num(1122.5, 2), num(height, 2))),
@@ -375,5 +387,20 @@ fn text_boxes_keep_underline_color_and_size_as_xhtml() {
     assert!(
         html.contains("&lt;span style="),
         "unknown styles stay text: {html}"
+    );
+}
+
+#[test]
+fn text_links_lead_only_to_the_web_or_mail() {
+    let html = super::markdown_html(
+        "[run](javascript:alert(1)) [site](https://example.org) [mail](mailto:a@b.c) ![x](http://tracker/p.png)",
+    );
+    assert!(!html.contains("javascript"), "{html}");
+    assert!(!html.contains("<img"), "{html}");
+    assert!(html.contains(r#"href="https://example.org""#), "{html}");
+    assert!(html.contains(r#"href="mailto:a@b.c""#), "{html}");
+    assert!(
+        html.contains("run") && html.contains('x'),
+        "the text stays: {html}"
     );
 }

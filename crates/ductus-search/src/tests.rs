@@ -134,3 +134,15 @@ fn scopes_narrow_to_names_or_one_page() {
         1
     );
 }
+
+#[test]
+fn snippets_mark_words_whose_lowercase_is_longer_or_shorter() {
+    // ẞ lowercases to 3 bytes → 2, İ from 2 bytes → 3: positions must still line up.
+    assert_eq!(
+        mark("STRAẞE nach İzmir", &["straße", "izmir"]).replace(['\u{1}', '\u{2}'], "|"),
+        "|STRAẞE| nach İzmir"
+    );
+    let marked = mark("İİİİ word", &["word"]);
+    assert_eq!(marked, "İİİİ \u{1}word\u{2}");
+    assert_eq!(mark("nothing here", &["absent"]), "nothing here");
+}

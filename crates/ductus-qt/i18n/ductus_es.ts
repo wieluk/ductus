@@ -88,10 +88,6 @@
         <translation>Importando %1…</translation>
     </message>
     <message>
-        <source>Imported into %1.</source>
-        <translation>Importado en %1.</translation>
-    </message>
-    <message>
         <source>Page copied into %1.</source>
         <translation>Página copiada en %1.</translation>
     </message>
@@ -100,8 +96,24 @@
         <translation>No se pudo guardar el PDF ahí.</translation>
     </message>
     <message>
+        <source>A name can&apos;t start with a dot.</source>
+        <translation>Un nombre no puede empezar por un punto.</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t contain “%1”: Windows and sync apps don&apos;t allow it in file names.</source>
+        <translation>Un nombre no puede contener «%1»: Windows y las apps de sincronización no lo permiten en nombres de archivo.</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t end with a dot.</source>
+        <translation>Un nombre no puede terminar en un punto.</translation>
+    </message>
+    <message>
         <source>New section</source>
         <translation>Nueva sección</translation>
+    </message>
+    <message>
+        <source>Imported “%1” into %2.</source>
+        <translation>«%1» importado en %2.</translation>
     </message>
     <message>
         <source>Exported to %1</source>
@@ -308,19 +320,19 @@
         <translation>«%1» ya existe ahí, así que se guarda como «%2». No se sobrescribe nada.</translation>
     </message>
     <message>
-        <source>The original file is only read, never changed.</source>
-        <translation>El archivo original solo se lee, nunca se modifica.</translation>
+        <source>What you import from is only read, never changed.</source>
+        <translation>Lo que importas solo se lee, nunca se modifica.</translation>
     </message>
 </context>
 <context>
     <name>InkCanvas</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to add pictures.</source>
-        <translation>Todavía no se pueden añadir imágenes a un PDF en el que escribes directamente. Importa el PDF como páginas de notas para añadir imágenes.</translation>
-    </message>
-    <message>
         <source>%1 isn&apos;t a picture Ductus can read.</source>
         <translation>%1 no es una imagen que Ductus pueda leer.</translation>
+    </message>
+    <message>
+        <source>%1 isn&apos;t a PDF Ductus can read.</source>
+        <translation>%1 no es un PDF que Ductus pueda leer.</translation>
     </message>
 </context>
 <context>
@@ -524,10 +536,6 @@
 <context>
     <name>Main</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet.</source>
-        <translation>Todavía no se pueden añadir imágenes a un PDF en el que escribes directamente.</translation>
-    </message>
-    <message>
         <source>“%1” is in the trash.</source>
         <translation>«%1» está en la papelera.</translation>
     </message>
@@ -542,6 +550,10 @@
     <message>
         <source>Download the recognizer for this first.</source>
         <translation>Primero descarga el reconocedor para esto.</translation>
+    </message>
+    <message>
+        <source>Drag to resize the halves; double-click for equal halves</source>
+        <translation>Arrastra para cambiar el tamaño de las mitades; doble clic para igualarlas</translation>
     </message>
     <message>
         <source>Show or hide notebooks (%1)</source>
@@ -612,20 +624,36 @@
         <translation>Importar</translation>
     </message>
     <message>
+        <source>Insert</source>
+        <translation>Insertar</translation>
+    </message>
+    <message>
         <source>Write on the PDF</source>
         <translation>Escribir en el PDF</translation>
     </message>
     <message>
-        <source>Ink is saved into the PDF as annotations. Other PDF readers show it too.</source>
-        <translation>La tinta se guarda en el PDF como anotaciones. Otros lectores de PDF también la muestran.</translation>
+        <source>A copy goes into the notebook; your ink is saved in that copy as annotations, so other PDF readers show it too.</source>
+        <translation>Una copia va al cuaderno; tu tinta se guarda en esa copia como anotaciones, así que otros lectores de PDF también la muestran.</translation>
+    </message>
+    <message>
+        <source>The PDF becomes the background of a notes page.</source>
+        <translation>El PDF se convierte en el fondo de una página de notas.</translation>
+    </message>
+    <message>
+        <source>Insert into this page</source>
+        <translation>Insertar en esta página</translation>
+    </message>
+    <message>
+        <source>Its pages become pictures on the open page, to move and resize like any picture.</source>
+        <translation>Sus páginas se convierten en imágenes en la página abierta, que puedes mover y redimensionar como cualquier imagen.</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>El archivo original solo se lee, nunca se modifica.</translation>
     </message>
     <message>
         <source>Import as note pages</source>
         <translation>Importar como páginas de notas</translation>
-    </message>
-    <message>
-        <source>The PDF becomes the background of a notes page. The original stays untouched.</source>
-        <translation>El PDF se convierte en el fondo de una página de notas. El original no se toca.</translation>
     </message>
     <message>
         <source>Page</source>
@@ -667,31 +695,9 @@
         <source>Delete</source>
         <translation>Eliminar</translation>
     </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>Acerca de Ductus</translation>
-    </message>
-    <message>
-        <source>Handwritten notebooks for Linux, Windows and Android.
-Development preview · GPL-3.0-or-later
-
-Library: %1</source>
-        <translation>Cuadernos manuscritos para Linux, Windows y Android.
-Versión preliminar · GPL-3.0-or-later
-
-Biblioteca: %1</translation>
-    </message>
-    <message>
-        <source>Close</source>
-        <translation>Cerrar</translation>
-    </message>
 </context>
 <context>
     <name>MathLayer</name>
-    <message>
-        <source>Formulas can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to write formulas on it.</source>
-        <translation>Todavía no se pueden añadir fórmulas a un PDF en el que escribes directamente. Importa el PDF como páginas de notas para escribir fórmulas en él.</translation>
-    </message>
     <message>
         <source>Reset the math favorites?</source>
         <translation>¿Restablecer los favoritos de fórmulas?</translation>
@@ -1310,6 +1316,13 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
     </message>
 </context>
 <context>
+    <name>PlatformFiles</name>
+    <message>
+        <source>Inside the app</source>
+        <translation>Dentro de la app</translation>
+    </message>
+</context>
+<context>
     <name>Ribbon</name>
     <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
@@ -1490,10 +1503,6 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
         <translation>Ajustes</translation>
     </message>
     <message>
-        <source>About Ductus</source>
-        <translation>Acerca de Ductus</translation>
-    </message>
-    <message>
         <source>Select everything on the page (Ctrl+A)</source>
         <translation>Seleccionar todo en la página (Ctrl+A)</translation>
     </message>
@@ -1536,10 +1545,6 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
     <message>
         <source>Add a picture file; you can also drop pictures onto the page</source>
         <translation>Añadir un archivo de imagen; también puedes soltar imágenes sobre la página</translation>
-    </message>
-    <message>
-        <source>PDFs written on directly can&apos;t hold pictures yet</source>
-        <translation>Los PDF en los que escribes directamente aún no pueden contener imágenes</translation>
     </message>
     <message>
         <source>PDF…</source>
@@ -1663,6 +1668,17 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
     </message>
 </context>
 <context>
+    <name>ScrollArrows</name>
+    <message>
+        <source>More</source>
+        <translation>Más</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Atrás</translation>
+    </message>
+</context>
+<context>
     <name>SearchBox</name>
     <message>
         <source>This page</source>
@@ -1689,8 +1705,20 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
         <translation>Nombres y contenido de todas las páginas y PDF (Ctrl+K)</translation>
     </message>
     <message>
+        <source>Search in: %1</source>
+        <translation>Buscar en: %1</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>Buscar</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Buscar (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Search (Ctrl+K)</source>
+        <translation>Buscar (Ctrl+K)</translation>
     </message>
     <message>
         <source>page %1</source>
@@ -1789,6 +1817,14 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
     <message>
         <source>Normal</source>
         <translation>Normal</translation>
+    </message>
+    <message>
+        <source>Remove “%1”?</source>
+        <translation>¿Quitar «%1»?</translation>
+    </message>
+    <message>
+        <source>Handwriting can&apos;t be read with it until it is downloaded again.</source>
+        <translation>No se podrá leer escritura a mano con él hasta que lo vuelvas a descargar.</translation>
     </message>
     <message>
         <source>Firm</source>
@@ -2014,6 +2050,22 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
     <message>
         <source>Dark</source>
         <translation>Oscuro</translation>
+    </message>
+    <message>
+        <source>App color</source>
+        <translation>Color de la aplicación</translation>
+    </message>
+    <message>
+        <source>The title bar, buttons and highlights; the grays take on its tint.</source>
+        <translation>La barra de título, los botones y los resaltados; los grises toman su tono.</translation>
+    </message>
+    <message>
+        <source>More colors…</source>
+        <translation>Más colores…</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>Elige un color</translation>
     </message>
     <message>
         <source>Around the page</source>
@@ -2315,10 +2367,6 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
 <context>
     <name>TextLayer</name>
     <message>
-        <source>Text boxes can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to type on it.</source>
-        <translation>Todavía no se pueden añadir cuadros de texto a un PDF en el que escribes directamente. Importa el PDF como páginas de notas para escribir en él.</translation>
-    </message>
-    <message>
         <source>Bold (Ctrl+B)</source>
         <translation>Negrita (Ctrl+B)</translation>
     </message>
@@ -2448,10 +2496,6 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
     <message>
         <source>Settings…</source>
         <translation>Ajustes…</translation>
-    </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>Acerca de Ductus</translation>
     </message>
     <message>
         <source>Quit</source>

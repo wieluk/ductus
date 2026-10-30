@@ -88,10 +88,6 @@
         <translation>Импорт %1…</translation>
     </message>
     <message>
-        <source>Imported into %1.</source>
-        <translation>Импортировано в %1.</translation>
-    </message>
-    <message>
         <source>Page copied into %1.</source>
         <translation>Страница скопирована в %1.</translation>
     </message>
@@ -100,8 +96,24 @@
         <translation>Не удалось сохранить PDF туда.</translation>
     </message>
     <message>
+        <source>A name can&apos;t start with a dot.</source>
+        <translation>Имя не может начинаться с точки.</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t contain “%1”: Windows and sync apps don&apos;t allow it in file names.</source>
+        <translation>Имя не может содержать «%1»: Windows и приложения синхронизации не допускают этот символ в именах файлов.</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t end with a dot.</source>
+        <translation>Имя не может заканчиваться точкой.</translation>
+    </message>
+    <message>
         <source>New section</source>
         <translation>Новый раздел</translation>
+    </message>
+    <message>
+        <source>Imported “%1” into %2.</source>
+        <translation>«%1» импортировано в %2.</translation>
     </message>
     <message>
         <source>Exported to %1</source>
@@ -313,19 +325,19 @@
         <translation>«%1» там уже есть, поэтому импорт сохранится как «%2». Ничего не перезаписывается.</translation>
     </message>
     <message>
-        <source>The original file is only read, never changed.</source>
-        <translation>Исходный файл только читается и никогда не меняется.</translation>
+        <source>What you import from is only read, never changed.</source>
+        <translation>Исходные файлы только читаются и никогда не меняются.</translation>
     </message>
 </context>
 <context>
     <name>InkCanvas</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to add pictures.</source>
-        <translation>В PDF, на котором вы пишете напрямую, пока нельзя добавлять изображения. Импортируйте PDF как страницы заметок, чтобы добавить изображения.</translation>
-    </message>
-    <message>
         <source>%1 isn&apos;t a picture Ductus can read.</source>
         <translation>%1 — не изображение, которое Ductus может прочитать.</translation>
+    </message>
+    <message>
+        <source>%1 isn&apos;t a PDF Ductus can read.</source>
+        <translation>%1 — не PDF, который Ductus может прочитать.</translation>
     </message>
 </context>
 <context>
@@ -529,10 +541,6 @@
 <context>
     <name>Main</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet.</source>
-        <translation>В PDF, на котором вы пишете напрямую, пока нельзя добавлять изображения.</translation>
-    </message>
-    <message>
         <source>“%1” is in the trash.</source>
         <translation>«%1» в корзине.</translation>
     </message>
@@ -547,6 +555,10 @@
     <message>
         <source>Download the recognizer for this first.</source>
         <translation>Сначала скачайте для этого распознаватель.</translation>
+    </message>
+    <message>
+        <source>Drag to resize the halves; double-click for equal halves</source>
+        <translation>Перетащите, чтобы изменить размер половин; двойной щелчок — поровну</translation>
     </message>
     <message>
         <source>Show or hide notebooks (%1)</source>
@@ -617,20 +629,36 @@
         <translation>Импорт</translation>
     </message>
     <message>
+        <source>Insert</source>
+        <translation>Вставить</translation>
+    </message>
+    <message>
         <source>Write on the PDF</source>
         <translation>Писать на PDF</translation>
     </message>
     <message>
-        <source>Ink is saved into the PDF as annotations. Other PDF readers show it too.</source>
-        <translation>Чернила сохраняются в PDF как аннотации. Другие программы для PDF тоже их показывают.</translation>
+        <source>A copy goes into the notebook; your ink is saved in that copy as annotations, so other PDF readers show it too.</source>
+        <translation>Копия попадает в блокнот; рукописные заметки сохраняются в ней как аннотации, поэтому их видят и другие программы для PDF.</translation>
+    </message>
+    <message>
+        <source>The PDF becomes the background of a notes page.</source>
+        <translation>PDF становится фоном страницы заметок.</translation>
+    </message>
+    <message>
+        <source>Insert into this page</source>
+        <translation>Вставить на эту страницу</translation>
+    </message>
+    <message>
+        <source>Its pages become pictures on the open page, to move and resize like any picture.</source>
+        <translation>Его страницы становятся картинками на открытой странице: их можно перемещать и менять размер, как любую картинку.</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>Исходный файл только читается и никогда не меняется.</translation>
     </message>
     <message>
         <source>Import as note pages</source>
         <translation>Импортировать как страницы заметок</translation>
-    </message>
-    <message>
-        <source>The PDF becomes the background of a notes page. The original stays untouched.</source>
-        <translation>PDF становится фоном страницы заметок. Оригинал не изменяется.</translation>
     </message>
     <message>
         <source>Page</source>
@@ -672,31 +700,9 @@
         <source>Delete</source>
         <translation>Удалить</translation>
     </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>О Ductus</translation>
-    </message>
-    <message>
-        <source>Handwritten notebooks for Linux, Windows and Android.
-Development preview · GPL-3.0-or-later
-
-Library: %1</source>
-        <translation>Рукописные блокноты для Linux, Windows и Android.
-Предварительная версия · GPL-3.0-or-later
-
-Библиотека: %1</translation>
-    </message>
-    <message>
-        <source>Close</source>
-        <translation>Закрыть</translation>
-    </message>
 </context>
 <context>
     <name>MathLayer</name>
-    <message>
-        <source>Formulas can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to write formulas on it.</source>
-        <translation>В PDF, на котором вы пишете напрямую, пока нельзя добавлять формулы. Импортируйте PDF как страницы заметок, чтобы писать на нём формулы.</translation>
-    </message>
     <message>
         <source>Reset the math favorites?</source>
         <translation>Сбросить избранные формулы?</translation>
@@ -1315,6 +1321,13 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     </message>
 </context>
 <context>
+    <name>PlatformFiles</name>
+    <message>
+        <source>Inside the app</source>
+        <translation>Внутри приложения</translation>
+    </message>
+</context>
+<context>
     <name>Ribbon</name>
     <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
@@ -1495,10 +1508,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Настройки</translation>
     </message>
     <message>
-        <source>About Ductus</source>
-        <translation>О Ductus</translation>
-    </message>
-    <message>
         <source>Select everything on the page (Ctrl+A)</source>
         <translation>Выделить всё на странице (Ctrl+A)</translation>
     </message>
@@ -1541,10 +1550,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Add a picture file; you can also drop pictures onto the page</source>
         <translation>Добавить файл изображения; изображения можно также перетащить на страницу</translation>
-    </message>
-    <message>
-        <source>PDFs written on directly can&apos;t hold pictures yet</source>
-        <translation>В PDF, на которых вы пишете напрямую, пока нельзя добавлять изображения</translation>
     </message>
     <message>
         <source>PDF…</source>
@@ -1668,6 +1673,17 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     </message>
 </context>
 <context>
+    <name>ScrollArrows</name>
+    <message>
+        <source>More</source>
+        <translation>Ещё</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>Назад</translation>
+    </message>
+</context>
+<context>
     <name>SearchBox</name>
     <message>
         <source>This page</source>
@@ -1694,8 +1710,20 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Названия и содержимое всех страниц и PDF (Ctrl+K)</translation>
     </message>
     <message>
+        <source>Search in: %1</source>
+        <translation>Искать в: %1</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>Поиск</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
         <translation>Поиск (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Search (Ctrl+K)</source>
+        <translation>Поиск (Ctrl+K)</translation>
     </message>
     <message>
         <source>page %1</source>
@@ -1794,6 +1822,14 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Normal</source>
         <translation>Обычное</translation>
+    </message>
+    <message>
+        <source>Remove “%1”?</source>
+        <translation>Удалить «%1»?</translation>
+    </message>
+    <message>
+        <source>Handwriting can&apos;t be read with it until it is downloaded again.</source>
+        <translation>Пока вы не загрузите его снова, рукописный текст с ним распознаваться не будет.</translation>
     </message>
     <message>
         <source>Firm</source>
@@ -2019,6 +2055,22 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Dark</source>
         <translation>Тёмная</translation>
+    </message>
+    <message>
+        <source>App color</source>
+        <translation>Цвет приложения</translation>
+    </message>
+    <message>
+        <source>The title bar, buttons and highlights; the grays take on its tint.</source>
+        <translation>Строка заголовка, кнопки и выделение; серые тона принимают его оттенок.</translation>
+    </message>
+    <message>
+        <source>More colors…</source>
+        <translation>Другие цвета…</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>Выберите цвет</translation>
     </message>
     <message>
         <source>Around the page</source>
@@ -2320,10 +2372,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>TextLayer</name>
     <message>
-        <source>Text boxes can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to type on it.</source>
-        <translation>В PDF, на котором вы пишете напрямую, пока нельзя добавлять текстовые поля. Импортируйте PDF как страницы заметок, чтобы печатать на нём.</translation>
-    </message>
-    <message>
         <source>Bold (Ctrl+B)</source>
         <translation>Жирный (Ctrl+B)</translation>
     </message>
@@ -2453,10 +2501,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Settings…</source>
         <translation>Настройки…</translation>
-    </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>О Ductus</translation>
     </message>
     <message>
         <source>Quit</source>

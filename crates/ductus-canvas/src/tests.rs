@@ -391,6 +391,32 @@ fn red_in(p: &Pixmap, x: u32, y: u32) -> bool {
 }
 
 #[test]
+fn printout_pages_stack_and_undo_together() {
+    let mut c = canvas();
+    let page = |shade| png(60, 80, tiny_skia::Color::from_rgba8(shade, 30, 30, 255));
+    let pages = (0..3)
+        .map(|i| (page(100 + i * 40), Some((600.0, 800.0))))
+        .collect();
+    assert!(c.insert_pictures(pages, None));
+    let images = c.document().images().to_vec();
+    assert_eq!(images.len(), 3);
+    assert_eq!(c.selection_count(), 3);
+    // Shrunk alike to fit the view's width, keeping the pages' shape.
+    assert!(
+        images
+            .iter()
+            .all(|i| (i.width / i.height - 0.75).abs() < 1e-6 && i.width < 600.0)
+    );
+    assert!(
+        images
+            .windows(2)
+            .all(|w| w[1].y > w[0].y + w[0].height && w[1].x == w[0].x)
+    );
+    c.undo();
+    assert!(c.document().images().is_empty());
+}
+
+#[test]
 fn pictures_move_scale_and_undo() {
     let mut c = canvas();
     c.insert_picture(
@@ -434,7 +460,7 @@ fn recognized_ink_becomes_text_or_a_formula_in_one_undo_step() {
     let mut c = canvas();
     draw_wave(&mut c, 50.0, 250.0, 100.0);
     c.select_all();
-    let (id, corner) = c.replace_ink("x^2", true).unwrap();
+    let (id, corner) = c.replace_ink("x^2", true, &[]).unwrap();
     let math = &c.document().maths()[0];
     assert_eq!(math.id, id);
     assert_eq!(
@@ -447,7 +473,7 @@ fn recognized_ink_becomes_text_or_a_formula_in_one_undo_step() {
     assert_eq!(c.document().strokes().len(), 1);
     assert!(c.document().maths().is_empty());
     c.select_all();
-    assert!(c.replace_ink("Grenzwert", false).is_some());
+    assert!(c.replace_ink("Grenzwert", false, &[]).is_some());
     assert_eq!(c.document().texts()[0].markdown, "Grenzwert");
 }
 
@@ -508,4 +534,25 @@ fn the_rotation_grip_turns_ink_and_keeps_boxes_upright() {
     );
     c.undo();
     assert_eq!(c.document().strokes()[0].points[0].x, b0.x);
+}
+
+#[test]
+fn reading_the_page_keeps_ink_that_was_not_read() {
+    let mut c = canvas();
+    draw_wave(&mut c, 40.0, 160.0, 60.0);
+    draw_wave(&mut c, 40.0, 160.0, 200.0);
+    let [drawing, line] = [0, 1].map(|i| c.document().strokes()[i].id);
+    c.select_all();
+    let (_, corner) = c.replace_ink("hello", false, &[line]).expect("replaced");
+    assert_eq!(c.document().strokes().len(), 1);
+    assert_eq!(c.document().strokes()[0].id, drawing);
+    let kept = ductus_ink::bounds(&c.document().strokes()[0]);
+    let text = &c.document().texts()[0];
+    assert!(
+        text.y > kept.y1 && corner.y > text.y,
+        "placed on the line it replaces"
+    );
+    c.undo();
+    assert_eq!(c.document().strokes().len(), 2);
+    assert!(c.document().texts().is_empty());
 }

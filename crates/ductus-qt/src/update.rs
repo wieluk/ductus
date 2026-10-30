@@ -9,6 +9,8 @@ struct Shared {
     busy: bool,
     checked: bool,
     latest: Option<Release>,
+    /// The notes of every release since the installed one, when there are several.
+    notes: String,
     error: String,
     received: u64,
     total: u64,
@@ -54,23 +56,40 @@ impl UpdateHandle {
         std::thread::Builder::new()
             .name("update".into())
             .spawn(move || {
-                job(&shared, &cancel);
-                if let Ok(mut s) = shared.lock() {
-                    s.busy = false;
+                let outcome = crate::guarded(|| {
+                    job(&shared, &cancel);
+                    Ok(())
+                });
+                // Also after a panic while it held the lock.
+                let mut s = shared
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
+                if let Err(e) = outcome {
+                    s.error = e;
                 }
+                s.busy = false;
             })
             .expect("a thread can be started");
     }
 
-    pub fn check(&self, feed: &str) {
-        let feed = match feed {
-            "" => ductus_update::LATEST_RELEASE_URL.to_owned(),
-            feed => feed.to_owned(),
+    /// Test feeds are single releases; GitHub's list then adds the notes of skipped versions.
+    pub fn check(&self, feed: &str, current: &str) {
+        let (feed, list) = match feed {
+            "" => (ductus_update::LATEST_RELEASE_URL.to_owned(), true),
+            feed => (feed.to_owned(), false),
         };
+        let current = current.to_owned();
         self.run(move |shared, _| {
             let outcome = ductus_update::latest_release(&feed);
+            let notes = match (&outcome, list) {
+                (Ok(Some(_)), true) => ductus_update::releases(ductus_update::RELEASES_URL)
+                    .map(|all| ductus_update::notes_since(&all, &current))
+                    .unwrap_or_default(),
+                _ => String::new(),
+            };
             let Ok(mut s) = shared.lock() else { return };
             s.checked = true;
+            s.notes = notes;
             match outcome {
                 Ok(latest) => s.latest = latest,
                 Err(e) => s.error = e,
@@ -130,11 +149,14 @@ impl UpdateHandle {
                 .as_ref()
                 .map(|r| r.version.clone())
                 .unwrap_or_default(),
-            notes: s
-                .latest
-                .as_ref()
-                .map(|r| r.notes.clone())
-                .unwrap_or_default(),
+            notes: match s.notes.is_empty() {
+                false => s.notes.clone(),
+                true => s
+                    .latest
+                    .as_ref()
+                    .map(|r| r.notes.clone())
+                    .unwrap_or_default(),
+            },
             page: s
                 .latest
                 .as_ref()

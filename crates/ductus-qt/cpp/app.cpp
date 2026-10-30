@@ -1,5 +1,4 @@
 #include "ductus-qt/cpp/app.h"
-#include "ductus-qt/cpp/singleinstance.h"
 #include "ductus-qt/cpp/translations.h"
 #include "ductus-qt/cpp/uitest.h"
 
@@ -9,6 +8,12 @@
 #include <QQuickWindow>
 #include <QSettings>
 #include <QStyleHints>
+#if !defined(Q_OS_ANDROID)
+#include "ductus-qt/cpp/singleinstance.h"
+#endif
+#if defined(Q_OS_WIN)
+#include "ductus-qt/cpp/winframe.h"
+#endif
 
 #include <string>
 
@@ -64,6 +69,9 @@ std::int32_t run_app(rust::Str program)
     engine.loadFromModule("Ductus", "Main");
     if (engine.rootObjects().isEmpty())
         return 1;
+#if defined(Q_OS_WIN)
+    WinFrame::install(qobject_cast<QQuickWindow *>(engine.rootObjects().first()));
+#endif
 #if !defined(Q_OS_ANDROID)
     auto *mainWindow = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
     QObject::connect(&instance, &SingleInstance::activationRequested, mainWindow, [mainWindow](const QString &token) {

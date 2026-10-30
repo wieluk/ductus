@@ -10,7 +10,7 @@ use ductus_core::{
 use ductus_format::Error;
 use serde_json::Value;
 use std::f64::consts::TAU;
-use std::io::Read as _;
+
 use std::path::Path;
 
 /// Ductus draws the thinnest part of a pressure stroke at this share of its width.
@@ -30,10 +30,7 @@ pub(crate) fn read(path: &Path) -> Result<Import, Error> {
     let raw = std::fs::read(path)?;
     // Usually gzipped; some sync setups keep it unpacked for diffing.
     let root: Value = if raw.starts_with(&[0x1f, 0x8b]) {
-        let mut json = Vec::new();
-        flate2::read::MultiGzDecoder::new(&raw[..])
-            .read_to_end(&mut json)
-            .map_err(not_rnote)?;
+        let json = crate::read_unpacked(flate2::read::MultiGzDecoder::new(&raw[..]))?;
         serde_json::from_slice(&json).map_err(not_rnote)?
     } else {
         serde_json::from_slice(&raw).map_err(not_rnote)?
@@ -167,11 +164,13 @@ fn paged(
     background: PageBackground,
     pictures: Vec<(String, Vec<u8>)>,
 ) -> Result<ImportedPage, Error> {
-    let page_of = |y: f64| (y / height).floor().max(0.0) as usize;
+    // Coordinates come from the file: far-off ones land on the last of at most MAX_PAGES pages.
+    const MAX_PAGES: f64 = 2000.0;
+    let page_of = |y: f64| (y / height).floor().clamp(0.0, MAX_PAGES - 1.0) as usize;
     let count = items
         .iter()
         .map(|item| page_of(item.top()) + 1)
-        .chain([((doc_height / height).round() as usize).max(1)])
+        .chain([(doc_height / height).round().clamp(1.0, MAX_PAGES) as usize])
         .max()
         .unwrap_or(1);
     let mut sheets: Vec<Sheet> = (0..count)

@@ -11,6 +11,7 @@ ApplicationWindow {
     /// "system", "light" or "dark".
     property string themeMode: "system"
     property bool darkMode: false
+    property color appColor: Theme.colors[0]
     property bool sidebarVisible: true
     property int sidebarWidth: Theme.sidebarWidth
     property bool penBarVisible: true
@@ -47,9 +48,21 @@ ApplicationWindow {
             AppController.locate(path)
     }
 
-    // Small tablet screens (or large scaling) get a window that fits above the taskbar.
-    width: Math.min(1280, Screen.desktopAvailableWidth)
-    height: Math.min(820, Screen.desktopAvailableHeight)
+    // Smaller than the screen even on small ones, so restoring from maximized visibly does something.
+    // Android shows apps on the whole screen, however large.
+    readonly property bool mobile: Qt.platform.os === "android"
+    width: mobile ? Screen.desktopAvailableWidth : Math.min(1280, Math.round(Screen.desktopAvailableWidth * 0.9))
+    height: mobile ? Screen.desktopAvailableHeight : Math.min(820, Math.round(Screen.desktopAvailableHeight * 0.9))
+    /// Saved: a window maximized when Ductus closed opens maximized again.
+    property bool maximized: false
+    /// The left half's share of a split.
+    property real splitRatio: 0.5
+    // Showing the window reports "windowed" before the saved value is applied.
+    property bool shown: false
+    onVisibilityChanged: (state) => {
+        if (shown && (state === Window.Maximized || state === Window.Windowed))
+            maximized = state === Window.Maximized
+    }
     minimumWidth: 480
     minimumHeight: 320
     visible: true
@@ -85,11 +98,19 @@ ApplicationWindow {
 
     onThemeModeChanged: updateTheme()
     onDarkModeChanged: Theme.dark = darkMode
+    onAppColorChanged: Theme.base = appColor
     Component.onCompleted: {
         updateTheme()
         Theme.dark = darkMode
+        Theme.base = appColor
         AppController.otherCanvas = canvasB
         AppController.canvas = canvasA
+        // After the settings are read.
+        Qt.callLater(() => {
+            if (maximized)
+                showMaximized()
+            shown = true
+        })
         if (AppController.storageQuestionPending())
             storageDialog.open()
     }
@@ -102,10 +123,6 @@ ApplicationWindow {
     property int visibilityBeforeScreenshot: Window.Windowed
 
     function takeScreenshot() {
-        if (!canvas.picturesAllowed) {
-            toast.show(qsTr("Pictures can't be added to a PDF you write on directly yet."), true)
-            return
-        }
         visibilityBeforeScreenshot = visibility
         showMinimized()
         // Give the window manager time to hide us before the capture starts.
@@ -138,6 +155,9 @@ ApplicationWindow {
     Settings {
         category: "ui"
         property alias themeMode: window.themeMode
+        property alias appColor: window.appColor
+        property alias maximized: window.maximized
+        property alias splitRatio: window.splitRatio
         property alias sidebarVisible: window.sidebarVisible
         property alias sidebarWidth: window.sidebarWidth
         property alias penBarRight: window.penBarRight
@@ -170,6 +190,8 @@ ApplicationWindow {
         function onErrorOccurred(message) { toast.show(message, true) }
         function onNotice(message) { toast.show(message, false) }
         function onImportReady(kind, name, pages, sections, location) {
+            // "Importing…" is over: the dialog says what was read.
+            toast.hide()
             importDialog.show(kind, name, pages, sections, location)
         }
         function onTrashed(name, trashId) {
@@ -218,9 +240,9 @@ ApplicationWindow {
     }
     Connections {
         target: AppController
+        // Settings opens scrolled to the download, which sits below a long list of languages.
         function onModelsNeeded(id) {
-            settingsDialog.section = 4
-            settingsDialog.open()
+            settingsDialog.showModels()
             const model = Models.entries.find(e => e.id === id)
             toast.show(model ? qsTr("Download \u201c%1\u201d first, then try again.").arg(model.title)
                              : qsTr("Download the recognizer for this first."), false)
@@ -228,7 +250,13 @@ ApplicationWindow {
     }
     Connections {
         target: Updater
-        function onUpdateFound() { updateDialog.open() }
+        // One question at a time: the update waits for the storage question.
+        function onUpdateFound() {
+            if (storageDialog.visible)
+                storageDialog.updateWaiting = true
+            else
+                updateDialog.open()
+        }
     }
 
     UpdateDialog {
@@ -321,6 +349,17 @@ ApplicationWindow {
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
+        // Android's Back goes up: from the page to the notebook list, from there out of the app.
+        // Open dialogs and menus take it first. Focus here, so Back arrives when nothing else has it.
+        focus: true
+        Keys.onBackPressed: (event) => {
+            if (Qt.platform.os !== "android")
+                event.accepted = false
+            else if (window.compact && !window.drawerOpen && AppController.currentPage.length > 0)
+                window.drawerOpen = true
+            else
+                AppController.moveToBack()
+        }
 
         TitleBar {
             id: titleBar
@@ -329,7 +368,6 @@ ApplicationWindow {
             canvas: window.canvas
             compact: window.compact
             visible: !window.fullScreen
-            onAboutRequested: aboutDialog.open()
             onNewPageRequested: newPageDialog.show("")
             onNewNotebookRequested: newNotebookDialog.show(AppController.defaultNotebookLocation())
             onHistoryRequested: historyDialog.show(AppController.currentPage)
@@ -360,7 +398,6 @@ ApplicationWindow {
             onExportRequested: exportDialog.show()
             onPrintRequested: AppController.print()
             onSettingsRequested: settingsDialog.open()
-            onAboutRequested: aboutDialog.open()
             onNewPageRequested: newPageDialog.show("")
             onNewNotebookRequested: newNotebookDialog.show(AppController.defaultNotebookLocation())
             onHistoryRequested: historyDialog.show(AppController.currentPage)
@@ -482,22 +519,23 @@ ApplicationWindow {
                     PagePane {
                         id: paneA
                         canvas: canvasA
-                        Layout.fillWidth: true
+                        // In a split, the divider sets this half's share; the other half takes the rest.
+                        Layout.fillWidth: !window.split
                         Layout.fillHeight: true
-                        Layout.preferredWidth: 1
+                        Layout.preferredWidth: window.split ? Math.round((pageArea.width - divider.width) * window.splitRatio) : -1
                         // An emptied half gives way; a phone shows only the active one.
                         visible: (pages.length > 0 || paneB.pages.length === 0)
                                  && (!window.compact || active || paneB.pages.length === 0)
                         split: window.split
                         pageTitle: window.pageTitle
                         fullScreen: window.fullScreen
+                        lowWindow: window.height < 560
                         leftInset: pageArea.leftPane === paneA && penBar.visible && !window.penBarRight
                                    ? penBar.x + penBar.width + 8 : 8
                         rightInset: pageArea.rightPane === paneA && penBar.visible && window.penBarRight
                                     ? pageArea.width - penBar.x + 8 : 8
                         onShowInSidebar: (path, view) => window.showInSidebar(path, view)
                         onNewPageRequested: newPageDialog.show("")
-                        onNoticeRequested: (message, error) => toast.show(message, error)
                         onTabDragged: (path, scenePosition, dropped) => pageArea.tabDragged(paneA, path, scenePosition, dropped)
 
                         InkCanvas {
@@ -510,11 +548,38 @@ ApplicationWindow {
                         }
                     }
 
-                    Rectangle {
+                    Item {
+                        id: divider
+                        objectName: "splitDivider"
                         Layout.fillHeight: true
-                        Layout.preferredWidth: 1
+                        Layout.preferredWidth: 7
                         visible: window.split
-                        color: Theme.ribbonBorder
+                        // Above the halves: its grip reaches into them, wide enough for a finger or pen.
+                        z: 1
+                        Rectangle {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: dividerDrag.containsMouse || dividerDrag.pressed ? 3 : 1
+                            height: parent.height
+                            color: dividerDrag.containsMouse || dividerDrag.pressed ? Theme.accent : Theme.ribbonBorder
+                        }
+                        MouseArea {
+                            id: dividerDrag
+                            anchors.fill: parent
+                            anchors.leftMargin: -6
+                            anchors.rightMargin: -6
+                            hoverEnabled: true
+                            cursorShape: Qt.SplitHCursor
+                            onPositionChanged: (mouse) => {
+                                if (!pressed)
+                                    return
+                                const x = mapToItem(pageArea, mouse.x, 0).x
+                                window.splitRatio = Math.max(0.2, Math.min(0.8, x / pageArea.width))
+                            }
+                            onDoubleClicked: window.splitRatio = 0.5
+                            ToolTip.visible: containsMouse && !pressed
+                            ToolTip.delay: 800
+                            ToolTip.text: qsTr("Drag to resize the halves; double-click for equal halves")
+                        }
                     }
 
                     PagePane {
@@ -522,18 +587,17 @@ ApplicationWindow {
                         canvas: canvasB
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        Layout.preferredWidth: 1
                         visible: pages.length > 0 && (!window.compact || active)
                         split: window.split
                         pageTitle: window.pageTitle
                         fullScreen: window.fullScreen
+                        lowWindow: window.height < 560
                         leftInset: pageArea.leftPane === paneB && penBar.visible && !window.penBarRight
                                    ? penBar.x + penBar.width + 8 : 8
                         rightInset: pageArea.rightPane === paneB && penBar.visible && window.penBarRight
                                     ? width - (penBar.x - x) + 8 : 8
                         onShowInSidebar: (path, view) => window.showInSidebar(path, view)
                         onNewPageRequested: newPageDialog.show("")
-                        onNoticeRequested: (message, error) => toast.show(message, error)
                         onTabDragged: (path, scenePosition, dropped) => pageArea.tabDragged(paneB, path, scenePosition, dropped)
 
                         InkCanvas {
@@ -668,33 +732,45 @@ ApplicationWindow {
         objectName: "pdfModeDialog"
 
         property string file
-        property bool annotate: true
+        /// "annotate", "pages" or "printout".
+        property string mode: "annotate"
+        readonly property bool printout: mode === "printout"
 
         title: qsTr("How do you want to write on this PDF?")
-        acceptText: qsTr("Import")
+        acceptText: printout ? qsTr("Insert") : qsTr("Import")
         onAboutToShow: {
             pdfPlace.location = AppController.defaultPageFolder()
             pdfPlace.browsing = false
+            if (printout && !window.canvas.enabled)
+                mode = "annotate"
         }
-        onAccepted: AppController.importPdf(file, annotate, pdfPlace.location)
+        onAccepted: {
+            if (printout)
+                window.canvas.insertPdfFile(file)
+            else
+                AppController.importPdf(file, mode === "annotate", pdfPlace.location)
+        }
 
         contentItem: Column {
             spacing: 8
             Repeater {
                 model: [
-                    { annotate: true, label: qsTr("Write on the PDF"),
-                      hint: qsTr("Ink is saved into the PDF as annotations. Other PDF readers show it too.") },
-                    { annotate: false, label: qsTr("Import as note pages"),
-                      hint: qsTr("The PDF becomes the background of a notes page. The original stays untouched.") }
+                    { mode: "annotate", name: "pdfModeAnnotate", label: qsTr("Write on the PDF"),
+                      hint: qsTr("A copy goes into the notebook; your ink is saved in that copy as annotations, so other PDF readers show it too.") },
+                    { mode: "pages", name: "pdfModePages", label: qsTr("Import as note pages"),
+                      hint: qsTr("The PDF becomes the background of a notes page.") },
+                    { mode: "printout", name: "pdfModePrintout", label: qsTr("Insert into this page"),
+                      hint: qsTr("Its pages become pictures on the open page, to move and resize like any picture.") }
                 ]
                 delegate: AbstractButton {
                     id: option
                     required property var modelData
-                    readonly property bool chosen: pdfModeDialog.annotate === modelData.annotate
-                    objectName: modelData.annotate ? "pdfModeAnnotate" : "pdfModePages"
+                    readonly property bool chosen: pdfModeDialog.mode === modelData.mode
+                    objectName: modelData.name
+                    visible: modelData.mode !== "printout" || window.canvas.enabled
                     width: pdfModeDialog.availableWidth
-                    height: optionText.implicitHeight + 20
-                    onClicked: pdfModeDialog.annotate = modelData.annotate
+                    height: visible ? optionText.implicitHeight + 20 : 0
+                    onClicked: pdfModeDialog.mode = modelData.mode
                     background: Rectangle {
                         radius: 8
                         color: option.chosen ? Theme.checked : (option.hovered ? Theme.hover : "transparent")
@@ -723,7 +799,15 @@ ApplicationWindow {
             }
             PlacePicker {
                 id: pdfPlace
+                visible: !pdfModeDialog.printout
                 width: pdfModeDialog.availableWidth
+            }
+            Label {
+                width: pdfModeDialog.availableWidth
+                text: qsTr("The original file is only read, never changed.")
+                color: Theme.textMuted
+                font.pixelSize: 11
+                wrapMode: Text.WordWrap
             }
         }
     }
@@ -776,6 +860,7 @@ ApplicationWindow {
     AppDialog {
         id: storageDialog
         objectName: "storageDialog"
+        property bool updateWaiting: false
         title: qsTr("Keep your notes in Documents?")
         message: qsTr("In Documents/Ductus your notebooks stay when the app is removed, and backups and sync apps such as Nextcloud or Syncthing find them. Ductus needs access to your files for that (\u201cAll files access\u201d).")
         acceptText: qsTr("Allow access")
@@ -785,6 +870,12 @@ ApplicationWindow {
             AppController.useSharedStorage()
         }
         onRejected: AppController.storageQuestionAnswered()
+        onClosed: {
+            if (updateWaiting) {
+                updateWaiting = false
+                updateDialog.open()
+            }
+        }
     }
 
     TrashDialog {
@@ -834,13 +925,4 @@ ApplicationWindow {
     NewPageDialog { id: newPageDialog }
     ImportDialog { id: importDialog }
     NewNotebookDialog { id: newNotebookDialog }
-
-    AppDialog {
-        id: aboutDialog
-        objectName: "aboutDialog"
-        title: qsTr("About Ductus")
-        message: qsTr("Handwritten notebooks for Linux, Windows and Android.\nDevelopment preview · GPL-3.0-or-later\n\nLibrary: %1").arg(AppController.libraryPath)
-        acceptText: qsTr("Close")
-        rejectText: ""
-    }
 }

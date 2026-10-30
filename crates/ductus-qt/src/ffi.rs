@@ -165,6 +165,8 @@ pub mod qobject {
         done: usize,
         total: usize,
         result: String,
+        /// Ids of the strokes that were read as `result`, space-separated.
+        strokes: String,
         error: String,
     }
 
@@ -232,7 +234,7 @@ pub mod qobject {
         type UpdateHandle;
         fn open_updater() -> Box<UpdateHandle>;
         fn update_is_newer(latest: &str, current: &str) -> bool;
-        fn check(self: &UpdateHandle, feed: &str);
+        fn check(self: &UpdateHandle, feed: &str, current: &str);
         fn download(self: &UpdateHandle, suffix: &str, dir: &str);
         fn cancel(self: &UpdateHandle);
         fn asset_url(self: &UpdateHandle, suffix: &str) -> String;
@@ -346,7 +348,6 @@ pub mod qobject {
         /// The open page and the one in the other half of a split view trade places.
         fn swap_open(self: &mut LibraryHandle);
         fn parked_page(self: &LibraryHandle) -> String;
-        fn accepts_pictures(self: &LibraryHandle) -> bool;
         /// After the PDF page at `view_y`; reload the page afterwards.
         fn insert_blank_sheet(
             self: &mut LibraryHandle,
@@ -491,13 +492,19 @@ pub mod qobject {
         fn clear_selection(self: &mut CanvasEngine);
         fn select_all(self: &mut CanvasEngine);
         fn selection_jobs(self: &CanvasEngine, math: bool) -> Vec<LineJob>;
-        fn replace_ink(self: &mut CanvasEngine, content: &str, math: bool) -> Vec<f64>;
+        fn replace_ink(
+            self: &mut CanvasEngine,
+            content: &str,
+            math: bool,
+            strokes: &str,
+        ) -> Vec<f64>;
         fn delete_selection(self: &mut CanvasEngine);
         fn copy_selection(self: &mut CanvasEngine);
         fn cut_selection(self: &mut CanvasEngine);
         fn paste(self: &mut CanvasEngine);
         fn can_paste(self: &CanvasEngine) -> bool;
         fn insert_picture(self: &mut CanvasEngine, png: &[u8], x: f64, y: f64) -> bool;
+        fn insert_pdf(self: &mut CanvasEngine, pdf: &[u8], x: f64, y: f64) -> Result<bool>;
         fn recolor_selection(self: &mut CanvasEngine, r: f32, g: f32, b: f32, a: f32);
         fn set_pen_color(self: &mut CanvasEngine, r: f32, g: f32, b: f32, a: f32);
         fn set_pen_width(self: &mut CanvasEngine, width: f64);

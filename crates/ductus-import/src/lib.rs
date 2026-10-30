@@ -152,6 +152,22 @@ fn file_name(title: &str) -> String {
     }
 }
 
+/// Unpacked data from one stream or package entry; more than this is a broken or hostile file.
+const MAX_UNPACKED: u64 = 512 << 20;
+
+/// Reads at most `MAX_UNPACKED` bytes: a few bytes of gzip can unpack to gigabytes.
+pub(crate) fn read_unpacked(reader: impl std::io::Read) -> Result<Vec<u8>, Error> {
+    use std::io::Read as _;
+    let mut out = Vec::new();
+    reader.take(MAX_UNPACKED + 1).read_to_end(&mut out)?;
+    if out.len() as u64 > MAX_UNPACKED {
+        return Err(Error::Invalid(
+            "The file unpacks to more than 512 MB.".into(),
+        ));
+    }
+    Ok(out)
+}
+
 pub(crate) fn pdf_error(e: ductus_pdf::Error) -> Error {
     Error::Invalid(e.to_string())
 }
@@ -180,13 +196,19 @@ pub(crate) fn picture(bytes: &[u8]) -> Option<(String, Vec<u8>)> {
 
 /// Ductus smooths ink through its points, so sparse ones (shapes, ruler lines) get points
 /// every two units, like its own shapes, to keep their corners.
-pub(crate) fn densify(points: Vec<InkPoint>) -> Vec<InkPoint> {
+/// Points that aren't numbers are dropped, and a segment gets at most a few thousand points:
+/// the files come from elsewhere.
+pub(crate) fn densify(mut points: Vec<InkPoint>) -> Vec<InkPoint> {
     const STEP: f64 = 2.0;
+    const MAX_PER_SEGMENT: f64 = 4096.0;
+    points.retain(|p| p.x.is_finite() && p.y.is_finite() && p.pressure.is_finite());
     let mut out = Vec::with_capacity(points.len());
     for pair in points.windows(2) {
         let (a, b) = (pair[0], pair[1]);
         out.push(a);
-        let n = ((b.x - a.x).hypot(b.y - a.y) / STEP).ceil() as usize;
+        let n = ((b.x - a.x).hypot(b.y - a.y) / STEP)
+            .ceil()
+            .min(MAX_PER_SEGMENT) as usize;
         out.extend((1..n).map(|i| {
             let t = i as f64 / n as f64;
             InkPoint {

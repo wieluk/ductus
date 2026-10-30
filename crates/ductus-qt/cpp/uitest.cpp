@@ -122,16 +122,13 @@ public:
                 return fail(QStringLiteral("drag-item: no such items in ") + rest);
             const QPoint a = from->mapToScene(QPointF(from->width() / 2, from->height() / 2)).toPoint();
             const QPoint b = to->mapToScene(QPointF(to->width() / 2, to->height() / 2)).toPoint();
-            if (cmd == u"touchpad-drag-item") {
+            if (cmd == u"touchpad-drag-item")
                 touchpadDrag(a, b);
-            } else {
-                QTest::mouseMove(m_window, a);
-                QTest::mousePress(m_window, Qt::LeftButton, {}, a);
-                for (int i = 1; i <= 20; ++i)
-                    QTest::mouseMove(m_window, a + (b - a) * i / 20, 15);
-                QTest::mouseRelease(m_window, Qt::LeftButton, {}, b);
-                QTest::qWait(100);
-            }
+            else
+                mouseDrag(a, b);
+        } else if (cmd == u"mouse") {
+            // `mouse x,y x,y`: a left-button drag between two window points.
+            mouseDrag(parsePoint(args.value(0)).toPoint(), parsePoint(args.value(1)).toPoint());
         } else if (cmd == u"click-item" || cmd == u"right-click-item") {
             const Qt::MouseButton button = cmd == u"click-item" ? Qt::LeftButton : Qt::RightButton;
             if (!clickItem(rest, button))
@@ -252,7 +249,12 @@ public:
             // File dialogs can't be scripted, so these call the controller directly.
             QString result;
             bool ok = false;
-            if (cmd == u"import-pdf") {
+            if (cmd == u"import-pdf" && args.value(0) == u"printout") {
+                QQuickItem *canvas = findItem(m_window->contentItem(), QStringLiteral("canvas"));
+                const QString file = QFileInfo(rest.section(QLatin1Char(' '), 1)).absoluteFilePath();
+                if (canvas)
+                    QMetaObject::invokeMethod(canvas, "insertPdfFile", Q_RETURN_ARG(bool, ok), Q_ARG(QString, file));
+            } else if (cmd == u"import-pdf") {
                 const bool annotate = args.value(0) == u"annotate";
                 const QString file = QFileInfo(rest.section(QLatin1Char(' '), 1)).absoluteFilePath();
                 QString folder;
@@ -290,7 +292,12 @@ public:
             if (actual != rest)
                 return fail(QStringLiteral("cursor is ") + actual);
         } else if (cmd == u"expect-prop") {
+            // A list adds the item of a new row with its next frame.
             QQuickItem *item = findItem(m_window->contentItem(), args.value(0));
+            for (int i = 0; !item && i < 50; ++i) {
+                QTest::qWait(20);
+                item = findItem(m_window->contentItem(), args.value(0));
+            }
             const QString actual = item ? item->property(args.value(1).toUtf8().constData()).toString()
                                         : QStringLiteral("(no item)");
             const QString expected = rest.section(QLatin1Char(' '), 2);
@@ -344,6 +351,16 @@ private:
     {
         return qmlEngine(m_window)->singletonInstance<QObject *>(QStringLiteral("Ductus"),
                                                                  QStringLiteral("AppController"));
+    }
+
+    void mouseDrag(QPoint a, QPoint b)
+    {
+        QTest::mouseMove(m_window, a);
+        QTest::mousePress(m_window, Qt::LeftButton, {}, a);
+        for (int i = 1; i <= 20; ++i)
+            QTest::mouseMove(m_window, a + (b - a) * i / 20, 15);
+        QTest::mouseRelease(m_window, Qt::LeftButton, {}, b);
+        QTest::qWait(100);
     }
 
     void touchpadDrag(QPoint a, QPoint b)

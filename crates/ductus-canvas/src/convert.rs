@@ -13,9 +13,18 @@ impl Canvas {
     }
 
     /// Replaces the selected ink with recognized text, or with a LaTeX formula, as one undo step.
+    /// With `only`, just those strokes go: the lines that were read, not drawings in between.
     /// Gives the new box's id and its bottom-right corner (document units), for opening it to edit.
-    pub fn replace_ink(&mut self, content: &str, math: bool) -> Option<(StrokeId, kurbo::Point)> {
-        let ink = self.selected_ink();
+    pub fn replace_ink(
+        &mut self,
+        content: &str,
+        math: bool,
+        only: &[StrokeId],
+    ) -> Option<(StrokeId, kurbo::Point)> {
+        let mut ink = self.selected_ink();
+        if !only.is_empty() {
+            ink.retain(|s| only.contains(&s.id));
+        }
         let bounds = ink
             .iter()
             .map(ductus_ink::bounds)

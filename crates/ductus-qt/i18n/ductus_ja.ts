@@ -88,10 +88,6 @@
         <translation>%1 を取り込み中…</translation>
     </message>
     <message>
-        <source>Imported into %1.</source>
-        <translation>%1 に取り込みました。</translation>
-    </message>
-    <message>
         <source>Page copied into %1.</source>
         <translation>ページを %1 にコピーしました。</translation>
     </message>
@@ -100,8 +96,24 @@
         <translation>そこに PDF を保存できませんでした。</translation>
     </message>
     <message>
+        <source>A name can&apos;t start with a dot.</source>
+        <translation>名前の先頭にピリオドは使えません。</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t contain “%1”: Windows and sync apps don&apos;t allow it in file names.</source>
+        <translation>名前に「%1」は使えません。Windows や同期アプリはファイル名にこの文字を使えません。</translation>
+    </message>
+    <message>
+        <source>A name can&apos;t end with a dot.</source>
+        <translation>名前の末尾にピリオドは使えません。</translation>
+    </message>
+    <message>
         <source>New section</source>
         <translation>新しいセクション</translation>
+    </message>
+    <message>
+        <source>Imported “%1” into %2.</source>
+        <translation>「%1」を %2 に取り込みました。</translation>
     </message>
     <message>
         <source>Exported to %1</source>
@@ -303,19 +315,19 @@
         <translation>「%1」は既にあるため、「%2」として保存します。上書きはされません。</translation>
     </message>
     <message>
-        <source>The original file is only read, never changed.</source>
-        <translation>元のファイルは読み取るだけで、変更しません。</translation>
+        <source>What you import from is only read, never changed.</source>
+        <translation>取り込み元は読み取るだけで、変更しません。</translation>
     </message>
 </context>
 <context>
     <name>InkCanvas</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to add pictures.</source>
-        <translation>直接書き込む PDF にはまだ画像を追加できません。画像を追加するには PDF をノートページとして取り込んでください。</translation>
-    </message>
-    <message>
         <source>%1 isn&apos;t a picture Ductus can read.</source>
         <translation>%1 は Ductus で読み込める画像ではありません。</translation>
+    </message>
+    <message>
+        <source>%1 isn&apos;t a PDF Ductus can read.</source>
+        <translation>%1 は Ductus で読める PDF ではありません。</translation>
     </message>
 </context>
 <context>
@@ -519,10 +531,6 @@
 <context>
     <name>Main</name>
     <message>
-        <source>Pictures can&apos;t be added to a PDF you write on directly yet.</source>
-        <translation>直接書き込む PDF にはまだ画像を追加できません。</translation>
-    </message>
-    <message>
         <source>“%1” is in the trash.</source>
         <translation>「%1」をごみ箱に移動しました。</translation>
     </message>
@@ -537,6 +545,10 @@
     <message>
         <source>Download the recognizer for this first.</source>
         <translation>まずこのための認識エンジンをダウンロードしてください。</translation>
+    </message>
+    <message>
+        <source>Drag to resize the halves; double-click for equal halves</source>
+        <translation>ドラッグで左右の幅を変更、ダブルクリックで半分ずつ</translation>
     </message>
     <message>
         <source>Show or hide notebooks (%1)</source>
@@ -607,20 +619,36 @@
         <translation>取り込み</translation>
     </message>
     <message>
+        <source>Insert</source>
+        <translation>挿入</translation>
+    </message>
+    <message>
         <source>Write on the PDF</source>
         <translation>PDF に書き込む</translation>
     </message>
     <message>
-        <source>Ink is saved into the PDF as annotations. Other PDF readers show it too.</source>
-        <translation>インクは注釈として PDF に保存されます。ほかの PDF リーダーでも表示されます。</translation>
+        <source>A copy goes into the notebook; your ink is saved in that copy as annotations, so other PDF readers show it too.</source>
+        <translation>コピーがノートブックに入り、インクはそのコピーに注釈として保存されるので、他の PDF リーダーでも表示されます。</translation>
+    </message>
+    <message>
+        <source>The PDF becomes the background of a notes page.</source>
+        <translation>PDF がノートページの背景になります。</translation>
+    </message>
+    <message>
+        <source>Insert into this page</source>
+        <translation>このページに挿入</translation>
+    </message>
+    <message>
+        <source>Its pages become pictures on the open page, to move and resize like any picture.</source>
+        <translation>PDF の各ページが開いているページ上の画像になり、ほかの画像と同じように移動やサイズ変更ができます。</translation>
+    </message>
+    <message>
+        <source>The original file is only read, never changed.</source>
+        <translation>元のファイルは読み取るだけで、変更しません。</translation>
     </message>
     <message>
         <source>Import as note pages</source>
         <translation>ノートページとして取り込む</translation>
-    </message>
-    <message>
-        <source>The PDF becomes the background of a notes page. The original stays untouched.</source>
-        <translation>PDF はノートページの背景になります。元のファイルはそのままです。</translation>
     </message>
     <message>
         <source>Page</source>
@@ -662,31 +690,9 @@
         <source>Delete</source>
         <translation>削除</translation>
     </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>Ductus について</translation>
-    </message>
-    <message>
-        <source>Handwritten notebooks for Linux, Windows and Android.
-Development preview · GPL-3.0-or-later
-
-Library: %1</source>
-        <translation>Linux、Windows、Android 用の手書きノート。
-開発プレビュー · GPL-3.0-or-later
-
-ライブラリ：%1</translation>
-    </message>
-    <message>
-        <source>Close</source>
-        <translation>閉じる</translation>
-    </message>
 </context>
 <context>
     <name>MathLayer</name>
-    <message>
-        <source>Formulas can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to write formulas on it.</source>
-        <translation>直接書き込む PDF にはまだ数式を追加できません。数式を書くには PDF をノートページとして取り込んでください。</translation>
-    </message>
     <message>
         <source>Reset the math favorites?</source>
         <translation>数式のお気に入りをリセットしますか？</translation>
@@ -1305,6 +1311,13 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     </message>
 </context>
 <context>
+    <name>PlatformFiles</name>
+    <message>
+        <source>Inside the app</source>
+        <translation>アプリ内</translation>
+    </message>
+</context>
+<context>
     <name>Ribbon</name>
     <message>
         <source>Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder</source>
@@ -1485,10 +1498,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>設定</translation>
     </message>
     <message>
-        <source>About Ductus</source>
-        <translation>Ductus について</translation>
-    </message>
-    <message>
         <source>Select everything on the page (Ctrl+A)</source>
         <translation>ページ上のすべてを選択（Ctrl+A）</translation>
     </message>
@@ -1531,10 +1540,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Add a picture file; you can also drop pictures onto the page</source>
         <translation>画像ファイルを追加します。画像をページにドロップすることもできます</translation>
-    </message>
-    <message>
-        <source>PDFs written on directly can&apos;t hold pictures yet</source>
-        <translation>直接書き込む PDF にはまだ画像を入れられません</translation>
     </message>
     <message>
         <source>PDF…</source>
@@ -1658,6 +1663,17 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     </message>
 </context>
 <context>
+    <name>ScrollArrows</name>
+    <message>
+        <source>More</source>
+        <translation>その他</translation>
+    </message>
+    <message>
+        <source>Back</source>
+        <translation>戻る</translation>
+    </message>
+</context>
+<context>
     <name>SearchBox</name>
     <message>
         <source>This page</source>
@@ -1684,8 +1700,20 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>すべてのページと PDF の名前と内容 (Ctrl+K)</translation>
     </message>
     <message>
+        <source>Search in: %1</source>
+        <translation>検索範囲: %1</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>検索</translation>
+    </message>
+    <message>
         <source>Search (Ctrl+F)</source>
-        <translation>検索（Ctrl+F）</translation>
+        <translation>検索 (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Search (Ctrl+K)</source>
+        <translation>検索 (Ctrl+K)</translation>
     </message>
     <message>
         <source>page %1</source>
@@ -1784,6 +1812,14 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Normal</source>
         <translation>標準</translation>
+    </message>
+    <message>
+        <source>Remove “%1”?</source>
+        <translation>「%1」を削除しますか？</translation>
+    </message>
+    <message>
+        <source>Handwriting can&apos;t be read with it until it is downloaded again.</source>
+        <translation>再びダウンロードするまで、これで手書きを読み取れなくなります。</translation>
     </message>
     <message>
         <source>Firm</source>
@@ -2009,6 +2045,22 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Dark</source>
         <translation>ダーク</translation>
+    </message>
+    <message>
+        <source>App color</source>
+        <translation>アプリの色</translation>
+    </message>
+    <message>
+        <source>The title bar, buttons and highlights; the grays take on its tint.</source>
+        <translation>タイトルバー、ボタン、強調表示に使われ、グレーにもその色味が付きます。</translation>
+    </message>
+    <message>
+        <source>More colors…</source>
+        <translation>その他の色…</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>色を選択</translation>
     </message>
     <message>
         <source>Around the page</source>
@@ -2310,10 +2362,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
 <context>
     <name>TextLayer</name>
     <message>
-        <source>Text boxes can&apos;t be added to a PDF you write on directly yet. Import the PDF as note pages to type on it.</source>
-        <translation>直接書き込む PDF にはまだテキストボックスを追加できません。入力するには PDF をノートページとして取り込んでください。</translation>
-    </message>
-    <message>
         <source>Bold (Ctrl+B)</source>
         <translation>太字（Ctrl+B）</translation>
     </message>
@@ -2443,10 +2491,6 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Settings…</source>
         <translation>設定…</translation>
-    </message>
-    <message>
-        <source>About Ductus</source>
-        <translation>Ductus について</translation>
     </message>
     <message>
         <source>Quit</source>

@@ -27,6 +27,10 @@ QString sharedLibraryPath();
 QString privateLibraryPath();
 /// Whether a folder is the app's own (Android only), which uninstalling removes.
 bool insideApp(const QString &path);
+/// A folder as people see it: native separators, and on Android relative to the storage it is on.
+QString displayPath(const QString &path);
+/// Android: the app goes to the background, as Back does on an app's first screen.
+void moveToBack();
 
 } // namespace PlatformFiles
 

@@ -1,20 +1,20 @@
 # Outside the page the pen acts as a mouse: the pen bar, ribbon colors, tabs and menus; at 150% scaling, as on Windows tablets.
 # env: QT_SCALE_FACTOR=1.5
 size 1280 800
-pen-tap preset5
+pen-tap preset7
 expect-prop canvas tool Pen
 expect-prop canvas penColor #1f4fd1
 # Its tooltip is open now and must not take the next tap.
 wait 900
-pen-tap preset9
+pen-tap preset11
 expect-prop canvas tool Highlighter
-expect-prop preset9 hovered true
+expect-prop preset11 hovered true
 pen p=0.6 400,400 500,420
-expect-prop preset9 hovered false
+expect-prop preset11 hovered false
 expect-cursor hidden
 pen-tap tab_draw
 expect-cursor shown
-pen-tap preset8
+pen-tap preset10
 expect-prop canvas penPattern dotted
 pen-tap penOptions
 pen-tap penColor7

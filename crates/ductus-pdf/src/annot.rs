@@ -15,6 +15,9 @@ const KEY_WIDTH: &str = "DuctusWidth";
 const KEY_LINE: &str = "DuctusLine";
 const KEY_BASE: &str = "DuctusBase";
 
+mod objects;
+pub use objects::{PageObject, PlacedObject, read_objects};
+
 #[derive(Debug, Clone)]
 pub struct PageInk {
     pub page: usize,
@@ -222,9 +225,10 @@ fn page_annotations(doc: &Document, page: ObjectId) -> Vec<(Object, Option<&Dict
 }
 
 fn is_ours(entry: &(Object, Option<&Dictionary>)) -> bool {
+    let ours = |d: &Dictionary| d.has(KEY_INK.as_bytes()) || d.has(objects::KEY_OBJECT.as_bytes());
     match (&entry.0, entry.1) {
-        (_, Some(d)) => d.has(KEY_INK.as_bytes()),
-        (Object::Dictionary(d), None) => d.has(KEY_INK.as_bytes()),
+        (_, Some(d)) => ours(d),
+        (Object::Dictionary(d), None) => ours(d),
         _ => false,
     }
 }
@@ -453,6 +457,15 @@ fn add_annotation(
 }
 
 pub fn write_ink(bytes: &[u8], ink: &[PageInk]) -> Result<Vec<u8>, Error> {
+    write_annotations(bytes, ink, &[])
+}
+
+/// Our ink, text boxes, formulas and pictures replace the ones saved before, in one update.
+pub fn write_annotations(
+    bytes: &[u8],
+    ink: &[PageInk],
+    objects: &[PlacedObject],
+) -> Result<Vec<u8>, Error> {
     let base_len = base_length(bytes);
     let base = &bytes[..base_len];
     let mut inc = IncrementalDocument::load_from(base)?;
@@ -466,13 +479,19 @@ pub fn write_ink(bytes: &[u8], ink: &[PageInk]) -> Result<Vec<u8>, Error> {
             .map(|e| e.0.clone())
             .collect();
         let new_ink: Vec<&PageInk> = ink.iter().filter(|i| i.page == index).collect();
-        if kept.len() == existing.len() && new_ink.is_empty() {
+        let new_objects: Vec<&PlacedObject> = objects.iter().filter(|o| o.page == index).collect();
+        if kept.len() == existing.len() && new_ink.is_empty() && new_objects.is_empty() {
             continue;
         }
         let geometry = PageGeometry::of(&prev, page);
         let mut annots = kept;
         for item in new_ink {
             if let Some(id) = add_annotation(&mut inc.new_document, page, &geometry, item) {
+                annots.push(Object::Reference(id));
+            }
+        }
+        for item in new_objects {
+            if let Some(id) = objects::add_object(&mut inc.new_document, page, &geometry, item) {
                 annots.push(Object::Reference(id));
             }
         }

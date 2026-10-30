@@ -139,10 +139,12 @@ impl StrokeBuilder {
                 self.points.push(InkPoint {
                     x: raw.x,
                     y: raw.y,
+                    pressure: self.smoothed_pressure.map_or(last.pressure, |p| p as f32),
+                    tilt_x: raw.tilt_x as f32,
+                    tilt_y: raw.tilt_y as f32,
                     t: raw
                         .time_ms
                         .wrapping_sub(self.start_ms.unwrap_or(raw.time_ms)),
-                    ..last
                 });
             }
         }

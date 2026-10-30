@@ -29,7 +29,7 @@ AppDialog {
     }
 
     objectName: "historyDialog"
-    title: qsTr("Earlier versions of “%1”").arg(path.split("/").pop())
+    title: qsTr("Earlier versions of “%1”").arg(AppController.displayName(path))
     acceptText: qsTr("Close")
     rejectText: ""
     acceptButton.objectName: "historyClose"

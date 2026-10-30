@@ -1,6 +1,7 @@
 import QtCore
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtQuick.Layouts
 import Ductus
 
@@ -10,6 +11,17 @@ Dialog {
     required property InkCanvas canvas
     required property ApplicationWindow window
     property int section: 0
+
+    /// Handwriting, scrolled down to the recognizers to download.
+    function showModels() {
+        section = 4
+        open()
+        Qt.callLater(() => {
+            const flick = handwritingSection.contentItem
+            const y = modelsAnchor.mapToItem(flick.contentItem, 0, 0).y - 8
+            flick.contentY = Math.max(0, Math.min(y, flick.contentHeight - flick.height))
+        })
+    }
 
     signal openFolderRequested()
     signal updateRequested()
@@ -32,6 +44,24 @@ Dialog {
         radius: 12
         border.width: 1
         border.color: Theme.ribbonBorder
+    }
+
+    // Downloading it again takes a while: removing asks first.
+    AppDialog {
+        id: removeModelDialog
+        objectName: "removeModelDialog"
+        property string modelId
+        property string modelTitle
+        function ask(model) {
+            modelId = model.id
+            modelTitle = model.title
+            open()
+        }
+        title: qsTr("Remove \u201c%1\u201d?").arg(modelTitle)
+        message: qsTr("Handwriting can't be read with it until it is downloaded again.")
+        acceptText: qsTr("Remove")
+        destructive: true
+        onAccepted: Models.remove(modelId)
     }
 
     // AppController reads these keys too (pages/, hwr/).
@@ -436,7 +466,7 @@ Dialog {
                         label: qsTr("App language")
                         hint: qsTr("The language of menus and messages. Handwriting languages are under Handwriting.")
                     }
-                    ComboBox {
+                    AppComboBox {
                         objectName: "appLanguage"
                         Layout.preferredWidth: 240
                         Layout.fillWidth: dialog.narrow
@@ -456,6 +486,50 @@ Dialog {
                     options: [qsTr("System"), qsTr("Light"), qsTr("Dark")]
                     value: modes.indexOf(dialog.window.themeMode)
                     onPicked: (index) => dialog.window.themeMode = modes[index]
+                }
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: dialog.narrow ? 1 : 2
+                    rowSpacing: 6
+                    columnSpacing: 12
+                    Described {
+                        label: qsTr("App color")
+                        hint: qsTr("The title bar, buttons and highlights; the grays take on its tint.")
+                    }
+                    Flow {
+                        // The colors and More colors in one row.
+                        Layout.preferredWidth: 280
+                        Layout.fillWidth: dialog.narrow
+                        spacing: 2
+                        Repeater {
+                            model: Theme.colors
+                            delegate: ColorSwatch {
+                                required property string modelData
+                                required property int index
+                                objectName: "appColor" + index
+                                swatch: modelData
+                                selected: Qt.colorEqual(dialog.window.appColor, modelData)
+                                onClicked: dialog.window.appColor = modelData
+                            }
+                        }
+                        RibbonButton {
+                            objectName: "appColorMore"
+                            iconName: "color"
+                            tip: qsTr("More colors…")
+                            implicitWidth: 28
+                            implicitHeight: 28
+                            padding: 3
+                            onClicked: {
+                                appColorDialog.selectedColor = dialog.window.appColor
+                                appColorDialog.open()
+                            }
+                        }
+                        ColorDialog {
+                            id: appColorDialog
+                            title: qsTr("Choose a color")
+                            onAccepted: dialog.window.appColor = selectedColor
+                        }
+                    }
                 }
                 Heading { text: qsTr("Around the page") }
                 Toggle {
@@ -507,7 +581,7 @@ Dialog {
             Section {
                 Heading { text: qsTr("Library folder") }
                 Described {
-                    label: AppController.libraryPath
+                    label: AppController.libraryDisplayPath
                     hint: qsTr("Your notebooks are ordinary folders and files here. Sync this folder with Nextcloud, Syncthing or similar to use it on several devices.")
                 }
                 Flow {
@@ -577,6 +651,7 @@ Dialog {
             }
 
             Section {
+                id: handwritingSection
                 Heading { text: qsTr("Recognizer") }
                 Described {
                     label: qsTr("Turns handwriting into text or formulas.")
@@ -697,6 +772,10 @@ Dialog {
                         }
                     }
                 }
+                Item {
+                    id: modelsAnchor
+                    Layout.fillWidth: true
+                }
                 Repeater {
                     model: Models.entries
                     delegate: RowLayout {
@@ -720,7 +799,7 @@ Dialog {
                             visible: !modelRow.loading
                             text: modelRow.modelData.installed ? qsTr("Remove") : qsTr("Download")
                             enabled: Models.busy === ""
-                            onClicked: modelRow.modelData.installed ? Models.remove(modelRow.modelData.id)
+                            onClicked: modelRow.modelData.installed ? removeModelDialog.ask(modelRow.modelData)
                                 : Models.download(modelRow.modelData.id)
                         }
                     }
