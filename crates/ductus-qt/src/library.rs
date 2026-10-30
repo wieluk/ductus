@@ -1,7 +1,8 @@
 use crate::engine::CanvasEngine;
-use crate::ffi::qobject::{ImportResult, TrashRow, TreeRow};
+use crate::ffi::qobject::{ImportResult, SavedPage, TrashRow, TreeRow};
 use crate::import::ImportHandle;
 use crate::recognize::RecognitionHandle;
+use crate::saver::Saver;
 use ductus_core::{Document, PageKind, PageSettings, Rgba};
 use ductus_format::library::pdf_stem;
 use ductus_format::{Filter, Library, Node, NodeKind, PageFile};
@@ -37,7 +38,9 @@ struct TreeView<'a> {
 const RECENT_SHOWN: usize = 5;
 
 pub struct LibraryHandle {
+    /// Through `lib()`, which waits for pending saves, unless nothing written can matter.
     library: Library,
+    saver: Saver,
     open: Option<OpenPage>,
     /// The page in the other half of a side-by-side view; `swap_open` makes it the open one.
     parked: Option<OpenPage>,
@@ -52,6 +55,7 @@ fn pdf_error(e: ductus_pdf::Error) -> ductus_format::Error {
 pub fn open_library(root: &str, data_dir: &str) -> Result<Box<LibraryHandle>> {
     Ok(Box::new(LibraryHandle {
         library: Library::open(root, Path::new(data_dir))?,
+        saver: Saver::new(),
         open: None,
         parked: None,
     }))
@@ -453,15 +457,15 @@ impl LibraryHandle {
     }
 
     pub fn import_page(&self, parent: &str, file: &str) -> Result<String> {
-        self.library.import_page(parent, Path::new(file))
+        self.lib().import_page(parent, Path::new(file))
     }
 
     pub fn unique_name(&self, parent: &str, base: &str) -> String {
-        self.library.unique_name(parent, base)
+        self.lib().unique_name(parent, base)
     }
 
     pub fn create_folder(&self, parent: &str, name: &str) -> Result<String> {
-        self.library.create_folder(parent, name)
+        self.lib().create_folder(parent, name)
     }
 
     pub fn create_page(&mut self, parent: &str, name: &str, like: &CanvasEngine) -> Result<String> {
@@ -469,7 +473,7 @@ impl LibraryHandle {
         if settings.kind == PageKind::Pdf {
             settings = PageSettings::default();
         }
-        self.library.create_page(parent, name, settings)
+        self.lib_mut().create_page(parent, name, settings)
     }
 
     pub fn create_page_styled(
@@ -481,18 +485,18 @@ impl LibraryHandle {
         pattern: &str,
     ) -> Result<String> {
         let settings = crate::engine::styled(PageSettings::default(), kind, landscape, pattern);
-        self.library.create_page(parent, name, settings)
+        self.lib_mut().create_page(parent, name, settings)
     }
 
     pub fn rename(&mut self, path: &str, name: &str) -> Result<String> {
-        let new = self.library.rename(path, name)?;
+        let new = self.lib().rename(path, name)?;
         self.follow_move(path, &new);
         Ok(new)
     }
 
     pub fn move_to(&mut self, path: &str, parent: &str, index: i32) -> Result<String> {
         let index = usize::try_from(index).ok();
-        let new = self.library.move_to(path, parent, index)?;
+        let new = self.lib().move_to(path, parent, index)?;
         self.follow_move(path, &new);
         Ok(new)
     }
@@ -506,7 +510,7 @@ impl LibraryHandle {
     }
 
     pub fn remove(&mut self, path: &str) -> Result<String> {
-        let id = self.library.delete(path)?;
+        let id = self.lib().delete(path)?;
         for page in [&mut self.open, &mut self.parked] {
             if page
                 .as_ref()
@@ -530,12 +534,12 @@ impl LibraryHandle {
     }
 
     pub fn pages_in(&self, folder: &str) -> Result<Vec<String>> {
-        self.library.pages_in(folder)
+        self.lib().pages_in(folder)
     }
 
     pub fn trash_rows(&self) -> Result<Vec<TrashRow>> {
         Ok(self
-            .library
+            .lib()
             .trash()?
             .into_iter()
             .map(|entry| {
@@ -561,20 +565,20 @@ impl LibraryHandle {
     }
 
     pub fn restore(&mut self, id: &str) -> Result<String> {
-        self.library.restore(id)
+        self.lib().restore(id)
     }
 
     pub fn purge(&self, id: &str) -> Result<()> {
-        self.library.purge(id)
+        self.lib().purge(id)
     }
 
     pub fn empty_trash(&self) -> Result<()> {
-        self.library.empty_trash()
+        self.lib().empty_trash()
     }
 
     pub fn versions(&self, path: &str) -> Result<Vec<u64>> {
         Ok(self
-            .library
+            .lib()
             .versions(path)?
             .into_iter()
             .map(|v| v.saved)
@@ -582,15 +586,15 @@ impl LibraryHandle {
     }
 
     pub fn restore_version(&mut self, path: &str, saved: u64) -> Result<()> {
-        self.library.restore_version(path, saved)
+        self.lib_mut().restore_version(path, saved)
     }
 
     pub fn copy_version(&self, path: &str, saved: u64, name: &str) -> Result<String> {
-        self.library.copy_version(path, saved, name)
+        self.lib().copy_version(path, saved, name)
     }
 
     pub fn set_color(&self, path: &str, color: &str) -> Result<()> {
-        self.library.set_color(path, parse_hex(color))
+        self.lib().set_color(path, parse_hex(color))
     }
 
     pub fn open_page(&self) -> String {
@@ -607,7 +611,36 @@ impl LibraryHandle {
         self.library.page_file(path).to_string_lossy().into_owned()
     }
 
+    fn lib(&self) -> &Library {
+        self.saver.wait();
+        &self.library
+    }
+
+    fn lib_mut(&mut self) -> &mut Library {
+        self.saver.wait();
+        &mut self.library
+    }
+
+    /// Saves finished since last asked.
+    pub fn take_saved(&self) -> Vec<SavedPage> {
+        self.saver
+            .take_done()
+            .into_iter()
+            .map(|(path, error)| SavedPage { path, error })
+            .collect()
+    }
+
+    pub fn saving(&self) -> bool {
+        self.saver.busy()
+    }
+
+    pub fn wait_saved(&self) {
+        self.saver.wait();
+    }
+
     pub fn load_into(&mut self, path: &str, canvas: &mut CanvasEngine) -> Result<()> {
+        // Opening another page needn't wait for the one just left to be written.
+        self.saver.wait_for(path);
         if is_pdf_path(path) {
             let bytes = self.library.read_pdf(path)?;
             let ink = ductus_pdf::read_ink(&bytes).map_err(pdf_error)?;
@@ -681,6 +714,7 @@ impl LibraryHandle {
         Ok(())
     }
 
+    /// Takes what the page holds now and writes it on the saving thread (`take_saved` reports it).
     pub fn save_from(&mut self, canvas: &CanvasEngine) -> Result<()> {
         let Some(open) = &self.open else {
             return Ok(());
@@ -693,24 +727,11 @@ impl LibraryHandle {
                 pdf,
                 recognized,
             } => {
-                // Text read from ink that has changed since is dropped.
-                let current: HashSet<String> = if recognized.is_empty() {
-                    HashSet::new()
-                } else {
-                    ductus_hwr::find_lines(doc.strokes())
-                        .into_iter()
-                        .map(|l| l.key)
-                        .collect()
-                };
-                let page = PageFile {
+                let mut page = PageFile {
                     id: id.clone(),
                     document: doc.clone(),
                     pdf: pdf.clone(),
-                    recognized: recognized
-                        .iter()
-                        .filter(|l| current.contains(&l.key))
-                        .cloned()
-                        .collect(),
+                    recognized: recognized.clone(),
                     pictures: doc
                         .images()
                         .iter()
@@ -720,22 +741,36 @@ impl LibraryHandle {
                         })
                         .collect(),
                 };
-                self.library.save_page(&path, &page)
+                let save = self.library.prepare_page_save(&path, id);
+                self.saver.queue(&path, move || {
+                    // Text read from ink that has changed since is dropped.
+                    if !page.recognized.is_empty() {
+                        let current: HashSet<String> =
+                            ductus_hwr::find_lines(page.document.strokes())
+                                .into_iter()
+                                .map(|l| l.key)
+                                .collect();
+                        page.recognized.retain(|l| current.contains(&l.key));
+                    }
+                    save.write(ductus_format::write_page(&page).as_bytes())
+                });
+                Ok(())
             }
             OpenKind::Pdf => {
-                let current = self.library.read_pdf(&path)?;
                 let picture = |name: &str| Some(canvas.canvas().picture_bytes(name)?.to_vec());
                 let objects = ductus_pdf::objects_by_page(doc, &picture);
-                let updated = ductus_pdf::write_annotations(
-                    &current,
-                    &ductus_pdf::ink_by_page(doc),
-                    &objects,
-                )
-                .map_err(pdf_error)?;
-                self.library.save_pdf(&path, &updated)?;
-                // Rewriting the PDF parsed all of it.
-                drop((current, updated));
-                ductus_core::release_freed_memory();
+                let ink = ductus_pdf::ink_by_page(doc);
+                let save = self.library.prepare_pdf_save(&path);
+                self.saver.queue(&path, move || {
+                    let current = std::fs::read(save.path())?;
+                    let updated = ductus_pdf::write_annotations(&current, &ink, &objects)
+                        .map_err(pdf_error)?;
+                    save.write(&updated)?;
+                    // Rewriting the PDF parsed all of it.
+                    drop((current, updated));
+                    ductus_core::release_freed_memory();
+                    Ok(())
+                });
                 Ok(())
             }
         }
@@ -766,20 +801,20 @@ impl LibraryHandle {
         let after = sheets.iter().rposition(|s| s.1 <= view_y).unwrap_or(0);
         match kind {
             None => {
-                let bytes = self.library.read_pdf(&path)?;
+                let bytes = self.lib().read_pdf(&path)?;
                 let updated = ductus_pdf::insert_blank_page(&bytes, after).map_err(pdf_error)?;
-                self.library.save_pdf(&path, &updated)
+                self.lib_mut().save_pdf(&path, &updated)
             }
             Some(name) => {
-                let bytes = self.library.read_page_pdf(&path, &name)?;
+                let bytes = self.lib().read_page_pdf(&path, &name)?;
                 let updated = ductus_pdf::insert_blank_page(&bytes, after).map_err(pdf_error)?;
-                let mut page = self.library.load_page(&path)?;
+                let mut page = self.lib().load_page(&path)?;
                 if let Some(&(_, y, _, h)) = sheets.get(after) {
                     page.document
                         .shift_below(y + h, sizes[after].1 + ductus_core::SHEET_GAP);
                 }
-                self.library.save_page_pdf(&path, &name, &updated)?;
-                self.library.save_page(&path, &page)
+                self.lib().save_page_pdf(&path, &name, &updated)?;
+                self.lib_mut().save_page(&path, &page)
             }
         }
     }
@@ -847,14 +882,19 @@ impl LibraryHandle {
                 recognized.push(line.clone());
             }
         }
-        // Not open (any more): update the file if that ink is still there.
-        let mut file = self.library.load_page(page)?;
-        let current = ductus_hwr::find_lines(file.document.strokes());
-        if current.iter().any(|l| l.key == key) {
-            file.recognized.retain(|l| l.key != key);
-            file.recognized.push(line);
-            self.library.save_page(page, &file)?;
-        }
+        // Not open (any more): update the file if that ink is still there. A cache, so no history.
+        let save = self.library.prepare_page_save_without_history(page);
+        let key = key.to_owned();
+        self.saver.queue(page, move || {
+            let mut file = ductus_format::read_page(&std::fs::read_to_string(save.path())?)?;
+            let current = ductus_hwr::find_lines(file.document.strokes());
+            if current.iter().any(|l| l.key == key) {
+                file.recognized.retain(|l| l.key != key);
+                file.recognized.push(line);
+                save.write(ductus_format::write_page(&file).as_bytes())?;
+            }
+            Ok(())
+        });
         Ok(false)
     }
 
@@ -880,7 +920,7 @@ impl LibraryHandle {
                 ductus_import::Entry::File { .. } => {}
             }
         }
-        let saved = ductus_import::save(&mut self.library, parent, &import)?;
+        let saved = ductus_import::save(self.lib_mut(), parent, &import)?;
         Ok(ImportResult {
             root: saved.root,
             page: saved.first_page.unwrap_or_default(),
@@ -895,13 +935,13 @@ impl LibraryHandle {
             .file_stem()
             .map(|s| s.to_string_lossy().into_owned())
             .unwrap_or_else(|| "Imported PDF".into());
-        let name = self.library.unique_name(parent, &stem);
+        let name = self.lib().unique_name(parent, &stem);
         // Make sure it opens before adding anything to the library.
         let sizes = open_pdf(bytes.clone())?.page_sizes().to_vec();
         if annotate {
-            self.library.add_pdf(parent, &name, &bytes)
+            self.lib().add_pdf(parent, &name, &bytes)
         } else {
-            self.library.create_pdf_page(parent, &name, &bytes, sizes)
+            self.lib_mut().create_pdf_page(parent, &name, &bytes, sizes)
         }
     }
 
@@ -970,14 +1010,14 @@ impl LibraryHandle {
         };
         match &open.kind {
             OpenKind::Pdf => {
-                let current = self.library.read_pdf(&open.path)?;
+                let current = self.lib().read_pdf(&open.path)?;
                 let pictures = ductus_pdf::pictures_by_page(doc, &picture);
                 ductus_pdf::flatten(&current, &ductus_pdf::ink_by_page(doc), &pictures)
             }
             OpenKind::Svg {
                 pdf: Some(name), ..
             } => {
-                let source = self.library.read_page_pdf(&open.path, name)?;
+                let source = self.lib().read_page_pdf(&open.path, name)?;
                 let pictures = ductus_pdf::pictures_by_page(doc, &picture);
                 ductus_pdf::flatten(&source, &ductus_pdf::ink_by_page(doc), &pictures)
             }
@@ -1144,6 +1184,30 @@ mod tests {
         assert!(dir.path().join("Notes/Mathematics/Limits.svg").is_file());
         handle.remove("Mathematics").unwrap();
         assert_eq!(handle.open_page(), "");
+    }
+
+    #[test]
+    fn moving_files_waits_for_saves_being_written() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut handle = open_library(
+            dir.path().join("Notes").to_str().unwrap(),
+            dir.path().join("app").to_str().unwrap(),
+        )
+        .unwrap();
+        let mut canvas = crate::engine::new_canvas_engine();
+        handle.create_folder("", "Math").unwrap();
+        let page = handle.create_page("Math", "Limits", &canvas).unwrap();
+        handle.load_into(&page, &mut canvas).unwrap();
+        handle.save_from(&canvas).unwrap();
+        handle.rename("Math", "Calculus").unwrap();
+        // The write landed before the move, not at the old place after it.
+        assert!(!dir.path().join("Notes/Math").exists());
+        assert!(dir.path().join("Notes/Calculus/Limits.svg").is_file());
+        let saved = handle.take_saved();
+        assert_eq!(saved.len(), 1);
+        assert_eq!(saved[0].path, "Math/Limits");
+        assert_eq!(saved[0].error, "");
+        assert!(!handle.saving());
     }
 
     #[test]

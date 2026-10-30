@@ -445,8 +445,13 @@ private:
     QTimer m_refreshTimer;
     QFileSystemWatcher m_watcher;
     /// To tell our own writes from other programs' changes.
-    QString m_lastSavedFile;
-    QDateTime m_lastSavedTime;
+    /// When each file was last written by us, so the watcher can tell our saves from others'.
+    QHash<QString, QDateTime> m_savedTimes;
+    /// While pages are written on the saving thread.
+    QTimer m_savePoll;
+    void pollSaves();
+    /// Waits for pages being written, e.g. before their files are read.
+    void finishSaves();
 };
 
 #endif

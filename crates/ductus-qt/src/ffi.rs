@@ -149,6 +149,13 @@ pub mod qobject {
         total: u32,
     }
 
+    /// A page written by the saving thread; `error` is "" when it was saved.
+    #[derive(Debug, Default)]
+    struct SavedPage {
+        path: String,
+        error: String,
+    }
+
     /// `root` is the page or folder created; `page` the first page in it, if any.
     #[derive(Debug, Default)]
     struct ImportResult {
@@ -352,7 +359,12 @@ pub mod qobject {
         fn page_file(self: &LibraryHandle, path: &str) -> String;
         fn load_into(self: &mut LibraryHandle, path: &str, canvas: &mut CanvasEngine)
         -> Result<()>;
+        /// Queues the save; `take_saved` reports when it is written.
         fn save_from(self: &mut LibraryHandle, canvas: &CanvasEngine) -> Result<()>;
+        fn take_saved(self: &LibraryHandle) -> Vec<SavedPage>;
+        /// Saves are still being written.
+        fn saving(self: &LibraryHandle) -> bool;
+        fn wait_saved(self: &LibraryHandle);
         fn close_page(self: &mut LibraryHandle);
         /// The open page and the one in the other half of a split view trade places.
         fn swap_open(self: &mut LibraryHandle);

@@ -216,6 +216,8 @@ AppController::AppController(QObject *parent)
     m_saveTimer.setSingleShot(true);
     m_saveTimer.setInterval(QSettings().value(QStringLiteral("saving/delay"), 1500).toInt());
     connect(&m_saveTimer, &QTimer::timeout, this, &AppController::saveNow);
+    m_savePoll.setInterval(50);
+    connect(&m_savePoll, &QTimer::timeout, this, &AppController::pollSaves);
 
     m_refreshTimer.setSingleShot(true);
     m_refreshTimer.setInterval(250);
@@ -245,6 +247,7 @@ AppController::AppController(QObject *parent)
         if (m_canvas)
             m_canvas->finishTextEditing();
         saveNow();
+        finishSaves();
     });
     connect(QGuiApplication::clipboard(), &QClipboard::dataChanged, this, [this] {
         if (!m_awaitingSnip)
@@ -270,6 +273,7 @@ AppController::AppController(QObject *parent)
                 m_canvas->finishTextEditing();
 #endif
             saveNow();
+            finishSaves();
         }
         if (state == Qt::ApplicationActive) {
             // Back from the system page that gives access to shared storage.
@@ -1575,18 +1579,52 @@ void AppController::saveNow()
         m_savedRevision = m_canvas->revision();
         setDirty(false);
         m_recognitionUnsaved = false;
-        m_lastSavedFile = toQ((*m_library)->page_file(toStd(currentPage())));
-        m_lastSavedTime = QFileInfo(m_lastSavedFile).lastModified();
+        // Written on the saving thread; pollSaves follows up once it is on disk.
+        m_savePoll.start();
+    }
+}
+
+void AppController::pollSaves()
+{
+    if (!m_library) {
+        m_savePoll.stop();
+        return;
+    }
+    // Asked before taking, so a save finishing in between is not missed.
+    const bool busy = (*m_library)->saving();
+    const rust::Vec<SavedPage> saved = (*m_library)->take_saved();
+    for (const SavedPage &s : saved) {
+        const QString page = toQ(s.path);
+        if (!s.error.empty()) {
+            Q_EMIT errorOccurred(toQ(s.error));
+            // Tried again with the next save.
+            if (page == currentPage())
+                setDirty(true);
+            continue;
+        }
+        const QString file = toQ((*m_library)->page_file(s.path));
+        m_savedTimes.insert(file, QFileInfo(file).lastModified());
         if (m_search) {
-            (*m_search)->reindex(toStd(currentPage()));
+            (*m_search)->reindex(s.path);
             m_indexTimer.start();
         }
         // Lines still queued are not prepared again; the rest follow once they are read.
-        if (recognizerKind() != u"off" && (*m_recognizer)->pending() == 0)
+        if (page == currentPage() && recognizerKind() != u"off" && (*m_recognizer)->pending() == 0)
             m_recognizeTimer.start();
-        // An atomic save replaces the file, which ends the watch on it.
-        QTimer::singleShot(0, this, &AppController::rewatch);
     }
+    // An atomic save replaces the file, which ends the watch on it.
+    if (!saved.empty())
+        QTimer::singleShot(0, this, &AppController::rewatch);
+    if (!busy)
+        m_savePoll.stop();
+}
+
+void AppController::finishSaves()
+{
+    if (!m_library)
+        return;
+    (*m_library)->wait_saved();
+    pollSaves();
 }
 
 void AppController::onFileChanged(const QString &file)
@@ -1596,8 +1634,9 @@ void AppController::onFileChanged(const QString &file)
     const QString page = currentPage();
     if (page.isEmpty() || file != toQ((*m_library)->page_file(toStd(page))))
         return;
-    // Our own saves trigger this too.
-    if (file == m_lastSavedFile && QFileInfo(file).lastModified() == m_lastSavedTime) {
+    // Our own saves trigger this too, maybe before they are reported.
+    finishSaves();
+    if (m_savedTimes.contains(file) && QFileInfo(file).lastModified() == m_savedTimes.value(file)) {
         QTimer::singleShot(0, this, &AppController::rewatch);
         return;
     }
@@ -1887,6 +1926,7 @@ void AppController::openExternally(const QString &path)
 {
     if (!m_library)
         return;
+    finishSaves();
     const QString file = toQ((*m_library)->absolute_path(toStd(path)));
     if (!QDesktopServices::openUrl(QUrl::fromLocalFile(file)))
         Q_EMIT errorOccurred(tr("No program is set up to open %1.").arg(QFileInfo(file).fileName()));
@@ -1986,8 +2026,10 @@ QVariantList AppController::search(const QString &query, const QString &scope, i
     if (onPage && currentPage().isEmpty())
         return out;
     // What was just written is found once this save is indexed.
-    if (onPage && (m_dirty || m_recognitionUnsaved))
+    if (onPage && (m_dirty || m_recognitionUnsaved)) {
         saveNow();
+        finishSaves();
+    }
     const rust::Vec<SearchHit> hits = (*m_search)->search(toStd(query), toStd(scope), toStd(currentPage()),
                                                           static_cast<std::size_t>(limit));
     for (const SearchHit &h : hits) {
@@ -2172,10 +2214,11 @@ void AppController::pollRecognition()
         attempt([&] {
             open = (*m_library)->apply_recognition(r.page, r.key, r.text, r.x, r.y, r.w, r.h, r.lang);
         });
+        // Other pages are reindexed once written.
         if (open)
             openPageChanged = true;
-        else if (m_search)
-            (*m_search)->reindex(r.page);
+        else
+            m_savePoll.start();
     }
     // The text is stored with the page (and indexed when it is saved) once the batch is read:
     // saving a big page per line kept the interface busy. Unsaved ink waits for the user's save.
