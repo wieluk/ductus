@@ -537,7 +537,7 @@ fn stroke(attrs: &HashMap<String, String>, coords: &str) -> Option<Stroke> {
             width: width * K,
             pattern,
         },
-        points: crate::densify(points),
+        points: crate::resample(points),
     })
 }
 

@@ -392,7 +392,7 @@ impl Converter {
                 t: 0,
             })
             .collect::<Vec<_>>();
-        crate::densify(points)
+        crate::resample(points)
     }
 
     fn shape(&self, v: &Value) -> Vec<Stroke> {

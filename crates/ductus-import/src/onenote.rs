@@ -563,7 +563,7 @@ fn ink_stroke(stroke: &InkStroke, path: &[(f64, f64)], (dx, dy): (f64, f64)) -> 
             width,
             pattern: LinePattern::Solid,
         },
-        points: crate::densify(
+        points: crate::resample(
             path.iter()
                 .map(|&(x, y)| InkPoint {
                     x: x + dx,

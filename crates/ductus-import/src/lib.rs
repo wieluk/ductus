@@ -196,12 +196,27 @@ pub(crate) fn picture(bytes: &[u8]) -> Option<(String, Vec<u8>)> {
 
 /// Ductus smooths ink through its points, so sparse ones (shapes, ruler lines) get points
 /// every two units, like its own shapes, to keep their corners.
+/// Points closer than Ductus's pen keeps them are merged: other apps sample far more densely,
+/// which made imported pages several times larger and slower than written ones.
 /// Points that aren't numbers are dropped, and a segment gets at most a few thousand points:
 /// the files come from elsewhere.
-pub(crate) fn densify(mut points: Vec<InkPoint>) -> Vec<InkPoint> {
+pub(crate) fn resample(mut points: Vec<InkPoint>) -> Vec<InkPoint> {
     const STEP: f64 = 2.0;
+    const MIN_STEP: f64 = 0.4;
     const MAX_PER_SEGMENT: f64 = 4096.0;
     points.retain(|p| p.x.is_finite() && p.y.is_finite() && p.pressure.is_finite());
+    let end = points.len().saturating_sub(1);
+    let mut kept: Vec<InkPoint> = Vec::with_capacity(points.len());
+    for (i, p) in points.into_iter().enumerate() {
+        match kept.last_mut() {
+            // Like the pen: a press harder in place still counts.
+            Some(last) if i < end && (p.x - last.x).hypot(p.y - last.y) < MIN_STEP => {
+                last.pressure = last.pressure.max(p.pressure);
+            }
+            _ => kept.push(p),
+        }
+    }
+    let points = kept;
     let mut out = Vec::with_capacity(points.len());
     for pair in points.windows(2) {
         let (a, b) = (pair[0], pair[1]);
@@ -290,9 +305,13 @@ mod tests {
             tilt_y: 0.0,
             t: 0,
         };
-        let dense = densify(vec![point(0.0), point(1.0), point(9.0)]);
+        let dense = resample(vec![point(0.0), point(1.0), point(9.0)]);
         let xs: Vec<f64> = dense.iter().map(|p| p.x).collect();
         assert_eq!(xs, [0.0, 1.0, 3.0, 5.0, 7.0, 9.0]);
+        // Dense samples thin out to the pen's spacing; the stroke still ends where it did.
+        let thin = resample((0..=10).map(|i| point(f64::from(i) * 0.1)).collect());
+        let xs: Vec<f64> = thin.iter().map(|p| p.x).collect();
+        assert_eq!(xs, [0.0, 0.4, 0.8, 1.0]);
     }
 
     #[test]
