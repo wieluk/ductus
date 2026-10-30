@@ -76,6 +76,11 @@ fn main() {
     if target_os == "linux" {
         builder = builder.qt_module("DBus").qt_module("WaylandClient");
     }
+    // Windows snaps windows with a native frame only; ours is kept but not drawn.
+    if target_os == "windows" {
+        builder = builder.cpp_files(["cpp/winframe.h", "cpp/winframe.cpp"]);
+        println!("cargo:rustc-link-lib=user32");
+    }
     // Android has no printing, and runs one copy of an app by itself.
     if target_os != "android" {
         builder = builder
