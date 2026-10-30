@@ -506,6 +506,12 @@ pub mod qobject {
         fn insert_picture(self: &mut CanvasEngine, png: &[u8], x: f64, y: f64) -> bool;
         fn insert_pdf(self: &mut CanvasEngine, pdf: &[u8], x: f64, y: f64) -> Result<bool>;
         fn recolor_selection(self: &mut CanvasEngine, r: f32, g: f32, b: f32, a: f32);
+        /// Mirrors the selection across its center; `horizontal` mirrors left and right.
+        fn flip_selection(self: &mut CanvasEngine, horizontal: bool);
+        /// Turns the selection by quarter turns; positive turns clockwise.
+        fn rotate_selection(self: &mut CanvasEngine, quarter_turns: i32);
+        /// Aligns the selected items: 0 left, 1 center, 2 right, 3 top, 4 middle, 5 bottom.
+        fn align_selection(self: &mut CanvasEngine, mode: u8);
         fn set_pen_color(self: &mut CanvasEngine, r: f32, g: f32, b: f32, a: f32);
         fn set_pen_width(self: &mut CanvasEngine, width: f64);
         fn pen_width(self: &CanvasEngine) -> f64;

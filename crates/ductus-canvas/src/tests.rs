@@ -556,3 +556,69 @@ fn reading_the_page_keeps_ink_that_was_not_read() {
     assert_eq!(c.document().strokes().len(), 2);
     assert!(c.document().texts().is_empty());
 }
+
+#[test]
+fn clipboard_is_shared_between_pages() {
+    let mut a = canvas();
+    draw_wave(&mut a, 40.0, 160.0, 80.0);
+    a.set_tool(ToolMode::Lasso);
+    lasso(&mut a, (20.0, 40.0, 180.0, 130.0));
+    a.copy_selection();
+
+    let mut b = canvas();
+    assert!(b.can_paste(), "the clipboard is shared across pages");
+    b.paste();
+    assert_eq!(b.document().strokes().len(), 1);
+    assert_eq!(b.selection_count(), 1);
+}
+
+#[test]
+fn flip_mirrors_ink_across_its_center() {
+    let mut c = canvas();
+    draw_wave(&mut c, 40.0, 160.0, 80.0);
+    let leftmost = c.document().strokes()[0].points[0].x;
+    c.set_tool(ToolMode::Lasso);
+    lasso(&mut c, (20.0, 40.0, 180.0, 130.0));
+    let center = c.selection_bounds().unwrap().center().x;
+    c.flip_selection(true);
+    let after = c.document().strokes()[0].points[0].x;
+    assert!(
+        (after - (2.0 * center - leftmost)).abs() < 1.0,
+        "the leftmost point is mirrored to the right: {after}"
+    );
+}
+
+#[test]
+fn rotate_turns_the_selection_a_quarter_turn() {
+    let mut c = canvas();
+    draw_wave(&mut c, 40.0, 160.0, 80.0); // wide and short
+    c.set_tool(ToolMode::Lasso);
+    lasso(&mut c, (20.0, 40.0, 180.0, 130.0));
+    let before = c.selection_bounds().unwrap();
+    assert!(before.width() > before.height());
+    c.rotate_selection(1);
+    let after = c.selection_bounds().unwrap();
+    assert!(after.height() > after.width(), "rotated to tall and narrow");
+    c.undo();
+    let restored = ductus_ink::bounds(&c.document().strokes()[0]);
+    assert!(
+        (restored.width() - before.width()).abs() < 1.0
+            && (restored.height() - before.height()).abs() < 1.0,
+        "undo restores the orientation"
+    );
+}
+
+#[test]
+fn align_moves_items_to_the_same_edge() {
+    let mut c = canvas();
+    draw_wave(&mut c, 40.0, 160.0, 80.0);
+    draw_wave(&mut c, 220.0, 360.0, 220.0);
+    c.set_tool(ToolMode::Lasso);
+    lasso(&mut c, (20.0, 40.0, 380.0, 300.0));
+    assert_eq!(c.selection_count(), 2);
+    c.align_selection(0); // left
+    let strokes = c.document().strokes();
+    let left0 = ductus_ink::bounds(&strokes[0]).x0;
+    let left1 = ductus_ink::bounds(&strokes[1]).x0;
+    assert!((left0 - left1).abs() < 0.5, "both left edges align: {left0} vs {left1}");
+}

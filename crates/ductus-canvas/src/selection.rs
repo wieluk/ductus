@@ -3,7 +3,7 @@ use crate::{Canvas, Gesture, PASTE_OFFSET, SELECTION_COLOR, TileLayer, ToolMode}
 use ductus_core::{Command, Image, MathBox, PageKind, Rgba, Stroke, StrokeId, TextBox, Tool};
 use ductus_render::{Layer, Picture, StrokePath, Viewport};
 use kurbo::{Affine, Point, Rect, Vec2};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use tiny_skia::Pixmap;
 
@@ -26,12 +26,14 @@ pub(crate) struct PictureData {
     picture: Rc<Picture>,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub(crate) struct Clipboard {
     strokes: Vec<Stroke>,
     images: Vec<Image>,
     texts: Vec<TextBox>,
     maths: Vec<MathBox>,
+    /// PNG bytes of the copied pictures, by source name, so they paste onto other pages too.
+    pictures: HashMap<String, Rc<[u8]>>,
 }
 
 fn inside(polygon: &[Point], p: Point) -> bool {
@@ -432,6 +434,10 @@ impl Canvas {
 
     pub(crate) fn finish_transform(&mut self) {
         let t = std::mem::replace(&mut self.selection_transform, Affine::IDENTITY);
+        self.apply_transform(t);
+    }
+
+    fn apply_transform(&mut self, t: Affine) {
         let Some(bounds) = self.selection_bounds() else {
             return;
         };
@@ -489,6 +495,101 @@ impl Canvas {
         self.redraw_overlay();
     }
 
+    pub fn flip_selection(&mut self, horizontal: bool) {
+        let Some(bounds) = self.selection_bounds() else {
+            return;
+        };
+        let center = bounds.center();
+        let t = if horizontal {
+            Affine::translate(Vec2::new(2.0 * center.x, 0.0)) * Affine::scale_non_uniform(-1.0, 1.0)
+        } else {
+            Affine::translate(Vec2::new(0.0, 2.0 * center.y)) * Affine::scale_non_uniform(1.0, -1.0)
+        };
+        self.apply_transform(t);
+    }
+
+    pub fn rotate_selection(&mut self, quarter_turns: i32) {
+        let Some(bounds) = self.selection_bounds() else {
+            return;
+        };
+        let center = bounds.center().to_vec2();
+        let angle = std::f64::consts::FRAC_PI_2 * f64::from(quarter_turns);
+        let t = Affine::translate(center) * Affine::rotate(angle) * Affine::translate(-center);
+        self.apply_transform(t);
+    }
+
+    pub fn align_selection(&mut self, mode: u8) {
+        let Some(bounds) = self.selection_bounds() else {
+            return;
+        };
+        // 0 left, 1 center, 2 right, 3 top, 4 middle, 5 bottom.
+        if mode > 5 {
+            return;
+        }
+        let shift = |rect: Rect| -> Vec2 {
+            let (current, target) = match mode {
+                0 => (rect.x0, bounds.x0),
+                1 => (rect.center().x, bounds.center().x),
+                2 => (rect.x1, bounds.x1),
+                3 => (rect.y0, bounds.y0),
+                4 => (rect.center().y, bounds.center().y),
+                _ => (rect.y1, bounds.y1),
+            };
+            if mode <= 2 {
+                Vec2::new(target - current, 0.0)
+            } else {
+                Vec2::new(0.0, target - current)
+            }
+        };
+        let strokes: Vec<Stroke> = self.selected_strokes().cloned().collect();
+        let moved_strokes: Vec<Stroke> = strokes
+            .iter()
+            .map(|s| transform_stroke(s, Affine::translate(shift(ductus_ink::bounds(s)))))
+            .collect();
+        let images: Vec<Image> = self.selected_images().cloned().collect();
+        let moved_images: Vec<Image> = images
+            .iter()
+            .map(|i| transform_image(i, Affine::translate(shift(image_rect(i)))))
+            .collect();
+        let texts: Vec<TextBox> = self.selected_texts().cloned().collect();
+        let moved_texts: Vec<TextBox> = texts
+            .iter()
+            .map(|x| transform_text(x, Affine::translate(shift(text_rect(x)))))
+            .collect();
+        let maths: Vec<MathBox> = self.selected_maths().cloned().collect();
+        let moved_maths: Vec<MathBox> = maths
+            .iter()
+            .map(|m| transform_math(m, Affine::translate(shift(math_rect(m)))))
+            .collect();
+        self.tiles.invalidate(TileLayer::Base, bounds);
+        for s in &moved_strokes {
+            self.paths.remove(&s.id);
+        }
+        let cmd = Command::batch([
+            (!strokes.is_empty()).then_some(Command::Replace {
+                before: strokes,
+                after: moved_strokes,
+            }),
+            (!images.is_empty()).then_some(Command::ReplaceImages {
+                before: images,
+                after: moved_images,
+            }),
+            (!texts.is_empty()).then_some(Command::ReplaceTexts {
+                before: texts,
+                after: moved_texts,
+            }),
+            (!maths.is_empty()).then_some(Command::ReplaceMaths {
+                before: maths,
+                after: moved_maths,
+            }),
+        ]);
+        if let Some(cmd) = cmd {
+            self.history.apply(&mut self.doc, cmd);
+            self.sync_layout();
+        }
+        self.redraw_overlay();
+    }
+
     pub fn delete_selection(&mut self) {
         if let Some(b) = self.selection_bounds() {
             self.tiles.invalidate(TileLayer::Base, b);
@@ -508,11 +609,20 @@ impl Canvas {
     }
 
     pub fn copy_selection(&mut self) {
-        self.clipboard = Clipboard {
-            strokes: self.selected_strokes().cloned().collect(),
-            images: self.selected_images().cloned().collect(),
-            texts: self.selected_texts().cloned().collect(),
-            maths: self.selected_maths().cloned().collect(),
+        let strokes = self.selected_strokes().cloned().collect();
+        let images: Vec<Image> = self.selected_images().cloned().collect();
+        let pictures = images
+            .iter()
+            .filter_map(|i| self.pictures.get(&i.source).map(|p| (i.source.clone(), p.bytes.clone())))
+            .collect();
+        let texts = self.selected_texts().cloned().collect();
+        let maths = self.selected_maths().cloned().collect();
+        *self.clipboard.borrow_mut() = Clipboard {
+            strokes,
+            images,
+            texts,
+            maths,
+            pictures,
         };
     }
 
@@ -522,10 +632,11 @@ impl Canvas {
     }
 
     pub fn can_paste(&self) -> bool {
-        !self.clipboard.strokes.is_empty()
-            || !self.clipboard.images.is_empty()
-            || !self.clipboard.texts.is_empty()
-            || !self.clipboard.maths.is_empty()
+        let clipboard = self.clipboard.borrow();
+        !clipboard.strokes.is_empty()
+            || !clipboard.images.is_empty()
+            || !clipboard.texts.is_empty()
+            || !clipboard.maths.is_empty()
     }
 
     pub fn paste(&mut self) {
@@ -533,40 +644,52 @@ impl Canvas {
             return;
         }
         let t = Affine::translate(Vec2::new(PASTE_OFFSET, PASTE_OFFSET));
-        let strokes: Vec<Stroke> = std::mem::take(&mut self.clipboard.strokes)
+        let clipboard = std::mem::take(&mut *self.clipboard.borrow_mut());
+        let strokes: Vec<Stroke> = clipboard
+            .strokes
             .iter()
             .map(|s| Stroke {
                 id: self.doc.alloc_id(),
                 ..transform_stroke(s, t)
             })
             .collect();
-        let images: Vec<Image> = std::mem::take(&mut self.clipboard.images)
+        let images: Vec<Image> = clipboard
+            .images
             .iter()
             .map(|i| Image {
                 id: self.doc.alloc_id(),
                 ..transform_image(i, t)
             })
             .collect();
-        let texts: Vec<TextBox> = std::mem::take(&mut self.clipboard.texts)
+        let texts: Vec<TextBox> = clipboard
+            .texts
             .iter()
             .map(|x| TextBox {
                 id: self.doc.alloc_id(),
                 ..transform_text(x, t)
             })
             .collect();
-        let maths: Vec<MathBox> = std::mem::take(&mut self.clipboard.maths)
+        let maths: Vec<MathBox> = clipboard
+            .maths
             .iter()
             .map(|m| MathBox {
                 id: self.doc.alloc_id(),
                 ..transform_math(m, t)
             })
             .collect();
+        // The pasted pictures render here, on whatever page receives the paste.
+        for (name, bytes) in &clipboard.pictures {
+            if !self.pictures.contains_key(name) {
+                self.add_picture(name, bytes.to_vec());
+            }
+        }
         // The next paste lands a step further along.
-        self.clipboard = Clipboard {
+        *self.clipboard.borrow_mut() = Clipboard {
             strokes: strokes.clone(),
             images: images.clone(),
             texts: texts.clone(),
             maths: maths.clone(),
+            pictures: clipboard.pictures,
         };
         self.selection = strokes
             .iter()

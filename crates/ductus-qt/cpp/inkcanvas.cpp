@@ -669,6 +669,24 @@ void InkCanvas::recolorSelection(const QColor &color)
     afterEdit();
 }
 
+void InkCanvas::flipSelection(bool horizontal)
+{
+    m_engine->flip_selection(horizontal);
+    afterEdit();
+}
+
+void InkCanvas::rotateSelection(int quarterTurns)
+{
+    m_engine->rotate_selection(quarterTurns);
+    afterEdit();
+}
+
+void InkCanvas::alignSelection(int mode)
+{
+    m_engine->align_selection(static_cast<std::uint8_t>(mode));
+    afterEdit();
+}
+
 void InkCanvas::trackHold(QPointF position)
 {
     if (!m_shapeAssist)

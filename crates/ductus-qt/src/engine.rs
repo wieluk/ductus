@@ -480,6 +480,21 @@ impl CanvasEngine {
         self.0.recolor_selection(Rgba { r, g, b, a });
     }
 
+    /// Mirrors the selection across its center; `horizontal` mirrors left and right.
+    pub fn flip_selection(&mut self, horizontal: bool) {
+        self.0.flip_selection(horizontal);
+    }
+
+    /// Turns the selection by quarter turns; positive turns clockwise.
+    pub fn rotate_selection(&mut self, quarter_turns: i32) {
+        self.0.rotate_selection(quarter_turns);
+    }
+
+    /// Aligns the selected items: 0 left, 1 center, 2 right, 3 top, 4 middle, 5 bottom.
+    pub fn align_selection(&mut self, mode: u8) {
+        self.0.align_selection(mode);
+    }
+
     pub fn tool(&self) -> u8 {
         match self.0.tool() {
             ToolMode::Pen => 0,

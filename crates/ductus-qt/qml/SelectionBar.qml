@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtQuick.Layouts
 import Ductus
 
@@ -21,6 +22,7 @@ Rectangle {
     readonly property real room: parent.width - leftInset - rightInset - 12
     readonly property real natural: edits.implicitWidth
         + (inks.visible ? flow.spacing + inks.implicitWidth : 0)
+        + (transforms.visible ? flow.spacing + transforms.implicitWidth : 0)
         + (converts.visible ? flow.spacing + converts.implicitWidth : 0)
     width: flow.width + 12
     height: flow.implicitHeight + 8
@@ -89,6 +91,54 @@ Rectangle {
                     onClicked: bar.canvas.recolorSelection(modelData)
                 }
             }
+            RibbonButton {
+                objectName: "selectionMoreColors"
+                iconName: "color"
+                tip: qsTr("More colors…")
+                onClicked: moreColors.open()
+            }
+        }
+        RowLayout {
+            id: transforms
+            spacing: 2
+            Rectangle {
+                opacity: transforms.x > 0 ? 1 : 0
+                Layout.preferredWidth: 1
+                Layout.preferredHeight: 22
+                Layout.leftMargin: 4
+                Layout.rightMargin: 4
+                color: Theme.separator
+            }
+            RibbonButton {
+                objectName: "selectionRotateLeft"
+                iconName: "rotate-left"
+                tip: qsTr("Rotate left")
+                onClicked: bar.canvas.rotateSelection(-1)
+            }
+            RibbonButton {
+                objectName: "selectionRotateRight"
+                iconName: "rotate-right"
+                tip: qsTr("Rotate right")
+                onClicked: bar.canvas.rotateSelection(1)
+            }
+            RibbonButton {
+                objectName: "selectionFlipHorizontal"
+                iconName: "flip-horizontal"
+                tip: qsTr("Flip horizontally")
+                onClicked: bar.canvas.flipSelection(true)
+            }
+            RibbonButton {
+                objectName: "selectionFlipVertical"
+                iconName: "flip-vertical"
+                tip: qsTr("Flip vertically")
+                onClicked: bar.canvas.flipSelection(false)
+            }
+            RibbonButton {
+                objectName: "selectionAlign"
+                iconName: "align"
+                tip: qsTr("Align…")
+                onClicked: alignMenu.popup(this, 0, height)
+            }
         }
         RowLayout {
             id: converts
@@ -118,6 +168,47 @@ Rectangle {
                 tip: qsTr("Replace the handwriting with a formula")
                 onClicked: AppController.convertSelection("math")
             }
+        }
+    }
+
+    ColorDialog {
+        id: moreColors
+        title: qsTr("Choose a color")
+        onAccepted: bar.canvas.recolorSelection(selectedColor)
+    }
+
+    AppMenu {
+        id: alignMenu
+        AppMenuItem {
+            objectName: "selectionAlignLeft"
+            text: qsTr("Align left")
+            onTriggered: bar.canvas.alignSelection(0)
+        }
+        AppMenuItem {
+            objectName: "selectionAlignCenterH"
+            text: qsTr("Align center")
+            onTriggered: bar.canvas.alignSelection(1)
+        }
+        AppMenuItem {
+            objectName: "selectionAlignRight"
+            text: qsTr("Align right")
+            onTriggered: bar.canvas.alignSelection(2)
+        }
+        AppMenuSeparator {}
+        AppMenuItem {
+            objectName: "selectionAlignTop"
+            text: qsTr("Align top")
+            onTriggered: bar.canvas.alignSelection(3)
+        }
+        AppMenuItem {
+            objectName: "selectionAlignMiddle"
+            text: qsTr("Align middle")
+            onTriggered: bar.canvas.alignSelection(4)
+        }
+        AppMenuItem {
+            objectName: "selectionAlignBottom"
+            text: qsTr("Align bottom")
+            onTriggered: bar.canvas.alignSelection(5)
         }
     }
 }

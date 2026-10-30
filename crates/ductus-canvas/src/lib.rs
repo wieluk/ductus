@@ -10,7 +10,9 @@ use ductus_core::{
 use ductus_ink::{PressureCurve, RawSample, Shape, Smoothing, StrokeBuilder};
 use ductus_render::{Layer, PageLayout, SheetPainter, StrokePath, Viewport};
 use kurbo::{Affine, Point, Rect, Vec2};
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 use tiles::{Tile, TileCache};
 use tiny_skia::{Pixmap, PixmapPaint, Transform};
 
@@ -25,6 +27,17 @@ const PASTE_OFFSET: f64 = 24.0;
 const SELECTION_COLOR: Rgba = Rgba::rgb(0.35, 0.26, 0.75);
 /// Tiles kept around the visible ones, so short scrolls back don't re-render.
 const TILE_MARGIN: i32 = 2;
+
+// The clipboard is shared between the canvases of a thread (every page and split view), so
+// copying on one page and pasting on another works. `Rc` is enough: the UI thread owns them.
+thread_local! {
+    static CLIPBOARD: Rc<RefCell<selection::Clipboard>> =
+        Rc::new(RefCell::new(selection::Clipboard::default()));
+}
+
+fn shared_clipboard() -> Rc<RefCell<selection::Clipboard>> {
+    CLIPBOARD.with(Rc::clone)
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ToolMode {
@@ -161,7 +174,7 @@ pub struct Canvas {
     backgrounds: HashMap<(i32, i32), Pixmap>,
     selection: HashSet<StrokeId>,
     selection_transform: Affine,
-    clipboard: selection::Clipboard,
+    clipboard: Rc<RefCell<selection::Clipboard>>,
     mark: Option<Rect>,
     math_draft: Option<math::MathDraft>,
     pictures: HashMap<String, selection::PictureData>,
@@ -203,7 +216,7 @@ impl Canvas {
             backgrounds: HashMap::new(),
             selection: HashSet::new(),
             selection_transform: Affine::IDENTITY,
-            clipboard: selection::Clipboard::default(),
+            clipboard: shared_clipboard(),
             pictures: HashMap::new(),
             math_draft: None,
             mark: None,
