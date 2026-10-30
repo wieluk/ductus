@@ -139,6 +139,12 @@ Rectangle {
                 tip: qsTr("Align…")
                 onClicked: alignMenu.popup(this, 0, height)
             }
+            RibbonButton {
+                objectName: "selectionLayer"
+                iconName: "layers"
+                tip: qsTr("Layering…")
+                onClicked: layerMenu.popup(this, 0, height)
+            }
         }
         RowLayout {
             id: converts
@@ -209,6 +215,30 @@ Rectangle {
             objectName: "selectionAlignBottom"
             text: qsTr("Align bottom")
             onTriggered: bar.canvas.alignSelection(5)
+        }
+    }
+
+    AppMenu {
+        id: layerMenu
+        AppMenuItem {
+            objectName: "selectionBringToFront"
+            text: qsTr("Bring to front")
+            onTriggered: bar.canvas.reorderSelection(0)
+        }
+        AppMenuItem {
+            objectName: "selectionBringForward"
+            text: qsTr("Bring forward")
+            onTriggered: bar.canvas.reorderSelection(1)
+        }
+        AppMenuItem {
+            objectName: "selectionSendBackward"
+            text: qsTr("Send backward")
+            onTriggered: bar.canvas.reorderSelection(2)
+        }
+        AppMenuItem {
+            objectName: "selectionSendToBack"
+            text: qsTr("Send to back")
+            onTriggered: bar.canvas.reorderSelection(3)
         }
     }
 }

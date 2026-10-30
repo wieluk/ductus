@@ -622,3 +622,38 @@ fn align_moves_items_to_the_same_edge() {
     let left1 = ductus_ink::bounds(&strokes[1]).x0;
     assert!((left0 - left1).abs() < 0.5, "both left edges align: {left0} vs {left1}");
 }
+
+#[test]
+fn layering_brings_a_stroke_to_the_front_and_undoes() {
+    let mut c = canvas();
+    draw_wave(&mut c, 40.0, 160.0, 80.0);
+    draw_wave(&mut c, 220.0, 360.0, 220.0);
+    let bottom = c.document().strokes()[0].id;
+    let top = c.document().strokes()[1].id;
+    c.set_tool(ToolMode::Lasso);
+    lasso(&mut c, (20.0, 40.0, 180.0, 130.0)); // the first wave
+    assert_eq!(c.selection_count(), 1);
+    c.reorder_selection(0); // bring to front
+    let ids: Vec<_> = c.document().strokes().iter().map(|s| s.id).collect();
+    assert_eq!(ids, [top, bottom], "the bottom stroke moves on top");
+    c.undo();
+    let ids: Vec<_> = c.document().strokes().iter().map(|s| s.id).collect();
+    assert_eq!(ids, [bottom, top], "undo restores the order");
+}
+
+#[test]
+fn layering_steps_one_item_at_a_time() {
+    let mut c = canvas();
+    draw_wave(&mut c, 40.0, 160.0, 80.0);
+    draw_wave(&mut c, 220.0, 360.0, 220.0);
+    let a = c.document().strokes()[0].id;
+    let b = c.document().strokes()[1].id;
+    c.set_tool(ToolMode::Lasso);
+    lasso(&mut c, (20.0, 40.0, 180.0, 130.0)); // select the first wave
+    c.reorder_selection(1); // bring forward: it moves above the other
+    let ids: Vec<_> = c.document().strokes().iter().map(|s| s.id).collect();
+    assert_eq!(ids, [b, a]);
+    c.reorder_selection(2); // send backward again
+    let ids: Vec<_> = c.document().strokes().iter().map(|s| s.id).collect();
+    assert_eq!(ids, [a, b]);
+}

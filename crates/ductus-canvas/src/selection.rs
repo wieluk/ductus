@@ -133,6 +133,46 @@ fn picture_name(bytes: &[u8]) -> String {
     format!("{IMAGE_PREFIX}{h:016x}.png")
 }
 
+/// New within-category order for layering: 0 bring to front, 1 bring forward,
+/// 2 send backward, 3 send to back. Later items draw on top.
+fn reorder_order(order: &[StrokeId], selected: &HashSet<StrokeId>, mode: u8) -> Vec<StrokeId> {
+    let chosen: Vec<StrokeId> = order
+        .iter()
+        .copied()
+        .filter(|id| selected.contains(id))
+        .collect();
+    let rest: Vec<StrokeId> = order
+        .iter()
+        .copied()
+        .filter(|id| !selected.contains(id))
+        .collect();
+    match mode {
+        0 => rest.into_iter().chain(chosen).collect(),
+        3 => chosen.into_iter().chain(rest).collect(),
+        1 => {
+            // Each selected item swaps with the unselected one above it, so a block moves together.
+            let mut out = order.to_vec();
+            for i in (0..out.len()).rev() {
+                if selected.contains(&out[i]) && i + 1 < out.len() && !selected.contains(&out[i + 1])
+                {
+                    out.swap(i, i + 1);
+                }
+            }
+            out
+        }
+        2 => {
+            let mut out = order.to_vec();
+            for i in 0..out.len() {
+                if selected.contains(&out[i]) && i > 0 && !selected.contains(&out[i - 1]) {
+                    out.swap(i - 1, i);
+                }
+            }
+            out
+        }
+        _ => order.to_vec(),
+    }
+}
+
 impl Canvas {
     pub fn transforming(&self) -> bool {
         matches!(
@@ -587,6 +627,55 @@ impl Canvas {
             self.history.apply(&mut self.doc, cmd);
             self.sync_layout();
         }
+        self.redraw_overlay();
+    }
+
+    pub fn reorder_selection(&mut self, mode: u8) {
+        if mode > 3 {
+            return;
+        }
+        let strokes_before: Vec<StrokeId> = self.doc.strokes().iter().map(|s| s.id).collect();
+        let strokes_after = reorder_order(&strokes_before, &self.selection, mode);
+        let images_before: Vec<StrokeId> = self.doc.images().iter().map(|i| i.id).collect();
+        let images_after = reorder_order(&images_before, &self.selection, mode);
+        let texts_before: Vec<StrokeId> = self.doc.texts().iter().map(|t| t.id).collect();
+        let texts_after = reorder_order(&texts_before, &self.selection, mode);
+        let maths_before: Vec<StrokeId> = self.doc.maths().iter().map(|m| m.id).collect();
+        let maths_after = reorder_order(&maths_before, &self.selection, mode);
+        let strokes = if strokes_after != strokes_before {
+            Some((strokes_before, strokes_after))
+        } else {
+            None
+        };
+        let images = if images_after != images_before {
+            Some((images_before, images_after))
+        } else {
+            None
+        };
+        let texts = if texts_after != texts_before {
+            Some((texts_before, texts_after))
+        } else {
+            None
+        };
+        let maths = if maths_after != maths_before {
+            Some((maths_before, maths_after))
+        } else {
+            None
+        };
+        if strokes.is_none() && images.is_none() && texts.is_none() && maths.is_none() {
+            return;
+        }
+        self.tiles.invalidate_layer(TileLayer::Base);
+        self.history.apply(
+            &mut self.doc,
+            Command::Reorder {
+                strokes,
+                images,
+                texts,
+                maths,
+            },
+        );
+        self.sync_layout();
         self.redraw_overlay();
     }
 

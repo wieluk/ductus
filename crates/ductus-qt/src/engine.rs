@@ -495,6 +495,12 @@ impl CanvasEngine {
         self.0.align_selection(mode);
     }
 
+    /// Moves the selection up or down within its categories:
+    /// 0 bring to front, 1 bring forward, 2 send backward, 3 send to back.
+    pub fn reorder_selection(&mut self, mode: u8) {
+        self.0.reorder_selection(mode);
+    }
+
     pub fn tool(&self) -> u8 {
         match self.0.tool() {
             ToolMode::Pen => 0,

@@ -687,6 +687,12 @@ void InkCanvas::alignSelection(int mode)
     afterEdit();
 }
 
+void InkCanvas::reorderSelection(int mode)
+{
+    m_engine->reorder_selection(static_cast<std::uint8_t>(mode));
+    afterEdit();
+}
+
 void InkCanvas::trackHold(QPointF position)
 {
     if (!m_shapeAssist)
