@@ -3,7 +3,7 @@ use crate::{Canvas, Gesture, PASTE_OFFSET, SELECTION_COLOR, TileLayer, ToolMode}
 use ductus_core::{Command, Image, MathBox, PageKind, Rgba, Stroke, StrokeId, TextBox, Tool};
 use ductus_render::{Layer, Picture, StrokePath, Viewport};
 use kurbo::{Affine, Point, Rect, Vec2};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use tiny_skia::Pixmap;
 
@@ -26,12 +26,26 @@ pub(crate) struct PictureData {
     picture: Rc<Picture>,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub(crate) struct Clipboard {
     strokes: Vec<Stroke>,
     images: Vec<Image>,
     texts: Vec<TextBox>,
     maths: Vec<MathBox>,
+    /// PNG bytes of the copied pictures, by source name, so they paste onto other pages too.
+    pictures: HashMap<String, Rc<[u8]>>,
+}
+
+impl Clipboard {
+    fn bounds(&self) -> Option<Rect> {
+        self.strokes
+            .iter()
+            .map(ductus_ink::bounds)
+            .chain(self.images.iter().map(image_rect))
+            .chain(self.texts.iter().map(text_rect))
+            .chain(self.maths.iter().map(math_rect))
+            .reduce(|a, b| a.union(b))
+    }
 }
 
 fn inside(polygon: &[Point], p: Point) -> bool {
@@ -129,6 +143,55 @@ fn picture_name(bytes: &[u8]) -> String {
         h = h.wrapping_mul(0x0100_0000_01b3);
     }
     format!("{IMAGE_PREFIX}{h:016x}.png")
+}
+
+fn overlaps(a: Rect, b: Rect) -> bool {
+    a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1
+}
+
+/// New within-category order for layering: 0 bring to front, 1 bring forward,
+/// 2 send backward, 3 send to back. Later items draw on top.
+fn reorder_order(
+    items: &[(StrokeId, Rect)],
+    selected: &HashSet<StrokeId>,
+    mode: u8,
+) -> Vec<StrokeId> {
+    let (chosen, rest): (Vec<StrokeId>, Vec<StrokeId>) = items
+        .iter()
+        .map(|(id, _)| *id)
+        .partition(|id| selected.contains(id));
+    match mode {
+        0 => rest.into_iter().chain(chosen).collect(),
+        3 => chosen.into_iter().chain(rest).collect(),
+        _ => {
+            // A step goes past the next item that overlaps: passing one elsewhere on the page
+            // changes nothing to see. The item nearest that end moves first, keeping their order.
+            let forward = mode == 1;
+            let mut out = items.to_vec();
+            let picks: Vec<StrokeId> = if forward {
+                chosen.into_iter().rev().collect()
+            } else {
+                chosen
+            };
+            for id in picks {
+                let Some(i) = out.iter().position(|(o, _)| *o == id) else {
+                    continue;
+                };
+                let rect = out[i].1;
+                let past = |&(o, r): &(StrokeId, Rect)| !selected.contains(&o) && overlaps(r, rect);
+                let target = if forward {
+                    out[i + 1..].iter().position(past).map(|k| i + 1 + k)
+                } else {
+                    out[..i].iter().rposition(past)
+                };
+                if let Some(j) = target {
+                    let item = out.remove(i);
+                    out.insert(j, item);
+                }
+            }
+            out.into_iter().map(|(id, _)| id).collect()
+        }
+    }
 }
 
 impl Canvas {
@@ -432,6 +495,10 @@ impl Canvas {
 
     pub(crate) fn finish_transform(&mut self) {
         let t = std::mem::replace(&mut self.selection_transform, Affine::IDENTITY);
+        self.apply_transform(t);
+    }
+
+    fn apply_transform(&mut self, t: Affine) {
         let Some(bounds) = self.selection_bounds() else {
             return;
         };
@@ -489,6 +556,117 @@ impl Canvas {
         self.redraw_overlay();
     }
 
+    /// Flipping or turning changes something: ink turns, or several items trade places.
+    /// Pictures and boxes stay upright, so one alone stays as it is.
+    pub fn selection_turns(&self) -> bool {
+        self.selected_strokes().next().is_some() || self.selection.len() > 1
+    }
+
+    pub fn flip_selection(&mut self, horizontal: bool) {
+        if !self.selection_turns() {
+            return;
+        }
+        let Some(bounds) = self.selection_bounds() else {
+            return;
+        };
+        let center = bounds.center();
+        let t = if horizontal {
+            Affine::translate(Vec2::new(2.0 * center.x, 0.0)) * Affine::scale_non_uniform(-1.0, 1.0)
+        } else {
+            Affine::translate(Vec2::new(0.0, 2.0 * center.y)) * Affine::scale_non_uniform(1.0, -1.0)
+        };
+        self.apply_transform(t);
+    }
+
+    pub fn rotate_selection(&mut self, quarter_turns: i32) {
+        if !self.selection_turns() {
+            return;
+        }
+        let Some(bounds) = self.selection_bounds() else {
+            return;
+        };
+        let center = bounds.center().to_vec2();
+        let angle = std::f64::consts::FRAC_PI_2 * f64::from(quarter_turns);
+        let t = Affine::translate(center) * Affine::rotate(angle) * Affine::translate(-center);
+        self.apply_transform(t);
+    }
+
+    pub fn reorder_selection(&mut self, mode: u8) {
+        if mode > 3 {
+            return;
+        }
+        let ids = |items: &[(StrokeId, Rect)]| items.iter().map(|(id, _)| *id).collect::<Vec<_>>();
+        let strokes: Vec<(StrokeId, Rect)> = self
+            .doc
+            .strokes()
+            .iter()
+            .map(|s| (s.id, ductus_ink::bounds(s)))
+            .collect();
+        let (strokes_before, strokes_after) = (
+            ids(&strokes),
+            reorder_order(&strokes, &self.selection, mode),
+        );
+        let images: Vec<(StrokeId, Rect)> = self
+            .doc
+            .images()
+            .iter()
+            .map(|i| (i.id, image_rect(i)))
+            .collect();
+        let (images_before, images_after) =
+            (ids(&images), reorder_order(&images, &self.selection, mode));
+        let texts: Vec<(StrokeId, Rect)> = self
+            .doc
+            .texts()
+            .iter()
+            .map(|t| (t.id, text_rect(t)))
+            .collect();
+        let (texts_before, texts_after) =
+            (ids(&texts), reorder_order(&texts, &self.selection, mode));
+        let maths: Vec<(StrokeId, Rect)> = self
+            .doc
+            .maths()
+            .iter()
+            .map(|m| (m.id, math_rect(m)))
+            .collect();
+        let (maths_before, maths_after) =
+            (ids(&maths), reorder_order(&maths, &self.selection, mode));
+        let strokes = if strokes_after != strokes_before {
+            Some((strokes_before, strokes_after))
+        } else {
+            None
+        };
+        let images = if images_after != images_before {
+            Some((images_before, images_after))
+        } else {
+            None
+        };
+        let texts = if texts_after != texts_before {
+            Some((texts_before, texts_after))
+        } else {
+            None
+        };
+        let maths = if maths_after != maths_before {
+            Some((maths_before, maths_after))
+        } else {
+            None
+        };
+        if strokes.is_none() && images.is_none() && texts.is_none() && maths.is_none() {
+            return;
+        }
+        self.tiles.invalidate_layer(TileLayer::Base);
+        self.history.apply(
+            &mut self.doc,
+            Command::Reorder {
+                strokes,
+                images,
+                texts,
+                maths,
+            },
+        );
+        self.sync_layout();
+        self.redraw_overlay();
+    }
+
     pub fn delete_selection(&mut self) {
         if let Some(b) = self.selection_bounds() {
             self.tiles.invalidate(TileLayer::Base, b);
@@ -508,11 +686,24 @@ impl Canvas {
     }
 
     pub fn copy_selection(&mut self) {
-        self.clipboard = Clipboard {
-            strokes: self.selected_strokes().cloned().collect(),
-            images: self.selected_images().cloned().collect(),
-            texts: self.selected_texts().cloned().collect(),
-            maths: self.selected_maths().cloned().collect(),
+        let strokes = self.selected_strokes().cloned().collect();
+        let images: Vec<Image> = self.selected_images().cloned().collect();
+        let pictures = images
+            .iter()
+            .filter_map(|i| {
+                self.pictures
+                    .get(&i.source)
+                    .map(|p| (i.source.clone(), p.bytes.clone()))
+            })
+            .collect();
+        let texts = self.selected_texts().cloned().collect();
+        let maths = self.selected_maths().cloned().collect();
+        *self.clipboard.borrow_mut() = Clipboard {
+            strokes,
+            images,
+            texts,
+            maths,
+            pictures,
         };
     }
 
@@ -522,51 +713,69 @@ impl Canvas {
     }
 
     pub fn can_paste(&self) -> bool {
-        !self.clipboard.strokes.is_empty()
-            || !self.clipboard.images.is_empty()
-            || !self.clipboard.texts.is_empty()
-            || !self.clipboard.maths.is_empty()
+        let clipboard = self.clipboard.borrow();
+        !clipboard.strokes.is_empty()
+            || !clipboard.images.is_empty()
+            || !clipboard.texts.is_empty()
+            || !clipboard.maths.is_empty()
     }
 
     pub fn paste(&mut self) {
         if !self.can_paste() {
             return;
         }
-        let t = Affine::translate(Vec2::new(PASTE_OFFSET, PASTE_OFFSET));
-        let strokes: Vec<Stroke> = std::mem::take(&mut self.clipboard.strokes)
+        let clipboard = std::mem::take(&mut *self.clipboard.borrow_mut());
+        let visible = self.view.visible_doc_rect();
+        // Copied out of view (further down, or on another page), the paste lands in view.
+        let t = Affine::translate(match clipboard.bounds() {
+            Some(b) if !overlaps(b, visible) => visible.center() - b.center(),
+            _ => Vec2::new(PASTE_OFFSET, PASTE_OFFSET),
+        });
+        let strokes: Vec<Stroke> = clipboard
+            .strokes
             .iter()
             .map(|s| Stroke {
                 id: self.doc.alloc_id(),
                 ..transform_stroke(s, t)
             })
             .collect();
-        let images: Vec<Image> = std::mem::take(&mut self.clipboard.images)
+        let images: Vec<Image> = clipboard
+            .images
             .iter()
             .map(|i| Image {
                 id: self.doc.alloc_id(),
                 ..transform_image(i, t)
             })
             .collect();
-        let texts: Vec<TextBox> = std::mem::take(&mut self.clipboard.texts)
+        let texts: Vec<TextBox> = clipboard
+            .texts
             .iter()
             .map(|x| TextBox {
                 id: self.doc.alloc_id(),
                 ..transform_text(x, t)
             })
             .collect();
-        let maths: Vec<MathBox> = std::mem::take(&mut self.clipboard.maths)
+        let maths: Vec<MathBox> = clipboard
+            .maths
             .iter()
             .map(|m| MathBox {
                 id: self.doc.alloc_id(),
                 ..transform_math(m, t)
             })
             .collect();
+        // The pasted pictures render here, on whatever page receives the paste.
+        for (name, bytes) in &clipboard.pictures {
+            if !self.pictures.contains_key(name) {
+                self.add_picture(name, bytes.to_vec());
+            }
+        }
         // The next paste lands a step further along.
-        self.clipboard = Clipboard {
+        *self.clipboard.borrow_mut() = Clipboard {
             strokes: strokes.clone(),
             images: images.clone(),
             texts: texts.clone(),
             maths: maths.clone(),
+            pictures: clipboard.pictures,
         };
         self.selection = strokes
             .iter()

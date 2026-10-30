@@ -2,6 +2,7 @@ use crate::{
     Image, MathBox, PageKind, PageSettings, SHEET_GAP, SheetRect, Stroke, StrokeId, TextBox,
     stack_sheets,
 };
+use std::collections::HashMap;
 
 #[derive(Debug, Default, Clone)]
 pub struct Document {
@@ -245,6 +246,31 @@ impl Document {
                 self.images[i] = image.clone();
             }
         }
+    }
+
+    /// Reorders the category so the items run in the given id sequence (a permutation of its ids).
+    pub(crate) fn reorder_strokes(&mut self, order: &[StrokeId]) {
+        let rank: HashMap<StrokeId, usize> =
+            order.iter().enumerate().map(|(i, id)| (*id, i)).collect();
+        self.strokes.sort_by_key(|s| rank[&s.id]);
+    }
+
+    pub(crate) fn reorder_images(&mut self, order: &[StrokeId]) {
+        let rank: HashMap<StrokeId, usize> =
+            order.iter().enumerate().map(|(i, id)| (*id, i)).collect();
+        self.images.sort_by_key(|i| rank[&i.id]);
+    }
+
+    pub(crate) fn reorder_texts(&mut self, order: &[StrokeId]) {
+        let rank: HashMap<StrokeId, usize> =
+            order.iter().enumerate().map(|(i, id)| (*id, i)).collect();
+        self.texts.sort_by_key(|t| rank[&t.id]);
+    }
+
+    pub(crate) fn reorder_maths(&mut self, order: &[StrokeId]) {
+        let rank: HashMap<StrokeId, usize> =
+            order.iter().enumerate().map(|(i, id)| (*id, i)).collect();
+        self.maths.sort_by_key(|m| rank[&m.id]);
     }
 
     pub(crate) fn set_settings(&mut self, settings: PageSettings) {

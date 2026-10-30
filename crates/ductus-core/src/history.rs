@@ -38,6 +38,14 @@ pub enum Command {
         before: Vec<MathBox>,
         after: Vec<MathBox>,
     },
+    /// Items moved up or down within their category, as full id orders `(before, after)`;
+    /// `None` means that category did not change.
+    Reorder {
+        strokes: Option<(Vec<StrokeId>, Vec<StrokeId>)>,
+        images: Option<(Vec<StrokeId>, Vec<StrokeId>)>,
+        texts: Option<(Vec<StrokeId>, Vec<StrokeId>)>,
+        maths: Option<(Vec<StrokeId>, Vec<StrokeId>)>,
+    },
     Batch(Vec<Command>),
 }
 
@@ -182,6 +190,25 @@ impl Command {
                 }
             }
             Command::ReplaceMaths { after, .. } => doc.replace_maths(after),
+            Command::Reorder {
+                strokes,
+                images,
+                texts,
+                maths,
+            } => {
+                if let Some((_, after)) = strokes {
+                    doc.reorder_strokes(after);
+                }
+                if let Some((_, after)) = images {
+                    doc.reorder_images(after);
+                }
+                if let Some((_, after)) = texts {
+                    doc.reorder_texts(after);
+                }
+                if let Some((_, after)) = maths {
+                    doc.reorder_maths(after);
+                }
+            }
             Command::Batch(commands) => commands.iter().for_each(|c| c.apply(doc)),
         }
     }
@@ -247,6 +274,25 @@ impl Command {
                 }
             }
             Command::ReplaceMaths { before, .. } => doc.replace_maths(before),
+            Command::Reorder {
+                strokes,
+                images,
+                texts,
+                maths,
+            } => {
+                if let Some((before, _)) = strokes {
+                    doc.reorder_strokes(before);
+                }
+                if let Some((before, _)) = images {
+                    doc.reorder_images(before);
+                }
+                if let Some((before, _)) = texts {
+                    doc.reorder_texts(before);
+                }
+                if let Some((before, _)) = maths {
+                    doc.reorder_maths(before);
+                }
+            }
             Command::Batch(commands) => commands.iter().rev().for_each(|c| c.revert(doc)),
         }
     }

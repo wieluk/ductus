@@ -12,8 +12,20 @@ QtObject {
     // A grey app color gives grey surfaces too.
     readonly property real chroma: Math.min(1, base.hslSaturation / 0.5)
     function tone(saturation, lightness) { return Qt.hsla(hue, saturation * chroma, lightness, 1) }
-    // White title text stays readable on a light color.
-    readonly property color accentLight: Qt.hsla(hue, base.hslSaturation, Math.min(base.hslLightness, 0.51), 1)
+    function luminance(c) {
+        const linear = v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+        return 0.2126 * linear(c.r) + 0.7152 * linear(c.g) + 0.0722 * linear(c.b)
+    }
+    // White title text stays readable: darker until it contrasts 3:1, which a yellow at half lightness doesn't.
+    readonly property color accentLight: {
+        let lightness = Math.min(base.hslLightness, 0.51)
+        let c = Qt.hsla(hue, base.hslSaturation, lightness, 1)
+        while (lightness > 0.05 && 1.05 / (luminance(c) + 0.05) < 3) {
+            lightness -= 0.02
+            c = Qt.hsla(hue, base.hslSaturation, lightness, 1)
+        }
+        return c
+    }
     readonly property color accentDark: Qt.hsla(hue, Math.min(1, base.hslSaturation * 1.5), 0.76, 1)
 
     readonly property color accent: dark ? accentDark : accentLight
@@ -28,8 +40,6 @@ QtObject {
     readonly property color ribbonBorder: dark ? tone(0.12, 0.249) : tone(0.21, 0.89)
     readonly property color text: dark ? tone(0.21, 0.935) : tone(0.13, 0.131)
     readonly property color textMuted: dark ? tone(0.11, 0.661) : tone(0.08, 0.439)
-    /// Under ink swatches on dark bars: pens show as they write on the light page.
-    readonly property color swatchPaper: "#f4f3f8"
     // Still readable: disabled options must be legible, just quieter.
     readonly property color textDisabled: dark ? tone(0.1, 0.571) : tone(0.09, 0.639)
     readonly property color hover: dark ? tone(0.13, 0.239) : tone(0.35, 0.927)

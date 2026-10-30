@@ -10,7 +10,6 @@ expect-no-file My Notebook/First page.assets
 setenv DUCTUS_TEST_SCREENSHOT tests/fixtures/screenshot.png
 click-item tab_insert
 click-item insertScreenshot
-wait 1200
 expect-prop canvas selectionCount 1
 key Delete
 expect-prop canvas selectionCount 0

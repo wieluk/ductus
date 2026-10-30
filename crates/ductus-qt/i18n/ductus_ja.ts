@@ -329,6 +329,10 @@
         <source>%1 isn&apos;t a PDF Ductus can read.</source>
         <translation>%1 は Ductus で読める PDF ではありません。</translation>
     </message>
+    <message>
+        <source>The first %1 of %2 pages are in. For the whole PDF, import it as note pages.</source>
+        <translation>%2 ページのうち最初の %1 ページを挿入しました。PDF 全体はノートページとして取り込んでください。</translation>
+    </message>
 </context>
 <context>
     <name>Language</name>
@@ -1188,6 +1192,10 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>ペンまたはツールを追加</translation>
     </message>
     <message>
+        <source>Done</source>
+        <translation>完了</translation>
+    </message>
+    <message>
         <source>Full screen (F11)</source>
         <translation>全画面表示（F11）</translation>
     </message>
@@ -1206,6 +1214,14 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Add %1</source>
         <translation>%1 を追加</translation>
+    </message>
+    <message>
+        <source>Rearrange…</source>
+        <translation>並べ替え…</translation>
+    </message>
+    <message>
+        <source>Show undo and redo</source>
+        <translation>元に戻す・やり直すを表示</translation>
     </message>
     <message>
         <source>Restore the default bar</source>
@@ -1236,24 +1252,8 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>特大の消しゴム</translation>
     </message>
     <message>
-        <source>Move up</source>
-        <translation>上へ移動</translation>
-    </message>
-    <message>
-        <source>Move down</source>
-        <translation>下へ移動</translation>
-    </message>
-    <message>
         <source>Remove from the bar</source>
         <translation>バーから削除</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>上へ</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>下へ</translation>
     </message>
 </context>
 <context>
@@ -1743,6 +1743,30 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>削除（Del）</translation>
     </message>
     <message>
+        <source>More colors…</source>
+        <translation>その他の色…</translation>
+    </message>
+    <message>
+        <source>Rotate left</source>
+        <translation>左に回転</translation>
+    </message>
+    <message>
+        <source>Rotate right</source>
+        <translation>右に回転</translation>
+    </message>
+    <message>
+        <source>Flip horizontally</source>
+        <translation>左右反転</translation>
+    </message>
+    <message>
+        <source>Flip vertically</source>
+        <translation>上下反転</translation>
+    </message>
+    <message>
+        <source>Layering…</source>
+        <translation>重なり順…</translation>
+    </message>
+    <message>
         <source>Text</source>
         <translation>テキスト</translation>
     </message>
@@ -1757,6 +1781,26 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Replace the handwriting with a formula</source>
         <translation>手書きを数式に置き換える</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>色を選択</translation>
+    </message>
+    <message>
+        <source>Bring to front</source>
+        <translation>最前面へ移動</translation>
+    </message>
+    <message>
+        <source>Bring forward</source>
+        <translation>前面へ移動</translation>
+    </message>
+    <message>
+        <source>Send backward</source>
+        <translation>背面へ移動</translation>
+    </message>
+    <message>
+        <source>Send to back</source>
+        <translation>最背面へ移動</translation>
     </message>
 </context>
 <context>

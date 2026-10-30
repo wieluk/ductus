@@ -8,7 +8,8 @@ click-item tab_draw
 click-item toolLasso
 pen 400,260 560,260 560,330 400,330 400,260
 expect-prop canvas selectionCount 1
-click-item selectionToMath
+# The pen taps the bar above the page, not the page below it.
+pen-tap selectionToMath
 wait 500
 expect-in-file My Notebook/First page.svg | dx:src="\frac{1}{2}"
 # The result opens in its editor, to correct a misreading right away.

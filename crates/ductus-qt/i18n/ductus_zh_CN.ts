@@ -329,6 +329,10 @@
         <source>%1 isn&apos;t a PDF Ductus can read.</source>
         <translation>%1 不是 Ductus 能读取的 PDF。</translation>
     </message>
+    <message>
+        <source>The first %1 of %2 pages are in. For the whole PDF, import it as note pages.</source>
+        <translation>已插入 %2 页中的前 %1 页。如需整个 PDF，请作为笔记页面导入。</translation>
+    </message>
 </context>
 <context>
     <name>Language</name>
@@ -1188,6 +1192,10 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>添加笔或工具</translation>
     </message>
     <message>
+        <source>Done</source>
+        <translation>完成</translation>
+    </message>
+    <message>
         <source>Full screen (F11)</source>
         <translation>全屏（F11）</translation>
     </message>
@@ -1206,6 +1214,14 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Add %1</source>
         <translation>添加 %1</translation>
+    </message>
+    <message>
+        <source>Rearrange…</source>
+        <translation>重新排列…</translation>
+    </message>
+    <message>
+        <source>Show undo and redo</source>
+        <translation>显示撤销和重做</translation>
     </message>
     <message>
         <source>Restore the default bar</source>
@@ -1236,24 +1252,8 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>特大橡皮擦</translation>
     </message>
     <message>
-        <source>Move up</source>
-        <translation>上移</translation>
-    </message>
-    <message>
-        <source>Move down</source>
-        <translation>下移</translation>
-    </message>
-    <message>
         <source>Remove from the bar</source>
         <translation>从栏中移除</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>上移</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>下移</translation>
     </message>
 </context>
 <context>
@@ -1743,6 +1743,30 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>删除（Del）</translation>
     </message>
     <message>
+        <source>More colors…</source>
+        <translation>更多颜色…</translation>
+    </message>
+    <message>
+        <source>Rotate left</source>
+        <translation>向左旋转</translation>
+    </message>
+    <message>
+        <source>Rotate right</source>
+        <translation>向右旋转</translation>
+    </message>
+    <message>
+        <source>Flip horizontally</source>
+        <translation>水平翻转</translation>
+    </message>
+    <message>
+        <source>Flip vertically</source>
+        <translation>垂直翻转</translation>
+    </message>
+    <message>
+        <source>Layering…</source>
+        <translation>层次…</translation>
+    </message>
+    <message>
         <source>Text</source>
         <translation>文字</translation>
     </message>
@@ -1757,6 +1781,26 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Replace the handwriting with a formula</source>
         <translation>把手写内容替换为公式</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>选择颜色</translation>
+    </message>
+    <message>
+        <source>Bring to front</source>
+        <translation>置于顶层</translation>
+    </message>
+    <message>
+        <source>Bring forward</source>
+        <translation>上移一层</translation>
+    </message>
+    <message>
+        <source>Send backward</source>
+        <translation>下移一层</translation>
+    </message>
+    <message>
+        <source>Send to back</source>
+        <translation>置于底层</translation>
     </message>
 </context>
 <context>

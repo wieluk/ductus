@@ -334,6 +334,10 @@
         <source>%1 isn&apos;t a PDF Ductus can read.</source>
         <translation>%1 no es un PDF que Ductus pueda leer.</translation>
     </message>
+    <message>
+        <source>The first %1 of %2 pages are in. For the whole PDF, import it as note pages.</source>
+        <translation>Se han insertado las primeras %1 de %2 páginas. Para el PDF completo, impórtalo como páginas de notas.</translation>
+    </message>
 </context>
 <context>
     <name>Language</name>
@@ -1193,6 +1197,10 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
         <translation>Añadir un lápiz o una herramienta</translation>
     </message>
     <message>
+        <source>Done</source>
+        <translation>Listo</translation>
+    </message>
+    <message>
         <source>Full screen (F11)</source>
         <translation>Pantalla completa (F11)</translation>
     </message>
@@ -1211,6 +1219,14 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
     <message>
         <source>Add %1</source>
         <translation>Añadir %1</translation>
+    </message>
+    <message>
+        <source>Rearrange…</source>
+        <translation>Reordenar…</translation>
+    </message>
+    <message>
+        <source>Show undo and redo</source>
+        <translation>Mostrar deshacer y rehacer</translation>
     </message>
     <message>
         <source>Restore the default bar</source>
@@ -1241,24 +1257,8 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
         <translation>Borrador extragrande</translation>
     </message>
     <message>
-        <source>Move up</source>
-        <translation>Subir</translation>
-    </message>
-    <message>
-        <source>Move down</source>
-        <translation>Bajar</translation>
-    </message>
-    <message>
         <source>Remove from the bar</source>
         <translation>Quitar de la barra</translation>
-    </message>
-    <message>
-        <source>Up</source>
-        <translation>Arriba</translation>
-    </message>
-    <message>
-        <source>Down</source>
-        <translation>Abajo</translation>
     </message>
 </context>
 <context>
@@ -1748,6 +1748,30 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
         <translation>Eliminar (Supr)</translation>
     </message>
     <message>
+        <source>More colors…</source>
+        <translation>Más colores…</translation>
+    </message>
+    <message>
+        <source>Rotate left</source>
+        <translation>Girar a la izquierda</translation>
+    </message>
+    <message>
+        <source>Rotate right</source>
+        <translation>Girar a la derecha</translation>
+    </message>
+    <message>
+        <source>Flip horizontally</source>
+        <translation>Voltear horizontalmente</translation>
+    </message>
+    <message>
+        <source>Flip vertically</source>
+        <translation>Voltear verticalmente</translation>
+    </message>
+    <message>
+        <source>Layering…</source>
+        <translation>Orden de capas…</translation>
+    </message>
+    <message>
         <source>Text</source>
         <translation>Texto</translation>
     </message>
@@ -1762,6 +1786,26 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
     <message>
         <source>Replace the handwriting with a formula</source>
         <translation>Sustituir la escritura por una fórmula</translation>
+    </message>
+    <message>
+        <source>Choose a color</source>
+        <translation>Elegir un color</translation>
+    </message>
+    <message>
+        <source>Bring to front</source>
+        <translation>Traer al frente</translation>
+    </message>
+    <message>
+        <source>Bring forward</source>
+        <translation>Traer adelante</translation>
+    </message>
+    <message>
+        <source>Send backward</source>
+        <translation>Enviar atrás</translation>
+    </message>
+    <message>
+        <source>Send to back</source>
+        <translation>Enviar al fondo</translation>
     </message>
 </context>
 <context>

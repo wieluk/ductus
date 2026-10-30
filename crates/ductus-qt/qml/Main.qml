@@ -177,6 +177,7 @@ ApplicationWindow {
         property alias shapeAssist: canvasA.shapeAssist
         property alias penBarVisible: window.penBarVisible
         property alias penPresets: penBar.presetsJson
+        property alias penBarUndoRedo: penBar.undoRedoShown
         property alias currentTab: titleBar.currentTab
         property alias mathSyntax: paneA.mathSyntax
         property alias mathFavorites: paneA.mathFavorites

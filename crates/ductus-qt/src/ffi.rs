@@ -140,6 +140,15 @@ pub mod qobject {
         file: String,
     }
 
+    /// A PDF printout once its pages are rendered: `placed` of the PDF's `total` pages went in.
+    #[derive(Debug, Default)]
+    struct PrintoutState {
+        done: bool,
+        error: bool,
+        placed: u32,
+        total: u32,
+    }
+
     /// `root` is the page or folder created; `page` the first page in it, if any.
     #[derive(Debug, Default)]
     struct ImportResult {
@@ -488,6 +497,7 @@ pub mod qobject {
         fn to_doc(self: &CanvasEngine, x: f64, y: f64) -> Vec<f64>;
         fn texts_of_page(self: &CanvasEngine) -> Vec<TextRow>;
         fn selection_has_ink(self: &CanvasEngine) -> bool;
+        fn selection_turns(self: &CanvasEngine) -> bool;
         fn selection_rect(self: &CanvasEngine) -> Vec<f64>;
         fn clear_selection(self: &mut CanvasEngine);
         fn select_all(self: &mut CanvasEngine);
@@ -504,8 +514,19 @@ pub mod qobject {
         fn paste(self: &mut CanvasEngine);
         fn can_paste(self: &CanvasEngine) -> bool;
         fn insert_picture(self: &mut CanvasEngine, png: &[u8], x: f64, y: f64) -> bool;
-        fn insert_pdf(self: &mut CanvasEngine, pdf: &[u8], x: f64, y: f64) -> Result<bool>;
+        /// Renders the first pages of a PDF on a worker thread; `take_printout` places them.
+        fn start_printout(self: &mut CanvasEngine, pdf: &[u8]);
+        fn printout_busy(self: &CanvasEngine) -> bool;
+        fn cancel_printout(self: &mut CanvasEngine);
+        fn take_printout(self: &mut CanvasEngine, x: f64, y: f64) -> PrintoutState;
         fn recolor_selection(self: &mut CanvasEngine, r: f32, g: f32, b: f32, a: f32);
+        /// Mirrors the selection across its center; `horizontal` mirrors left and right.
+        fn flip_selection(self: &mut CanvasEngine, horizontal: bool);
+        /// Turns the selection by quarter turns; positive turns clockwise.
+        fn rotate_selection(self: &mut CanvasEngine, quarter_turns: i32);
+        /// Moves the selection up or down within its categories:
+        /// 0 bring to front, 1 bring forward, 2 send backward, 3 send to back.
+        fn reorder_selection(self: &mut CanvasEngine, mode: u8);
         fn set_pen_color(self: &mut CanvasEngine, r: f32, g: f32, b: f32, a: f32);
         fn set_pen_width(self: &mut CanvasEngine, width: f64);
         fn pen_width(self: &CanvasEngine) -> f64;
