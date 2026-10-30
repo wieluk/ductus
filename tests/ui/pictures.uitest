@@ -10,7 +10,8 @@ expect-no-file My Notebook/First page.assets
 setenv DUCTUS_TEST_SCREENSHOT tests/fixtures/screenshot.png
 click-item tab_insert
 click-item insertScreenshot
-wait 1200
+# The window minimizes, waits, restores, then inserts: give slow CI runners time.
+wait 2500
 expect-prop canvas selectionCount 1
 key Delete
 expect-prop canvas selectionCount 0
