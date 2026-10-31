@@ -6,6 +6,12 @@ on:
 permissions:
   contents: read
 
+# actions/checkout runs `git init`, which hints about the default branch name otherwise.
+env:
+  GIT_CONFIG_COUNT: 1
+  GIT_CONFIG_KEY_0: init.defaultBranch
+  GIT_CONFIG_VALUE_0: main
+
 jobs:
   core:
     name: Core tests

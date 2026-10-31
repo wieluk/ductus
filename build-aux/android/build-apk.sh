@@ -110,7 +110,7 @@ sign=()
 if [ -n "${ANDROID_KEYSTORE:-}" ]; then
   sign=(--sign "$ANDROID_KEYSTORE" "${ANDROID_KEY_ALIAS:?}" --storepass "${ANDROID_KEYSTORE_PASSWORD:?}")
 else
-  echo "warning: no ANDROID_KEYSTORE; signing with a throwaway key (updates won't install over it)" >&2
+  echo "No ANDROID_KEYSTORE: signing with a throwaway key (updates won't install over it)." >&2
   keystore=$build/throwaway.keystore
   [ -f "$keystore" ] || keytool -genkeypair -keystore "$keystore" -alias ductus -keyalg RSA \
     -keysize 2048 -validity 10000 -storepass throwaway -keypass throwaway \

@@ -41,9 +41,9 @@ if GL="$(flatpak info --show-location "org.freedesktop.Platform.GL.default//$GL_
     )
 fi
 
-# The SDK has only GNU ld.bfd, which links Qt fine here; saying so keeps cxx-qt from warning
-# that neither lld, gold nor mold was found.
-LINK_FLAGS="-Clink-arg=-fuse-ld=bfd"
+# Rust's own lld links (its gcc-ld wrapper): GNU ld.bfd, the SDK's only linker, leaves cxx-qt's
+# initializers undefined. Naming it also keeps cxx-qt from looking for lld, gold or mold.
+LINK_FLAGS="-Clink-arg=-fuse-ld=lld"
 
 extra_args=()
 IFS=: read -ra extra_paths <<<"${SDK_RUN_BIND:-}"
