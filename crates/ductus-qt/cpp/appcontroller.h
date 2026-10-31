@@ -438,13 +438,20 @@ private:
     Pane m_other;
     quint64 m_savedRevision = 0;
     bool m_dirty = false;
+    /// Read handwriting not yet saved: a cache, so it is saved once a batch is read, not per line.
+    bool m_recognitionUnsaved = false;
     void setDirty(bool dirty);
     QTimer m_saveTimer;
     QTimer m_refreshTimer;
     QFileSystemWatcher m_watcher;
     /// To tell our own writes from other programs' changes.
-    QString m_lastSavedFile;
-    QDateTime m_lastSavedTime;
+    /// When each file was last written by us, so the watcher can tell our saves from others'.
+    QHash<QString, QDateTime> m_savedTimes;
+    /// While pages are written on the saving thread.
+    QTimer m_savePoll;
+    void pollSaves();
+    /// Waits for pages being written, e.g. before their files are read.
+    void finishSaves();
 };
 
 #endif

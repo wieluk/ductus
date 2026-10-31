@@ -3,6 +3,7 @@ use crate::{Canvas, Gesture, PASTE_OFFSET, SELECTION_COLOR, TileLayer, ToolMode}
 use ductus_core::{Command, Image, MathBox, PageKind, Rgba, Stroke, StrokeId, TextBox, Tool};
 use ductus_render::{Layer, Picture, StrokePath, Viewport};
 use kurbo::{Affine, Point, Rect, Vec2};
+use std::cell::OnceCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use tiny_skia::Pixmap;
@@ -23,7 +24,16 @@ const IMAGE_PREFIX: &str = "img-";
 
 pub(crate) struct PictureData {
     bytes: Rc<[u8]>,
-    picture: Rc<Picture>,
+    /// Decoded when first drawn, so a page opens without decoding pictures out of sight.
+    picture: OnceCell<Option<Picture>>,
+}
+
+impl PictureData {
+    fn picture(&self) -> Option<&Picture> {
+        self.picture
+            .get_or_init(|| Picture::decode_png(&self.bytes))
+            .as_ref()
+    }
 }
 
 #[derive(Default, Clone)]
@@ -831,21 +841,18 @@ impl Canvas {
             .apply(&mut self.doc, Command::Replace { before, after });
     }
 
-    pub fn add_picture(&mut self, name: &str, bytes: Vec<u8>) -> bool {
-        let Some(picture) = Picture::decode_png(&bytes) else {
-            return false;
-        };
+    /// PNG bytes the page's images show; ones that don't decode show nothing.
+    pub fn add_picture(&mut self, name: &str, bytes: Vec<u8>) {
         self.pictures.insert(
             name.to_owned(),
             PictureData {
                 bytes: bytes.into(),
-                picture: Rc::new(picture),
+                picture: OnceCell::new(),
             },
         );
         for image in self.doc.images().iter().filter(|i| i.source == name) {
             self.tiles.invalidate(TileLayer::Base, image_rect(image));
         }
-        true
     }
 
     pub fn picture_bytes(&self, name: &str) -> Option<&[u8]> {
@@ -861,14 +868,13 @@ impl Canvas {
         let mut placed = Vec::new();
         for (bytes, size) in pictures {
             let name = picture_name(&bytes);
-            if !self.add_picture(&name, bytes) {
+            self.add_picture(&name, bytes);
+            let Some((w, h)) = self.pictures[&name].picture().map(Picture::size) else {
+                self.pictures.remove(&name);
                 continue;
-            }
-            let size = size.unwrap_or_else(|| {
-                let (w, h) = self.pictures[&name].picture.size();
-                // Screenshots of high-density screens have more pixels than points.
-                (f64::from(w) / self.view.dpr, f64::from(h) / self.view.dpr)
-            });
+            };
+            // Screenshots of high-density screens have more pixels than points.
+            let size = size.unwrap_or((f64::from(w) / self.view.dpr, f64::from(h) / self.view.dpr));
             placed.push((name, size));
         }
         if placed.is_empty() {
@@ -927,15 +933,18 @@ impl Canvas {
             return;
         }
         let clip = ductus_render::ink_clip(pixmap, vp, &self.layout);
+        let area = vp.doc_rect(pixmap.width(), pixmap.height());
         for image in self.doc.images().iter().filter(|i| !self.is_hidden(i.id)) {
-            if let Some(data) = self.pictures.get(&image.source) {
-                ductus_render::render_picture(
-                    pixmap,
-                    vp,
-                    &data.picture,
-                    image_rect(image),
-                    clip.as_ref(),
-                );
+            let rect = image_rect(image);
+            if !ductus_render::overlaps(rect, area) {
+                continue;
+            }
+            if let Some(picture) = self
+                .pictures
+                .get(&image.source)
+                .and_then(PictureData::picture)
+            {
+                ductus_render::render_picture(pixmap, vp, picture, rect, clip.as_ref());
             }
         }
     }
@@ -972,12 +981,16 @@ impl Canvas {
         let t = self.overlay_transform();
         if self.transforming() {
             for image in self.selected_images() {
-                if let Some(data) = self.pictures.get(&image.source) {
+                if let Some(picture) = self
+                    .pictures
+                    .get(&image.source)
+                    .and_then(PictureData::picture)
+                {
                     let r = transform_image(image, t);
                     ductus_render::render_picture(
                         pixmap,
                         vp,
-                        &data.picture,
+                        picture,
                         image_rect(&r),
                         clip.as_ref(),
                     );
@@ -990,7 +1003,7 @@ impl Canvas {
             // The cached outlines, moved: outlining every selected stroke per tile was too slow.
             let paths: Vec<&StrokePath> = self
                 .selected_strokes()
-                .filter_map(|s| self.paths.get(&s.id))
+                .filter_map(|s| self.paths.get(&s.id)?.built())
                 .collect();
             for layer in [Layer::Highlight, Layer::Ink] {
                 ductus_render::render_strokes_moved(

@@ -925,19 +925,34 @@ impl Library {
     }
 
     pub fn save_pdf(&mut self, rel: &str, bytes: &[u8]) -> Result<(), Error> {
+        self.prepare_pdf_save(rel).write(bytes)
+    }
+
+    /// A save of a PDF written on, to be written later (maybe on another thread).
+    pub fn prepare_pdf_save(&mut self, rel: &str) -> PendingSave {
         let path = self.abs(rel);
         let key = format!("pdf-{}", stable_key(rel));
+        self.prepare_save(&key, path, PDF_EXTENSION)
+    }
+
+    /// History gets the first save of a session, then at most one per policy interval.
+    fn prepare_save(&mut self, key: &str, path: PathBuf, extension: &'static str) -> PendingSave {
+        let mut history = None;
         if path.is_file() {
             let now = SystemTime::now();
-            let due = self.snapshots.get(&key).is_none_or(|last| {
+            let due = self.snapshots.get(key).is_none_or(|last| {
                 now.duration_since(*last).unwrap_or_default() >= self.policy.interval
             });
             if due {
-                self.snapshot_as(&key, &path, PDF_EXTENSION)?;
-                self.snapshots.insert(key, now);
+                history = Some((self.history_dir(key), extension));
+                self.snapshots.insert(key.to_owned(), now);
             }
         }
-        write_atomic(&path, bytes)
+        PendingSave {
+            path,
+            history,
+            policy: self.policy,
+        }
     }
 
     pub fn set_color(&self, folder: &str, color: Option<Rgba>) -> Result<(), Error> {
@@ -950,69 +965,101 @@ impl Library {
         read_page(&fs::read_to_string(self.page_file(rel))?)
     }
 
-    /// History gets the first save of a session, then at most one per policy interval.
     pub fn save_page(&mut self, rel: &str, page: &PageFile) -> Result<(), Error> {
+        self.prepare_page_save(rel, &page.id)
+            .write(write_page(page).as_bytes())
+    }
+
+    /// A save of a page, to be written later (maybe on another thread).
+    pub fn prepare_page_save(&mut self, rel: &str, page_id: &str) -> PendingSave {
         let path = self.page_file(rel);
-        if path.is_file() {
-            let now = SystemTime::now();
-            let due = self.snapshots.get(&page.id).is_none_or(|last| {
-                now.duration_since(*last).unwrap_or_default() >= self.policy.interval
-            });
-            if due {
-                self.snapshot(&page.id, &path)?;
-                self.snapshots.insert(page.id.clone(), now);
-            }
+        self.prepare_save(page_id, path, PAGE_EXTENSION)
+    }
+
+    /// A save that keeps no history: for what can be made again, like read handwriting.
+    pub fn prepare_page_save_without_history(&self, rel: &str) -> PendingSave {
+        PendingSave {
+            path: self.page_file(rel),
+            history: None,
+            policy: self.policy,
         }
-        write_atomic(&path, write_page(page).as_bytes())
     }
 
     fn history_dir(&self, page_id: &str) -> PathBuf {
         self.data.join("history").join(page_id)
     }
 
-    fn snapshot(&self, page_id: &str, current: &Path) -> Result<(), Error> {
-        self.snapshot_as(page_id, current, PAGE_EXTENSION)
-    }
-
     fn snapshot_as(&self, key: &str, current: &Path, extension: &str) -> Result<(), Error> {
-        let dir = self.history_dir(key);
-        fs::create_dir_all(&dir)?;
-        let mut stamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_or(0, |d| d.as_millis());
-        // Two snapshots in one millisecond would overwrite each other.
-        while dir.join(format!("{stamp}.{extension}")).exists() {
-            stamp += 1;
-        }
-        fs::copy(current, dir.join(format!("{stamp}.{extension}")))?;
-        let size = |p: &PathBuf| fs::metadata(p).map_or(0, |m| m.len());
-        let mut versions = self.history(key)?;
-        let mut total: u64 = versions.iter().map(size).sum();
-        while versions.len() > self.policy.keep
-            || (total > self.policy.max_bytes && versions.len() > MIN_VERSIONS)
-        {
-            let oldest = versions.remove(0);
-            total -= size(&oldest);
-            fs::remove_file(oldest)?;
-        }
-        Ok(())
+        snapshot_into(&self.history_dir(key), current, extension, &self.policy)
     }
 
     pub fn history(&self, page_id: &str) -> Result<Vec<PathBuf>, Error> {
-        let dir = self.history_dir(page_id);
-        if !dir.is_dir() {
-            return Ok(Vec::new());
-        }
-        let mut files: Vec<(u128, PathBuf)> = fs::read_dir(dir)?
-            .filter_map(|e| {
-                let path = e.ok()?.path();
-                let stamp = path.file_stem()?.to_str()?.parse().ok()?;
-                Some((stamp, path))
-            })
-            .collect();
-        files.sort();
-        Ok(files.into_iter().map(|(_, p)| p).collect())
+        history_files(&self.history_dir(page_id))
     }
+}
+
+/// A file save the library has prepared; writing it needs no library, so it can run elsewhere.
+pub struct PendingSave {
+    path: PathBuf,
+    /// Where the file as it is goes first, and as what.
+    history: Option<(PathBuf, &'static str)>,
+    policy: HistoryPolicy,
+}
+
+impl PendingSave {
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    pub fn write(&self, bytes: &[u8]) -> Result<(), Error> {
+        if let Some((dir, extension)) = &self.history {
+            snapshot_into(dir, &self.path, extension, &self.policy)?;
+        }
+        write_atomic(&self.path, bytes)
+    }
+}
+
+fn snapshot_into(
+    dir: &Path,
+    current: &Path,
+    extension: &str,
+    policy: &HistoryPolicy,
+) -> Result<(), Error> {
+    fs::create_dir_all(dir)?;
+    let mut stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |d| d.as_millis());
+    // Two snapshots in one millisecond would overwrite each other.
+    while dir.join(format!("{stamp}.{extension}")).exists() {
+        stamp += 1;
+    }
+    fs::copy(current, dir.join(format!("{stamp}.{extension}")))?;
+    let size = |p: &PathBuf| fs::metadata(p).map_or(0, |m| m.len());
+    let mut versions = history_files(dir)?;
+    let mut total: u64 = versions.iter().map(size).sum();
+    while versions.len() > policy.keep
+        || (total > policy.max_bytes && versions.len() > MIN_VERSIONS)
+    {
+        let oldest = versions.remove(0);
+        total -= size(&oldest);
+        fs::remove_file(oldest)?;
+    }
+    Ok(())
+}
+
+fn history_files(dir: &Path) -> Result<Vec<PathBuf>, Error> {
+    if !dir.is_dir() {
+        return Ok(Vec::new());
+    }
+    let mut files: Vec<(u128, PathBuf)> = fs::read_dir(dir)?
+        .filter_map(|e| {
+            let path = e.ok()?.path();
+            let stamp = path.file_stem()?.to_str()?.parse().ok()?;
+            Some((stamp, path))
+        })
+        .collect();
+    files.sort();
+    Ok(files.into_iter().map(|(_, p)| p).collect())
 }
 
 mod trash;

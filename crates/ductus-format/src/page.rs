@@ -47,13 +47,51 @@ fn sheet_rects(doc: &Document) -> Vec<Rect> {
 }
 
 fn num(v: f64, decimals: usize) -> String {
-    let s = format!("{v:.decimals$}");
-    let s = if s.contains('.') {
-        s.trim_end_matches('0').trim_end_matches('.')
-    } else {
-        &s
-    };
-    if s == "-0" { "0".into() } else { s.into() }
+    let mut s = String::new();
+    push_num(&mut s, v, decimals);
+    s
+}
+
+/// Rounded to `decimals`, without trailing zeros; pages hold millions of these, so no allocations.
+fn push_num(out: &mut String, v: f64, decimals: usize) {
+    const SCALES: [f64; 4] = [1.0, 10.0, 100.0, 1000.0];
+    let scaled = (v * SCALES[decimals.min(3)]).round();
+    if decimals > 3 || !scaled.is_finite() || scaled.abs() >= 1e15 {
+        let s = format!("{v:.decimals$}");
+        let s = if s.contains('.') {
+            s.trim_end_matches('0').trim_end_matches('.')
+        } else {
+            &s
+        };
+        out.push_str(if s == "-0" { "0" } else { s });
+        return;
+    }
+    let mut n = scaled as i64;
+    if n < 0 {
+        out.push('-');
+        n = -n;
+    }
+    let mut digits = [0u8; 20];
+    let mut len = 0;
+    while n > 0 || len <= decimals {
+        digits[len] = b'0' + (n % 10) as u8;
+        n /= 10;
+        len += 1;
+    }
+    // Trailing zeros of the fraction are dropped, and the point with them.
+    let zeros = digits[..decimals]
+        .iter()
+        .take_while(|&&d| d == b'0')
+        .count();
+    for &d in digits[decimals..len].iter().rev() {
+        out.push(char::from(d));
+    }
+    if zeros < decimals {
+        out.push('.');
+        for &d in digits[zeros..decimals].iter().rev() {
+            out.push(char::from(d));
+        }
+    }
 }
 
 /// A name for a file in a page's folder, not a path into other folders.
@@ -78,18 +116,154 @@ fn hex(c: Rgba) -> String {
 
 fn path_data(path: &BezPath) -> String {
     let mut d = String::new();
-    let p = |pt: kurbo::Point| format!("{},{}", num(pt.x, 2), num(pt.y, 2));
+    push_path_data(&mut d, path);
+    d
+}
+
+/// Outlines are most of a page, so they are written compactly: relative steps in hundredths,
+/// and smooth quadratic runs as `t`, whose control point viewers derive from the one before.
+fn push_path_data(d: &mut String, path: &BezPath) {
+    let mut w = PathWriter {
+        d,
+        cur: (0, 0),
+        start: (0, 0),
+        exact: kurbo::Point::ZERO,
+        exact_start: kurbo::Point::ZERO,
+        control: None,
+        command: 0,
+        separate: false,
+        dotted: false,
+    };
     for el in path.elements() {
         match *el {
-            PathEl::MoveTo(a) => write!(d, "M{}", p(a)),
-            PathEl::LineTo(a) => write!(d, "L{}", p(a)),
-            PathEl::QuadTo(a, b) => write!(d, "Q{} {}", p(a), p(b)),
-            PathEl::CurveTo(a, b, c) => write!(d, "C{} {} {}", p(a), p(b), p(c)),
-            PathEl::ClosePath => write!(d, "Z"),
+            PathEl::MoveTo(a) => {
+                let p = hundredths(a);
+                if w.command == 0 {
+                    w.command(b'M');
+                    w.pair(p);
+                } else {
+                    w.command(b'm');
+                    w.pair(w.step(p));
+                }
+                (w.cur, w.start, w.exact, w.exact_start) = (p, p, a, a);
+                w.control = None;
+            }
+            PathEl::LineTo(a) => {
+                let p = hundredths(a);
+                w.command(b'l');
+                w.pair(w.step(p));
+                (w.cur, w.exact, w.control) = (p, a, None);
+            }
+            PathEl::QuadTo(c, e) => {
+                let smooth = w.control.filter(|(_, exact)| {
+                    let reflected = w.exact + (w.exact - *exact);
+                    (c - reflected).hypot() < 1e-6 * (1.0 + c.x.abs() + c.y.abs())
+                });
+                let p = if let Some(((cx, cy), _)) = smooth {
+                    // The derived control point is off by the rounding so far; the end point
+                    // takes that up, so the error never grows past a hundredth.
+                    let derived = (2 * w.cur.0 - cx, 2 * w.cur.1 - cy);
+                    let off = kurbo::Vec2::new(
+                        derived.0 as f64 / 100.0 - c.x,
+                        derived.1 as f64 / 100.0 - c.y,
+                    );
+                    let p = hundredths(e + off / 2.0);
+                    w.command(b't');
+                    w.pair(w.step(p));
+                    w.control = Some((derived, c));
+                    p
+                } else {
+                    let (cp, p) = (hundredths(c), hundredths(e));
+                    w.command(b'q');
+                    w.pair(w.step(cp));
+                    w.pair(w.step(p));
+                    w.control = Some((cp, c));
+                    p
+                };
+                (w.cur, w.exact) = (p, e);
+            }
+            PathEl::CurveTo(a, b, e) => {
+                w.command(b'c');
+                for q in [a, b, e] {
+                    w.pair(w.step(hundredths(q)));
+                }
+                (w.cur, w.exact, w.control) = (hundredths(e), e, None);
+            }
+            PathEl::ClosePath => {
+                w.command(b'z');
+                (w.cur, w.exact, w.control) = (w.start, w.exact_start, None);
+            }
         }
-        .expect("writing to a String cannot fail");
     }
-    d
+}
+
+fn hundredths(p: kurbo::Point) -> (i64, i64) {
+    let r = |v: f64| {
+        if v.is_finite() {
+            (v * 100.0).round() as i64
+        } else {
+            0
+        }
+    };
+    (r(p.x), r(p.y))
+}
+
+struct PathWriter<'a> {
+    d: &'a mut String,
+    /// Where viewers are, in hundredths.
+    cur: (i64, i64),
+    start: (i64, i64),
+    exact: kurbo::Point,
+    exact_start: kurbo::Point,
+    /// The last quadratic control point: as viewers have it, and exactly.
+    control: Option<((i64, i64), kurbo::Point)>,
+    command: u8,
+    separate: bool,
+    dotted: bool,
+}
+
+impl PathWriter<'_> {
+    fn step(&self, p: (i64, i64)) -> (i64, i64) {
+        (p.0 - self.cur.0, p.1 - self.cur.1)
+    }
+
+    /// Repeated commands are implied, except after a move (which implies a line).
+    fn command(&mut self, c: u8) {
+        if c != self.command || matches!(c, b'M' | b'm' | b'z') {
+            self.d.push(char::from(c));
+            self.separate = false;
+        }
+        self.command = c;
+    }
+
+    fn pair(&mut self, (x, y): (i64, i64)) {
+        self.number(x);
+        self.number(y);
+    }
+
+    /// Like `1.5`, `-.05` or `12`; a separator only where the number wouldn't start a new one.
+    fn number(&mut self, v: i64) {
+        let (whole, part) = (v.unsigned_abs() / 100, v.unsigned_abs() % 100);
+        let starts_new = v < 0 || (whole == 0 && part != 0 && self.dotted);
+        if self.separate && !starts_new {
+            self.d.push(' ');
+        }
+        if v < 0 {
+            self.d.push('-');
+        }
+        if whole > 0 || part == 0 {
+            write!(self.d, "{whole}").unwrap();
+        }
+        if part > 0 {
+            if part % 10 == 0 {
+                write!(self.d, ".{}", part / 10).unwrap();
+            } else {
+                write!(self.d, ".{part:02}").unwrap();
+            }
+        }
+        self.separate = true;
+        self.dotted = part > 0;
+    }
 }
 
 fn canvas_rect(doc: &Document) -> Rect {
@@ -143,13 +317,11 @@ fn pattern_def(bg: &PageBackground, origin: kurbo::Point) -> Option<String> {
     ))
 }
 
-fn stroke_element(stroke: &Stroke) -> String {
+fn push_stroke_element(el: &mut String, stroke: &Stroke) {
     let outline = ductus_ink::outline(&stroke.points, &stroke.style);
-    let mut el = format!(
-        r#"<path d="{}" fill="{}""#,
-        path_data(&outline),
-        hex(stroke.style.color)
-    );
+    el.push_str(r#"<path d=""#);
+    push_path_data(el, &outline);
+    write!(el, r#"" fill="{}""#, hex(stroke.style.color)).unwrap();
     if stroke.style.color.a < 1.0 {
         write!(
             el,
@@ -172,40 +344,72 @@ fn stroke_element(stroke: &Stroke) -> String {
         write!(el, r#" dx:line="{}""#, stroke.style.pattern.name()).unwrap();
     }
     let t0 = stroke.points.first().map_or(0, |p| p.t);
-    let ink: Vec<String> = stroke
-        .points
-        .iter()
-        .map(|p| {
-            format!(
-                "{},{},{},{}",
-                num(p.x, 2),
-                num(p.y, 2),
-                num(f64::from(p.pressure), 3),
-                p.t - t0
-            )
-        })
-        .collect();
-    write!(el, r#" dx:ink="{}""#, ink.join(" ")).unwrap();
+    el.push_str(r#" dx:ink=""#);
+    for (i, p) in stroke.points.iter().enumerate() {
+        if i > 0 {
+            el.push(' ');
+        }
+        push_num(el, p.x, 2);
+        el.push(',');
+        push_num(el, p.y, 2);
+        el.push(',');
+        push_num(el, f64::from(p.pressure), 3);
+        write!(el, ",{}", p.t - t0).unwrap();
+    }
+    el.push('"');
     if stroke
         .points
         .iter()
         .any(|p| p.tilt_x != 0.0 || p.tilt_y != 0.0)
     {
-        let tilt: Vec<String> = stroke
-            .points
-            .iter()
-            .map(|p| {
-                format!(
-                    "{},{}",
-                    num(f64::from(p.tilt_x), 2),
-                    num(f64::from(p.tilt_y), 2)
-                )
-            })
-            .collect();
-        write!(el, r#" dx:tilt="{}""#, tilt.join(" ")).unwrap();
+        el.push_str(r#" dx:tilt=""#);
+        for (i, p) in stroke.points.iter().enumerate() {
+            if i > 0 {
+                el.push(' ');
+            }
+            push_num(el, f64::from(p.tilt_x), 2);
+            el.push(',');
+            push_num(el, f64::from(p.tilt_y), 2);
+        }
+        el.push('"');
     }
     el.push_str("/>");
-    el
+}
+
+/// Big pages are written on several threads: saving happens while the user waits.
+fn push_stroke_elements(svg: &mut String, strokes: &[&Stroke]) {
+    let threads = std::thread::available_parallelism().map_or(1, usize::from);
+    let points: usize = strokes.iter().map(|s| s.points.len()).sum();
+    if threads < 2 || points < 20_000 {
+        for stroke in strokes {
+            push_stroke_element(svg, stroke);
+            svg.push('\n');
+        }
+        return;
+    }
+    let chunk = strokes.len().div_ceil(threads);
+    let parts: Vec<String> = std::thread::scope(|scope| {
+        let workers: Vec<_> = strokes
+            .chunks(chunk)
+            .map(|chunk| {
+                scope.spawn(move || {
+                    let mut part = String::new();
+                    for stroke in chunk {
+                        push_stroke_element(&mut part, stroke);
+                        part.push('\n');
+                    }
+                    part
+                })
+            })
+            .collect();
+        workers
+            .into_iter()
+            .map(|w| w.join().expect("writing a stroke cannot panic"))
+            .collect()
+    });
+    for part in parts {
+        svg.push_str(&part);
+    }
 }
 
 /// The inline HTML text boxes use (`<u>`, spans with color and size) as XHTML; sizes in em.
@@ -336,7 +540,9 @@ pub fn write_page(page: &PageFile) -> String {
     let area = canvas_rect(doc);
     let bg = &settings.background;
 
-    let mut svg = String::with_capacity(4096 + doc.strokes().len() * 1024);
+    // About 90 bytes per point: its sample and two outline segments.
+    let points: usize = doc.strokes().iter().map(|s| s.points.len()).sum();
+    let mut svg = String::with_capacity(4096 + doc.strokes().len() * 256 + points * 90);
     svg.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     write!(
         svg,
@@ -486,10 +692,12 @@ pub fn write_page(page: &PageFile) -> String {
     // Highlights beneath ink, as the app draws them.
     for (layer, tool) in [("highlight", Tool::Highlighter), ("ink", Tool::Pen)] {
         writeln!(svg, r#"<g dx:layer="{layer}">"#).unwrap();
-        for stroke in doc.strokes().iter().filter(|s| s.style.tool == tool) {
-            svg.push_str(&stroke_element(stroke));
-            svg.push('\n');
-        }
+        let strokes: Vec<&Stroke> = doc
+            .strokes()
+            .iter()
+            .filter(|s| s.style.tool == tool)
+            .collect();
+        push_stroke_elements(&mut svg, &strokes);
         svg.push_str("</g>\n");
     }
     // Recognized handwriting as invisible text over the ink, like OCR text in scans.
@@ -564,23 +772,58 @@ fn parse_ink(ink: &str, tilt: Option<&str>) -> Result<Vec<InkPoint>, Error> {
     ink.split_whitespace()
         .enumerate()
         .map(|(i, sample)| {
-            let v: Vec<&str> = sample.split(',').collect();
             let bad = || Error::Invalid(format!("bad ink sample {sample:?}"));
-            if v.len() != 4 {
+            let mut v = sample.split(',');
+            let mut next = || v.next().ok_or_else(bad);
+            let (x, y, pressure, t) = (next()?, next()?, next()?, next()?);
+            if v.next().is_some() {
                 return Err(bad());
             }
             let (tilt_x, tilt_y) = tilts.get(i).copied().unwrap_or((0.0, 0.0));
             Ok(InkPoint {
-                x: v[0].parse().map_err(|_| bad())?,
-                y: v[1].parse().map_err(|_| bad())?,
-                pressure: v[2].parse().map_err(|_| bad())?,
-                t: v[3].parse().map_err(|_| bad())?,
+                x: parse_decimal(x).ok_or_else(bad)?,
+                y: parse_decimal(y).ok_or_else(bad)?,
+                pressure: parse_decimal(pressure).ok_or_else(bad)? as f32,
+                t: t.parse().map_err(|_| bad())?,
                 tilt_x,
                 tilt_y,
             })
         })
         .collect()
 }
+
+/// Plain decimals like the ones pages are written with, quickly; anything else the usual way.
+fn parse_decimal(s: &str) -> Option<f64> {
+    const POWERS: [f64; 8] = [1.0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7];
+    let (negative, digits) = match s.strip_prefix('-') {
+        Some(rest) => (true, rest),
+        None => (false, s),
+    };
+    let mut mantissa: u64 = 0;
+    let mut fraction = None;
+    let mut count = 0;
+    for (i, b) in digits.bytes().enumerate() {
+        match b {
+            b'0'..=b'9' if count < 15 => {
+                mantissa = mantissa * 10 + u64::from(b - b'0');
+                count += 1;
+            }
+            b'.' if fraction.is_none() => fraction = Some(digits.len() - i - 1),
+            _ => return s.parse().ok(),
+        }
+    }
+    let decimals = fraction.unwrap_or(0);
+    if count == 0 || decimals >= POWERS.len() {
+        return s.parse().ok();
+    }
+    // Both are exact, so one division rounds as correctly as parsing does.
+    let v = mantissa as f64 / POWERS[decimals];
+    Some(if negative { -v } else { v })
+}
+
+/// The plain SVG attributes pages are read from.
+const READ_SVG_ATTRIBUTES: [&str; 7] =
+    ["fill", "fill-opacity", "x", "y", "width", "height", "href"];
 
 /// Elements without Ductus data are ignored (and dropped on the next save).
 pub fn read_page(svg: &str) -> Result<PageFile, Error> {
@@ -614,19 +857,18 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
         for attr in element.attributes() {
             let attr = attr.map_err(quick_xml::Error::from)?;
             let (ans, alocal) = reader.resolver().resolve_attribute(attr.key);
+            let key = match ans {
+                ResolveResult::Bound(Namespace(n)) if n == DX_NS => alocal.as_ref().to_owned(),
+                // The outlines are most of a page and only for other programs: never read.
+                ResolveResult::Unbound if READ_SVG_ATTRIBUTES.contains(&alocal.as_ref()) => {
+                    format!("svg:{}", alocal.as_ref())
+                }
+                _ => continue,
+            };
             let value = attr
                 .normalized_value(quick_xml::XmlVersion::Implicit1_0)?
                 .into_owned();
-            let key = alocal.as_ref().to_owned();
-            match ans {
-                ResolveResult::Bound(Namespace(n)) if n == DX_NS => {
-                    dx.insert(key, value);
-                }
-                ResolveResult::Unbound => {
-                    dx.entry(format!("svg:{key}")).or_insert(value);
-                }
-                _ => {}
-            }
+            dx.entry(key).or_insert(value);
         }
 
         match local.as_ref() {
@@ -773,10 +1015,7 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
             }
             "image" => {
                 let href = dx.get("svg:href");
-                let source = dx
-                    .get("src")
-                    .cloned()
-                    .or_else(|| href.filter(|h| !h.starts_with("data:")).cloned());
+                let source = dx.get("src").cloned();
                 if let (Some(source), Some(png)) = (
                     &source,
                     href.and_then(|h| h.strip_prefix(PNG_DATA))

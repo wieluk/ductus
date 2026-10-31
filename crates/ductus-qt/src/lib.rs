@@ -13,6 +13,7 @@ mod library;
 mod models;
 mod priority;
 mod recognize;
+mod saver;
 mod search;
 mod update;
 
