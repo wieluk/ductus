@@ -44,6 +44,8 @@ pub(crate) struct Clipboard {
     maths: Vec<MathBox>,
     /// PNG bytes of the copied pictures, by source name, so they paste onto other pages too.
     pictures: HashMap<String, Rc<[u8]>>,
+    /// Where the copied items lay, so pasting stacks them alike.
+    stacking: HashMap<StrokeId, (i64, StrokeId)>,
 }
 
 impl Clipboard {
@@ -70,7 +72,7 @@ fn inside(polygon: &[Point], p: Point) -> bool {
     result
 }
 
-fn image_rect(image: &Image) -> Rect {
+pub(crate) fn image_rect(image: &Image) -> Rect {
     Rect::new(
         image.x,
         image.y,
@@ -159,8 +161,8 @@ fn overlaps(a: Rect, b: Rect) -> bool {
     a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1
 }
 
-/// New within-category order for layering: 0 bring to front, 1 bring forward,
-/// 2 send backward, 3 send to back. Later items draw on top.
+/// New stacking order for layering: 0 bring to front, 1 bring forward,
+/// 2 send backward, 3 send to back. Later items lie on top.
 fn reorder_order(
     items: &[(StrokeId, Rect)],
     selected: &HashSet<StrokeId>,
@@ -434,36 +436,39 @@ impl Canvas {
         }
     }
 
-    /// Text lies on top, then ink, then pictures.
+    /// The topmost item there.
     fn item_at(&self, at: Point) -> Option<StrokeId> {
         let reach = TAP_REACH / self.view.zoom;
-        self.text_at(at)
-            .or_else(|| {
-                self.doc
-                    .strokes()
-                    .iter()
-                    .rev()
-                    .find(|s| ductus_ink::hits_circle(s, at, reach))
-                    .map(|s| s.id)
-            })
-            .or_else(|| self.math_at(at))
-            .or_else(|| self.image_at(at))
+        let ink = self
+            .doc
+            .strokes()
+            .iter()
+            .filter(|s| ductus_ink::hits_circle(s, at, reach))
+            .map(|s| s.id);
+        self.objects_at(at)
+            .chain(ink)
+            .max_by_key(|id| self.doc.stack_key(*id))
     }
 
     /// What the hand picks up: everything but ink, which it would otherwise grab when panning.
     fn object_at(&self, at: Point) -> Option<StrokeId> {
+        self.objects_at(at).max_by_key(|id| self.doc.stack_key(*id))
+    }
+
+    fn objects_at(&self, at: Point) -> impl Iterator<Item = StrokeId> {
         self.text_at(at)
-            .or_else(|| self.math_at(at))
-            .or_else(|| self.image_at(at))
+            .into_iter()
+            .chain(self.math_at(at))
+            .chain(self.image_at(at))
     }
 
     fn image_at(&self, at: Point) -> Option<StrokeId> {
         self.doc
             .images()
             .iter()
-            .rev()
-            .find(|i| image_rect(i).contains(at))
+            .filter(|i| image_rect(i).contains(at))
             .map(|i| i.id)
+            .max_by_key(|id| self.doc.stack_key(*id))
     }
 
     pub(crate) fn select_inside(&mut self, lasso: &[Point]) {
@@ -536,6 +541,7 @@ impl Canvas {
         let moved: Vec<Stroke> = strokes.iter().map(|s| transform_stroke(s, t)).collect();
         for s in &moved {
             self.paths.remove(&s.id);
+            self.outlined = None;
         }
         let moved_images = images
             .iter()
@@ -601,79 +607,28 @@ impl Canvas {
         self.apply_transform(t);
     }
 
+    /// Moves the selection up or down the one stack every kind of item shares.
     pub fn reorder_selection(&mut self, mode: u8) {
         if mode > 3 {
             return;
         }
-        let ids = |items: &[(StrokeId, Rect)]| items.iter().map(|(id, _)| *id).collect::<Vec<_>>();
-        let strokes: Vec<(StrokeId, Rect)> = self
-            .doc
-            .strokes()
+        let items: Vec<(StrokeId, Rect)> = self
+            .stack()
+            .entries
             .iter()
-            .map(|s| (s.id, ductus_ink::bounds(s)))
+            .map(|e| (e.id, e.rect))
             .collect();
-        let (strokes_before, strokes_after) = (
-            ids(&strokes),
-            reorder_order(&strokes, &self.selection, mode),
-        );
-        let images: Vec<(StrokeId, Rect)> = self
-            .doc
-            .images()
-            .iter()
-            .map(|i| (i.id, image_rect(i)))
-            .collect();
-        let (images_before, images_after) =
-            (ids(&images), reorder_order(&images, &self.selection, mode));
-        let texts: Vec<(StrokeId, Rect)> = self
-            .doc
-            .texts()
-            .iter()
-            .map(|t| (t.id, text_rect(t)))
-            .collect();
-        let (texts_before, texts_after) =
-            (ids(&texts), reorder_order(&texts, &self.selection, mode));
-        let maths: Vec<(StrokeId, Rect)> = self
-            .doc
-            .maths()
-            .iter()
-            .map(|m| (m.id, math_rect(m)))
-            .collect();
-        let (maths_before, maths_after) =
-            (ids(&maths), reorder_order(&maths, &self.selection, mode));
-        let strokes = if strokes_after != strokes_before {
-            Some((strokes_before, strokes_after))
-        } else {
-            None
-        };
-        let images = if images_after != images_before {
-            Some((images_before, images_after))
-        } else {
-            None
-        };
-        let texts = if texts_after != texts_before {
-            Some((texts_before, texts_after))
-        } else {
-            None
-        };
-        let maths = if maths_after != maths_before {
-            Some((maths_before, maths_after))
-        } else {
-            None
-        };
-        if strokes.is_none() && images.is_none() && texts.is_none() && maths.is_none() {
+        let order = reorder_order(&items, &self.selection, mode);
+        if order.iter().eq(items.iter().map(|(id, _)| id)) {
             return;
         }
-        self.tiles.invalidate_layer(TileLayer::Base);
-        self.history.apply(
-            &mut self.doc,
-            Command::Reorder {
-                strokes,
-                images,
-                texts,
-                maths,
-            },
-        );
-        self.sync_layout();
+        let Some(cmd) = Command::restack(&self.doc, &order) else {
+            return;
+        };
+        if let Some(b) = self.selection_bounds() {
+            self.tiles.invalidate(TileLayer::Base, b.inflate(4.0, 4.0));
+        }
+        self.history.apply(&mut self.doc, cmd);
         self.redraw_overlay();
     }
 
@@ -708,12 +663,18 @@ impl Canvas {
             .collect();
         let texts = self.selected_texts().cloned().collect();
         let maths = self.selected_maths().cloned().collect();
+        let stacking = self
+            .selection
+            .iter()
+            .map(|id| (*id, self.doc.stack_key(*id)))
+            .collect();
         *self.clipboard.borrow_mut() = Clipboard {
             strokes,
             images,
             texts,
             maths,
             pictures,
+            stacking,
         };
     }
 
@@ -779,6 +740,30 @@ impl Canvas {
                 self.add_picture(name, bytes.to_vec());
             }
         }
+        let copied = clipboard
+            .strokes
+            .iter()
+            .map(|s| s.id)
+            .chain(clipboard.images.iter().map(|i| i.id))
+            .chain(clipboard.texts.iter().map(|x| x.id))
+            .chain(clipboard.maths.iter().map(|m| m.id));
+        let pasted = strokes
+            .iter()
+            .map(|s| s.id)
+            .chain(images.iter().map(|i| i.id))
+            .chain(texts.iter().map(|x| x.id))
+            .chain(maths.iter().map(|m| m.id));
+        let mut stacked: Vec<((i64, StrokeId), StrokeId)> = copied
+            .zip(pasted)
+            .map(|(old, new)| {
+                (
+                    clipboard.stacking.get(&old).copied().unwrap_or((0, old)),
+                    new,
+                )
+            })
+            .collect();
+        stacked.sort_by_key(|(key, _)| *key);
+        let order: Vec<StrokeId> = stacked.iter().map(|(_, id)| *id).collect();
         // The next paste lands a step further along.
         *self.clipboard.borrow_mut() = Clipboard {
             strokes: strokes.clone(),
@@ -786,14 +771,14 @@ impl Canvas {
             texts: texts.clone(),
             maths: maths.clone(),
             pictures: clipboard.pictures,
+            stacking: order
+                .iter()
+                .enumerate()
+                .map(|(z, id)| (*id, (z as i64, *id)))
+                .collect(),
         };
-        self.selection = strokes
-            .iter()
-            .map(|s| s.id)
-            .chain(images.iter().map(|i| i.id))
-            .chain(texts.iter().map(|x| x.id))
-            .chain(maths.iter().map(|m| m.id))
-            .collect();
+        self.doc.stack_new_on_top(&order);
+        self.selection = order.into_iter().collect();
         for r in strokes
             .iter()
             .map(ductus_ink::bounds)
@@ -834,6 +819,7 @@ impl Canvas {
             .collect();
         for s in &after {
             self.paths.remove(&s.id);
+            self.outlined = None;
             self.tiles
                 .invalidate(TileLayer::Base, ductus_ink::bounds(s));
         }
@@ -928,24 +914,22 @@ impl Canvas {
         true
     }
 
-    pub(crate) fn render_pictures_into(&self, pixmap: &mut Pixmap, vp: &Viewport) {
-        if self.doc.images().is_empty() {
+    pub(crate) fn render_picture(
+        &self,
+        id: StrokeId,
+        pixmap: &mut Pixmap,
+        vp: &Viewport,
+        clip: Option<&tiny_skia::Mask>,
+    ) {
+        let Some(image) = self.doc.image_index_of(id).map(|i| &self.doc.images()[i]) else {
             return;
-        }
-        let clip = ductus_render::ink_clip(pixmap, vp, &self.layout);
-        let area = vp.doc_rect(pixmap.width(), pixmap.height());
-        for image in self.doc.images().iter().filter(|i| !self.is_hidden(i.id)) {
-            let rect = image_rect(image);
-            if !ductus_render::overlaps(rect, area) {
-                continue;
-            }
-            if let Some(picture) = self
-                .pictures
-                .get(&image.source)
-                .and_then(PictureData::picture)
-            {
-                ductus_render::render_picture(pixmap, vp, picture, rect, clip.as_ref());
-            }
+        };
+        if let Some(picture) = self
+            .pictures
+            .get(&image.source)
+            .and_then(PictureData::picture)
+        {
+            ductus_render::render_picture(pixmap, vp, picture, image_rect(image), clip);
         }
     }
 

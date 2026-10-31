@@ -38,9 +38,9 @@ impl Canvas {
         self.doc
             .maths()
             .iter()
-            .rev()
-            .find(|m| math_rect(m).inflate(slack, slack).contains(at))
+            .filter(|m| math_rect(m).inflate(slack, slack).contains(at))
             .map(|m| m.id)
+            .max_by_key(|id| self.doc.stack_key(*id))
     }
 
     pub fn begin_math(&mut self, at: Point, syntax: &str, color: Rgba) {
@@ -178,18 +178,16 @@ impl Canvas {
         }
     }
 
-    pub(crate) fn render_maths_into(&self, pixmap: &mut Pixmap, vp: &Viewport) {
-        if self.doc.maths().is_empty() {
-            return;
-        }
-        let area = vp.doc_rect(pixmap.width(), pixmap.height());
-        let clip = ductus_render::ink_clip(pixmap, vp, &self.layout);
-        for math in self.doc.maths() {
-            if self.is_hidden(math.id) || !ductus_render::overlaps(math_rect(math), area) {
-                continue;
-            }
-            let paths = math_paths(math);
-            ductus_render::render_strokes(pixmap, vp, paths.iter(), clip.as_ref());
+    pub(crate) fn render_math(
+        &self,
+        id: StrokeId,
+        pixmap: &mut Pixmap,
+        vp: &Viewport,
+        clip: Option<&tiny_skia::Mask>,
+    ) {
+        if let Some(i) = self.doc.math_index_of(id) {
+            let paths = math_paths(&self.doc.maths()[i]);
+            ductus_render::render_strokes(pixmap, vp, paths.iter(), clip);
         }
     }
 

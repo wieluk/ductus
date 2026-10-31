@@ -18,6 +18,9 @@ Item {
     property point newAt
     property real newWidth: 400
 
+    /// Above every layer of the page: what is being edited, drawn or chosen.
+    readonly property real topZ: 10000
+
     /// Text on paper is dark in both themes, like ink.
     readonly property color ink: "#1a1a1f"
     readonly property int fontSize: 16
@@ -113,12 +116,33 @@ Item {
         }
     }
 
+    // The page's layers above the canvas, which text boxes lie between: ink written on a box
+    // is above it, a picture sent back below it. Layer n lies at z 2n, boxes at odd z.
+    Repeater {
+        model: Math.max(0, overlay.canvas.bands - 1)
+        delegate: InkLayer {
+            required property int index
+            anchors.fill: parent
+            canvas: overlay.canvas
+            sheet: index + 1
+            z: 2 * (index + 1)
+        }
+    }
+
+    InkLayer {
+        anchors.fill: parent
+        canvas: overlay.canvas
+        sheet: 255
+        z: overlay.topZ
+    }
+
     Repeater {
         id: boxes
         model: overlay.canvas.texts
         delegate: Item {
             id: box
             required property real textId
+            required property real stack
             required property string markdown
             required property real boxX
             required property real boxY
@@ -130,6 +154,8 @@ Item {
             property alias edit: edit
 
             objectName: "text_" + textId
+            // Being edited, a box comes up so what is typed shows.
+            z: editing ? overlay.topZ - 1 : stack
             x: boxX
             y: boxY
             width: boxWidth
@@ -167,6 +193,7 @@ Item {
 
     Item {
         id: newBox
+        z: overlay.topZ - 1
         visible: overlay.editingId === -1
         // Reading the zoom re-evaluates the placement on every pan and zoom.
         readonly property point origin: {
@@ -217,6 +244,7 @@ Item {
     Rectangle {
         id: formatBar
         objectName: "textFormatBar"
+        z: overlay.topZ + 1
         readonly property Item target: overlay.editingId === -1 ? newBox
                                        : (overlay.activeEdit ? overlay.activeEdit.parent : null)
         visible: overlay.activeEdit !== null && target !== null

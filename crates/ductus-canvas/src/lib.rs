@@ -1,3 +1,4 @@
+mod stack;
 mod tiles;
 mod view;
 
@@ -178,6 +179,12 @@ pub struct Canvas {
     mark: Option<Rect>,
     math_draft: Option<math::MathDraft>,
     pictures: HashMap<String, selection::PictureData>,
+    stack: RefCell<stack::Stack>,
+    /// What the band tiles were drawn for, so items changing band get redrawn.
+    drawn_lifted: Vec<(StrokeId, u8, Rect)>,
+    drawn_bands: usize,
+    /// Outlines are looked at again only when the page or the view changed, or ones were dropped.
+    outlined: Option<(Rect, u64, bool)>,
 }
 
 impl Default for Canvas {
@@ -226,6 +233,10 @@ impl Canvas {
             active: None,
             active_stale: false,
             tiles: TileCache::new(1.0),
+            stack: RefCell::default(),
+            drawn_lifted: Vec::new(),
+            drawn_bands: 1,
+            outlined: None,
         }
     }
 
@@ -336,6 +347,9 @@ impl Canvas {
         self.pictures.retain(|name, _| used.contains(name.as_str()));
         self.history = History::new();
         self.paths.clear();
+        self.outlined = None;
+        // Another page may have reached the same version.
+        *self.stack.borrow_mut() = stack::Stack::default();
         self.sync_layout();
         self.tiles.invalidate_layer(TileLayer::Base);
         self.reset_view();
@@ -786,6 +800,7 @@ impl Canvas {
         if self.history.undo(&mut self.doc) {
             // Moves and recolors keep stroke ids, so cached outlines may be stale.
             self.paths.clear();
+            self.outlined = None;
             self.tiles.invalidate_layer(TileLayer::Base);
             self.sync_layout();
         }
@@ -797,6 +812,7 @@ impl Canvas {
         if self.history.redo(&mut self.doc) {
             // Moves and recolors keep stroke ids, so cached outlines may be stale.
             self.paths.clear();
+            self.outlined = None;
             self.tiles.invalidate_layer(TileLayer::Base);
             self.sync_layout();
         }
@@ -811,15 +827,76 @@ impl Canvas {
         }
     }
 
+    /// Every layer's tiles: the page, the bands above text boxes, then the overlay.
     pub fn frame(&mut self) -> Vec<TileView> {
+        let mut out = self.frame_layer(TileLayer::Base);
+        for band in 1..self.drawn_bands {
+            out.extend(self.frame_layer(TileLayer::Band(band as u8)));
+        }
+        out.extend(self.frame_layer(TileLayer::Overlay));
+        out
+    }
+
+    /// One layer's tiles: the frontend shows each band on its own sheet between text boxes.
+    pub fn frame_layer(&mut self, layer: TileLayer) -> Vec<TileView> {
         if self.view.width <= 0.0 || self.view.height <= 0.0 {
             return Vec::new();
         }
+        self.prepare_frame();
+        let visible = self.view.visible_doc_rect();
+        let range = self.tiles.range(visible);
+        let mut out = Vec::new();
+        match layer {
+            TileLayer::Base => {
+                for y in range.1..=range.3 {
+                    for x in range.0..=range.2 {
+                        out.push(self.ensure_tile(TileKey { layer, x, y }));
+                    }
+                }
+                self.tiles.evict_outside(layer, range, TILE_MARGIN);
+            }
+            TileLayer::Band(band) => {
+                let Some(bounds) = self.stack().bounds.get(usize::from(band)).copied() else {
+                    return out;
+                };
+                let area = bounds.inflate(2.0, 2.0).intersect(visible);
+                if band == 0 || !ductus_render::overlaps(bounds.inflate(2.0, 2.0), visible) {
+                    return out;
+                }
+                let r = self.tiles.range(area);
+                for y in r.1..=r.3 {
+                    for x in r.0..=r.2 {
+                        out.push(self.ensure_tile(TileKey { layer, x, y }));
+                    }
+                }
+            }
+            TileLayer::Overlay => {
+                if let Some(bounds) = self.overlay_bounds() {
+                    let visible = visible - self.overlay_offset();
+                    let range = self.tiles.range(visible);
+                    self.tiles.evict_outside(layer, range, TILE_MARGIN);
+                    let area = bounds.intersect(visible);
+                    if ductus_render::overlaps(bounds, visible) {
+                        let r = self.tiles.range(area);
+                        for y in r.1..=r.3 {
+                            for x in r.0..=r.2 {
+                                out.push(self.ensure_tile(TileKey { layer, x, y }));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    fn prepare_frame(&mut self) {
         // Showing tiles scaled is fine while a gesture runs, but not by much.
         let ratio = self.target_scale() / self.tiles.scale;
         if !(0.5..=2.0).contains(&ratio) {
             self.tiles.rescale(self.target_scale());
             self.backgrounds.clear();
+            self.outlined = None;
         }
         if std::mem::take(&mut self.active_stale) {
             if let Some(Gesture::Drawing {
@@ -839,56 +916,44 @@ impl Canvas {
             .tile_doc_rect(range.0, range.1)
             .union(self.tiles.tile_doc_rect(range.2, range.3));
         let moving = self.transforming();
-        for stroke in self.doc.strokes() {
-            let outline = self
-                .paths
-                .entry(stroke.id)
-                .or_insert_with(|| Outline::Pending(Outline::reach(stroke)));
-            if let Outline::Pending(reach) = *outline {
-                if ductus_render::overlaps(reach, shown)
-                    || (moving && self.selection.contains(&stroke.id))
-                {
-                    *outline = Outline::Built(StrokePath::new(stroke));
-                }
-            }
-        }
-
-        let mut out = Vec::new();
-        for y in range.1..=range.3 {
-            for x in range.0..=range.2 {
-                out.push(self.ensure_tile(TileKey {
-                    layer: TileLayer::Base,
-                    x,
-                    y,
-                }));
-            }
-        }
-        self.tiles
-            .evict_outside(TileLayer::Base, range, TILE_MARGIN);
-        // Otherwise every PDF page scrolled past would stay in memory.
-        self.backgrounds
-            .retain(|&(x, y), _| tiles::within(range, TILE_MARGIN, x, y));
-
-        if let Some(bounds) = self.overlay_bounds() {
-            let visible = visible - self.overlay_offset();
-            let range = self.tiles.range(visible);
-            self.tiles
-                .evict_outside(TileLayer::Overlay, range, TILE_MARGIN);
-            let area = bounds.intersect(visible);
-            if ductus_render::overlaps(bounds, visible) {
-                let r = self.tiles.range(area);
-                for y in r.1..=r.3 {
-                    for x in r.0..=r.2 {
-                        out.push(self.ensure_tile(TileKey {
-                            layer: TileLayer::Overlay,
-                            x,
-                            y,
-                        }));
+        let outlined = Some((shown, self.doc.version(), moving));
+        if self.outlined != outlined {
+            self.outlined = outlined;
+            for stroke in self.doc.strokes() {
+                let outline = self
+                    .paths
+                    .entry(stroke.id)
+                    .or_insert_with(|| Outline::Pending(Outline::reach(stroke)));
+                if let Outline::Pending(reach) = *outline {
+                    if ductus_render::overlaps(reach, shown)
+                        || (moving && self.selection.contains(&stroke.id))
+                    {
+                        *outline = Outline::Built(StrokePath::new(stroke));
                     }
                 }
             }
         }
-        out
+        self.follow_bands();
+        // Otherwise every PDF page scrolled past would stay in memory.
+        self.backgrounds
+            .retain(|&(x, y), _| tiles::within(range, TILE_MARGIN, x, y));
+        let bounds = self.stack().bounds.clone();
+        let tiles = &self.tiles;
+        let keep = |band: u8, x: i32, y: i32| {
+            bounds.get(usize::from(band)).is_some_and(|b| {
+                tiles::within(range, TILE_MARGIN, x, y)
+                    && ductus_render::overlaps(tiles.tile_doc_rect(x, y), b.inflate(2.0, 2.0))
+            })
+        };
+        let stale: Vec<TileKey> = tiles
+            .tiles
+            .keys()
+            .filter(|k| matches!(k.layer, TileLayer::Band(b) if !keep(b, k.x, k.y)))
+            .copied()
+            .collect();
+        for key in stale {
+            self.tiles.tiles.remove(&key);
+        }
     }
 
     fn ensure_tile(&mut self, key: TileKey) -> TileView {
@@ -907,9 +972,11 @@ impl Canvas {
             match key.layer {
                 TileLayer::Base => {
                     self.paint_background(key.x, key.y, &mut pixmap, &vp);
-                    self.render_pictures_into(&mut pixmap, &vp);
-                    self.render_maths_into(&mut pixmap, &vp);
-                    self.render_strokes_into(&mut pixmap, &vp);
+                    self.render_band(0, &mut pixmap, &vp);
+                }
+                TileLayer::Band(band) => {
+                    pixmap.fill(tiny_skia::Color::TRANSPARENT);
+                    self.render_band(band, &mut pixmap, &vp);
                 }
                 TileLayer::Overlay => self.render_overlay(&mut pixmap, &vp),
             }
@@ -923,7 +990,7 @@ impl Canvas {
             );
         }
         let shown = match key.layer {
-            TileLayer::Base => doc_rect,
+            TileLayer::Base | TileLayer::Band(_) => doc_rect,
             TileLayer::Overlay => doc_rect + self.overlay_offset(),
         };
         TileView {
@@ -974,18 +1041,43 @@ impl Canvas {
         pixmap.data_mut().copy_from_slice(background.data());
     }
 
-    fn render_strokes_into(&self, pixmap: &mut Pixmap, vp: &Viewport) {
+    /// The band's items in stacking order; within a run of ink, highlights go beneath.
+    fn render_band(&self, band: u8, pixmap: &mut Pixmap, vp: &Viewport) {
         let clip = ductus_render::ink_clip(pixmap, vp, &self.layout);
-        for layer in [Layer::Highlight, Layer::Ink] {
-            let strokes = self
-                .doc
-                .strokes()
-                .iter()
-                .filter(|s| !self.is_hidden(s.id))
-                .filter_map(|s| self.paths.get(&s.id)?.built())
-                .filter(|p| p.layer == layer);
-            ductus_render::render_strokes(pixmap, vp, strokes, clip.as_ref());
+        let area = vp.doc_rect(pixmap.width(), pixmap.height());
+        let stack = self.stack();
+        let mut run: Vec<&StrokePath> = Vec::new();
+        let flush = |run: &mut Vec<&StrokePath>, pixmap: &mut Pixmap| {
+            for layer in [Layer::Highlight, Layer::Ink] {
+                let strokes = run.iter().copied().filter(|p| p.layer == layer);
+                ductus_render::render_strokes(pixmap, vp, strokes, clip.as_ref());
+            }
+            run.clear();
+        };
+        for entry in stack.entries.iter().filter(|e| {
+            e.band == band
+                && e.kind != stack::Kind::Text
+                && ductus_render::overlaps(e.rect, area)
+                && !self.is_hidden(e.id)
+        }) {
+            match entry.kind {
+                stack::Kind::Stroke => {
+                    if let Some(path) = self.paths.get(&entry.id).and_then(Outline::built) {
+                        run.push(path);
+                    }
+                }
+                stack::Kind::Image => {
+                    flush(&mut run, pixmap);
+                    self.render_picture(entry.id, pixmap, vp, clip.as_ref());
+                }
+                stack::Kind::Math => {
+                    flush(&mut run, pixmap);
+                    self.render_math(entry.id, pixmap, vp, clip.as_ref());
+                }
+                stack::Kind::Text => {}
+            }
         }
+        flush(&mut run, pixmap);
     }
 
     pub fn tile_pixels(&self, key: TileKey) -> Option<&[u8]> {

@@ -17,6 +17,7 @@
 
 struct CanvasEngine;
 class QSGImageNode;
+class QSGNode;
 class QTabletEvent;
 class QQuickWindow;
 class QMimeData;
@@ -37,6 +38,7 @@ public:
         ZoomScaleRole,
         DocScaleRole,
         SelectedRole,
+        StackRole,
     };
 
     struct Row {
@@ -46,10 +48,13 @@ public:
         double zoomScale = 1;
         double docScale = 1;
         bool selected = false;
+        /// Its z among the page's layers: layer n lies at 2n.
+        double stack = 1;
         bool operator==(const Row &o) const
         {
             return id == o.id && markdown == o.markdown && box == o.box
-                && zoomScale == o.zoomScale && docScale == o.docScale && selected == o.selected;
+                && zoomScale == o.zoomScale && docScale == o.docScale && selected == o.selected
+                && stack == o.stack;
         }
     };
 
@@ -95,6 +100,8 @@ class InkCanvas : public QQuickItem
     Q_PROPERTY(bool shapeAssist READ shapeAssist WRITE setShapeAssist NOTIFY shapeAssistChanged)
     Q_PROPERTY(int selectionCount READ selectionCount NOTIFY selectionChanged)
     Q_PROPERTY(TextBoxModel *texts READ texts CONSTANT)
+    /// Layers of the page stacked between text boxes (see InkLayer), the page itself included.
+    Q_PROPERTY(int bands READ bands NOTIFY bandsChanged)
     Q_PROPERTY(QRectF mathDraftRect READ mathDraftRect NOTIFY mathDraftChanged)
     Q_PROPERTY(bool selectionHasInk READ selectionHasInk NOTIFY selectionChanged)
     /// Flipping or rotating would change something.
@@ -160,6 +167,23 @@ public:
     void setShapeAssist(bool on);
     int selectionCount() const { return m_selectionCount; }
     TextBoxModel *texts() { return &m_texts; }
+    int bands() const { return m_bands; }
+
+    /// The overlay (what is being drawn, moved or selected) and the pen tip, above all text.
+    static constexpr int OverlayLayer = 255;
+    struct TileNode {
+        QSGImageNode *node = nullptr;
+        quint64 generation = 0;
+    };
+    /// One layer's scene graph nodes; only touched on the render thread, GUI thread blocked.
+    struct LayerNodes {
+        QHash<quint64, TileNode> tiles;
+        QSGNode *tileRoot = nullptr;
+        QSGNode *tipRoot = nullptr;
+        QSGImageNode *tip = nullptr;
+    };
+    /// The nodes of one layer: this item shows the page, InkLayer items the others.
+    QSGNode *paintLayer(QSGNode *oldNode, int layer, LayerNodes &nodes);
     QRectF mathDraftRect() const { return m_mathDraftRect; }
     bool selectionHasInk() const { return m_selectionHasInk; }
     bool selectionTurns() const { return m_selectionTurns; }
@@ -208,6 +232,9 @@ public:
     void focusSheet(int index);
 
 Q_SIGNALS:
+    /// The page changed on screen: its InkLayer items repaint too.
+    void repainted();
+    void bandsChanged();
     void toolChanged();
     void penColorChanged();
     void penWidthChanged();
@@ -330,16 +357,9 @@ private:
     QString m_printoutName;
     QRectF m_selectionRect;
 
-    // Only touched in updatePaintNode (render thread, GUI thread blocked).
-    struct TileNode {
-        QSGImageNode *node = nullptr;
-        quint64 generation = 0;
-    };
-    QHash<quint64, TileNode> m_tileNodes;
-    QSGNode *m_baseLayer = nullptr;
-    QSGNode *m_overlayLayer = nullptr;
-    QSGNode *m_tipLayer = nullptr;
-    QSGImageNode *m_tipNode = nullptr;
+    LayerNodes m_pageNodes;
+    int m_bands = 1;
+    void repaint();
     /// A stroke that started on the canvas keeps the pen until release.
     /// Every canvas: the pen events of a window reach all of them.
     static inline QList<InkCanvas *> s_canvases;
@@ -351,6 +371,39 @@ private:
     bool m_mouseForwarded = false;
     Qt::MouseButton m_forwardButton = Qt::LeftButton;
     QPointer<QQuickWindow> m_filteredWindow;
+};
+
+/// One layer of a canvas's page above its text boxes, e.g. ink written on a text box.
+class InkLayer : public QQuickItem
+{
+    Q_OBJECT
+    QML_ELEMENT
+    Q_PROPERTY(InkCanvas *canvas READ canvas WRITE setCanvas NOTIFY canvasChanged)
+    /// 1… a band of the page, or InkCanvas::OverlayLayer.
+    Q_PROPERTY(int sheet READ sheet WRITE setSheet NOTIFY sheetChanged)
+
+public:
+    explicit InkLayer(QQuickItem *parent = nullptr);
+    InkCanvas *canvas() const { return m_canvas; }
+    void setCanvas(InkCanvas *canvas);
+    int sheet() const { return m_layer; }
+    void setSheet(int layer);
+
+Q_SIGNALS:
+    void canvasChanged();
+    void sheetChanged();
+
+protected:
+    QSGNode *updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *data) override;
+    void releaseResources() override;
+
+private:
+    QPointer<InkCanvas> m_canvas;
+    QMetaObject::Connection m_repaint;
+    int m_layer = 1;
+    /// The nodes were built for another canvas or layer.
+    bool m_rebuild = false;
+    InkCanvas::LayerNodes m_nodes;
 };
 
 #endif

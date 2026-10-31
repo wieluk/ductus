@@ -38,13 +38,10 @@ pub enum Command {
         before: Vec<MathBox>,
         after: Vec<MathBox>,
     },
-    /// Items moved up or down within their category, as full id orders `(before, after)`;
-    /// `None` means that category did not change.
-    Reorder {
-        strokes: Option<(Vec<StrokeId>, Vec<StrokeId>)>,
-        images: Option<(Vec<StrokeId>, Vec<StrokeId>)>,
-        texts: Option<(Vec<StrokeId>, Vec<StrokeId>)>,
-        maths: Option<(Vec<StrokeId>, Vec<StrokeId>)>,
+    /// Items moved up or down the stack: their stacking keys before and after.
+    Restack {
+        before: Vec<(StrokeId, i64)>,
+        after: Vec<(StrokeId, i64)>,
     },
     Batch(Vec<Command>),
 }
@@ -106,6 +103,17 @@ impl Command {
         Some(Command::RemoveMaths(items))
     }
 
+    /// Stacks the page's items in this order, bottom first.
+    pub fn restack(doc: &Document, order: &[StrokeId]) -> Option<Command> {
+        let (before, after): (Vec<_>, Vec<_>) = order
+            .iter()
+            .enumerate()
+            .map(|(z, id)| ((*id, doc.z(*id)), (*id, z as i64)))
+            .filter(|(b, a)| b != a)
+            .unzip();
+        (!after.is_empty()).then_some(Command::Restack { before, after })
+    }
+
     pub fn batch(commands: impl IntoIterator<Item = Option<Command>>) -> Option<Command> {
         let mut commands: Vec<Command> = commands.into_iter().flatten().collect();
         match commands.len() {
@@ -153,6 +161,7 @@ impl Command {
                 pieces,
             } => {
                 doc.remove(original.id);
+                doc.stack_like(pieces.iter().map(|p| p.id), original.id);
                 for (k, piece) in pieces.iter().enumerate() {
                     doc.insert(index + k, piece.clone());
                 }
@@ -190,25 +199,7 @@ impl Command {
                 }
             }
             Command::ReplaceMaths { after, .. } => doc.replace_maths(after),
-            Command::Reorder {
-                strokes,
-                images,
-                texts,
-                maths,
-            } => {
-                if let Some((_, after)) = strokes {
-                    doc.reorder_strokes(after);
-                }
-                if let Some((_, after)) = images {
-                    doc.reorder_images(after);
-                }
-                if let Some((_, after)) = texts {
-                    doc.reorder_texts(after);
-                }
-                if let Some((_, after)) = maths {
-                    doc.reorder_maths(after);
-                }
-            }
+            Command::Restack { after, .. } => doc.set_z(after),
             Command::Batch(commands) => commands.iter().for_each(|c| c.apply(doc)),
         }
     }
@@ -274,25 +265,7 @@ impl Command {
                 }
             }
             Command::ReplaceMaths { before, .. } => doc.replace_maths(before),
-            Command::Reorder {
-                strokes,
-                images,
-                texts,
-                maths,
-            } => {
-                if let Some((before, _)) = strokes {
-                    doc.reorder_strokes(before);
-                }
-                if let Some((before, _)) = images {
-                    doc.reorder_images(before);
-                }
-                if let Some((before, _)) = texts {
-                    doc.reorder_texts(before);
-                }
-                if let Some((before, _)) = maths {
-                    doc.reorder_maths(before);
-                }
-            }
+            Command::Restack { before, .. } => doc.set_z(before),
             Command::Batch(commands) => commands.iter().rev().for_each(|c| c.revert(doc)),
         }
     }

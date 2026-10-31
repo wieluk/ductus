@@ -150,7 +150,7 @@ fn convert(snapshot: &Value, name: String) -> Result<Import, Error> {
         _ => endless(name, items, background, c.pictures),
     };
     Ok(Import {
-        entry: Entry::Page(page),
+        entry: Entry::Page(Box::new(page)),
         warnings,
     })
 }

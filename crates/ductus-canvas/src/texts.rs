@@ -12,6 +12,8 @@ pub struct TextView {
     pub screen: Rect,
     pub scale: f64,
     pub selected: bool,
+    /// Where the box lies among the canvas bands: band n is at 2n, boxes between.
+    pub z: f64,
 }
 
 impl Canvas {
@@ -19,9 +21,9 @@ impl Canvas {
         self.doc
             .texts()
             .iter()
-            .rev()
-            .find(|t| text_rect(t).contains(at))
+            .filter(|t| text_rect(t).contains(at))
             .map(|t| t.id)
+            .max_by_key(|id| self.doc.stack_key(*id))
     }
 
     pub fn add_text(
@@ -97,6 +99,7 @@ impl Canvas {
 
     pub fn text_views(&self) -> Vec<TextView> {
         let dragging = self.transforming();
+        let z = self.stack().text_z();
         self.doc
             .texts()
             .iter()
@@ -113,6 +116,7 @@ impl Canvas {
                     screen: self.view.to_screen_rect(text_rect(&shown)),
                     scale: self.view.zoom * shown.scale,
                     selected,
+                    z: z.get(&t.id).copied().unwrap_or(1.0),
                 }
             })
             .collect()

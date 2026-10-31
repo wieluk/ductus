@@ -73,6 +73,8 @@ pub mod qobject {
         height: f64,
         scale: f64,
         selected: bool,
+        /// Stacking among the layers: layer n is at 2n.
+        z: f64,
     }
 
     /// `w` < 0: no box; `page` -1: no page.
@@ -442,7 +444,10 @@ pub mod qobject {
         fn new_canvas_engine() -> Box<CanvasEngine>;
 
         fn set_viewport(self: &mut CanvasEngine, width: f64, height: f64, dpr: f64);
-        fn frame(self: &mut CanvasEngine) -> Vec<TileInfo>;
+        /// One layer's tiles: 0 the page, 1… the bands above text boxes, 255 the overlay.
+        fn frame(self: &mut CanvasEngine, layer: u8) -> Vec<TileInfo>;
+        /// Layers stacked between text boxes, the page included.
+        fn bands(self: &CanvasEngine) -> u32;
         fn tile_pixels(self: &CanvasEngine, layer: u8, x: i32, y: i32) -> &[u8];
         fn tile_size(self: &CanvasEngine) -> u32;
 

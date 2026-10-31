@@ -4,6 +4,35 @@ use crate::{
 };
 use std::collections::HashMap;
 
+/// Anything on a page, owned.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Item {
+    Stroke(Stroke),
+    Image(Image),
+    Text(TextBox),
+    Math(MathBox),
+}
+
+/// Anything on a page.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ItemRef<'a> {
+    Stroke(&'a Stroke),
+    Image(&'a Image),
+    Text(&'a TextBox),
+    Math(&'a MathBox),
+}
+
+impl ItemRef<'_> {
+    pub fn id(&self) -> StrokeId {
+        match self {
+            ItemRef::Stroke(s) => s.id,
+            ItemRef::Image(i) => i.id,
+            ItemRef::Text(t) => t.id,
+            ItemRef::Math(m) => m.id,
+        }
+    }
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct Document {
     strokes: Vec<Stroke>,
@@ -13,6 +42,12 @@ pub struct Document {
     next_id: u64,
     settings: PageSettings,
     pdf_sheets: Vec<(f64, f64)>,
+    /// One stacking order for every kind of item: higher lies on top, ties go by id.
+    /// Removed items keep theirs, so undo puts them back where they were.
+    z: HashMap<StrokeId, i64>,
+    z_top: i64,
+    /// Bumped by every change to the items, so views know when to look again.
+    version: u64,
 }
 
 impl Document {
@@ -31,7 +66,36 @@ impl Document {
         };
         for mut stroke in strokes {
             stroke.id = doc.alloc_id();
+            doc.stack_on_top(stroke.id);
             doc.strokes.push(stroke);
+        }
+        doc
+    }
+
+    /// Stacked in the given order, bottom first; ids are reassigned like `with_contents`.
+    pub fn with_items(settings: PageSettings, items: impl IntoIterator<Item = Item>) -> Self {
+        let mut doc = Self::with_contents(settings, []);
+        for item in items {
+            let id = doc.alloc_id();
+            doc.stack_on_top(id);
+            match item {
+                Item::Stroke(mut s) => {
+                    s.id = id;
+                    doc.strokes.push(s);
+                }
+                Item::Image(mut i) => {
+                    i.id = id;
+                    doc.images.push(i);
+                }
+                Item::Text(mut t) => {
+                    t.id = id;
+                    doc.texts.push(t);
+                }
+                Item::Math(mut m) => {
+                    m.id = id;
+                    doc.maths.push(m);
+                }
+            }
         }
         doc
     }
@@ -39,6 +103,7 @@ impl Document {
     pub fn with_images(mut self, images: impl IntoIterator<Item = Image>) -> Self {
         for mut image in images {
             image.id = self.alloc_id();
+            self.stack_on_top(image.id);
             self.images.push(image);
         }
         self
@@ -47,6 +112,7 @@ impl Document {
     pub fn with_texts(mut self, texts: impl IntoIterator<Item = TextBox>) -> Self {
         for mut text in texts {
             text.id = self.alloc_id();
+            self.stack_on_top(text.id);
             self.texts.push(text);
         }
         self
@@ -55,6 +121,7 @@ impl Document {
     pub fn with_maths(mut self, maths: impl IntoIterator<Item = MathBox>) -> Self {
         for mut math in maths {
             math.id = self.alloc_id();
+            self.stack_on_top(math.id);
             self.maths.push(math);
         }
         self
@@ -70,15 +137,19 @@ impl Document {
 
     pub(crate) fn insert_math(&mut self, index: usize, math: MathBox) {
         self.next_id = self.next_id.max(math.id.0);
+        self.stack_on_top(math.id);
+        self.version += 1;
         self.maths.insert(index.min(self.maths.len()), math);
     }
 
     pub(crate) fn remove_math(&mut self, id: StrokeId) -> Option<(usize, MathBox)> {
         let index = self.math_index_of(id)?;
+        self.version += 1;
         Some((index, self.maths.remove(index)))
     }
 
     pub(crate) fn replace_maths(&mut self, maths: &[MathBox]) {
+        self.version += 1;
         for math in maths {
             if let Some(i) = self.math_index_of(math.id) {
                 self.maths[i] = math.clone();
@@ -88,6 +159,7 @@ impl Document {
 
     /// Outside the undo history: the size is derived from the source.
     pub fn update_math_quietly(&mut self, math: MathBox) {
+        self.version += 1;
         if let Some(i) = self.math_index_of(math.id) {
             self.maths[i] = math;
         }
@@ -103,22 +175,27 @@ impl Document {
 
     pub(crate) fn insert_text(&mut self, index: usize, text: TextBox) {
         self.next_id = self.next_id.max(text.id.0);
+        self.stack_on_top(text.id);
+        self.version += 1;
         self.texts.insert(index.min(self.texts.len()), text);
     }
 
     pub(crate) fn remove_text(&mut self, id: StrokeId) -> Option<(usize, TextBox)> {
         let index = self.text_index_of(id)?;
+        self.version += 1;
         Some((index, self.texts.remove(index)))
     }
 
     /// Outside the undo history: the height is derived from the contents.
     pub fn update_text_quietly(&mut self, text: TextBox) {
+        self.version += 1;
         if let Some(i) = self.text_index_of(text.id) {
             self.texts[i] = text;
         }
     }
 
     pub(crate) fn replace_texts(&mut self, texts: &[TextBox]) {
+        self.version += 1;
         for text in texts {
             if let Some(i) = self.text_index_of(text.id) {
                 self.texts[i] = text.clone();
@@ -156,6 +233,7 @@ impl Document {
 
     /// Moves everything that starts below `y` down by `dy`, making room for a new sheet.
     pub fn shift_below(&mut self, y: f64, dy: f64) {
+        self.version += 1;
         for stroke in &mut self.strokes {
             let top = stroke
                 .points
@@ -210,15 +288,19 @@ impl Document {
 
     pub(crate) fn insert(&mut self, index: usize, stroke: Stroke) {
         self.next_id = self.next_id.max(stroke.id.0);
+        self.stack_on_top(stroke.id);
+        self.version += 1;
         self.strokes.insert(index.min(self.strokes.len()), stroke);
     }
 
     pub(crate) fn remove(&mut self, id: StrokeId) -> Option<(usize, Stroke)> {
         let index = self.index_of(id)?;
+        self.version += 1;
         Some((index, self.strokes.remove(index)))
     }
 
     pub(crate) fn replace(&mut self, strokes: &[Stroke]) {
+        self.version += 1;
         for stroke in strokes {
             if let Some(i) = self.index_of(stroke.id) {
                 self.strokes[i] = stroke.clone();
@@ -232,15 +314,19 @@ impl Document {
 
     pub(crate) fn insert_image(&mut self, index: usize, image: Image) {
         self.next_id = self.next_id.max(image.id.0);
+        self.stack_on_top(image.id);
+        self.version += 1;
         self.images.insert(index.min(self.images.len()), image);
     }
 
     pub(crate) fn remove_image(&mut self, id: StrokeId) -> Option<(usize, Image)> {
         let index = self.image_index_of(id)?;
+        self.version += 1;
         Some((index, self.images.remove(index)))
     }
 
     pub(crate) fn replace_images(&mut self, images: &[Image]) {
+        self.version += 1;
         for image in images {
             if let Some(i) = self.image_index_of(image.id) {
                 self.images[i] = image.clone();
@@ -248,29 +334,62 @@ impl Document {
         }
     }
 
-    /// Reorders the category so the items run in the given id sequence (a permutation of its ids).
-    pub(crate) fn reorder_strokes(&mut self, order: &[StrokeId]) {
-        let rank: HashMap<StrokeId, usize> =
-            order.iter().enumerate().map(|(i, id)| (*id, i)).collect();
-        self.strokes.sort_by_key(|s| rank[&s.id]);
+    fn stack_on_top(&mut self, id: StrokeId) {
+        if !self.z.contains_key(&id) {
+            self.z_top += 1;
+            self.z.insert(id, self.z_top);
+        }
     }
 
-    pub(crate) fn reorder_images(&mut self, order: &[StrokeId]) {
-        let rank: HashMap<StrokeId, usize> =
-            order.iter().enumerate().map(|(i, id)| (*id, i)).collect();
-        self.images.sort_by_key(|i| rank[&i.id]);
+    /// Puts items that aren't on the page yet on top, in this order; adding them keeps it.
+    pub fn stack_new_on_top(&mut self, ids: &[StrokeId]) {
+        for id in ids {
+            self.z.remove(id);
+            self.stack_on_top(*id);
+        }
     }
 
-    pub(crate) fn reorder_texts(&mut self, order: &[StrokeId]) {
-        let rank: HashMap<StrokeId, usize> =
-            order.iter().enumerate().map(|(i, id)| (*id, i)).collect();
-        self.texts.sort_by_key(|t| rank[&t.id]);
+    /// New pieces of an item (cut by the eraser) stay where the item was.
+    pub(crate) fn stack_like(&mut self, ids: impl IntoIterator<Item = StrokeId>, like: StrokeId) {
+        let z = self.z(like);
+        for id in ids {
+            self.z.insert(id, z);
+        }
     }
 
-    pub(crate) fn reorder_maths(&mut self, order: &[StrokeId]) {
-        let rank: HashMap<StrokeId, usize> =
-            order.iter().enumerate().map(|(i, id)| (*id, i)).collect();
-        self.maths.sort_by_key(|m| rank[&m.id]);
+    pub(crate) fn set_z(&mut self, entries: &[(StrokeId, i64)]) {
+        self.version += 1;
+        for &(id, z) in entries {
+            self.z_top = self.z_top.max(z);
+            self.z.insert(id, z);
+        }
+    }
+
+    pub fn z(&self, id: StrokeId) -> i64 {
+        self.z.get(&id).copied().unwrap_or(0)
+    }
+
+    /// Orders items by where they lie: the greater key is on top.
+    pub fn stack_key(&self, id: StrokeId) -> (i64, StrokeId) {
+        (self.z(id), id)
+    }
+
+    /// Every item, bottom first.
+    pub fn items(&self) -> Vec<ItemRef<'_>> {
+        let mut items: Vec<ItemRef<'_>> = self
+            .strokes
+            .iter()
+            .map(ItemRef::Stroke)
+            .chain(self.images.iter().map(ItemRef::Image))
+            .chain(self.texts.iter().map(ItemRef::Text))
+            .chain(self.maths.iter().map(ItemRef::Math))
+            .collect();
+        items.sort_by_key(|i| self.stack_key(i.id()));
+        items
+    }
+
+    pub fn version(&self) -> u64 {
+        self.version
     }
 
     pub(crate) fn set_settings(&mut self, settings: PageSettings) {

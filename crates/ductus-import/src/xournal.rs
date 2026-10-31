@@ -196,7 +196,7 @@ fn parse(
     }
     let page = assemble(name, p.sheets, &p.pdfs, p.pictures)?;
     Ok(Import {
-        entry: Entry::Page(page),
+        entry: Entry::Page(Box::new(page)),
         warnings: p.warnings,
     })
 }

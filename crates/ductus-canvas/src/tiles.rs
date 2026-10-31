@@ -8,8 +8,19 @@ pub const TILE_SIZE: u32 = 256;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum TileLayer {
+    /// The page and the items on it.
     Base,
+    /// Items lifted above text boxes (see `stack`): transparent, numbered from 1.
+    Band(u8),
+    /// What is being drawn, moved or selected.
     Overlay,
+}
+
+impl TileLayer {
+    /// Redrawing the page redraws the bands too.
+    fn covers(self, key: TileLayer) -> bool {
+        self == key || (self == TileLayer::Base && matches!(key, TileLayer::Band(_)))
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -68,7 +79,7 @@ impl TileCache {
     pub fn invalidate(&mut self, layer: TileLayer, doc: Rect) {
         let size = f64::from(TILE_SIZE) / self.scale;
         for (key, tile) in &mut self.tiles {
-            if key.layer != layer {
+            if !layer.covers(key.layer) {
                 continue;
             }
             let r = Rect::new(
@@ -85,14 +96,19 @@ impl TileCache {
 
     pub fn invalidate_layer(&mut self, layer: TileLayer) {
         for (key, tile) in &mut self.tiles {
-            if key.layer == layer {
+            if layer.covers(key.layer) {
                 tile.dirty = true;
             }
         }
     }
 
     pub fn drop_layer(&mut self, layer: TileLayer) {
-        self.tiles.retain(|key, _| key.layer != layer);
+        self.tiles.retain(|key, _| !layer.covers(key.layer));
+    }
+
+    pub fn drop_bands_from(&mut self, first: usize) {
+        self.tiles
+            .retain(|key, _| !matches!(key.layer, TileLayer::Band(b) if usize::from(b) >= first));
     }
 
     pub fn rescale(&mut self, scale: f64) {
