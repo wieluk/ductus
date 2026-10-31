@@ -1015,10 +1015,7 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
             }
             "image" => {
                 let href = dx.get("svg:href");
-                let source = dx
-                    .get("src")
-                    .cloned()
-                    .or_else(|| href.filter(|h| !h.starts_with("data:")).cloned());
+                let source = dx.get("src").cloned();
                 if let (Some(source), Some(png)) = (
                     &source,
                     href.and_then(|h| h.strip_prefix(PNG_DATA))
