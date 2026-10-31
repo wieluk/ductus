@@ -120,38 +120,149 @@ fn path_data(path: &BezPath) -> String {
     d
 }
 
+/// Outlines are most of a page, so they are written compactly: relative steps in hundredths,
+/// and smooth quadratic runs as `t`, whose control point viewers derive from the one before.
 fn push_path_data(d: &mut String, path: &BezPath) {
-    let p = |d: &mut String, pt: kurbo::Point| {
-        push_num(d, pt.x, 2);
-        d.push(',');
-        push_num(d, pt.y, 2);
+    let mut w = PathWriter {
+        d,
+        cur: (0, 0),
+        start: (0, 0),
+        exact: kurbo::Point::ZERO,
+        exact_start: kurbo::Point::ZERO,
+        control: None,
+        command: 0,
+        separate: false,
+        dotted: false,
     };
     for el in path.elements() {
         match *el {
             PathEl::MoveTo(a) => {
-                d.push('M');
-                p(d, a);
+                let p = hundredths(a);
+                if w.command == 0 {
+                    w.command(b'M');
+                    w.pair(p);
+                } else {
+                    w.command(b'm');
+                    w.pair(w.step(p));
+                }
+                (w.cur, w.start, w.exact, w.exact_start) = (p, p, a, a);
+                w.control = None;
             }
             PathEl::LineTo(a) => {
-                d.push('L');
-                p(d, a);
+                let p = hundredths(a);
+                w.command(b'l');
+                w.pair(w.step(p));
+                (w.cur, w.exact, w.control) = (p, a, None);
             }
-            PathEl::QuadTo(a, b) => {
-                d.push('Q');
-                p(d, a);
-                d.push(' ');
-                p(d, b);
+            PathEl::QuadTo(c, e) => {
+                let smooth = w.control.filter(|(_, exact)| {
+                    let reflected = w.exact + (w.exact - *exact);
+                    (c - reflected).hypot() < 1e-6 * (1.0 + c.x.abs() + c.y.abs())
+                });
+                let p = if let Some(((cx, cy), _)) = smooth {
+                    // The derived control point is off by the rounding so far; the end point
+                    // takes that up, so the error never grows past a hundredth.
+                    let derived = (2 * w.cur.0 - cx, 2 * w.cur.1 - cy);
+                    let off = kurbo::Vec2::new(
+                        derived.0 as f64 / 100.0 - c.x,
+                        derived.1 as f64 / 100.0 - c.y,
+                    );
+                    let p = hundredths(e + off / 2.0);
+                    w.command(b't');
+                    w.pair(w.step(p));
+                    w.control = Some((derived, c));
+                    p
+                } else {
+                    let (cp, p) = (hundredths(c), hundredths(e));
+                    w.command(b'q');
+                    w.pair(w.step(cp));
+                    w.pair(w.step(p));
+                    w.control = Some((cp, c));
+                    p
+                };
+                (w.cur, w.exact) = (p, e);
             }
-            PathEl::CurveTo(a, b, c) => {
-                d.push('C');
-                p(d, a);
-                d.push(' ');
-                p(d, b);
-                d.push(' ');
-                p(d, c);
+            PathEl::CurveTo(a, b, e) => {
+                w.command(b'c');
+                for q in [a, b, e] {
+                    w.pair(w.step(hundredths(q)));
+                }
+                (w.cur, w.exact, w.control) = (hundredths(e), e, None);
             }
-            PathEl::ClosePath => d.push('Z'),
+            PathEl::ClosePath => {
+                w.command(b'z');
+                (w.cur, w.exact, w.control) = (w.start, w.exact_start, None);
+            }
         }
+    }
+}
+
+fn hundredths(p: kurbo::Point) -> (i64, i64) {
+    let r = |v: f64| {
+        if v.is_finite() {
+            (v * 100.0).round() as i64
+        } else {
+            0
+        }
+    };
+    (r(p.x), r(p.y))
+}
+
+struct PathWriter<'a> {
+    d: &'a mut String,
+    /// Where viewers are, in hundredths.
+    cur: (i64, i64),
+    start: (i64, i64),
+    exact: kurbo::Point,
+    exact_start: kurbo::Point,
+    /// The last quadratic control point: as viewers have it, and exactly.
+    control: Option<((i64, i64), kurbo::Point)>,
+    command: u8,
+    separate: bool,
+    dotted: bool,
+}
+
+impl PathWriter<'_> {
+    fn step(&self, p: (i64, i64)) -> (i64, i64) {
+        (p.0 - self.cur.0, p.1 - self.cur.1)
+    }
+
+    /// Repeated commands are implied, except after a move (which implies a line).
+    fn command(&mut self, c: u8) {
+        if c != self.command || matches!(c, b'M' | b'm' | b'z') {
+            self.d.push(char::from(c));
+            self.separate = false;
+        }
+        self.command = c;
+    }
+
+    fn pair(&mut self, (x, y): (i64, i64)) {
+        self.number(x);
+        self.number(y);
+    }
+
+    /// Like `1.5`, `-.05` or `12`; a separator only where the number wouldn't start a new one.
+    fn number(&mut self, v: i64) {
+        let (whole, part) = (v.unsigned_abs() / 100, v.unsigned_abs() % 100);
+        let starts_new = v < 0 || (whole == 0 && part != 0 && self.dotted);
+        if self.separate && !starts_new {
+            self.d.push(' ');
+        }
+        if v < 0 {
+            self.d.push('-');
+        }
+        if whole > 0 || part == 0 {
+            write!(self.d, "{whole}").unwrap();
+        }
+        if part > 0 {
+            if part % 10 == 0 {
+                write!(self.d, ".{}", part / 10).unwrap();
+            } else {
+                write!(self.d, ".{part:02}").unwrap();
+            }
+        }
+        self.separate = true;
+        self.dotted = part > 0;
     }
 }
 

@@ -404,3 +404,44 @@ fn text_links_lead_only_to_the_web_or_mail() {
         "the text stays: {html}"
     );
 }
+
+#[test]
+fn compact_outlines_stay_within_two_hundredths() {
+    // A long wavy stroke far from the origin: many `t` steps in a row, where rounding could add up.
+    let points: Vec<_> = (0..400)
+        .map(|i| {
+            let x = 5000.0 + f64::from(i) * 0.37;
+            (
+                x,
+                3000.0 + (x * 0.2).sin() * 12.0,
+                0.3 + (i % 7) as f32 * 0.1,
+            )
+        })
+        .collect();
+    let s = stroke(Tool::Pen, Rgba::BLACK, &points, false);
+    let d = path_data(&ductus_ink::outline(&s.points, &s.style));
+    assert!(d.contains('t'), "smooth runs are written as t");
+    let svg = format!(r#"<svg xmlns="{SVG_NS}" width="1" height="1"><path d="{d}"/></svg>"#);
+    let tree = resvg::usvg::Tree::from_str(&svg, &resvg::usvg::Options::default()).unwrap();
+    let Some(resvg::usvg::Node::Path(read)) = tree.root().children().first() else {
+        panic!("no path read back");
+    };
+    let exact: Vec<kurbo::Point> = ductus_ink::outline(&s.points, &s.style)
+        .elements()
+        .iter()
+        .flat_map(|el| match *el {
+            PathEl::MoveTo(a) | PathEl::LineTo(a) => vec![a],
+            PathEl::QuadTo(a, b) => vec![a, b],
+            PathEl::CurveTo(a, b, c) => vec![a, b, c],
+            PathEl::ClosePath => vec![],
+        })
+        .collect();
+    let got = read.data().points();
+    assert_eq!(got.len(), exact.len());
+    for (g, e) in got.iter().zip(&exact) {
+        let off = (f64::from(g.x) - e.x)
+            .abs()
+            .max((f64::from(g.y) - e.y).abs());
+        assert!(off < 0.02, "{off} units off at {e:?}");
+    }
+}
