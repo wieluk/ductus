@@ -73,6 +73,8 @@ pub mod qobject {
         height: f64,
         scale: f64,
         selected: bool,
+        /// Stacking among the layers: layer n is at 2n.
+        z: f64,
     }
 
     /// `w` < 0: no box; `page` -1: no page.
@@ -284,6 +286,8 @@ pub mod qobject {
         fn relocate_library(from: &str, to: &str, data_dir: &str) -> Result<()>;
         /// Joins exported page PDFs into one file.
         fn merge_pdf_files(files: Vec<String>, target: &str) -> Result<()>;
+        /// A Ductus page rather than some other drawing.
+        fn is_page(file: &str) -> bool;
         /// This library's own folder inside the app's data folder.
         fn data_dir(self: &LibraryHandle) -> String;
         fn root(self: &LibraryHandle) -> String;
@@ -440,7 +444,10 @@ pub mod qobject {
         fn new_canvas_engine() -> Box<CanvasEngine>;
 
         fn set_viewport(self: &mut CanvasEngine, width: f64, height: f64, dpr: f64);
-        fn frame(self: &mut CanvasEngine) -> Vec<TileInfo>;
+        /// One layer's tiles: 0 the page, 1… the bands above text boxes, 255 the overlay.
+        fn frame(self: &mut CanvasEngine, layer: u8) -> Vec<TileInfo>;
+        /// Layers stacked between text boxes, the page included.
+        fn bands(self: &CanvasEngine) -> u32;
         fn tile_pixels(self: &CanvasEngine, layer: u8, x: i32, y: i32) -> &[u8];
         fn tile_size(self: &CanvasEngine) -> u32;
 
@@ -569,8 +576,8 @@ pub mod qobject {
     unsafe extern "C++" {
         include!("ductus-qt/cpp/app.h");
 
-        /// `program` is argv[0]: Qt for Android finds its plugins next to it.
-        fn run_app(program: &str) -> i32;
+        /// `program` is argv[0]: Qt for Android finds its plugins next to it. `files` are opened.
+        fn run_app(program: &str, files: Vec<String>) -> i32;
     }
 }
 
@@ -578,7 +585,7 @@ pub use crate::convert::{ConvertHandle, open_converter};
 pub use crate::engine::{CanvasEngine, new_canvas_engine};
 pub use crate::import::{ImportHandle, can_import, open_importer};
 pub use crate::library::{
-    LibraryHandle, PrintJob, merge_pdf_files, open_library, pdf_support_problem, pdf_text,
+    LibraryHandle, PrintJob, is_page, merge_pdf_files, open_library, pdf_support_problem, pdf_text,
     relocate_library,
 };
 pub use crate::models::{

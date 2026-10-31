@@ -18,7 +18,7 @@ fn png() -> String {
 
 fn page_of(import: Import) -> crate::ImportedPage {
     match import.entry {
-        Entry::Page(page) => page,
+        Entry::Page(page) => *page,
         _ => panic!("expected a page"),
     }
 }

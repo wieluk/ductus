@@ -21,7 +21,7 @@ fn slot(value: Value) -> Value {
 
 fn page_of(import: Import) -> ImportedPage {
     match import.entry {
-        Entry::Page(page) => page,
+        Entry::Page(page) => *page,
         _ => panic!("expected a page"),
     }
 }

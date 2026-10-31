@@ -138,6 +138,10 @@
         <translation>Ductus はノートページ (.svg)、PDF、Xournal++・Rnote・OneNote のファイルを開けます。</translation>
     </message>
     <message>
+        <source>%1 isn&apos;t a Ductus page.</source>
+        <translation>%1 は Ductus のページではありません。</translation>
+    </message>
+    <message>
         <source>Indexing %1 of %2 files…</source>
         <translation>%2 個中 %1 個目のファイルをインデックス中…</translation>
     </message>

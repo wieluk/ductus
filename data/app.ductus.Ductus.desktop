@@ -1,10 +1,11 @@
 [Desktop Entry]
 Name=Ductus
 Comment=Handwritten notebooks with stylus support
-Exec=ductus
+Exec=ductus %F
 Icon=app.ductus.Ductus
 Terminal=false
 Type=Application
 Categories=Office;Education;GTK;
 Keywords=notes;handwriting;stylus;pen;notebook;pdf;annotate;
 StartupNotify=true
+MimeType=image/svg+xml;

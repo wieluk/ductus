@@ -1,0 +1,25 @@
+# Layering: pictures, ink and text boxes share one stacking order.
+size 1280 800
+click-item tab_insert
+click-item insertText
+click 560,400
+type Text that a picture can cover
+key Escape
+expect-prop canvas bands 1
+# Pasted last, the picture lies on the text box: a layer above it holds the picture.
+clipboard-image tests/fixtures/screenshot.png
+key Ctrl+V
+expect-prop canvas bands 2
+click-item selectionLayer
+click-item selectionSendToBack
+expect-prop canvas bands 1
+expect-in-file My Notebook/First page.svg | <image
+key Ctrl+Z
+expect-prop canvas bands 2
+key Ctrl+Y
+key Escape
+# Ink written on the box lies above it.
+click-item tab_draw
+click-item toolPen
+pen p=0.8 520,410 900,430
+expect-prop canvas bands 2

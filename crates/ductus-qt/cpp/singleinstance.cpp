@@ -5,6 +5,8 @@
 #include <QLocalSocket>
 #include <QStandardPaths>
 
+#include <memory>
+
 QString SingleInstance::serverName()
 {
     // Tests and portable setups have their own settings folder, and their own instance.
@@ -30,7 +32,7 @@ QString SingleInstance::serverName()
 #endif
 }
 
-bool SingleInstance::claim()
+bool SingleInstance::claim(const QStringList &files)
 {
     const QString name = serverName();
     QLocalSocket running;
@@ -40,7 +42,11 @@ bool SingleInstance::claim()
         QByteArray token = qgetenv("XDG_ACTIVATION_TOKEN");
         if (token.isEmpty())
             token = qgetenv("DESKTOP_STARTUP_ID");
+        // A line each for the token and the files, then an empty line.
         running.write(token + '\n');
+        for (const QString &file : files)
+            running.write(file.toUtf8() + '\n');
+        running.write("\n");
         running.waitForBytesWritten(1000);
         running.disconnectFromServer();
         // Shows up in logs, so a start that seems to do nothing can be told apart from a crash.
@@ -55,10 +61,18 @@ bool SingleInstance::claim()
     connect(&m_server, &QLocalServer::newConnection, this, [this] {
         while (QLocalSocket *socket = m_server.nextPendingConnection()) {
             connect(socket, &QLocalSocket::disconnected, socket, &QObject::deleteLater);
-            connect(socket, &QLocalSocket::readyRead, this, [this, socket] {
-                if (!socket->canReadLine())
-                    return;
-                Q_EMIT activationRequested(QString::fromUtf8(socket->readLine().trimmed()));
+            // The first line is the token, which may be empty; an empty line after it ends the files.
+            auto lines = std::make_shared<QStringList>();
+            connect(socket, &QLocalSocket::readyRead, this, [this, socket, lines] {
+                while (socket->canReadLine()) {
+                    const QString line = QString::fromUtf8(socket->readLine().chopped(1));
+                    if (!lines->isEmpty() && line.isEmpty()) {
+                        Q_EMIT activationRequested(lines->first(), lines->mid(1));
+                        lines->clear();
+                    } else {
+                        lines->append(line);
+                    }
+                }
             });
         }
     });

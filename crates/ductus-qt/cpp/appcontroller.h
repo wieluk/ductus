@@ -307,6 +307,8 @@ Q_SIGNALS:
     void holdRecentChanged();
     void canvasChanged();
     void errorOccurred(const QString &message);
+    /// A file to open from outside: the command line, another start of Ductus, or an Android intent.
+    void openRequested(const QString &fileOrUrl);
     void notice(const QString &message);
     void softwareRenderingChanged();
     /// Something went to the trash; `trashId` brings it back.

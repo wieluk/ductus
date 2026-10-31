@@ -1961,6 +1961,11 @@ QString AppController::openFile(const QString &fileOrUrl)
             tr("Ductus opens notes pages (.svg), PDFs, and Xournal++, Rnote and OneNote files."));
         return {};
     }
+    // Other drawings (when Ductus opens every .svg) would be saved over as pages.
+    if (suffix == u"svg" && !is_page(toStd(readable))) {
+        Q_EMIT errorOccurred(tr("%1 isn't a Ductus page.").arg(PlatformFiles::displayName(fileOrUrl)));
+        return {};
+    }
     const QString root = QFileInfo(libraryPath()).canonicalFilePath() + QLatin1Char('/');
     const QString file = info.canonicalFilePath();
     if (file.startsWith(root)) {

@@ -41,6 +41,10 @@ if GL="$(flatpak info --show-location "org.freedesktop.Platform.GL.default//$GL_
     )
 fi
 
+# Rust's own lld links (its gcc-ld wrapper): GNU ld.bfd, the SDK's only linker, leaves cxx-qt's
+# initializers undefined. Naming it also keeps cxx-qt from looking for lld, gold or mold.
+LINK_FLAGS="-Clink-arg=-fuse-ld=lld"
+
 extra_args=()
 IFS=: read -ra extra_paths <<<"${SDK_RUN_BIND:-}"
 for path in "${extra_paths[@]}"; do
@@ -72,5 +76,6 @@ exec bwrap \
     --setenv RUSTUP_HOME "$RUSTUP_DIR" \
     --setenv CARGO_HOME "$CARGO_DIR" \
     --setenv CARGO_TARGET_DIR "$PROJECT/target/sdk-$SDK_BRANCH" \
+    --setenv RUSTFLAGS "${RUSTFLAGS:+$RUSTFLAGS }$LINK_FLAGS" \
     --setenv HOME "$HOME" \
     "$@"

@@ -1,14 +1,22 @@
 #include "ductus-qt/cpp/app.h"
+#include "ductus-qt/cpp/appcontroller.h"
 #include "ductus-qt/cpp/translations.h"
 #include "ductus-qt/cpp/uitest.h"
 
 #include <QApplication>
+#include <QDir>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 #include <QQuickWindow>
 #include <QSettings>
 #include <QStyleHints>
-#if !defined(Q_OS_ANDROID)
+#include <QTimer>
+#include <QUrl>
+#if defined(Q_OS_ANDROID)
+#include <QJniObject>
+#include <QtCore/qcoreapplication_platform.h>
+#include <QtCore/private/qjnihelpers_p.h>
+#else
 #include "ductus-qt/cpp/singleinstance.h"
 #endif
 #if defined(Q_OS_WIN)
@@ -28,7 +36,55 @@ bool softwareRendering()
 #endif
 }
 
-std::int32_t run_app(rust::Str program)
+namespace {
+
+#if defined(Q_OS_ANDROID)
+/// The file an "Open with" intent points to, or "".
+QString viewedFile(const QJniObject &intent)
+{
+    if (!intent.isValid()
+        || intent.callObjectMethod<jstring>("getAction").toString() != u"android.intent.action.VIEW")
+        return {};
+    const QJniObject uri = intent.callObjectMethod("getData", "()Landroid/net/Uri;");
+    return uri.isValid() ? uri.callObjectMethod<jstring>("toString").toString() : QString();
+}
+
+/// Intents that reach the running app: its activity is the only one (launchMode singleTask).
+class IntentFiles : public QtAndroidPrivate::NewIntentListener
+{
+public:
+    explicit IntentFiles(AppController *controller) : m_controller(controller) {}
+    bool handleNewIntent(JNIEnv *, jobject intent) override
+    {
+        const QString file = viewedFile(QJniObject(intent));
+        if (file.isEmpty())
+            return false;
+        // Called on Android's thread.
+        QMetaObject::invokeMethod(m_controller, [c = m_controller, file] { Q_EMIT c->openRequested(file); },
+                                  Qt::QueuedConnection);
+        return true;
+    }
+
+private:
+    AppController *m_controller;
+};
+#endif
+
+/// Paths from the command line don't depend on the folder Ductus was started in.
+QStringList openable(const rust::Vec<rust::String> &files)
+{
+    QStringList out;
+    for (const rust::String &file : files) {
+        const QString arg = QString::fromUtf8(file.data(), qsizetype(file.size()));
+        const QUrl url(arg);
+        out << (url.scheme().size() > 1 ? arg : QDir::current().absoluteFilePath(arg));
+    }
+    return out;
+}
+
+} // namespace
+
+std::int32_t run_app(rust::Str program, rust::Vec<rust::String> files)
 {
     // Qt for Android looks for its plugins next to argv[0], the app's library.
     static std::string arg0 = program.empty() ? std::string("ductus") : std::string(program);
@@ -46,10 +102,11 @@ std::int32_t run_app(rust::Str program)
         QSettings::setDefaultFormat(QSettings::IniFormat);
         QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, configDir);
     }
+    QStringList opened = openable(files);
 #if !defined(Q_OS_ANDROID)
     // Two copies would each save the same open pages over the other's.
     SingleInstance instance;
-    if (!instance.claim())
+    if (!instance.claim(opened))
         return 0;
 #endif
     // Some graphics drivers draw Qt Quick garbled: Qt's software renderer is slower but right.
@@ -72,9 +129,24 @@ std::int32_t run_app(rust::Str program)
 #if defined(Q_OS_WIN)
     WinFrame::install(qobject_cast<QQuickWindow *>(engine.rootObjects().first()));
 #endif
+    auto *controller = engine.singletonInstance<AppController *>("Ductus", "AppController");
+#if defined(Q_OS_ANDROID)
+    static IntentFiles intentFiles(controller);
+    QtAndroidPrivate::registerNewIntentListener(&intentFiles);
+    const QJniObject activity = QNativeInterface::QAndroidApplication::context();
+    if (const QString file = viewedFile(activity.callObjectMethod("getIntent", "()Landroid/content/Intent;"));
+        !file.isEmpty())
+        opened << file;
+#endif
+    // Once the window is up and the library open.
+    QTimer::singleShot(0, controller, [controller, opened] {
+        for (const QString &file : opened)
+            Q_EMIT controller->openRequested(file);
+    });
 #if !defined(Q_OS_ANDROID)
     auto *mainWindow = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
-    QObject::connect(&instance, &SingleInstance::activationRequested, mainWindow, [mainWindow](const QString &token) {
+    QObject::connect(&instance, &SingleInstance::activationRequested, mainWindow,
+                     [mainWindow, controller](const QString &token, const QStringList &forwarded) {
         // Qt's Wayland shell reads the launcher's token from here when the window asks to come forward.
         if (!token.isEmpty())
             qputenv("XDG_ACTIVATION_TOKEN", token.toUtf8());
@@ -82,6 +154,8 @@ std::int32_t run_app(rust::Str program)
         mainWindow->show();
         mainWindow->raise();
         mainWindow->requestActivate();
+        for (const QString &file : forwarded)
+            Q_EMIT controller->openRequested(file);
     });
 #endif
 

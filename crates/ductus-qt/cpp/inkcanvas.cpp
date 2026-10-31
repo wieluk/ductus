@@ -60,8 +60,8 @@ PointerSample sampleAt(QPointF position, quint64 timestamp)
 quint64 tileKey(const TileInfo &t)
 {
     constexpr quint64 mask = 0x7FFFFFFF;
-    return (quint64(t.layer & 1) << 62) | ((quint64(quint32(t.x)) & mask) << 31)
-        | (quint64(quint32(t.y)) & mask);
+    // One layer per hash: the position is the key.
+    return ((quint64(quint32(t.x)) & mask) << 31) | (quint64(quint32(t.y)) & mask);
 }
 
 // On Wayland a pen gets the mouse's cursor, which Qt only updates while the mouse is over the window.
@@ -143,14 +143,14 @@ InkCanvas::InkCanvas(QQuickItem *parent)
     m_settleTimer.setInterval(150);
     connect(&m_settleTimer, &QTimer::timeout, this, [this] {
         m_engine->settle();
-        update();
+        repaint();
     });
 
     m_markTimer.setSingleShot(true);
     m_markTimer.setInterval(2500);
     connect(&m_markTimer, &QTimer::timeout, this, [this] {
         m_engine->clear_mark();
-        update();
+        repaint();
     });
 
     m_holdTimer.setSingleShot(true);
@@ -223,6 +223,8 @@ QVariant TextBoxModel::data(const QModelIndex &index, int role) const
         return row.docScale;
     case SelectedRole:
         return row.selected;
+    case StackRole:
+        return row.stack;
     default:
         return {};
     }
@@ -232,7 +234,8 @@ QHash<int, QByteArray> TextBoxModel::roleNames() const
 {
     return {{IdRole, "textId"},       {MarkdownRole, "markdown"},   {BoxXRole, "boxX"},
             {BoxYRole, "boxY"},       {BoxWidthRole, "boxWidth"},   {BoxHeightRole, "boxHeight"},
-            {ZoomScaleRole, "zoomScale"}, {DocScaleRole, "docScale"}, {SelectedRole, "selected"}};
+            {ZoomScaleRole, "zoomScale"}, {DocScaleRole, "docScale"}, {SelectedRole, "selected"},
+            {StackRole, "stack"}};
 }
 
 void TextBoxModel::setRows(QList<Row> rows)
@@ -253,8 +256,19 @@ void TextBoxModel::setRows(QList<Row> rows)
     endResetModel();
 }
 
+void InkCanvas::repaint()
+{
+    update();
+    Q_EMIT repainted();
+}
+
 void InkCanvas::refreshTexts()
 {
+    const int bands = static_cast<int>(m_engine->bands());
+    if (bands != m_bands) {
+        m_bands = bands;
+        Q_EMIT bandsChanged();
+    }
     const rust::Vec<double> m = m_engine->math_draft_rect();
     const QRectF draft = m.size() == 4 ? QRectF(m[0], m[1], m[2], m[3]) : QRectF();
     if (draft != m_mathDraftRect) {
@@ -268,7 +282,7 @@ void InkCanvas::refreshTexts()
     for (const TextRow &r : rows) {
         out.append({static_cast<qint64>(r.id),
                     QString::fromUtf8(r.markdown.data(), static_cast<qsizetype>(r.markdown.size())),
-                    QRectF(r.x, r.y, r.width, r.height), r.scale, r.scale / zoom, r.selected});
+                    QRectF(r.x, r.y, r.width, r.height), r.scale, r.scale / zoom, r.selected, r.z});
     }
     m_texts.setRows(std::move(out));
 }
@@ -359,6 +373,8 @@ void InkCanvas::setTextHeight(qint64 id, qreal docHeight)
 {
     m_engine->set_text_height(static_cast<std::uint64_t>(id), docHeight);
     refreshTexts();
+    // A taller box may reach items stacked on it.
+    repaint();
 }
 
 void InkCanvas::setPenColor(const QColor &color)
@@ -368,7 +384,7 @@ void InkCanvas::setPenColor(const QColor &color)
     m_penColor = color;
     m_engine->set_pen_color(color.redF(), color.greenF(), color.blueF(), color.alphaF());
     Q_EMIT penColorChanged();
-    update();
+    repaint();
 }
 
 void InkCanvas::setPenPattern(const QString &pattern)
@@ -486,7 +502,7 @@ void InkCanvas::setEraserSize(int radius)
         return;
     m_eraserSize = radius;
     m_engine->set_eraser_size(radius);
-    update();
+    repaint();
     Q_EMIT eraserSizeChanged();
 }
 
@@ -723,7 +739,7 @@ void InkCanvas::onHold()
         return;
     const QString kind = QString::fromStdString(std::string(m_engine->hold()));
     if (!kind.isEmpty()) {
-        update();
+        repaint();
         Q_EMIT shapeRecognized(kind);
     }
 }
@@ -755,7 +771,7 @@ void InkCanvas::afterEdit()
         Q_EMIT pageStyleChanged();
         Q_EMIT edited();
     }
-    update();
+    repaint();
 }
 
 quint64 InkCanvas::revision() const
@@ -774,7 +790,7 @@ void InkCanvas::documentReplaced()
     Q_EMIT historyChanged();
     Q_EMIT pageStyleChanged();
     Q_EMIT viewChanged();
-    update();
+    repaint();
 }
 
 QString InkCanvas::pageKind() const
@@ -841,7 +857,7 @@ void InkCanvas::setDeskColor(const QColor &color)
     m_deskColor = color;
     m_engine->set_desk_color(color.redF(), color.greenF(), color.blueF());
     Q_EMIT deskColorChanged();
-    update();
+    repaint();
 }
 
 void InkCanvas::viewMoved()
@@ -850,7 +866,7 @@ void InkCanvas::viewMoved()
     refreshTexts();
     Q_EMIT viewChanged();
     m_settleTimer.start();
-    update();
+    repaint();
 }
 
 bool InkCanvas::event(QEvent *event)
@@ -1098,7 +1114,7 @@ bool InkCanvas::handleTablet(QTabletEvent *event)
         }
         showPenTip(position);
     }
-    update();
+    repaint();
     return true;
 }
 
@@ -1131,7 +1147,7 @@ void InkCanvas::mousePressEvent(QMouseEvent *event)
         }
     }
     event->accept();
-    update();
+    repaint();
 }
 
 void InkCanvas::mouseMoveEvent(QMouseEvent *event)
@@ -1148,7 +1164,7 @@ void InkCanvas::mouseMoveEvent(QMouseEvent *event)
         updateSelection();
         if (m_engine->has_selection_drag())
             refreshTexts();
-        update();
+        repaint();
     }
 }
 
@@ -1192,7 +1208,7 @@ void InkCanvas::touchEvent(QTouchEvent *event)
             m_engine->pointer_cancel();
         m_touchDrawing = false;
         m_pinching = false;
-        update();
+        repaint();
         return;
     }
 
@@ -1271,7 +1287,7 @@ void InkCanvas::touchEvent(QTouchEvent *event)
                 Q_EMIT mathRequested(p, static_cast<qint64>(m_engine->math_at(p.x(), p.y())));
         }
     }
-    update();
+    repaint();
 }
 
 void InkCanvas::wheelEvent(QWheelEvent *event)
@@ -1327,7 +1343,7 @@ void InkCanvas::setPenTipSize(qreal radius)
     if (qFuzzyCompare(radius, m_penTipSize))
         return;
     m_penTipSize = radius;
-    update();
+    repaint();
     Q_EMIT inputSettingsChanged();
 }
 
@@ -1337,7 +1353,7 @@ void InkCanvas::showPenTip(QPointF position)
         return;
     m_tipPosition = position;
     m_tipVisible = true;
-    update();
+    repaint();
 }
 
 void InkCanvas::hideCursor(bool hide)
@@ -1358,7 +1374,7 @@ void InkCanvas::hidePenTip()
 {
     if (m_tipVisible) {
         m_tipVisible = false;
-        update();
+        repaint();
     }
 }
 
@@ -1378,27 +1394,34 @@ void InkCanvas::geometryChange(const QRectF &newGeometry, const QRectF &oldGeome
         m_engine->pan_by((newWidth - oldWidth) / 2, 0);
         viewMoved();
     }
-    update();
+    repaint();
 }
 
 QSGNode *InkCanvas::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
 {
+    return paintLayer(oldNode, 0, m_pageNodes);
+}
+
+QSGNode *InkCanvas::paintLayer(QSGNode *oldNode, int layer, LayerNodes &nodes)
+{
+    QQuickWindow *win = window();
+    if (!win)
+        return oldNode;
     QSGNode *root = oldNode;
     if (!root) {
         // Layers are transform nodes: the software renderer only passes transform and clip to later-added children of stateful nodes.
         root = new QSGNode;
-        m_baseLayer = new QSGTransformNode;
-        m_overlayLayer = new QSGTransformNode;
-        m_tipLayer = new QSGTransformNode;
-        root->appendChildNode(m_baseLayer);
-        root->appendChildNode(m_overlayLayer);
-        root->appendChildNode(m_tipLayer);
-        m_tileNodes.clear();
-        m_tipNode = nullptr;
+        nodes.tileRoot = new QSGTransformNode;
+        root->appendChildNode(nodes.tileRoot);
+        if (layer == OverlayLayer) {
+            nodes.tipRoot = new QSGTransformNode;
+            root->appendChildNode(nodes.tipRoot);
+        }
+        nodes.tiles.clear();
+        nodes.tip = nullptr;
     }
-    QQuickWindow *win = window();
     m_engine->set_viewport(width(), height(), win->effectiveDevicePixelRatio());
-    const rust::Vec<TileInfo> tiles = m_engine->frame();
+    const rust::Vec<TileInfo> tiles = m_engine->frame(static_cast<std::uint8_t>(layer));
     const int size = static_cast<int>(m_engine->tile_size());
 
     // Only changed tiles are replaced, so renderers keep their batches.
@@ -1406,8 +1429,8 @@ QSGNode *InkCanvas::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
     visible.reserve(static_cast<qsizetype>(tiles.size()));
     for (const TileInfo &tile : tiles) {
         const quint64 key = tileKey(tile);
-        QSGNode *layer = tile.layer == 0 ? m_baseLayer : m_overlayLayer;
-        TileNode entry = m_tileNodes.take(key);
+        QSGNode *parent = nodes.tileRoot;
+        TileNode entry = nodes.tiles.take(key);
         if (!entry.node || entry.generation != tile.generation) {
             const rust::Slice<const std::uint8_t> pixels =
                 m_engine->tile_pixels(tile.layer, tile.x, tile.y);
@@ -1415,19 +1438,19 @@ QSGNode *InkCanvas::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
                                QImage::Format_RGBA8888_Premultiplied);
             // Deep copy: the engine may redraw this buffer before the upload happens.
             QSGTexture *texture = win->createTextureFromImage(
-                image.copy(), tile.layer == 0 ? QQuickWindow::CreateTextureOptions()
-                                              : QQuickWindow::TextureHasAlphaChannel);
+                image.copy(), layer == 0 ? QQuickWindow::CreateTextureOptions()
+                                         : QQuickWindow::TextureHasAlphaChannel);
             QSGImageNode *node = win->createImageNode();
             node->setTexture(texture);
             node->setOwnsTexture(true);
             node->setFiltering(QSGTexture::Linear);
             // Nodes own their texture, so deleting the old node frees its pixels.
             if (entry.node) {
-                layer->insertChildNodeBefore(node, entry.node);
-                layer->removeChildNode(entry.node);
+                parent->insertChildNodeBefore(node, entry.node);
+                parent->removeChildNode(entry.node);
                 delete entry.node;
             } else {
-                layer->appendChildNode(node);
+                parent->appendChildNode(node);
             }
             entry.node = node;
             entry.generation = tile.generation;
@@ -1437,21 +1460,23 @@ QSGNode *InkCanvas::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
             entry.node->setRect(rect);
         visible.insert(key, entry);
     }
-    for (const TileNode &stale : std::as_const(m_tileNodes)) {
+    for (const TileNode &stale : std::as_const(nodes.tiles)) {
         stale.node->parent()->removeChildNode(stale.node);
         delete stale.node;
     }
-    m_tileNodes = std::move(visible);
+    nodes.tiles = std::move(visible);
+    if (layer != OverlayLayer)
+        return root;
 
     const qreal tipRadius = m_tipEraser ? m_eraserSize : m_penTipSize;
-    if (m_tipNode && (!m_tipVisible || m_tipColor != m_penColor || m_tipBuiltEraser != m_tipEraser
+    if (nodes.tip && (!m_tipVisible || m_tipColor != m_penColor || m_tipBuiltEraser != m_tipEraser
                       || m_tipBuiltRadius != tipRadius)) {
-        m_tipLayer->removeChildNode(m_tipNode);
-        delete m_tipNode;
-        m_tipNode = nullptr;
+        nodes.tipRoot->removeChildNode(nodes.tip);
+        delete nodes.tip;
+        nodes.tip = nullptr;
     }
     if (m_tipVisible) {
-        if (!m_tipNode) {
+        if (!nodes.tip) {
             const qreal dpr = win->effectiveDevicePixelRatio();
             const int px = qCeil(tipRadius * 2 * dpr) + 2;
             QImage dot(px, px, QImage::Format_ARGB32_Premultiplied);
@@ -1470,17 +1495,17 @@ QSGNode *InkCanvas::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
                 painter.drawEllipse(QRectF(1, 1, px - 2, px - 2));
             }
             painter.end();
-            m_tipNode = win->createImageNode();
-            m_tipNode->setTexture(
+            nodes.tip = win->createImageNode();
+            nodes.tip->setTexture(
                 win->createTextureFromImage(dot, QQuickWindow::TextureHasAlphaChannel));
-            m_tipNode->setOwnsTexture(true);
+            nodes.tip->setOwnsTexture(true);
             m_tipColor = m_penColor;
             m_tipBuiltEraser = m_tipEraser;
             m_tipBuiltRadius = tipRadius;
-            m_tipLayer->appendChildNode(m_tipNode);
+            nodes.tipRoot->appendChildNode(nodes.tip);
         }
         const qreal r = tipRadius + 1;
-        m_tipNode->setRect(QRectF(m_tipPosition.x() - r, m_tipPosition.y() - r, 2 * r, 2 * r));
+        nodes.tip->setRect(QRectF(m_tipPosition.x() - r, m_tipPosition.y() - r, 2 * r, 2 * r));
     }
     return root;
 }
@@ -1488,8 +1513,54 @@ QSGNode *InkCanvas::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
 void InkCanvas::releaseResources()
 {
     // The scene graph deletes the node tree.
-    m_tileNodes.clear();
-    m_baseLayer = m_overlayLayer = m_tipLayer = nullptr;
-    m_tipNode = nullptr;
+    m_pageNodes = {};
 }
 
+
+InkLayer::InkLayer(QQuickItem *parent)
+    : QQuickItem(parent)
+{
+    setFlag(ItemHasContents, true);
+}
+
+void InkLayer::setCanvas(InkCanvas *canvas)
+{
+    if (m_canvas == canvas)
+        return;
+    disconnect(m_repaint);
+    m_canvas = canvas;
+    if (m_canvas)
+        m_repaint = connect(m_canvas, &InkCanvas::repainted, this, &QQuickItem::update);
+    m_rebuild = true;
+    Q_EMIT canvasChanged();
+    update();
+}
+
+void InkLayer::setSheet(int layer)
+{
+    if (m_layer == layer)
+        return;
+    m_layer = layer;
+    m_rebuild = true;
+    Q_EMIT sheetChanged();
+    update();
+}
+
+QSGNode *InkLayer::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
+{
+    // A node tree built for another canvas or layer starts over.
+    if (m_rebuild || !m_canvas) {
+        m_rebuild = false;
+        delete oldNode;
+        oldNode = nullptr;
+        m_nodes = {};
+    }
+    if (!m_canvas)
+        return nullptr;
+    return m_canvas->paintLayer(oldNode, m_layer, m_nodes);
+}
+
+void InkLayer::releaseResources()
+{
+    m_nodes = {};
+}

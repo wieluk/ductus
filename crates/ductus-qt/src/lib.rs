@@ -31,7 +31,13 @@ pub(crate) fn guarded<T>(work: impl FnOnce() -> Result<T, String>) -> Result<T, 
 }
 
 pub fn run() -> i32 {
-    ffi::qobject::run_app("")
+    // "Open with Ductus" passes the files as arguments.
+    let files = std::env::args_os()
+        .skip(1)
+        .map(|arg| arg.to_string_lossy().into_owned())
+        .filter(|arg| !arg.starts_with('-'))
+        .collect();
+    ffi::qobject::run_app("", files)
 }
 
 /// Qt's Android loader calls this with the path of this library as argv[0].
@@ -47,5 +53,6 @@ pub extern "C" fn main(argc: i32, argv: *const *const std::ffi::c_char) -> i32 {
     } else {
         String::new()
     };
-    ffi::qobject::run_app(&program)
+    // Files to open come in Android intents, which app.cpp reads.
+    ffi::qobject::run_app(&program, Vec::new())
 }

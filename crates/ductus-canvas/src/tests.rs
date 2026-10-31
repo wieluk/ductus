@@ -608,6 +608,50 @@ fn rotate_turns_the_selection_a_quarter_turn() {
     );
 }
 
+fn stacking(c: &Canvas) -> Vec<StrokeId> {
+    c.document().items().iter().map(|i| i.id()).collect()
+}
+
+#[test]
+fn layering_puts_ink_above_a_picture_and_undoes() {
+    let mut c = canvas();
+    draw_wave(&mut c, 40.0, 160.0, 80.0);
+    let red = tiny_skia::Color::from_rgba8(220, 20, 20, 255);
+    assert!(c.insert_picture(png(240, 160, red), Some(Point::new(100.0, 80.0))));
+    let covered = |c: &mut Canvas| ink_in(&shot(c), 40, 60, 160, 100) == 0;
+    assert!(covered(&mut c), "the picture, added last, lies on the ink");
+    c.reorder_selection(3); // send to back
+    assert!(
+        !covered(&mut c),
+        "sent back, the picture lies under the ink"
+    );
+    c.undo();
+    assert!(covered(&mut c));
+}
+
+#[test]
+fn ink_on_a_text_box_lies_on_a_band_above_it() {
+    let mut c = canvas();
+    let text = c.add_text(20.0, 40.0, 200.0, 60.0, "note").unwrap();
+    assert_eq!(c.bands(), 1, "nothing lies on the text box yet");
+    draw_wave(&mut c, 40.0, 160.0, 80.0);
+    assert_eq!(c.bands(), 2, "ink written on the box lies above it");
+    let z = |c: &Canvas| c.text_views().iter().find(|t| t.id == text).unwrap().z;
+    assert!(
+        z(&c) > 0.0 && z(&c) < 2.0,
+        "the box lies between the page and band 1"
+    );
+    c.set_tool(ToolMode::Lasso);
+    lasso(&mut c, (39.0, 79.0, 39.0, 79.0)); // a tap on the wave, which lies on the box
+    let wave = c.document().strokes()[0].id;
+    assert_eq!(c.selection_count(), 1);
+    c.reorder_selection(3);
+    assert_eq!(stacking(&c), [wave, text]);
+    assert_eq!(c.bands(), 1, "sent back, the wave lies under the box");
+    c.undo();
+    assert_eq!(c.bands(), 2);
+}
+
 #[test]
 fn layering_brings_a_stroke_to_the_front_and_undoes() {
     let mut c = canvas();
@@ -619,11 +663,13 @@ fn layering_brings_a_stroke_to_the_front_and_undoes() {
     lasso(&mut c, (20.0, 40.0, 180.0, 130.0)); // the first wave
     assert_eq!(c.selection_count(), 1);
     c.reorder_selection(0); // bring to front
-    let ids: Vec<_> = c.document().strokes().iter().map(|s| s.id).collect();
-    assert_eq!(ids, [top, bottom], "the bottom stroke moves on top");
+    assert_eq!(
+        stacking(&c),
+        [top, bottom],
+        "the bottom stroke moves on top"
+    );
     c.undo();
-    let ids: Vec<_> = c.document().strokes().iter().map(|s| s.id).collect();
-    assert_eq!(ids, [bottom, top], "undo restores the order");
+    assert_eq!(stacking(&c), [bottom, top], "undo restores the order");
 }
 
 #[test]
@@ -636,13 +682,7 @@ fn layering_steps_past_the_next_overlapping_item() {
     c.set_tool(ToolMode::Lasso);
     lasso(&mut c, (20.0, 40.0, 180.0, 130.0)); // the first wave
     assert_eq!(c.selection_count(), 1);
-    let order = |c: &Canvas| {
-        c.document()
-            .strokes()
-            .iter()
-            .map(|s| s.id)
-            .collect::<Vec<_>>()
-    };
+    let order = stacking;
     c.reorder_selection(1); // bring forward: past the one it overlaps, not just the next one
     assert_eq!(order(&c), [b, d, a]);
     c.reorder_selection(2); // send backward: under the one it overlaps

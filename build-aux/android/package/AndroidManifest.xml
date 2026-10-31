@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <!-- Qt's template (src/android/templates) with Ductus' name and icon;
-     androiddeployqt fills in the placeholders. -->
+     androiddeployqt fills in the placeholders. The package name comes from
+     android-package-name in build-apk.sh (Gradle's namespace). -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="app.ductus.Ductus"
     android:installLocation="auto"
     android:versionCode="-- %%INSERT_VERSION_CODE%% --"
     android:versionName="-- %%INSERT_VERSION_NAME%% --">
@@ -32,12 +32,21 @@
             android:name="org.qtproject.qt.android.bindings.QtActivity"
             android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation|mcc|mnc|density"
             android:label="Ductus"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:screenOrientation="unspecified"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- "Open with" for pages. One activity (singleTask): Qt runs one per app, so the
+                 file manager's request reaches the running one instead of starting another. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="image/svg+xml" />
             </intent-filter>
 
           <meta-data

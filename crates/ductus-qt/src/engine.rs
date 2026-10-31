@@ -50,11 +50,21 @@ fn sample(s: &PointerSample) -> Sample {
     }
 }
 
+const OVERLAY: u8 = 255;
+
 fn layer(index: u8) -> TileLayer {
-    if index == 0 {
-        TileLayer::Base
-    } else {
-        TileLayer::Overlay
+    match index {
+        0 => TileLayer::Base,
+        OVERLAY => TileLayer::Overlay,
+        band => TileLayer::Band(band),
+    }
+}
+
+fn layer_index(layer: TileLayer) -> u8 {
+    match layer {
+        TileLayer::Base => 0,
+        TileLayer::Band(band) => band,
+        TileLayer::Overlay => OVERLAY,
     }
 }
 
@@ -152,12 +162,16 @@ impl CanvasEngine {
         self.0.set_viewport(width, height, dpr);
     }
 
-    pub fn frame(&mut self) -> Vec<TileInfo> {
+    pub fn bands(&self) -> u32 {
+        self.0.bands() as u32
+    }
+
+    pub fn frame(&mut self, layer_index: u8) -> Vec<TileInfo> {
         self.0
-            .frame()
+            .frame_layer(layer(layer_index))
             .into_iter()
             .map(|t| TileInfo {
-                layer: u8::from(t.key.layer == TileLayer::Overlay),
+                layer: self::layer_index(t.key.layer),
                 x: t.key.x,
                 y: t.key.y,
                 generation: t.generation,
@@ -298,6 +312,7 @@ impl CanvasEngine {
                 height: t.screen.height(),
                 scale: t.scale,
                 selected: t.selected,
+                z: t.z,
             })
             .collect()
     }
@@ -316,6 +331,7 @@ impl CanvasEngine {
                 height: t.height,
                 scale: t.scale,
                 selected: false,
+                z: 0.0,
             })
             .collect()
     }

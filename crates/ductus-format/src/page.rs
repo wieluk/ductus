@@ -4,9 +4,9 @@ use crate::Error;
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use ductus_core::{
-    Document, Image, InkPoint, LinePattern, MathBox, Orientation, PageBackground, PageKind,
-    PageSettings, PaperSize, PatternStyle, Rgba, Stroke, StrokeId, StrokeStyle, TextBox, Tool,
-    UNITS_PER_MM,
+    Document, Image, InkPoint, Item, ItemRef, LinePattern, MathBox, Orientation, PageBackground,
+    PageKind, PageSettings, PaperSize, PatternStyle, Rgba, Stroke, StrokeId, StrokeStyle, TextBox,
+    Tool, UNITS_PER_MM,
 };
 use kurbo::{BezPath, PathEl, Rect};
 use quick_xml::NsReader;
@@ -659,47 +659,65 @@ pub fn write_page(page: &PageFile) -> String {
     }
     svg.push_str("</g>\n");
 
-    if !doc.images().is_empty() {
-        svg.push_str(r#"<g dx:layer="images">"#);
-        for image in doc.images() {
-            let href = match page.pictures.get(&image.source) {
-                Some(png) => format!("{PNG_DATA}{}", BASE64.encode(png)),
-                None => image.source.clone(),
-            };
-            write!(
-                svg,
-                r#"<image href="{}" dx:src="{}" x="{}" y="{}" width="{}" height="{}" preserveAspectRatio="none"/>"#,
-                escape_attr(&href),
-                escape_attr(&image.source),
-                num(image.x, 2),
-                num(image.y, 2),
-                num(image.width, 2),
-                num(image.height, 2)
-            )
-            .unwrap();
+    // In stacking order, bottom first; within a run of ink, highlights beneath, as the app draws them.
+    svg.push_str("<g dx:layer=\"items\">\n");
+    let items = doc.items();
+    let mut rest = &items[..];
+    while let Some(first) = rest.first() {
+        if let ItemRef::Stroke(_) = first {
+            let run = rest
+                .iter()
+                .position(|i| !matches!(i, ItemRef::Stroke(_)))
+                .unwrap_or(rest.len());
+            let strokes: Vec<&Stroke> = rest[..run]
+                .iter()
+                .filter_map(|i| match i {
+                    ItemRef::Stroke(s) => Some(*s),
+                    _ => None,
+                })
+                .collect();
+            for tool in [Tool::Highlighter, Tool::Pen] {
+                let layer: Vec<&Stroke> = strokes
+                    .iter()
+                    .copied()
+                    .filter(|s| s.style.tool == tool)
+                    .collect();
+                push_stroke_elements(&mut svg, &layer);
+            }
+            rest = &rest[run..];
+            continue;
         }
-        svg.push_str("</g>\n");
-    }
-
-    if !doc.maths().is_empty() {
-        svg.push_str(r#"<g dx:layer="math">"#);
-        for math in doc.maths() {
-            svg.push_str(&math_element(math));
+        match first {
+            ItemRef::Image(image) => {
+                let href = match page.pictures.get(&image.source) {
+                    Some(png) => format!("{PNG_DATA}{}", BASE64.encode(png)),
+                    None => image.source.clone(),
+                };
+                writeln!(
+                    svg,
+                    r#"<image href="{}" dx:src="{}" x="{}" y="{}" width="{}" height="{}" preserveAspectRatio="none"/>"#,
+                    escape_attr(&href),
+                    escape_attr(&image.source),
+                    num(image.x, 2),
+                    num(image.y, 2),
+                    num(image.width, 2),
+                    num(image.height, 2)
+                )
+                .unwrap();
+            }
+            ItemRef::Math(math) => {
+                svg.push_str(&math_element(math));
+                svg.push('\n');
+            }
+            ItemRef::Text(text) => {
+                svg.push_str(&text_element(text));
+                svg.push('\n');
+            }
+            ItemRef::Stroke(_) => unreachable!("runs of ink are written above"),
         }
-        svg.push_str("</g>\n");
+        rest = &rest[1..];
     }
-
-    // Highlights beneath ink, as the app draws them.
-    for (layer, tool) in [("highlight", Tool::Highlighter), ("ink", Tool::Pen)] {
-        writeln!(svg, r#"<g dx:layer="{layer}">"#).unwrap();
-        let strokes: Vec<&Stroke> = doc
-            .strokes()
-            .iter()
-            .filter(|s| s.style.tool == tool)
-            .collect();
-        push_stroke_elements(&mut svg, &strokes);
-        svg.push_str("</g>\n");
-    }
+    svg.push_str("</g>\n");
     // Recognized handwriting as invisible text over the ink, like OCR text in scans.
     if !page.recognized.is_empty() {
         svg.push_str(r#"<g dx:layer="recognized" fill-opacity="0" font-family="sans-serif">"#);
@@ -728,13 +746,6 @@ pub fn write_page(page: &PageFile) -> String {
                 escape_attr(&line.text).replace('>', "&gt;")
             )
             .unwrap();
-        }
-        svg.push_str("</g>\n");
-    }
-    if !doc.texts().is_empty() {
-        svg.push_str(r#"<g dx:layer="text">"#);
-        for text in doc.texts() {
-            svg.push_str(&text_element(text));
         }
         svg.push_str("</g>\n");
     }
@@ -832,10 +843,8 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
     let mut kind_name = String::from("endless");
     let (mut paper, mut orientation) = (PaperSize::A4, Orientation::Portrait);
     let mut background = PageBackground::default();
-    let mut strokes = Vec::new();
-    let mut images = Vec::new();
-    let mut texts = Vec::new();
-    let mut maths = Vec::new();
+    // In file order, which is the stacking order.
+    let mut items = Vec::new();
     let mut recognized = Vec::new();
     let mut pictures = BTreeMap::new();
     let mut saw_root = false;
@@ -937,7 +946,7 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
                 if points.is_empty() {
                     continue;
                 }
-                strokes.push(Stroke {
+                items.push(Item::Stroke(Stroke {
                     id: StrokeId(0),
                     style: StrokeStyle {
                         tool,
@@ -949,7 +958,7 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
                             .unwrap_or_default(),
                     },
                     points,
-                });
+                }));
             }
             "text" => {
                 let Some(key) = dx.get("key").cloned() else {
@@ -976,7 +985,7 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
                     continue;
                 };
                 let number = |key: &str| dx.get(key).and_then(|v| v.parse::<f64>().ok());
-                maths.push(MathBox {
+                items.push(Item::Math(MathBox {
                     id: StrokeId(0),
                     source: source.clone(),
                     syntax: syntax.clone(),
@@ -989,7 +998,7 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
                         .get("svg:fill")
                         .and_then(|c| parse_color(c))
                         .unwrap_or(Rgba::BLACK),
-                });
+                }));
             }
             "foreignObject" => {
                 let Some(markdown) = dx.get("text") else {
@@ -1002,7 +1011,7 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
                     number("svg:width"),
                     number("svg:height"),
                 ) {
-                    texts.push(TextBox {
+                    items.push(Item::Text(TextBox {
                         id: StrokeId(0),
                         markdown: markdown.clone(),
                         x,
@@ -1010,7 +1019,7 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
                         width,
                         height,
                         scale: number("scale").filter(|s| *s > 0.0).unwrap_or(1.0),
-                    });
+                    }));
                 }
             }
             "image" => {
@@ -1031,14 +1040,14 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
                     number("svg:width"),
                     number("svg:height"),
                 ) {
-                    images.push(Image {
+                    items.push(Item::Image(Image {
                         id: StrokeId(0),
                         source,
                         x,
                         y,
                         width,
                         height,
-                    });
+                    }));
                 }
             }
             _ => {}
@@ -1055,10 +1064,7 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
         "pdf" => PageKind::Pdf,
         _ => PageKind::Endless,
     };
-    let mut document = Document::with_contents(PageSettings { kind, background }, strokes)
-        .with_images(images)
-        .with_texts(texts)
-        .with_maths(maths);
+    let mut document = Document::with_items(PageSettings { kind, background }, items);
     document.set_pdf_sheets(pdf_sheets);
     Ok(PageFile {
         id: id.unwrap_or_else(crate::new_id),

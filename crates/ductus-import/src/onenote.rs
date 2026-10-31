@@ -155,7 +155,7 @@ fn section_entry(section: &Section, warnings: &mut Warnings) -> Entry {
         warnings.skipped += builder.skipped;
         warnings.pictures += builder.bad_pictures;
         let files = std::mem::take(&mut builder.files);
-        entries.push(Entry::Page(builder.finish(page)));
+        entries.push(Entry::Page(Box::new(builder.finish(page))));
         entries.extend(
             files
                 .into_iter()

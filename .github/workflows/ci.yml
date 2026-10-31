@@ -14,6 +14,12 @@ concurrency:
 permissions:
   contents: read
 
+# actions/checkout runs `git init`, which hints about the default branch name otherwise.
+env:
+  GIT_CONFIG_COUNT: 1
+  GIT_CONFIG_KEY_0: init.defaultBranch
+  GIT_CONFIG_VALUE_0: main
+
 jobs:
   tests:
     uses: ./.github/workflows/tests.yml
@@ -38,6 +44,8 @@ jobs:
         with:
           name: ui-shots-linux
           path: target/ui-shots
+          # The build may have failed before any UI test ran.
+          if-no-files-found: ignore
 
   windows:
     runs-on: windows-2025
@@ -52,6 +60,8 @@ jobs:
         with:
           name: ui-shots-windows
           path: target/ui-shots
+          # The build may have failed before any UI test ran.
+          if-no-files-found: ignore
 
   # Only on main, to keep its cache warm for releases.
   android:

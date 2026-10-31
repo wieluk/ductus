@@ -236,7 +236,8 @@ fn pictures_are_inside_the_page_and_other_renderers_show_them() {
     page.pictures.insert("img-0123.png".into(), png.clone());
     let svg = write_page(&page);
     assert!(svg.contains(r#"href="data:image/png;base64,"#));
-    assert!(svg.find("<image").unwrap() < svg.find(r#"dx:layer="highlight""#).unwrap());
+    // Added last, so it lies on the ink.
+    assert!(svg.find("<image").unwrap() > svg.rfind("dx:ink=").unwrap());
     let back = read_page(&svg).unwrap();
     let image = &back.document.images()[0];
     assert_eq!(image.source, "img-0123.png");
@@ -267,6 +268,53 @@ fn pictures_are_inside_the_page_and_other_renderers_show_them() {
         c.green(),
         c.blue()
     );
+}
+
+#[test]
+fn stacking_order_survives_saving() {
+    let ink = |y: f64| {
+        Item::Stroke(stroke(
+            Tool::Pen,
+            Rgba::BLACK,
+            &[(10.0, y, 0.5), (90.0, y, 0.5)],
+            false,
+        ))
+    };
+    let text = Item::Text(TextBox {
+        id: StrokeId(0),
+        markdown: "note".into(),
+        x: 0.0,
+        y: 0.0,
+        width: 100.0,
+        height: 20.0,
+        scale: 1.0,
+    });
+    let picture = Item::Image(Image {
+        id: StrokeId(0),
+        source: "img-1.png".into(),
+        x: 0.0,
+        y: 0.0,
+        width: 50.0,
+        height: 50.0,
+    });
+    let mut page = sample_page(PageSettings::default());
+    page.document = Document::with_items(
+        PageSettings::default(),
+        [ink(10.0), text, picture, ink(30.0)],
+    );
+    let kinds = |doc: &Document| {
+        doc.items()
+            .iter()
+            .map(|i| match i {
+                ItemRef::Stroke(s) => format!("ink{}", s.points[0].y),
+                ItemRef::Image(_) => "picture".into(),
+                ItemRef::Text(_) => "text".into(),
+                ItemRef::Math(_) => "math".into(),
+            })
+            .collect::<Vec<_>>()
+    };
+    let back = read_page(&write_page(&page)).unwrap();
+    assert_eq!(kinds(&back.document), ["ink10", "text", "picture", "ink30"]);
 }
 
 #[test]

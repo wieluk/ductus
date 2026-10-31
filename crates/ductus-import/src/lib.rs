@@ -23,7 +23,7 @@ pub struct ImportedPage {
 }
 
 pub enum Entry {
-    Page(ImportedPage),
+    Page(Box<ImportedPage>),
     Folder {
         name: String,
         notebook: bool,

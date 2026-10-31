@@ -6,7 +6,7 @@
 
 #include "rust/cxx.h"
 
-std::int32_t run_app(rust::Str program);
+std::int32_t run_app(rust::Str program, rust::Vec<rust::String> files);
 /// Drawing with Qt's software renderer instead of the graphics card (applies at start).
 bool softwareRendering();
 

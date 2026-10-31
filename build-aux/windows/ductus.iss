@@ -24,6 +24,7 @@ UninstallDisplayIcon={app}\ductus.exe
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
+ChangesAssociations=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -31,9 +32,20 @@ Name: "german"; MessagesFile: "compiler:Languages\German.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "svgassoc"; Description: "{cm:AssocFileExtension,Ductus,.svg}"
 
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[Registry]
+; Ductus pages: Ductus shows up under "Open with" for .svg files and in Settings › Default apps.
+; Windows asks once which app to keep; it doesn't let installers take over a file type.
+Root: HKA; Subkey: "Software\Classes\Ductus.Page"; ValueType: string; ValueName: ""; ValueData: "Ductus page"; Flags: uninsdeletekey; Tasks: svgassoc
+Root: HKA; Subkey: "Software\Classes\Ductus.Page\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\ductus.exe,0"; Tasks: svgassoc
+Root: HKA; Subkey: "Software\Classes\Ductus.Page\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\ductus.exe"" ""%1"""; Tasks: svgassoc
+Root: HKA; Subkey: "Software\Classes\.svg\OpenWithProgids"; ValueType: string; ValueName: "Ductus.Page"; ValueData: ""; Flags: uninsdeletevalue; Tasks: svgassoc
+Root: HKA; Subkey: "Software\Classes\Applications\ductus.exe"; Flags: uninsdeletekey; Tasks: svgassoc
+Root: HKA; Subkey: "Software\Classes\Applications\ductus.exe\SupportedTypes"; ValueType: string; ValueName: ".svg"; ValueData: ""; Tasks: svgassoc
 
 [Icons]
 Name: "{autoprograms}\Ductus"; Filename: "{app}\ductus.exe"
