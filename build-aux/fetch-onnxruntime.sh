@@ -7,7 +7,7 @@ set -euo pipefail
 platform=$1
 dest=$2
 # renovate: datasource=github-releases depName=microsoft/onnxruntime
-version=1.31.0
+version=1.31.1
 base=https://github.com/microsoft/onnxruntime/releases/download/v$version
 case $platform in
   linux-x64) file=onnxruntime-linux-x64-$version.tgz; sha=cc5c72baf5ae5c8238a6841f0897227be2d02826b9cf98eaf02fdefaeeb03a57 ;;
