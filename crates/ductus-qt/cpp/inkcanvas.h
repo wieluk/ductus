@@ -17,6 +17,18 @@
 
 #include <array>
 
+// The Qt button a pen's side button arrives as depends on the platform. Linux reports the lower one
+// (the only one on most pens) as middle and the upper as right. Windows knows one barrel button: right.
+// Android passes its own flags on, so stylus buttons arrive as ExtraButton3/4, and Samsung's S Pen
+// as the secondary (right) button.
+#if defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
+inline constexpr Qt::MouseButtons firstPenButton = Qt::MiddleButton;
+inline constexpr Qt::MouseButtons secondPenButton = Qt::RightButton;
+#else
+inline constexpr Qt::MouseButtons firstPenButton = Qt::RightButton | Qt::ExtraButton3;
+inline constexpr Qt::MouseButtons secondPenButton = Qt::MiddleButton | Qt::ExtraButton4;
+#endif
+
 struct CanvasEngine;
 class QSGImageNode;
 class QSGNode;

@@ -1,4 +1,5 @@
 #include "ductus-qt/cpp/uitest.h"
+#include "ductus-qt/cpp/inkcanvas.h"
 #include "ductus-qt/src/ffi.cxxqt.h"
 
 #include <QClipboard>
@@ -62,6 +63,13 @@ QPointingDevice *touchscreen()
 {
     static QPointingDevice *device = QTest::createTouchDevice();
     return device;
+}
+
+// The one button a pen sends of those the canvas accepts for a side button.
+Qt::MouseButton lowestButton(Qt::MouseButtons buttons)
+{
+    const int bits = buttons.toInt();
+    return Qt::MouseButton(bits & -bits);
 }
 
 QPointF parsePoint(const QString &token)
@@ -398,8 +406,8 @@ private:
         QWindowSystemInterface::flushWindowSystemEvents();
     }
 
-    // `pen [p=0.2-1.0] [button=1|2] x,y x,y ...`: a stroke with a pressure ramp, maybe with a side
-    // button held (as Linux reports the lower and upper one).
+    // `pen [p=0.2-1.0] [button=1|2] x,y x,y ...`: a stroke with a pressure ramp, maybe with the first
+    // or second side button held, sent as this platform's pen reports it.
     void stroke(QPointingDevice::PointerType type, const QStringList &args)
     {
         qreal p0 = 0.8, p1 = 0.8;
@@ -407,9 +415,9 @@ private:
         QList<QPointF> corners;
         for (const QString &arg : args) {
             if (arg == u"button=1") {
-                held |= Qt::MiddleButton;
+                held |= lowestButton(firstPenButton);
             } else if (arg == u"button=2") {
-                held |= Qt::RightButton;
+                held |= lowestButton(secondPenButton);
             } else if (arg.startsWith(u"p=")) {
                 const QStringList range = arg.mid(2).split(QLatin1Char('-'));
                 p0 = range.value(0).toDouble();

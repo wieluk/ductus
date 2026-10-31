@@ -64,18 +64,6 @@ quint64 tileKey(const TileInfo &t)
     return ((quint64(quint32(t.x)) & mask) << 31) | (quint64(quint32(t.y)) & mask);
 }
 
-// The Qt button a pen's side button arrives as depends on the platform. Linux reports the lower one
-// (the only one on most pens) as middle and the upper as right. Windows knows one barrel button: right.
-// Android passes its own flags on, so stylus buttons arrive as ExtraButton3/4, and Samsung's S Pen
-// as the secondary (right) button.
-#if defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
-const Qt::MouseButtons firstPenButton = Qt::MiddleButton;
-const Qt::MouseButtons secondPenButton = Qt::RightButton;
-#else
-const Qt::MouseButtons firstPenButton = Qt::RightButton | Qt::ExtraButton3;
-const Qt::MouseButtons secondPenButton = Qt::MiddleButton | Qt::ExtraButton4;
-#endif
-
 std::uint8_t engineTool(InkCanvas::Tool tool)
 {
     return tool == InkCanvas::Hand ? 4 : static_cast<std::uint8_t>(tool);
