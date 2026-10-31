@@ -30,7 +30,18 @@ Copy-Item target\pdfium\bin\pdfium.dll $app\
 if ($LASTEXITCODE -ne 0) { throw "ONNX Runtime download failed" }
 Copy-Item target\onnxruntime\lib\onnxruntime.dll $app\
 Copy-Item LICENSE $app\LICENSE.txt
-& "$env:QT_ROOT_DIR\bin\windeployqt.exe" --release --no-translations --qmldir crates\ductus-qt\qml $app\ductus.exe
+# The MSVC runtime goes next to ductus.exe, so neither the zip nor the installer needs the
+# VC++ redistributable on the machine (windeployqt would only add its installer).
+$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+$vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+$crt = Get-ChildItem "$vs\VC\Redist\MSVC\*\x64\Microsoft.VC*.CRT" -Directory -ErrorAction SilentlyContinue |
+    Where-Object { $_.Parent.Parent.Name -match '^\d+(\.\d+)+$' } |
+    Sort-Object { [version]$_.Parent.Parent.Name } | Select-Object -Last 1
+if (-not $crt) { throw "MSVC runtime not found under $vs" }
+Copy-Item "$($crt.FullName)\*.dll" $app\
+# Qt Quick renders with Direct3D 11 and ships its shaders compiled, so DXC isn't needed.
+& "$env:QT_ROOT_DIR\bin\windeployqt.exe" --release --no-translations --no-compiler-runtime `
+    --no-system-dxc-compiler --qmldir crates\ductus-qt\qml $app\ductus.exe
 if ($LASTEXITCODE -ne 0) { throw "windeployqt failed" }
 # windeployqt only adds the Windows platform; the UI tests need offscreen.
 Copy-Item "$env:QT_ROOT_DIR\plugins\platforms\qoffscreen.dll" $app\platforms\
