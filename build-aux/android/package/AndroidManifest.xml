@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <!-- Qt's template (src/android/templates) with Ductus' name and icon;
-     androiddeployqt fills in the placeholders. -->
+     androiddeployqt fills in the placeholders. The package name comes from
+     android-package-name in build-apk.sh (Gradle's namespace). -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="app.ductus.Ductus"
     android:installLocation="auto"
     android:versionCode="-- %%INSERT_VERSION_CODE%% --"
     android:versionName="-- %%INSERT_VERSION_NAME%% --">

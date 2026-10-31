@@ -60,6 +60,11 @@ IFS=. read -r major minor patch <<<"${version%%[-+]*}"
 code=$((major * 10000 + minor * 100 + patch))
 [ "$code" -gt 0 ] || code=1
 
+# Our QML module is compiled into the library. A qmldir without a plugin lets the import scanner
+# resolve `import Ductus`, and androiddeployqt then deploys nothing for it.
+mkdir -p "$build/qml-imports/Ductus"
+echo "module Ductus" > "$build/qml-imports/Ductus/qmldir"
+
 # What CMake would write for a qt_add_executable target.
 cat > "$build/deployment-settings.json" <<EOF
 {
@@ -90,7 +95,7 @@ cat > "$build/deployment-settings.json" <<EOF
   "android-compile-sdk-version": "35",
   "permissions": [],
   "application-binary": "ductus",
-  "qml-import-paths": "",
+  "qml-import-paths": "$build/qml-imports",
   "qml-root-path": "$root/crates/ductus-qt/qml",
   "qml-importscanner-binary": "$QT_HOST/libexec/qmlimportscanner",
   "rcc-binary": "$QT_HOST/libexec/rcc",
@@ -113,6 +118,10 @@ else
   sign=(--sign "$keystore" ductus --storepass throwaway)
 fi
 
+# apksigner runs the `java` on PATH; a newer one warns about its native access.
+export PATH="$JAVA_HOME/bin:$PATH"
+# Gradle names each deprecated feature instead of only counting them.
+export GRADLE_OPTS="${GRADLE_OPTS:+$GRADLE_OPTS }-Dorg.gradle.warning.mode=all"
 "$QT_HOST/bin/androiddeployqt" --input "$build/deployment-settings.json" --output "$apk_dir" \
   --android-platform android-35 --jdk "${JAVA_HOME:?}" --gradle --release "${sign[@]}"
 
