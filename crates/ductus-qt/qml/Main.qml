@@ -138,11 +138,8 @@ ApplicationWindow {
     }
 
     function restoreAfterScreenshot() {
-        if (visibility === Window.Minimized) {
-            if (visibilityBeforeScreenshot === Window.FullScreen) showFullScreen()
-            else if (visibilityBeforeScreenshot === Window.Maximized) showMaximized()
-            else showNormal()
-        }
+        if (visibility === Window.Minimized)
+            AppController.setFullScreen(window, visibilityBeforeScreenshot === Window.FullScreen, maximized)
         raise()
         requestActivate()
     }
@@ -154,13 +151,7 @@ ApplicationWindow {
     }
 
     function toggleFullScreen() {
-        // Back to a maximized window if it was one: showNormal() would also restore it.
-        if (visibility !== Window.FullScreen)
-            showFullScreen()
-        else if (maximized)
-            showMaximized()
-        else
-            showNormal()
+        AppController.setFullScreen(window, visibility !== Window.FullScreen, maximized)
     }
 
     Settings {

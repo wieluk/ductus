@@ -2240,6 +2240,21 @@ void AppController::pollRecognition()
         m_recognitionPoll.stop();
 }
 
+void AppController::setFullScreen(QWindow *window, bool fullScreen, bool maximized)
+{
+    if (!window)
+        return;
+    const Qt::WindowStates normal = maximized ? Qt::WindowMaximized : Qt::WindowNoState;
+#ifdef Q_OS_WIN
+    // Windows remembers the maximized state itself, and our frame would pad a zoomed full screen.
+    window->setWindowStates(fullScreen ? Qt::WindowFullScreen : normal);
+#else
+    // Full screen stays maximized underneath: KWin ignores maximizing a full-screen window, and
+    // leaving full screen it restores the size from before, unmaximized if we had dropped that.
+    window->setWindowStates(fullScreen ? normal | Qt::WindowFullScreen : normal);
+#endif
+}
+
 void AppController::takeScreenshot()
 {
     // Tests supply the picture.

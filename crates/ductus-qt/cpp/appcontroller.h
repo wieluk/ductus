@@ -12,6 +12,7 @@
 #include <QPointer>
 #include <QSet>
 #include <QTimer>
+#include <QWindow>
 #include <QtQml/qqmlregistration.h>
 
 #include "ductus-qt/cpp/inkcanvas.h"
@@ -293,6 +294,8 @@ public:
     /// Without a dialog, for tests.
     Q_INVOKABLE bool printToFile(const QString &fileOrUrl);
     Q_INVOKABLE void takeScreenshot();
+    /// Into or out of full screen, back to a maximized window if it was one.
+    Q_INVOKABLE static void setFullScreen(QWindow *window, bool fullScreen, bool maximized);
     /// `scope`: "all", "names" or "page" (the open page).
     Q_INVOKABLE QVariantList search(const QString &query, const QString &scope, int limit = 50);
     Q_INVOKABLE void openSearchHit(const QVariantMap &hit);
