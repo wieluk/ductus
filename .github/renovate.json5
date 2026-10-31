@@ -38,6 +38,22 @@
       enabled: false,
     },
     {
+      // Pinned to the typed-path whose TypedPath onenote_parser takes; it moves by hand together with onenote_parser.
+      matchPackageNames: ["typed-path"],
+      enabled: false,
+    },
+    {
+      // androiddeployqt of Qt 6.10 builds with Gradle 8.14, and the 9.x plugin needs Gradle 9.
+      // Android builds only run on pushes, so a PR's checks can't catch this.
+      matchPackageNames: ["com.android.tools.build:gradle"],
+      allowedVersions: "<9",
+    },
+    {
+      // androidx.core 1.17 and newer need a compileSdk above the android-35 the APK builds against.
+      matchPackageNames: ["androidx.core:core"],
+      allowedVersions: "<1.17",
+    },
+    {
       matchPackageNames: ["microsoft/onnxruntime"],
       extractVersion: "^v(?<version>\\d+\\.\\d+\\.\\d+)$",
     },
