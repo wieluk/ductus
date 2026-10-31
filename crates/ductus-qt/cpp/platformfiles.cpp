@@ -35,6 +35,28 @@ QString cacheFile(const QString &folder, const QString &name)
     return dir + QLatin1Char('/') + (name.isEmpty() ? QStringLiteral("file") : name);
 }
 
+/// The path in shared storage that a storage provider's link names, or "". After `kind` ("tree"
+/// or "document") comes the item's id, such as primary:Documents/Notes; in a tree link a
+/// "document" part may follow.
+QString storagePath(const QString &url, const QString &kind)
+{
+    const QUrl parsed(url);
+    if (parsed.host() != u"com.android.externalstorage.documents")
+        return {};
+    const QStringList parts = parsed.path(QUrl::FullyDecoded).split(QLatin1Char('/'), Qt::SkipEmptyParts);
+    const qsizetype at = parts.indexOf(kind);
+    if (at < 0 || at + 1 >= parts.size())
+        return {};
+    QString id = parts.mid(at + 1).join(QLatin1Char('/'));
+    if (kind == u"tree")
+        id = id.section(QStringLiteral("/document/"), 0, 0);
+    const QString volume = id.section(QLatin1Char(':'), 0, 0);
+    const QString rest = id.section(QLatin1Char(':'), 1);
+    const QString base = volume == u"primary" ? QStringLiteral("/storage/emulated/0")
+                                               : QStringLiteral("/storage/") + volume;
+    return rest.isEmpty() ? base : base + QLatin1Char('/') + rest;
+}
+
 #if defined(Q_OS_ANDROID)
 int sdkVersion()
 {
@@ -61,6 +83,10 @@ QString readable(const QString &fileOrUrl)
 {
     if (isLocal(fileOrUrl))
         return localFile(fileOrUrl);
+    // With access to shared storage, a page in the library opens in place rather than as a copy.
+    if (const QString path = storagePath(fileOrUrl, QStringLiteral("document"));
+        !path.isEmpty() && QFileInfo(path).isFile() && QFileInfo(path).isReadable())
+        return path;
     QFile source(fileOrUrl);
     if (!source.open(QIODevice::ReadOnly))
         return {};
@@ -100,20 +126,7 @@ QString folderPath(const QString &pathOrUrl)
     if (isLocal(pathOrUrl))
         return localFile(pathOrUrl);
     // content://com.android.externalstorage.documents/tree/primary%3ADocuments%2FNotes
-    const QUrl url(pathOrUrl);
-    if (url.host() != u"com.android.externalstorage.documents")
-        return {};
-    const QStringList parts = url.path(QUrl::FullyDecoded).split(QLatin1Char('/'), Qt::SkipEmptyParts);
-    const qsizetype tree = parts.indexOf(QStringLiteral("tree"));
-    if (tree < 0 || tree + 1 >= parts.size())
-        return {};
-    // After "tree" the folder's id; a "document" part may repeat it.
-    const QString id = parts.mid(tree + 1).join(QLatin1Char('/')).section(QStringLiteral("/document/"), 0, 0);
-    const QString volume = id.section(QLatin1Char(':'), 0, 0);
-    const QString rest = id.section(QLatin1Char(':'), 1);
-    const QString base = volume == u"primary" ? QStringLiteral("/storage/emulated/0")
-                                               : QStringLiteral("/storage/") + volume;
-    return rest.isEmpty() ? base : base + QLatin1Char('/') + rest;
+    return storagePath(pathOrUrl, QStringLiteral("tree"));
 }
 
 #if defined(Q_OS_ANDROID)

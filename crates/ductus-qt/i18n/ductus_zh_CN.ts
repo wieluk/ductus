@@ -138,6 +138,10 @@
         <translation>Ductus 可打开笔记页面 (.svg)、PDF 以及 Xournal++、Rnote 和 OneNote 文件。</translation>
     </message>
     <message>
+        <source>%1 isn&apos;t a Ductus page.</source>
+        <translation>%1 不是 Ductus 页面。</translation>
+    </message>
+    <message>
         <source>Indexing %1 of %2 files…</source>
         <translation>正在索引第 %1 个文件，共 %2 个…</translation>
     </message>

@@ -139,6 +139,10 @@
         <translation>O Ductus abre páginas de notas (.svg), PDFs e arquivos do Xournal++, Rnote e OneNote.</translation>
     </message>
     <message>
+        <source>%1 isn&apos;t a Ductus page.</source>
+        <translation>%1 não é uma página do Ductus.</translation>
+    </message>
+    <message>
         <source>Indexing %1 of %2 files…</source>
         <translation>Indexando arquivo %1 de %2…</translation>
     </message>

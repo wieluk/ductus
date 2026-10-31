@@ -122,6 +122,14 @@ ApplicationWindow {
 
     property int visibilityBeforeScreenshot: Window.Windowed
 
+    /// A PDF asks how to write on it first.
+    function openFile(fileOrUrl) {
+        if (AppController.openFile(fileOrUrl) === "pdf") {
+            pdfModeDialog.file = fileOrUrl
+            pdfModeDialog.open()
+        }
+    }
+
     function takeScreenshot() {
         visibilityBeforeScreenshot = visibility
         showMinimized()
@@ -192,6 +200,7 @@ ApplicationWindow {
     Connections {
         target: AppController
         function onErrorOccurred(message) { toast.show(message, true) }
+        function onOpenRequested(file) { window.openFile(file) }
         function onNotice(message) { toast.show(message, false) }
         function onImportReady(kind, name, pages, sections, location) {
             // "Importing…" is over: the dialog says what was read.
@@ -695,12 +704,7 @@ ApplicationWindow {
         title: qsTr("Open")
         nameFilters: [qsTr("Notes pages and PDFs (*.svg *.pdf *.PDF)"),
                       importFileDialog.notesFilter, qsTr("All files (*)")]
-        onAccepted: {
-            if (AppController.openFile(selectedFile.toString()) === "pdf") {
-                pdfModeDialog.file = selectedFile.toString()
-                pdfModeDialog.open()
-            }
-        }
+        onAccepted: window.openFile(selectedFile.toString())
     }
 
     FileDialog {

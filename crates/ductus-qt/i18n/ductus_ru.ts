@@ -140,6 +140,10 @@
         <translation>Ductus открывает страницы заметок (.svg), PDF и файлы Xournal++, Rnote и OneNote.</translation>
     </message>
     <message>
+        <source>%1 isn&apos;t a Ductus page.</source>
+        <translation>%1 — не страница Ductus.</translation>
+    </message>
+    <message>
         <source>Indexing %1 of %2 files…</source>
         <translation>Индексация файла %1 из %2…</translation>
     </message>

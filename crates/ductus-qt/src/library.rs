@@ -65,6 +65,10 @@ pub fn relocate_library(from: &str, to: &str, data_dir: &str) -> Result<()> {
     ductus_format::relocate_library(Path::new(from), Path::new(to), Path::new(data_dir))
 }
 
+pub fn is_page(file: &str) -> bool {
+    ductus_format::library::is_page(Path::new(file))
+}
+
 pub fn merge_pdf_files(files: Vec<String>, target: &str) -> Result<()> {
     let parts = files
         .iter()

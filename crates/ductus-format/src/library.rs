@@ -139,11 +139,13 @@ pub fn online_only(_meta: &fs::Metadata) -> bool {
 /// Pages declare the Ductus namespace; other SVGs (template logos, figures) are plain files.
 /// A placeholder counts as a page unread: listing a library must not download all of it.
 fn is_page_file(entry: &fs::DirEntry) -> bool {
-    if entry.metadata().is_ok_and(|m| online_only(&m)) {
-        return true;
-    }
+    entry.metadata().is_ok_and(|m| online_only(&m)) || is_page(&entry.path())
+}
+
+/// Whether the SVG at `file` is a Ductus page; reads only its start.
+pub fn is_page(file: &Path) -> bool {
     let mut head = Vec::new();
-    fs::File::open(entry.path())
+    fs::File::open(file)
         .and_then(|f| f.take(4096).read_to_end(&mut head))
         .is_ok()
         && head.windows(DX_NS.len()).any(|w| w == DX_NS.as_bytes())

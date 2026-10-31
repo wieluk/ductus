@@ -13,6 +13,9 @@
     </p>
   </description>
   <launchable type="desktop-id">app.ductus.Ductus.desktop</launchable>
+  <provides>
+    <mediatype>image/svg+xml</mediatype>
+  </provides>
   <supports>
     <control>pointing</control>
     <control>touch</control>
