@@ -146,10 +146,13 @@ ApplicationWindow {
     }
 
     function toggleFullScreen() {
-        if (visibility === Window.FullScreen)
-            showNormal()
-        else
+        // Back to a maximized window if it was one: showNormal() would also restore it.
+        if (visibility !== Window.FullScreen)
             showFullScreen()
+        else if (maximized)
+            showMaximized()
+        else
+            showNormal()
     }
 
     Settings {
