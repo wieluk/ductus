@@ -78,15 +78,15 @@ fn moved(path: &str, from: &str, to: &str) -> Option<String> {
 impl Library {
     pub fn list(&self, folder: &str) -> Result<Rc<Vec<Node>>, Error> {
         let modified = fs::metadata(self.abs(folder))?.modified().ok();
-        if let Some(modified) = modified {
-            if let Some(cached) = self.listings.borrow().get(folder) {
-                let settled = cached
-                    .read_at
-                    .duration_since(modified)
-                    .is_ok_and(|d| d >= SETTLE);
-                if cached.modified == modified && settled {
-                    return Ok(Rc::clone(&cached.nodes));
-                }
+        if let Some(modified) = modified
+            && let Some(cached) = self.listings.borrow().get(folder)
+        {
+            let settled = cached
+                .read_at
+                .duration_since(modified)
+                .is_ok_and(|d| d >= SETTLE);
+            if cached.modified == modified && settled {
+                return Ok(Rc::clone(&cached.nodes));
             }
         }
         let nodes = Rc::new(self.read_folder(folder)?);

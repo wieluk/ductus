@@ -20,14 +20,14 @@ pub(crate) fn read(dir: &Path) -> Result<Import, Error> {
 /// The folder's notes, or nothing when it has none.
 fn folder(dir: &Path, notebook: bool, warnings: &mut Vec<String>) -> Result<Option<Entry>, Error> {
     // OneNote's table of contents knows the section order and colours.
-    if let Some(toc) = files(dir)?.into_iter().find(|f| is(f, "onetoc2")) {
-        if let Ok(mut import) = crate::onenote::read(&toc) {
-            if let Entry::Folder { notebook: n, .. } = &mut import.entry {
-                *n = notebook;
-            }
-            warnings.append(&mut import.warnings);
-            return Ok(Some(import.entry));
+    if let Some(toc) = files(dir)?.into_iter().find(|f| is(f, "onetoc2"))
+        && let Ok(mut import) = crate::onenote::read(&toc)
+    {
+        if let Entry::Folder { notebook: n, .. } = &mut import.entry {
+            *n = notebook;
         }
+        warnings.append(&mut import.warnings);
+        return Ok(Some(import.entry));
     }
     let name = dir
         .canonicalize()

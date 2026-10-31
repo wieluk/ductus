@@ -271,14 +271,14 @@ enum Piece {
 
 impl Builder {
     fn page(&mut self, page: &Page) {
-        if let (Some(title), Some(text)) = (page.title(), page.title_text()) {
-            if !text.trim().is_empty() {
-                let x = f64::from(title.offset_horizontal()) * HALF_INCH + HALF_INCH;
-                let y = f64::from(title.offset_vertical()) * HALF_INCH + HALF_INCH / 2.0;
-                let mut flow = Flow::new(x, y, None);
-                flow.push(format!("# {}", escape_inline(text.trim())), BODY_PT * 2.0);
-                flow.flush(&mut self.texts);
-            }
+        if let (Some(title), Some(text)) = (page.title(), page.title_text())
+            && !text.trim().is_empty()
+        {
+            let x = f64::from(title.offset_horizontal()) * HALF_INCH + HALF_INCH;
+            let y = f64::from(title.offset_vertical()) * HALF_INCH + HALF_INCH / 2.0;
+            let mut flow = Flow::new(x, y, None);
+            flow.push(format!("# {}", escape_inline(text.trim())), BODY_PT * 2.0);
+            flow.flush(&mut self.texts);
         }
         for content in page.contents() {
             match content {

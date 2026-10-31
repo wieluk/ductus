@@ -309,10 +309,11 @@ impl Index {
             return Vec::new();
         }
         let stamp = modified(path);
-        if let Some(memo) = &self.pdf_memo {
-            if memo.file == path && memo.stamp == stamp {
-                return memo.entries.clone();
-            }
+        if let Some(memo) = &self.pdf_memo
+            && memo.file == path
+            && memo.stamp == stamp
+        {
+            return memo.entries.clone();
         }
         let Ok(file) = std::fs::read(path)
             .map_err(|_| ())

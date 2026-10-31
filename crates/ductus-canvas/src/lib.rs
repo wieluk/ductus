@@ -905,15 +905,14 @@ impl Canvas {
             self.backgrounds.clear();
             self.outlined = None;
         }
-        if std::mem::take(&mut self.active_stale) {
-            if let Some(Gesture::Drawing {
+        if std::mem::take(&mut self.active_stale)
+            && let Some(Gesture::Drawing {
                 builder,
                 shape: None,
                 ..
             }) = &self.gesture
-            {
-                self.active = StrokePath::from_points(builder.points(), builder.style());
-            }
+        {
+            self.active = StrokePath::from_points(builder.points(), builder.style());
         }
         let visible = self.view.visible_doc_rect();
         let range = self.tiles.range(visible);
@@ -931,12 +930,11 @@ impl Canvas {
                     .paths
                     .entry(stroke.id)
                     .or_insert_with(|| Outline::Pending(Outline::reach(stroke)));
-                if let Outline::Pending(reach) = *outline {
-                    if ductus_render::overlaps(reach, shown)
-                        || (moving && self.selection.contains(&stroke.id))
-                    {
-                        *outline = Outline::Built(StrokePath::new(stroke));
-                    }
+                if let Outline::Pending(reach) = *outline
+                    && (ductus_render::overlaps(reach, shown)
+                        || (moving && self.selection.contains(&stroke.id)))
+                {
+                    *outline = Outline::Built(StrokePath::new(stroke));
                 }
             }
         }

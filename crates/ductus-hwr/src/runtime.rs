@@ -37,12 +37,12 @@ fn candidates() -> Vec<PathBuf> {
         let p = PathBuf::from(p);
         out.push(if p.is_dir() { p.join(&name) } else { p });
     }
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(dir) = exe.parent() {
-            // Next to the executable (Windows) or ../lib (Flatpak: /app/lib).
-            out.push(dir.join(&name));
-            out.push(dir.join("../lib").join(&name));
-        }
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(dir) = exe.parent()
+    {
+        // Next to the executable (Windows) or ../lib (Flatpak: /app/lib).
+        out.push(dir.join(&name));
+        out.push(dir.join("../lib").join(&name));
     }
     out
 }
