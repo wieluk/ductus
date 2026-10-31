@@ -1965,6 +1965,26 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Ластик</translation>
     </message>
     <message>
+        <source>Current tool</source>
+        <translation>Текущий инструмент</translation>
+    </message>
+    <message>
+        <source>Pen</source>
+        <translation>Перо</translation>
+    </message>
+    <message>
+        <source>Highlighter</source>
+        <translation>Маркер</translation>
+    </message>
+    <message>
+        <source>Lasso</source>
+        <translation>Лассо</translation>
+    </message>
+    <message>
+        <source>Hand</source>
+        <translation>Рука</translation>
+    </message>
+    <message>
         <source>The eraser removes</source>
         <translation>Ластик стирает</translation>
     </message>
@@ -1987,6 +2007,30 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Also in the eraser&apos;s menus. The pen shows a ring this large while erasing.</source>
         <translation>Также в меню ластика. При стирании перо показывает кольцо такого размера.</translation>
+    </message>
+    <message>
+        <source>Pen buttons</source>
+        <translation>Кнопки пера</translation>
+    </message>
+    <message>
+        <source>Side button</source>
+        <translation>Боковая кнопка</translation>
+    </message>
+    <message>
+        <source>Hold it while the tip touches the page to use this instead.</source>
+        <translation>Удерживайте её, пока кончик касается страницы, чтобы использовать вместо инструмента это.</translation>
+    </message>
+    <message>
+        <source>Second side button</source>
+        <translation>Вторая боковая кнопка</translation>
+    </message>
+    <message>
+        <source>On pens with two, the one farther from the tip.</source>
+        <translation>У перьев с двумя кнопками — та, что дальше от кончика.</translation>
+    </message>
+    <message>
+        <source>Eraser end</source>
+        <translation>Ластик на пере</translation>
     </message>
     <message>
         <source>Touch</source>

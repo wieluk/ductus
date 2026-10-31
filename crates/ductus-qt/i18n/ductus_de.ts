@@ -1960,6 +1960,26 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Radierer</translation>
     </message>
     <message>
+        <source>Current tool</source>
+        <translation>Aktuelles Werkzeug</translation>
+    </message>
+    <message>
+        <source>Pen</source>
+        <translation>Stift</translation>
+    </message>
+    <message>
+        <source>Highlighter</source>
+        <translation>Textmarker</translation>
+    </message>
+    <message>
+        <source>Lasso</source>
+        <translation>Lasso</translation>
+    </message>
+    <message>
+        <source>Hand</source>
+        <translation>Hand</translation>
+    </message>
+    <message>
         <source>The eraser removes</source>
         <translation>Der Radierer entfernt</translation>
     </message>
@@ -1982,6 +2002,30 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
     <message>
         <source>Also in the eraser&apos;s menus. The pen shows a ring this large while erasing.</source>
         <translation>Auch in den Menüs des Radierers. Beim Radieren zeigt der Stift einen Ring dieser Größe.</translation>
+    </message>
+    <message>
+        <source>Pen buttons</source>
+        <translation>Stifttasten</translation>
+    </message>
+    <message>
+        <source>Side button</source>
+        <translation>Seitentaste</translation>
+    </message>
+    <message>
+        <source>Hold it while the tip touches the page to use this instead.</source>
+        <translation>Halte sie gedrückt, während die Spitze die Seite berührt, um stattdessen dies zu verwenden.</translation>
+    </message>
+    <message>
+        <source>Second side button</source>
+        <translation>Zweite Seitentaste</translation>
+    </message>
+    <message>
+        <source>On pens with two, the one farther from the tip.</source>
+        <translation>Bei Stiften mit zwei die, die weiter von der Spitze entfernt ist.</translation>
+    </message>
+    <message>
+        <source>Eraser end</source>
+        <translation>Radiererende</translation>
     </message>
     <message>
         <source>Touch</source>

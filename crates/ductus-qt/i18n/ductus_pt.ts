@@ -1960,6 +1960,26 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
         <translation>Borracha</translation>
     </message>
     <message>
+        <source>Current tool</source>
+        <translation>Ferramenta atual</translation>
+    </message>
+    <message>
+        <source>Pen</source>
+        <translation>Caneta</translation>
+    </message>
+    <message>
+        <source>Highlighter</source>
+        <translation>Marca-texto</translation>
+    </message>
+    <message>
+        <source>Lasso</source>
+        <translation>Laço</translation>
+    </message>
+    <message>
+        <source>Hand</source>
+        <translation>Mão</translation>
+    </message>
+    <message>
         <source>The eraser removes</source>
         <translation>A borracha apaga</translation>
     </message>
@@ -1982,6 +2002,30 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
     <message>
         <source>Also in the eraser&apos;s menus. The pen shows a ring this large while erasing.</source>
         <translation>Também nos menus da borracha. Ao apagar, a caneta mostra um anel deste tamanho.</translation>
+    </message>
+    <message>
+        <source>Pen buttons</source>
+        <translation>Botões da caneta</translation>
+    </message>
+    <message>
+        <source>Side button</source>
+        <translation>Botão lateral</translation>
+    </message>
+    <message>
+        <source>Hold it while the tip touches the page to use this instead.</source>
+        <translation>Mantenha-o pressionado enquanto a ponta toca a página para usar isto no lugar.</translation>
+    </message>
+    <message>
+        <source>Second side button</source>
+        <translation>Segundo botão lateral</translation>
+    </message>
+    <message>
+        <source>On pens with two, the one farther from the tip.</source>
+        <translation>Em canetas com dois, o mais distante da ponta.</translation>
+    </message>
+    <message>
+        <source>Eraser end</source>
+        <translation>Ponta borracha</translation>
     </message>
     <message>
         <source>Touch</source>

@@ -1955,6 +1955,26 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>橡皮擦</translation>
     </message>
     <message>
+        <source>Current tool</source>
+        <translation>当前工具</translation>
+    </message>
+    <message>
+        <source>Pen</source>
+        <translation>笔</translation>
+    </message>
+    <message>
+        <source>Highlighter</source>
+        <translation>荧光笔</translation>
+    </message>
+    <message>
+        <source>Lasso</source>
+        <translation>套索</translation>
+    </message>
+    <message>
+        <source>Hand</source>
+        <translation>抓手</translation>
+    </message>
+    <message>
         <source>The eraser removes</source>
         <translation>橡皮擦擦除</translation>
     </message>
@@ -1977,6 +1997,30 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Also in the eraser&apos;s menus. The pen shows a ring this large while erasing.</source>
         <translation>也会出现在橡皮擦菜单中。擦除时笔会显示这么大的圆圈。</translation>
+    </message>
+    <message>
+        <source>Pen buttons</source>
+        <translation>笔按键</translation>
+    </message>
+    <message>
+        <source>Side button</source>
+        <translation>侧键</translation>
+    </message>
+    <message>
+        <source>Hold it while the tip touches the page to use this instead.</source>
+        <translation>按住它并让笔尖接触页面时，改用此工具。</translation>
+    </message>
+    <message>
+        <source>Second side button</source>
+        <translation>第二侧键</translation>
+    </message>
+    <message>
+        <source>On pens with two, the one farther from the tip.</source>
+        <translation>有两个侧键的笔上，离笔尖较远的那个。</translation>
+    </message>
+    <message>
+        <source>Eraser end</source>
+        <translation>橡皮擦端</translation>
     </message>
     <message>
         <source>Touch</source>

@@ -467,9 +467,16 @@ impl Canvas {
     }
 
     /// False when nothing starts (touch without finger drawing, say): the caller pans.
-    pub fn pointer_down(&mut self, device: Device, sample: Sample, erase_button: bool) -> bool {
+    /// `tool` stands in for the chosen one during this stroke (a pen button held, say);
+    /// without it the pen's eraser end erases.
+    pub fn pointer_down(&mut self, device: Device, sample: Sample, tool: Option<ToolMode>) -> bool {
+        let tool = tool.unwrap_or(if device == Device::PenEraser {
+            ToolMode::Eraser
+        } else {
+            self.tool
+        });
         let at = self.view.to_doc(Point::new(sample.x, sample.y));
-        if self.tool == ToolMode::Hand && !erase_button && device != Device::PenEraser {
+        if tool == ToolMode::Hand {
             self.pointer_cancel();
             let gesture = self.begin_hand_gesture(at);
             let grabbed = gesture.is_some();
@@ -481,8 +488,8 @@ impl Canvas {
             return false;
         }
         self.pointer_cancel();
-        let erase = erase_button || device == Device::PenEraser || self.tool == ToolMode::Eraser;
-        if self.tool == ToolMode::Lasso && !erase {
+        let erase = tool == ToolMode::Eraser;
+        if tool == ToolMode::Lasso {
             let gesture = self.begin_selection_gesture(at);
             self.gesture = Some(gesture);
             self.redraw_overlay();
@@ -492,7 +499,7 @@ impl Canvas {
         self.gesture = Some(if erase {
             Gesture::Erasing { splits: Vec::new() }
         } else {
-            let style = match self.tool {
+            let style = match tool {
                 ToolMode::Highlighter => self.highlighter,
                 _ => self.pen,
             };

@@ -386,10 +386,9 @@ private:
 
     // Through the platform input path, as a real tablet's events arrive.
     void tablet(QEvent::Type type, const QPointingDevice *device, QPointF pos, qreal pressure,
-                Qt::MouseButton button)
+                Qt::MouseButtons held)
     {
-        const Qt::MouseButtons buttons =
-            type == QEvent::TabletRelease ? Qt::NoButton : Qt::MouseButtons(button);
+        const Qt::MouseButtons buttons = type == QEvent::TabletRelease ? Qt::NoButton : held;
         // Platforms report native pixels; Qt scales them, as on a 150% Windows screen.
         QWindowSystemInterface::handleTabletEvent(m_window, m_time += 5, device,
                                                   QHighDpi::toNativeLocalPosition(pos, m_window),
@@ -399,13 +398,19 @@ private:
         QWindowSystemInterface::flushWindowSystemEvents();
     }
 
-    // `pen [p=0.2-1.0] x,y x,y ...`: a stroke with a pressure ramp.
+    // `pen [p=0.2-1.0] [button=1|2] x,y x,y ...`: a stroke with a pressure ramp, maybe with a side
+    // button held (as Linux reports the lower and upper one).
     void stroke(QPointingDevice::PointerType type, const QStringList &args)
     {
         qreal p0 = 0.8, p1 = 0.8;
+        Qt::MouseButtons held = Qt::LeftButton;
         QList<QPointF> corners;
         for (const QString &arg : args) {
-            if (arg.startsWith(u"p=")) {
+            if (arg == u"button=1") {
+                held |= Qt::MiddleButton;
+            } else if (arg == u"button=2") {
+                held |= Qt::RightButton;
+            } else if (arg.startsWith(u"p=")) {
                 const QStringList range = arg.mid(2).split(QLatin1Char('-'));
                 p0 = range.value(0).toDouble();
                 p1 = range.size() > 1 ? range.value(1).toDouble() : p0;
@@ -417,14 +422,14 @@ private:
         if (points.isEmpty())
             return;
         const auto *device = stylus(type);
-        tablet(QEvent::TabletPress, device, points.first(), p0, Qt::LeftButton);
+        tablet(QEvent::TabletPress, device, points.first(), p0, held);
         for (qsizetype i = 1; i < points.size(); ++i) {
             const qreal f = qreal(i) / qMax<qsizetype>(1, points.size() - 1);
-            tablet(QEvent::TabletMove, device, points[i], p0 + (p1 - p0) * f, Qt::LeftButton);
+            tablet(QEvent::TabletMove, device, points[i], p0 + (p1 - p0) * f, held);
             if (i % 4 == 0)
                 QTest::qWait(8);
         }
-        tablet(QEvent::TabletRelease, device, points.last(), 0, Qt::LeftButton);
+        tablet(QEvent::TabletRelease, device, points.last(), 0, held);
         QTest::qWait(30);
     }
 
@@ -469,11 +474,30 @@ private:
         return nullptr;
     }
 
+    // An item scrolled out of sight (far down a settings section, say) comes into view first.
+    static void reveal(QQuickItem *item)
+    {
+        for (QQuickItem *view = item->parentItem(); view; view = view->parentItem()) {
+            if (!view->inherits("QQuickFlickable"))
+                continue;
+            auto *content = view->property("contentItem").value<QQuickItem *>();
+            if (!content)
+                continue;
+            const QRectF r = item->mapRectToItem(content, QRectF(0, 0, item->width(), item->height()));
+            const qreal y = view->property("contentY").toReal();
+            if (r.top() >= y && r.bottom() <= y + view->height())
+                continue;
+            const qreal end = qMax(0.0, view->property("contentHeight").toReal() - view->height());
+            view->setProperty("contentY", qBound(0.0, r.center().y() - view->height() / 2, end));
+        }
+    }
+
     bool clickItem(const QString &name, Qt::MouseButton button)
     {
         QQuickItem *item = findItem(m_window->contentItem(), name);
         if (!item)
             return false;
+        reveal(item);
         const QPointF center = item->mapToScene(QPointF(item->width() / 2, item->height() / 2));
         QTest::mouseClick(m_window, button, {}, center.toPoint());
         QTest::qWait(60);

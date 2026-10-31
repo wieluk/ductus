@@ -1960,6 +1960,26 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
         <translation>Borrador</translation>
     </message>
     <message>
+        <source>Current tool</source>
+        <translation>Herramienta actual</translation>
+    </message>
+    <message>
+        <source>Pen</source>
+        <translation>Lápiz</translation>
+    </message>
+    <message>
+        <source>Highlighter</source>
+        <translation>Resaltador</translation>
+    </message>
+    <message>
+        <source>Lasso</source>
+        <translation>Lazo</translation>
+    </message>
+    <message>
+        <source>Hand</source>
+        <translation>Mano</translation>
+    </message>
+    <message>
         <source>The eraser removes</source>
         <translation>El borrador quita</translation>
     </message>
@@ -1982,6 +2002,30 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
     <message>
         <source>Also in the eraser&apos;s menus. The pen shows a ring this large while erasing.</source>
         <translation>También en los menús del borrador. Al borrar, el lápiz muestra un anillo de este tamaño.</translation>
+    </message>
+    <message>
+        <source>Pen buttons</source>
+        <translation>Botones del lápiz</translation>
+    </message>
+    <message>
+        <source>Side button</source>
+        <translation>Botón lateral</translation>
+    </message>
+    <message>
+        <source>Hold it while the tip touches the page to use this instead.</source>
+        <translation>Mantenlo pulsado mientras la punta toca la página para usar esto en su lugar.</translation>
+    </message>
+    <message>
+        <source>Second side button</source>
+        <translation>Segundo botón lateral</translation>
+    </message>
+    <message>
+        <source>On pens with two, the one farther from the tip.</source>
+        <translation>En lápices con dos, el más alejado de la punta.</translation>
+    </message>
+    <message>
+        <source>Eraser end</source>
+        <translation>Extremo borrador</translation>
     </message>
     <message>
         <source>Touch</source>

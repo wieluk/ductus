@@ -175,6 +175,9 @@ ApplicationWindow {
         property alias sidebarRight: window.sidebarRight
         property alias holdDelay: canvasA.holdDelay
         property alias palmRejection: canvasA.palmRejection
+        property alias penButtonTool: canvasA.penButtonTool
+        property alias penButton2Tool: canvasA.penButton2Tool
+        property alias eraserEndTool: canvasA.eraserEndTool
         property alias penTipVisible: canvasA.penTipVisible
         property alias penTipSize: canvasA.penTipSize
         property alias fingerDrawing: canvasA.fingerDrawing
@@ -224,7 +227,8 @@ ApplicationWindow {
     Instantiator {
         model: ["tool", "penColor", "penWidth", "penPattern", "highlighterColor", "highlighterWidth",
                 "eraserWholeStrokes", "eraserSize", "shapeAssist", "fingerDrawing", "holdDelay",
-                "palmRejection", "penTipVisible", "penTipSize", "pressureResponse", "smoothing"]
+                "palmRejection", "penTipVisible", "penTipSize", "pressureResponse", "smoothing",
+                "penButtonTool", "penButton2Tool", "eraserEndTool"]
         delegate: Binding {
             required property string modelData
             target: window.idleCanvas

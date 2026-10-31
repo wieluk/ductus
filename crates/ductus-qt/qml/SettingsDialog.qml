@@ -172,6 +172,36 @@ Dialog {
         }
     }
 
+    /// What a pen button stands for while held: one of the tools, or the chosen one.
+    component PenButton: GridLayout {
+        id: penButton
+        property string label
+        property string hint
+        property int value
+        signal picked(int tool)
+        Layout.fillWidth: true
+        columns: dialog.narrow ? 1 : 2
+        rowSpacing: 6
+        columnSpacing: 12
+        Described {
+            label: penButton.label
+            hint: penButton.hint
+        }
+        AppComboBox {
+            objectName: penButton.objectName + "Tool"
+            Layout.preferredWidth: 240
+            Layout.fillWidth: dialog.narrow
+            model: [{ tool: -1, name: qsTr("Current tool") }, { tool: InkCanvas.Pen, name: qsTr("Pen") },
+                    { tool: InkCanvas.Highlighter, name: qsTr("Highlighter") },
+                    { tool: InkCanvas.Eraser, name: qsTr("Eraser") }, { tool: InkCanvas.Lasso, name: qsTr("Lasso") },
+                    { tool: InkCanvas.Hand, name: qsTr("Hand") }]
+            textRole: "name"
+            valueRole: "tool"
+            currentIndex: Math.max(0, model.findIndex(t => t.tool === penButton.value))
+            onActivated: penButton.picked(currentValue)
+        }
+    }
+
     component Toggle: RowLayout {
         id: toggle
         property string label
@@ -397,6 +427,28 @@ Dialog {
                     options: ["S", "M", "L", "XL"]
                     value: sizes.indexOf(dialog.canvas.eraserSize)
                     onPicked: (index) => dialog.canvas.eraserSize = sizes[index]
+                }
+
+                Heading { text: qsTr("Pen buttons") }
+                PenButton {
+                    objectName: "penButton"
+                    label: qsTr("Side button")
+                    hint: qsTr("Hold it while the tip touches the page to use this instead.")
+                    value: dialog.canvas.penButtonTool
+                    onPicked: (tool) => dialog.canvas.penButtonTool = tool
+                }
+                PenButton {
+                    objectName: "penButton2"
+                    label: qsTr("Second side button")
+                    hint: qsTr("On pens with two, the one farther from the tip.")
+                    value: dialog.canvas.penButton2Tool
+                    onPicked: (tool) => dialog.canvas.penButton2Tool = tool
+                }
+                PenButton {
+                    objectName: "eraserEnd"
+                    label: qsTr("Eraser end")
+                    value: dialog.canvas.eraserEndTool
+                    onPicked: (tool) => dialog.canvas.eraserEndTool = tool
                 }
 
                 Heading { text: qsTr("Touch") }

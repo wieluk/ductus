@@ -15,6 +15,8 @@
 
 #include "rust/cxx.h"
 
+#include <array>
+
 struct CanvasEngine;
 class QSGImageNode;
 class QSGNode;
@@ -110,6 +112,11 @@ class InkCanvas : public QQuickItem
     Q_PROPERTY(int holdDelay READ holdDelay WRITE setHoldDelay NOTIFY inputSettingsChanged)
     /// Touch is ignored this long (ms) after pen activity, so a resting palm doesn't scroll.
     Q_PROPERTY(int palmRejection READ palmRejection WRITE setPalmRejection NOTIFY inputSettingsChanged)
+    /// What a pen stroke does with its side button held (the second one on pens with two) or with
+    /// the eraser end: a Tool, or -1 for the chosen tool.
+    Q_PROPERTY(int penButtonTool READ penButtonTool WRITE setPenButtonTool NOTIFY inputSettingsChanged)
+    Q_PROPERTY(int penButton2Tool READ penButton2Tool WRITE setPenButton2Tool NOTIFY inputSettingsChanged)
+    Q_PROPERTY(int eraserEndTool READ eraserEndTool WRITE setEraserEndTool NOTIFY inputSettingsChanged)
     Q_PROPERTY(bool penTipVisible READ penTipVisible WRITE setPenTipVisible NOTIFY inputSettingsChanged)
     /// Radius of the pen-tip dot in logical pixels.
     Q_PROPERTY(qreal penTipSize READ penTipSize WRITE setPenTipSize NOTIFY inputSettingsChanged)
@@ -155,6 +162,12 @@ public:
     void setHoldDelay(int ms);
     int palmRejection() const { return m_palmRejection; }
     void setPalmRejection(int ms);
+    int penButtonTool() const { return m_penButtonTools[0]; }
+    int penButton2Tool() const { return m_penButtonTools[1]; }
+    int eraserEndTool() const { return m_penButtonTools[2]; }
+    void setPenButtonTool(int tool) { setPenButtonTool(0, tool); }
+    void setPenButton2Tool(int tool) { setPenButtonTool(1, tool); }
+    void setEraserEndTool(int tool) { setPenButtonTool(2, tool); }
     bool penTipVisible() const { return m_penTipVisible; }
     void setPenTipVisible(bool on);
     qreal penTipSize() const { return m_penTipSize; }
@@ -280,6 +293,9 @@ protected:
 
 private:
     bool handleTablet(QTabletEvent *event);
+    void setPenButtonTool(int which, int tool);
+    /// The chosen tool, or the one a held pen button or the eraser end stands for.
+    Tool penTool(const QTabletEvent *event) const;
     void forwardAsMouse(QTabletEvent *event);
     /// False where a control, popup or dialog is on top.
     bool ownsScenePoint(QPointF scenePosition) const;
@@ -334,6 +350,8 @@ private:
     bool m_shapeAssist = true;
     int m_holdDelay = 500;
     int m_palmRejection = 600;
+    /// Pen button, second pen button, eraser end.
+    std::array<int, 3> m_penButtonTools{Eraser, Eraser, Eraser};
     bool m_penTipVisible = true;
     qreal m_penTipSize = 2.5;
     bool m_eraserWholeStrokes = true;

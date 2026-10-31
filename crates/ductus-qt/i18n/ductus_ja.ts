@@ -1955,6 +1955,26 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>消しゴム</translation>
     </message>
     <message>
+        <source>Current tool</source>
+        <translation>現在のツール</translation>
+    </message>
+    <message>
+        <source>Pen</source>
+        <translation>ペン</translation>
+    </message>
+    <message>
+        <source>Highlighter</source>
+        <translation>蛍光ペン</translation>
+    </message>
+    <message>
+        <source>Lasso</source>
+        <translation>投げなわ</translation>
+    </message>
+    <message>
+        <source>Hand</source>
+        <translation>手のひら</translation>
+    </message>
+    <message>
         <source>The eraser removes</source>
         <translation>消しゴムで消すもの</translation>
     </message>
@@ -1977,6 +1997,30 @@ Create one with the + button, or make a folder a notebook under Folders.</source
     <message>
         <source>Also in the eraser&apos;s menus. The pen shows a ring this large while erasing.</source>
         <translation>消しゴムのメニューにもあります。消している間、ペンにはこの大きさの円が表示されます。</translation>
+    </message>
+    <message>
+        <source>Pen buttons</source>
+        <translation>ペンのボタン</translation>
+    </message>
+    <message>
+        <source>Side button</source>
+        <translation>サイドボタン</translation>
+    </message>
+    <message>
+        <source>Hold it while the tip touches the page to use this instead.</source>
+        <translation>押したままペン先をページに当てると、代わりにこれを使います。</translation>
+    </message>
+    <message>
+        <source>Second side button</source>
+        <translation>2つ目のサイドボタン</translation>
+    </message>
+    <message>
+        <source>On pens with two, the one farther from the tip.</source>
+        <translation>ボタンが2つあるペンでは、ペン先から遠いほう。</translation>
+    </message>
+    <message>
+        <source>Eraser end</source>
+        <translation>消しゴム側</translation>
     </message>
     <message>
         <source>Touch</source>

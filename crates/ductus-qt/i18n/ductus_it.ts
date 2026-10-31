@@ -1960,6 +1960,26 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
         <translation>Gomma</translation>
     </message>
     <message>
+        <source>Current tool</source>
+        <translation>Strumento attuale</translation>
+    </message>
+    <message>
+        <source>Pen</source>
+        <translation>Penna</translation>
+    </message>
+    <message>
+        <source>Highlighter</source>
+        <translation>Evidenziatore</translation>
+    </message>
+    <message>
+        <source>Lasso</source>
+        <translation>Lazo</translation>
+    </message>
+    <message>
+        <source>Hand</source>
+        <translation>Mano</translation>
+    </message>
+    <message>
         <source>The eraser removes</source>
         <translation>La gomma cancella</translation>
     </message>
@@ -1982,6 +2002,30 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
     <message>
         <source>Also in the eraser&apos;s menus. The pen shows a ring this large while erasing.</source>
         <translation>Anche nei menu della gomma. Durante la cancellazione la penna mostra un anello di questa grandezza.</translation>
+    </message>
+    <message>
+        <source>Pen buttons</source>
+        <translation>Pulsanti della penna</translation>
+    </message>
+    <message>
+        <source>Side button</source>
+        <translation>Pulsante laterale</translation>
+    </message>
+    <message>
+        <source>Hold it while the tip touches the page to use this instead.</source>
+        <translation>Tienilo premuto mentre la punta tocca la pagina per usare questo al suo posto.</translation>
+    </message>
+    <message>
+        <source>Second side button</source>
+        <translation>Secondo pulsante laterale</translation>
+    </message>
+    <message>
+        <source>On pens with two, the one farther from the tip.</source>
+        <translation>Sulle penne che ne hanno due, quello più lontano dalla punta.</translation>
+    </message>
+    <message>
+        <source>Eraser end</source>
+        <translation>Estremità gomma</translation>
     </message>
     <message>
         <source>Touch</source>
