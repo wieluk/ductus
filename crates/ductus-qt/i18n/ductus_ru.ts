@@ -2013,8 +2013,24 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Кнопки пера</translation>
     </message>
     <message>
+        <source>Side buttons work</source>
+        <translation>Боковые кнопки работают</translation>
+    </message>
+    <message>
+        <source>While held</source>
+        <translation>Пока удерживаются</translation>
+    </message>
+    <message>
+        <source>On click</source>
+        <translation>По нажатию</translation>
+    </message>
+    <message>
         <source>Side button</source>
         <translation>Боковая кнопка</translation>
+    </message>
+    <message>
+        <source>Click it to switch to this tool, and again to switch back.</source>
+        <translation>Нажмите, чтобы переключиться на этот инструмент, и ещё раз, чтобы вернуться.</translation>
     </message>
     <message>
         <source>Hold it while the tip touches the page to use this instead.</source>

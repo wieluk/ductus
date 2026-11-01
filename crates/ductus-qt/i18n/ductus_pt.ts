@@ -2008,8 +2008,24 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
         <translation>Botões da caneta</translation>
     </message>
     <message>
+        <source>Side buttons work</source>
+        <translation>Os botões laterais funcionam</translation>
+    </message>
+    <message>
+        <source>While held</source>
+        <translation>Enquanto pressionados</translation>
+    </message>
+    <message>
+        <source>On click</source>
+        <translation>Ao clicar</translation>
+    </message>
+    <message>
         <source>Side button</source>
         <translation>Botão lateral</translation>
+    </message>
+    <message>
+        <source>Click it to switch to this tool, and again to switch back.</source>
+        <translation>Clique para mudar para esta ferramenta e de novo para voltar.</translation>
     </message>
     <message>
         <source>Hold it while the tip touches the page to use this instead.</source>

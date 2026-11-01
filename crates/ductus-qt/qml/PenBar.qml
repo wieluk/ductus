@@ -93,7 +93,7 @@ Rectangle {
 
     function isActive(p) {
         const hl = p.type === "highlighter"
-        if (canvas.tool !== (hl ? InkCanvas.Highlighter : InkCanvas.Pen))
+        if (canvas.shownTool !== (hl ? InkCanvas.Highlighter : InkCanvas.Pen))
             return false
         return Qt.colorEqual(hl ? canvas.highlighterColor : canvas.penColor, p.color)
             && Math.abs((hl ? canvas.highlighterWidth : canvas.penWidth) - p.width) < 0.01
@@ -102,11 +102,11 @@ Rectangle {
 
     function toolChecked(name) {
         switch (name) {
-        case "lasso": return canvas.tool === InkCanvas.Lasso
-        case "hand": return canvas.tool === InkCanvas.Hand
-        case "eraser": return canvas.tool === InkCanvas.Eraser
-        case "text": return canvas.tool === InkCanvas.Text
-        case "math": return canvas.tool === InkCanvas.Math
+        case "lasso": return canvas.shownTool === InkCanvas.Lasso
+        case "hand": return canvas.shownTool === InkCanvas.Hand
+        case "eraser": return canvas.shownTool === InkCanvas.Eraser
+        case "text": return canvas.shownTool === InkCanvas.Text
+        case "math": return canvas.shownTool === InkCanvas.Math
         case "shapes": return canvas.shapeAssist
         default: return false
         }

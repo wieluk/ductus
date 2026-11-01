@@ -2008,8 +2008,24 @@ Crea uno con el botón + o convierte una carpeta en cuaderno en Carpetas.</trans
         <translation>Botones del lápiz</translation>
     </message>
     <message>
+        <source>Side buttons work</source>
+        <translation>Los botones laterales actúan</translation>
+    </message>
+    <message>
+        <source>While held</source>
+        <translation>Mientras se mantienen</translation>
+    </message>
+    <message>
+        <source>On click</source>
+        <translation>Al hacer clic</translation>
+    </message>
+    <message>
         <source>Side button</source>
         <translation>Botón lateral</translation>
+    </message>
+    <message>
+        <source>Click it to switch to this tool, and again to switch back.</source>
+        <translation>Haz clic para cambiar a esta herramienta y otra vez para volver.</translation>
     </message>
     <message>
         <source>Hold it while the tip touches the page to use this instead.</source>

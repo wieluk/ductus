@@ -2008,8 +2008,24 @@ Creane uno con il pulsante + o rendi una cartella un quaderno in Cartelle.</tran
         <translation>Pulsanti della penna</translation>
     </message>
     <message>
+        <source>Side buttons work</source>
+        <translation>I pulsanti laterali agiscono</translation>
+    </message>
+    <message>
+        <source>While held</source>
+        <translation>Finché premuti</translation>
+    </message>
+    <message>
+        <source>On click</source>
+        <translation>Al clic</translation>
+    </message>
+    <message>
         <source>Side button</source>
         <translation>Pulsante laterale</translation>
+    </message>
+    <message>
+        <source>Click it to switch to this tool, and again to switch back.</source>
+        <translation>Fai clic per passare a questo strumento e di nuovo per tornare indietro.</translation>
     </message>
     <message>
         <source>Hold it while the tip touches the page to use this instead.</source>

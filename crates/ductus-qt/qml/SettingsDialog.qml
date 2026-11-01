@@ -172,7 +172,7 @@ Dialog {
         }
     }
 
-    /// What a pen button stands for while held: one of the tools, or the chosen one.
+    /// What a pen button stands for: one of the tools, or the chosen one.
     component PenButton: GridLayout {
         id: penButton
         property string label
@@ -430,10 +430,19 @@ Dialog {
                 }
 
                 Heading { text: qsTr("Pen buttons") }
+                Choice {
+                    objectName: "penButtonsMode"
+                    label: qsTr("Side buttons work")
+                    options: [qsTr("While held"), qsTr("On click")]
+                    value: dialog.canvas.penButtonsSwitch ? 1 : 0
+                    onPicked: (index) => dialog.canvas.penButtonsSwitch = index === 1
+                }
                 PenButton {
                     objectName: "penButton"
                     label: qsTr("Side button")
-                    hint: qsTr("Hold it while the tip touches the page to use this instead.")
+                    hint: dialog.canvas.penButtonsSwitch
+                          ? qsTr("Click it to switch to this tool, and again to switch back.")
+                          : qsTr("Hold it while the tip touches the page to use this instead.")
                     value: dialog.canvas.penButtonTool
                     onPicked: (tool) => dialog.canvas.penButtonTool = tool
                 }

@@ -169,6 +169,7 @@ ApplicationWindow {
         property alias penButtonTool: canvasA.penButtonTool
         property alias penButton2Tool: canvasA.penButton2Tool
         property alias eraserEndTool: canvasA.eraserEndTool
+        property alias penButtonsSwitch: canvasA.penButtonsSwitch
         property alias penTipVisible: canvasA.penTipVisible
         property alias penTipSize: canvasA.penTipSize
         property alias fingerDrawing: canvasA.fingerDrawing
@@ -219,7 +220,7 @@ ApplicationWindow {
         model: ["tool", "penColor", "penWidth", "penPattern", "highlighterColor", "highlighterWidth",
                 "eraserWholeStrokes", "eraserSize", "shapeAssist", "fingerDrawing", "holdDelay",
                 "palmRejection", "penTipVisible", "penTipSize", "pressureResponse", "smoothing",
-                "penButtonTool", "penButton2Tool", "eraserEndTool"]
+                "penButtonTool", "penButton2Tool", "eraserEndTool", "penButtonsSwitch"]
         delegate: Binding {
             required property string modelData
             target: window.idleCanvas

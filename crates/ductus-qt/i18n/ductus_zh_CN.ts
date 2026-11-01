@@ -2003,8 +2003,24 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>笔按键</translation>
     </message>
     <message>
+        <source>Side buttons work</source>
+        <translation>侧键生效方式</translation>
+    </message>
+    <message>
+        <source>While held</source>
+        <translation>按住时</translation>
+    </message>
+    <message>
+        <source>On click</source>
+        <translation>单击切换</translation>
+    </message>
+    <message>
         <source>Side button</source>
         <translation>侧键</translation>
+    </message>
+    <message>
+        <source>Click it to switch to this tool, and again to switch back.</source>
+        <translation>单击切换到此工具，再次单击切换回来。</translation>
     </message>
     <message>
         <source>Hold it while the tip touches the page to use this instead.</source>

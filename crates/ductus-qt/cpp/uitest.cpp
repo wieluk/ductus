@@ -65,11 +65,17 @@ QPointingDevice *touchscreen()
     return device;
 }
 
-// The one button a pen sends of those the canvas accepts for a side button.
-Qt::MouseButton lowestButton(Qt::MouseButtons buttons)
+// `button=1` or `button=2`: the first or second side button, as this platform's pen reports it.
+Qt::MouseButtons sideButton(const QString &arg)
 {
-    const int bits = buttons.toInt();
-    return Qt::MouseButton(bits & -bits);
+    // Of the buttons the canvas takes for one, the pen sends one.
+    auto lowest = [](Qt::MouseButtons buttons) {
+        const int bits = buttons.toInt();
+        return Qt::MouseButtons(bits & -bits);
+    };
+    return arg == u"button=1"   ? lowest(firstPenButton())
+           : arg == u"button=2" ? lowest(secondPenButton())
+                                : Qt::MouseButtons();
 }
 
 QPointF parsePoint(const QString &token)
@@ -120,6 +126,15 @@ public:
             stroke(cmd == u"eraser" ? QPointingDevice::PointerType::Eraser
                                     : QPointingDevice::PointerType::Pen,
                    args);
+        } else if (cmd == u"hover" || cmd == u"pen-click") {
+            // `hover [eraser] [button=1|2] x,y`: the pen in the air there, maybe with a side button
+            // held or the eraser end down; `pen-click button=1|2 x,y` clicks the side button there.
+            hover(args, cmd == u"pen-click");
+        } else if (cmd == u"pen-out") {
+            QWindowSystemInterface::handleTabletEnterLeaveProximityEvent(
+                m_window, m_time += 5, stylus(QPointingDevice::PointerType::Pen), false);
+            QWindowSystemInterface::flushWindowSystemEvents();
+            QTest::qWait(30);
                 } else if (cmd == u"click") {
             QTest::mouseClick(m_window, Qt::LeftButton, {}, parsePoint(args.value(0)).toPoint());
         } else if (cmd == u"drag-item" || cmd == u"touchpad-drag-item") {
@@ -414,10 +429,8 @@ private:
         Qt::MouseButtons held = Qt::LeftButton;
         QList<QPointF> corners;
         for (const QString &arg : args) {
-            if (arg == u"button=1") {
-                held |= lowestButton(firstPenButton);
-            } else if (arg == u"button=2") {
-                held |= lowestButton(secondPenButton);
+            if (const Qt::MouseButtons button = sideButton(arg)) {
+                held |= button;
             } else if (arg.startsWith(u"p=")) {
                 const QStringList range = arg.mid(2).split(QLatin1Char('-'));
                 p0 = range.value(0).toDouble();
@@ -439,6 +452,32 @@ private:
         }
         tablet(QEvent::TabletRelease, device, points.last(), 0, held);
         QTest::qWait(30);
+    }
+
+    void hover(const QStringList &args, bool click)
+    {
+        auto type = QPointingDevice::PointerType::Pen;
+        Qt::MouseButtons held;
+        QPointF at;
+        for (const QString &arg : args) {
+            if (arg == u"eraser")
+                type = QPointingDevice::PointerType::Eraser;
+            else if (const Qt::MouseButtons button = sideButton(arg))
+                held |= button;
+            else
+                at = parsePoint(arg);
+        }
+        const auto *device = stylus(type);
+        if (click) {
+            tablet(QEvent::TabletMove, device, at, 0, Qt::NoButton);
+            QTest::qWait(20);
+        }
+        tablet(QEvent::TabletMove, device, at, 0, held);
+        QTest::qWait(30);
+        if (click) {
+            tablet(QEvent::TabletMove, device, at, 0, Qt::NoButton);
+            QTest::qWait(30);
+        }
     }
 
     void touchDrag(const QStringList &args)

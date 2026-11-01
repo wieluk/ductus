@@ -2008,8 +2008,24 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Stifttasten</translation>
     </message>
     <message>
+        <source>Side buttons work</source>
+        <translation>Seitentasten wirken</translation>
+    </message>
+    <message>
+        <source>While held</source>
+        <translation>Solange gedrückt</translation>
+    </message>
+    <message>
+        <source>On click</source>
+        <translation>Per Klick</translation>
+    </message>
+    <message>
         <source>Side button</source>
         <translation>Seitentaste</translation>
+    </message>
+    <message>
+        <source>Click it to switch to this tool, and again to switch back.</source>
+        <translation>Ein Klick wechselt zu diesem Werkzeug, ein weiterer zurück.</translation>
     </message>
     <message>
         <source>Hold it while the tip touches the page to use this instead.</source>

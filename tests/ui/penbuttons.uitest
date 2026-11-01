@@ -35,3 +35,44 @@ key Ctrl+A
 expect-prop canvas selectionCount 2
 key Escape
 shot pen-buttons
+# Held in the air, a side button or the eraser end shows its tool in the bars.
+click-item toolPen
+hover button=2 550,500
+expect-prop canvas shownTool Lasso
+expect-prop barTool_lasso active true
+expect-prop canvas tool Pen
+hover 550,500
+expect-prop canvas shownTool Pen
+expect-prop barTool_lasso active false
+hover eraser 550,500
+expect-prop barTool_eraser active true
+pen-out
+expect-prop canvas shownTool Pen
+# A side button's click in the air draws nothing.
+pen-click button=1 550,500
+key Ctrl+A
+expect-prop canvas selectionCount 2
+key Escape
+# Switching: a click changes the tool, and on that tool goes back.
+click-item toolPen
+click-item appMenuButton
+click-item menuSettings
+click-item penButtonsMode1
+click-item settingsClose
+pen-click button=1 550,500
+expect-prop canvas tool Highlighter
+pen-click button=1 550,500
+expect-prop canvas tool Pen
+pen-click button=2 550,500
+pen-click button=1 550,500
+expect-prop canvas tool Highlighter
+pen-click button=1 550,500
+expect-prop canvas tool Pen
+pen-click button=2 550,500
+expect-prop canvas tool Lasso
+# A tool picked in the bar is the one to go back to.
+click-item barTool_eraser
+pen-click button=2 550,500
+expect-prop canvas tool Lasso
+pen-click button=2 550,500
+expect-prop canvas tool Eraser

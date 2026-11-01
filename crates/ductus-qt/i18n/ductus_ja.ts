@@ -2003,8 +2003,24 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>ペンのボタン</translation>
     </message>
     <message>
+        <source>Side buttons work</source>
+        <translation>サイドボタンの動作</translation>
+    </message>
+    <message>
+        <source>While held</source>
+        <translation>押している間</translation>
+    </message>
+    <message>
+        <source>On click</source>
+        <translation>クリックで切り替え</translation>
+    </message>
+    <message>
         <source>Side button</source>
         <translation>サイドボタン</translation>
+    </message>
+    <message>
+        <source>Click it to switch to this tool, and again to switch back.</source>
+        <translation>クリックでこのツールに切り替え、もう一度クリックで元に戻ります。</translation>
     </message>
     <message>
         <source>Hold it while the tip touches the page to use this instead.</source>

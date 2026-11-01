@@ -2008,8 +2008,24 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Boutons du stylet</translation>
     </message>
     <message>
+        <source>Side buttons work</source>
+        <translation>Les boutons latéraux agissent</translation>
+    </message>
+    <message>
+        <source>While held</source>
+        <translation>Tant qu&apos;ils sont enfoncés</translation>
+    </message>
+    <message>
+        <source>On click</source>
+        <translation>Au clic</translation>
+    </message>
+    <message>
         <source>Side button</source>
         <translation>Bouton latéral</translation>
+    </message>
+    <message>
+        <source>Click it to switch to this tool, and again to switch back.</source>
+        <translation>Cliquez pour passer à cet outil, et à nouveau pour revenir.</translation>
     </message>
     <message>
         <source>Hold it while the tip touches the page to use this instead.</source>
