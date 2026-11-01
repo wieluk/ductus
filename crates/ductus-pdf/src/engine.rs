@@ -16,14 +16,14 @@ fn candidates() -> Vec<PathBuf> {
             p
         });
     }
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(dir) = exe.parent() {
-            // Next to the executable (Windows) or ../lib (Flatpak: /app/lib).
-            out.push(Pdfium::pdfium_platform_library_name_at_path(dir));
-            out.push(Pdfium::pdfium_platform_library_name_at_path(
-                &dir.join("../lib"),
-            ));
-        }
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(dir) = exe.parent()
+    {
+        // Next to the executable (Windows) or ../lib (Flatpak: /app/lib).
+        out.push(Pdfium::pdfium_platform_library_name_at_path(dir));
+        out.push(Pdfium::pdfium_platform_library_name_at_path(
+            &dir.join("../lib"),
+        ));
     }
     out
 }

@@ -451,12 +451,13 @@ pub mod qobject {
         fn tile_pixels(self: &CanvasEngine, layer: u8, x: i32, y: i32) -> &[u8];
         fn tile_size(self: &CanvasEngine) -> u32;
 
-        /// `device`: 0 = pen, 1 = pen eraser end, 2 = mouse, 3 = touch.
+        /// `device`: 0 = pen, 1 = pen eraser end, 2 = mouse, 3 = touch. `tool` (as in
+        /// `set_tool`) stands in for the chosen one during this stroke; 255 keeps it.
         fn pointer_down(
             self: &mut CanvasEngine,
             device: u8,
             sample: &PointerSample,
-            erase_button: bool,
+            tool: u8,
         ) -> bool;
         fn pointer_move(self: &mut CanvasEngine, samples: &[PointerSample]);
         fn pointer_up(self: &mut CanvasEngine);
@@ -473,7 +474,7 @@ pub mod qobject {
         fn needs_settle(self: &CanvasEngine) -> bool;
         fn settle(self: &mut CanvasEngine);
 
-        /// `tool`: 0 = pen, 1 = highlighter, 2 = eraser.
+        /// `tool`: 0 = pen, 1 = highlighter, 2 = eraser, 3 = lasso, 4 = hand.
         fn set_tool(self: &mut CanvasEngine, tool: u8);
         fn tool(self: &CanvasEngine) -> u8;
         fn set_eraser_whole_strokes(self: &mut CanvasEngine, on: bool);

@@ -136,11 +136,11 @@ impl Canvas {
 
     pub fn cancel_math(&mut self) {
         if let Some(draft) = self.math_draft.take() {
-            if let Some(id) = draft.target {
-                if let Some(i) = self.doc.math_index_of(id) {
-                    let rect = math_rect(&self.doc.maths()[i]);
-                    self.tiles.invalidate(TileLayer::Base, rect);
-                }
+            if let Some(id) = draft.target
+                && let Some(i) = self.doc.math_index_of(id)
+            {
+                let rect = math_rect(&self.doc.maths()[i]);
+                self.tiles.invalidate(TileLayer::Base, rect);
             }
             self.redraw_overlay();
         }

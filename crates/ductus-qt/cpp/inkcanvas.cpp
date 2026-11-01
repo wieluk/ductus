@@ -64,6 +64,11 @@ quint64 tileKey(const TileInfo &t)
     return ((quint64(quint32(t.x)) & mask) << 31) | (quint64(quint32(t.y)) & mask);
 }
 
+std::uint8_t engineTool(InkCanvas::Tool tool)
+{
+    return tool == InkCanvas::Hand ? 4 : static_cast<std::uint8_t>(tool);
+}
+
 // On Wayland a pen gets the mouse's cursor, which Qt only updates while the mouse is over the window.
 void setPenCursor(QWindow *window, const QCursor &cursor)
 {
@@ -87,9 +92,11 @@ QEvent::Type penContactType(const QTabletEvent *event)
 {
     static bool down = false;
     const int change = WinPen::contactChangeAt(event->timestamp());
+    // A side button pressed in the air is a press too, of the right button rather than the tip.
     const bool contact = change != 0 ? change > 0
                          : down       ? event->type() != QEvent::TabletRelease
-                                      : event->type() == QEvent::TabletPress;
+                                      : event->type() == QEvent::TabletPress
+                                            && event->button() == Qt::LeftButton;
     const QEvent::Type type = contact == down ? QEvent::TabletMove
                               : contact       ? QEvent::TabletPress
                                               : QEvent::TabletRelease;
@@ -113,6 +120,17 @@ QTabletEvent penEventAs(const QTabletEvent *event, QEvent::Type type)
 }
 #endif
 
+#ifndef Q_OS_WIN
+// The same event as a move, with the buttons still held.
+QTabletEvent tabletMoveFrom(const QTabletEvent *event)
+{
+    return QTabletEvent(QEvent::TabletMove, event->pointingDevice(), event->position(),
+                        event->globalPosition(), event->pressure(), event->xTilt(), event->yTilt(),
+                        event->tangentialPressure(), event->rotation(), event->z(), event->modifiers(),
+                        Qt::NoButton, event->buttons());
+}
+#endif
+
 bool isMouse(const QPointerEvent *event)
 {
     const auto *device = event->pointingDevice();
@@ -129,6 +147,8 @@ InkCanvas::InkCanvas(QQuickItem *parent)
     , m_penColor(QColor::fromRgbF(0.1f, 0.1f, 0.12f))
 {
     s_canvases << this;
+    // Qt tells the application, not a window, when the pen goes out of reach.
+    qApp->installEventFilter(this);
     setFlag(ItemHasContents);
     setAcceptedMouseButtons(Qt::LeftButton | Qt::MiddleButton);
     setAcceptHoverEvents(true);
@@ -184,14 +204,17 @@ void InkCanvas::setTool(Tool tool)
 {
     if (tool == this->tool())
         return;
+    if (!m_switchingTool)
+        m_toolBeforeSwitch = -1;
     m_textTool = tool == Text;
     m_mathTool = tool == Math;
     if (!m_textTool && !m_mathTool)
-        m_engine->set_tool(tool == Hand ? 4 : static_cast<std::uint8_t>(tool));
+        m_engine->set_tool(engineTool(tool));
     else
         clearSelection();
     setCursor(tool == Hand ? Qt::OpenHandCursor : Qt::CrossCursor);
     Q_EMIT toolChanged();
+    Q_EMIT shownToolChanged();
 }
 
 int TextBoxModel::rowCount(const QModelIndex &parent) const
@@ -903,12 +926,24 @@ void InkCanvas::itemChange(ItemChange change, const ItemChangeData &value)
 
 bool InkCanvas::eventFilter(QObject *watched, QEvent *event)
 {
+    if (watched == qApp) {
+        if (event->type() == QEvent::TabletLeaveProximity) {
+            setHeldTool(-1);
+            m_sideButtons = Qt::NoButton;
+            hidePenTip();
+        }
+        return false;
+    }
+    // The application's filter sees every object's events; the rest is about the window's.
+    if (watched != m_filteredWindow)
+        return QQuickItem::eventFilter(watched, event);
     switch (event->type()) {
     case QEvent::TabletPress:
     case QEvent::TabletMove:
     case QEvent::TabletRelease:
         if (watched == window()) {
             auto *tablet = static_cast<QTabletEvent *>(event);
+            trackPenButtons(tablet);
             if (otherTakesPen(tablet->scenePosition())) {
                 hidePenTip();
                 return false;
@@ -919,6 +954,15 @@ bool InkCanvas::eventFilter(QObject *watched, QEvent *event)
                 fixed.setTimestamp(tablet->timestamp());
                 tablet->accept();
                 return handleTablet(&fixed);
+            }
+#else
+            // Qt makes a side button's press or release a tablet press or release, also with
+            // the tip in the air. Only the tip's (the left button) touches the page.
+            if (tablet->type() != QEvent::TabletMove && tablet->button() != Qt::LeftButton) {
+                QTabletEvent move = tabletMoveFrom(tablet);
+                move.setTimestamp(tablet->timestamp());
+                tablet->accept();
+                return handleTablet(&move);
             }
 #endif
             return handleTablet(tablet);
@@ -1012,8 +1056,8 @@ void InkCanvas::forwardAsMouse(QTabletEvent *event)
     if (event->type() == QEvent::TabletPress) {
         type = QEvent::MouseButtonPress;
         // The tip with a barrel button held is a right click.
-        m_forwardButton = event->buttons() & (Qt::RightButton | Qt::MiddleButton) ? Qt::RightButton
-                                                                                  : Qt::LeftButton;
+        m_forwardButton = event->buttons() & (firstPenButton() | secondPenButton()) ? Qt::RightButton
+                                                                                : Qt::LeftButton;
     } else if (event->type() == QEvent::TabletRelease) {
         type = QEvent::MouseButtonRelease;
     }
@@ -1065,13 +1109,14 @@ bool InkCanvas::handleTablet(QTabletEvent *event)
                                event->yTilt(),
                                static_cast<std::uint32_t>(event->timestamp())};
     const bool eraserEnd = event->pointerType() == QPointingDevice::PointerType::Eraser;
-    m_tipEraser = eraserEnd || tool() == Eraser;
+    const Tool penTool = this->penTool(event);
+    m_tipEraser = penTool == Eraser;
 
-    if (press && m_textTool && !eraserEnd) {
+    if (press && penTool == Text) {
         m_tabletGrab = true;
         Q_EMIT textRequested(position,
                              static_cast<qint64>(m_engine->text_at(position.x(), position.y())));
-    } else if (press && m_mathTool && !eraserEnd) {
+    } else if (press && penTool == Math) {
         m_tabletGrab = true;
         Q_EMIT mathRequested(position,
                              static_cast<qint64>(m_engine->math_at(position.x(), position.y())));
@@ -1079,9 +1124,7 @@ bool InkCanvas::handleTablet(QTabletEvent *event)
         m_tabletGrab = true;
         // Drawing ends typing in a text box.
         forceActiveFocus();
-        // A barrel button held while touching down erases.
-        const bool barrel = event->buttons() & (Qt::MiddleButton | Qt::RightButton);
-        if (m_engine->pointer_down(eraserEnd ? 1 : 0, sample, barrel)) {
+        if (m_engine->pointer_down(eraserEnd ? 1 : 0, sample, engineTool(penTool))) {
             trackHold(position);
         } else {
             m_tabletPanning = true;
@@ -1138,7 +1181,7 @@ void InkCanvas::mousePressEvent(QMouseEvent *event)
         Q_EMIT mathRequested(p, static_cast<qint64>(m_engine->math_at(p.x(), p.y())));
     } else if (event->button() == Qt::LeftButton) {
         forceActiveFocus();
-        if (m_engine->pointer_down(2, sampleAt(event->position(), event->timestamp()), false)) {
+        if (m_engine->pointer_down(2, sampleAt(event->position(), event->timestamp()), 255)) {
             trackHold(event->position());
         } else {
             m_mousePanning = true;
@@ -1250,7 +1293,7 @@ void InkCanvas::touchEvent(QTouchEvent *event)
             m_pinching = false;
             m_lastTouchPosition = point.position();
         } else if (point.state() == QEventPoint::Pressed) {
-            m_touchDrawing = m_engine->pointer_down(3, sampleAt(point.position(), point.timestamp()), false);
+            m_touchDrawing = m_engine->pointer_down(3, sampleAt(point.position(), point.timestamp()), 255);
             if (m_touchDrawing)
                 trackHold(point.position());
             m_lastTouchPosition = point.position();
@@ -1316,6 +1359,99 @@ void InkCanvas::setHoldDelay(int ms)
     m_holdDelay = ms;
     m_holdTimer.setInterval(ms);
     Q_EMIT inputSettingsChanged();
+}
+
+void InkCanvas::setPenButtonTool(int which, int tool)
+{
+    tool = tool >= Pen && tool <= Hand ? tool : -1;
+    if (tool == m_penButtonTools[which])
+        return;
+    m_penButtonTools[which] = tool;
+    Q_EMIT inputSettingsChanged();
+}
+
+void InkCanvas::setPenButtonsSwitch(bool on)
+{
+    if (on == m_penButtonsSwitch)
+        return;
+    m_penButtonsSwitch = on;
+    m_toolBeforeSwitch = -1;
+    Q_EMIT inputSettingsChanged();
+}
+
+int InkCanvas::heldPenButton(const QTabletEvent *event) const
+{
+    if (event->pointerType() == QPointingDevice::PointerType::Eraser)
+        return 2;
+    // Switching, the side buttons change the tool itself.
+    if (m_penButtonsSwitch)
+        return -1;
+    if (event->buttons() & firstPenButton())
+        return 0;
+    if (event->buttons() & secondPenButton())
+        return 1;
+    return -1;
+}
+
+InkCanvas::Tool InkCanvas::penTool(const QTabletEvent *event) const
+{
+    const int which = heldPenButton(event);
+    const int choice = which < 0 ? -1 : m_penButtonTools[which];
+    return choice < 0 ? tool() : static_cast<Tool>(choice);
+}
+
+void InkCanvas::trackPenButtons(const QTabletEvent *event)
+{
+    const int which = heldPenButton(event);
+    setHeldTool(which < 0 ? -1 : m_penButtonTools[which]);
+
+    const Qt::MouseButtons side = event->pointerType() == QPointingDevice::PointerType::Eraser
+        ? Qt::MouseButtons()
+        : event->buttons() & (firstPenButton() | secondPenButton());
+    const Qt::MouseButtons clicked = side & ~m_sideButtons;
+    m_sideButtons = side;
+    if (!m_penButtonsSwitch || !clicked)
+        return;
+    // Every canvas of the window sees the click; the first one acts for all. Not while writing.
+    const InkCanvas *first = nullptr;
+    for (const InkCanvas *canvas : std::as_const(s_canvases)) {
+        if (canvas->window() != window())
+            continue;
+        if (canvas->m_tabletGrab)
+            return;
+        if (!first)
+            first = canvas;
+    }
+    const int tool = m_penButtonTools[clicked & firstPenButton() ? 0 : 1];
+    if (first == this && tool >= 0)
+        switchToPenButtonTool(tool);
+}
+
+void InkCanvas::setHeldTool(int tool)
+{
+    if (tool == m_heldTool)
+        return;
+    m_heldTool = tool;
+    Q_EMIT shownToolChanged();
+}
+
+// A click switches to the button's tool, and on that tool back to the one before.
+void InkCanvas::switchToPenButtonTool(int tool)
+{
+    const bool back = this->tool() == tool && m_toolBeforeSwitch >= 0;
+    const Tool next = static_cast<Tool>(back ? m_toolBeforeSwitch : tool);
+    const int before = back ? -1 : m_toolBeforeSwitch >= 0 ? m_toolBeforeSwitch : this->tool();
+    if (next == this->tool())
+        return;
+    // The other half of a split view follows the tool, so it remembers the way back as well.
+    for (InkCanvas *canvas : std::as_const(s_canvases)) {
+        if (canvas->window() != window())
+            continue;
+        canvas->m_switchingTool = true;
+        canvas->setTool(next);
+        canvas->m_switchingTool = false;
+        canvas->m_toolBeforeSwitch = before;
+    }
 }
 
 void InkCanvas::setPalmRejection(int ms)

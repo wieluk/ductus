@@ -868,10 +868,10 @@ impl Canvas {
         }
         let visible = self.view.visible_doc_rect();
         let mut room = (visible.width(), visible.height());
-        if let PageKind::Paper { .. } | PageKind::Pdf = self.doc.settings().kind {
-            if let Some(sheet) = self.layout.sheet_rects().first() {
-                room.0 = room.0.min(sheet.width());
-            }
+        if let PageKind::Paper { .. } | PageKind::Pdf = self.doc.settings().kind
+            && let Some(sheet) = self.layout.sheet_rects().first()
+        {
+            room.0 = room.0.min(sheet.width());
         }
         let widest = placed.iter().map(|(_, (w, _))| *w).fold(0.0, f64::max);
         let total: f64 = placed.iter().map(|(_, (_, h))| *h).sum::<f64>()

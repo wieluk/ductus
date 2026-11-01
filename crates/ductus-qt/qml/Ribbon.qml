@@ -74,7 +74,7 @@ Rectangle {
             iconName: "lasso"
             tip: qsTr("Lasso: circle ink to select it, then drag, copy or delete it")
             checkable: true
-            checked: ribbon.canvas.tool === InkCanvas.Lasso
+            checked: ribbon.canvas.shownTool === InkCanvas.Lasso
             onClicked: ribbon.canvas.tool = InkCanvas.Lasso
         }
         RibbonButton {
@@ -82,7 +82,7 @@ Rectangle {
             iconName: "hand"
             tip: qsTr("Hand: drag text, formulas and pictures to move them, their corners to resize; elsewhere it scrolls")
             checkable: true
-            checked: ribbon.canvas.tool === InkCanvas.Hand
+            checked: ribbon.canvas.shownTool === InkCanvas.Hand
             onClicked: ribbon.canvas.tool = InkCanvas.Hand
         }
         RibbonButton {
@@ -90,7 +90,7 @@ Rectangle {
             iconName: "pen"
             tip: qsTr("Pen")
             checkable: true
-            checked: ribbon.canvas.tool === InkCanvas.Pen
+            checked: ribbon.canvas.shownTool === InkCanvas.Pen
             onClicked: ribbon.canvas.tool = InkCanvas.Pen
             ColorMark { color: ribbon.canvas.penColor }
         }
@@ -104,7 +104,7 @@ Rectangle {
             iconName: "highlighter"
             tip: qsTr("Highlighter")
             checkable: true
-            checked: ribbon.canvas.tool === InkCanvas.Highlighter
+            checked: ribbon.canvas.shownTool === InkCanvas.Highlighter
             onClicked: ribbon.canvas.tool = InkCanvas.Highlighter
             ColorMark { color: ribbon.canvas.highlighterColor }
         }
@@ -120,7 +120,7 @@ Rectangle {
                  ? qsTr("Eraser: removes whole strokes (also: pen eraser end or barrel button)")
                  : qsTr("Eraser: removes the ink it touches (also: pen eraser end or barrel button)")
             checkable: true
-            checked: ribbon.canvas.tool === InkCanvas.Eraser
+            checked: ribbon.canvas.shownTool === InkCanvas.Eraser
             onClicked: ribbon.canvas.tool = InkCanvas.Eraser
         }
         OptionsButton {
@@ -133,7 +133,7 @@ Rectangle {
             iconName: "text"
             tip: qsTr("Text: click on the page to type; click a text box to edit it")
             checkable: true
-            checked: ribbon.canvas.tool === InkCanvas.Text
+            checked: ribbon.canvas.shownTool === InkCanvas.Text
             onClicked: ribbon.canvas.tool = InkCanvas.Text
         }
     }
@@ -445,7 +445,7 @@ Rectangle {
                     text: qsTr("Text")
                     tip: qsTr("Type on the page: click where the text should go")
                     checkable: true
-                    checked: ribbon.canvas.tool === InkCanvas.Text
+                    checked: ribbon.canvas.shownTool === InkCanvas.Text
                     enabled: ribbon.canvas.enabled
                     onClicked: ribbon.canvas.tool = InkCanvas.Text
                 }
@@ -455,7 +455,7 @@ Rectangle {
                     text: qsTr("Math")
                     tip: qsTr("Write a formula in LaTeX or Typst: click where it should go, or on a formula to change it")
                     checkable: true
-                    checked: ribbon.canvas.tool === InkCanvas.Math
+                    checked: ribbon.canvas.shownTool === InkCanvas.Math
                     enabled: ribbon.canvas.enabled
                     onClicked: ribbon.canvas.tool = InkCanvas.Math
                 }

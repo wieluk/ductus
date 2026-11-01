@@ -29,7 +29,7 @@ pub(crate) fn read(path: &Path) -> Result<Import, Error> {
         let mut xml = String::new();
         for i in 0..zip.len() {
             let mut entry = zip.by_index(i).map_err(bad)?;
-            let name = entry.name().to_owned();
+            let name = entry.name().map_err(bad)?.into_owned();
             if name == "content.xml" {
                 xml = String::from_utf8(crate::read_unpacked(&mut entry)?)
                     .map_err(|_| Error::Invalid("The file isn't text.".into()))?;
@@ -292,13 +292,13 @@ impl Parser<'_> {
         let dir = self.file.parent().unwrap_or(Path::new("."));
         let filename = filename.strip_prefix("file://").unwrap_or(filename);
         let mut candidates = Vec::new();
-        if domain == "attach" {
-            if let Some(own) = self.file.file_name() {
-                let mut name = own.to_os_string();
-                name.push(".");
-                name.push(filename);
-                candidates.push(dir.join(name));
-            }
+        if domain == "attach"
+            && let Some(own) = self.file.file_name()
+        {
+            let mut name = own.to_os_string();
+            name.push(".");
+            name.push(filename);
+            candidates.push(dir.join(name));
         }
         // Xournal++ keeps the PDF or picture a page is drawn over by its absolute path; relative
         // names stay next to the notebook.
@@ -472,7 +472,12 @@ fn stroke(attrs: &HashMap<String, String>, coords: &str) -> Option<Stroke> {
         .split_whitespace()
         .filter_map(|v| v.parse().ok())
         .collect();
-    let xy: Vec<(f64, f64)> = numbers.chunks_exact(2).map(|c| (c[0], c[1])).collect();
+    let xy: Vec<(f64, f64)> = numbers
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|c| (c[0], c[1]))
+        .collect();
     if xy.is_empty() {
         return None;
     }

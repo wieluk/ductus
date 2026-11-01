@@ -49,12 +49,14 @@ impl PdfImage {
         };
         let rgb: Vec<u8> = self
             .rgba
-            .chunks_exact(4)
+            .as_chunks::<4>()
+            .0
+            .iter()
             .flat_map(|p| [p[0], p[1], p[2]])
             .collect();
         let mut dict = image("DeviceRGB");
-        if self.rgba.chunks_exact(4).any(|p| p[3] < 255) {
-            let alpha: Vec<u8> = self.rgba.chunks_exact(4).map(|p| p[3]).collect();
+        if self.rgba.as_chunks::<4>().0.iter().any(|p| p[3] < 255) {
+            let alpha: Vec<u8> = self.rgba.as_chunks::<4>().0.iter().map(|p| p[3]).collect();
             let mask = pdf.add_object(compressed(image("DeviceGray"), alpha));
             dict.set("SMask", mask);
         }

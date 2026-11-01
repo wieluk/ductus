@@ -24,7 +24,7 @@ fn draw_wave(c: &mut Canvas, x0: f64, x1: f64, y: f64) {
             0.3 + 0.7 * f,
         )
     };
-    assert!(c.pointer_down(Device::Pen, point(0), false));
+    assert!(c.pointer_down(Device::Pen, point(0), None));
     for i in 1..=n {
         c.pointer_move(&[point(i)]);
     }
@@ -88,7 +88,7 @@ fn eraser_removes_strokes_in_one_undo_step() {
     c.set_eraser_mode(EraserMode::Stroke);
     draw_wave(&mut c, 50.0, 350.0, 100.0);
     draw_wave(&mut c, 50.0, 350.0, 200.0);
-    c.pointer_down(Device::PenEraser, pen_sample(200.0, 60.0, 0, 1.0), false);
+    c.pointer_down(Device::PenEraser, pen_sample(200.0, 60.0, 0, 1.0), None);
     for i in 1..=40 {
         c.pointer_move(&[pen_sample(200.0, 60.0 + f64::from(i) * 5.0, i * 5, 1.0)]);
     }
@@ -104,12 +104,39 @@ fn eraser_removes_strokes_in_one_undo_step() {
 }
 
 #[test]
+fn a_stand_in_tool_wins_over_the_chosen_one_and_the_eraser_end() {
+    let mut c = canvas();
+    c.set_eraser_mode(EraserMode::Stroke);
+    draw_wave(&mut c, 50.0, 350.0, 100.0);
+    // A pen button set to the eraser, with the pen chosen.
+    c.pointer_down(
+        Device::Pen,
+        pen_sample(200.0, 60.0, 0, 1.0),
+        Some(ToolMode::Eraser),
+    );
+    for i in 1..=20 {
+        c.pointer_move(&[pen_sample(200.0, 60.0 + f64::from(i) * 4.0, i * 5, 1.0)]);
+    }
+    c.pointer_up();
+    assert!(c.document().strokes().is_empty());
+    // The eraser end set to the pen writes.
+    c.pointer_down(
+        Device::PenEraser,
+        pen_sample(100.0, 100.0, 0, 1.0),
+        Some(ToolMode::Pen),
+    );
+    c.pointer_move(&[pen_sample(200.0, 120.0, 50, 1.0)]);
+    c.pointer_up();
+    assert_eq!(c.document().strokes().len(), 1);
+}
+
+#[test]
 fn touch_pans_unless_finger_drawing_is_on() {
     let mut c = canvas();
-    assert!(!c.pointer_down(Device::Touch, Sample::at(10.0, 10.0, 0), false));
+    assert!(!c.pointer_down(Device::Touch, Sample::at(10.0, 10.0, 0), None));
     assert!(!c.is_drawing());
     c.set_finger_draws(true);
-    assert!(c.pointer_down(Device::Touch, Sample::at(10.0, 10.0, 0), false));
+    assert!(c.pointer_down(Device::Touch, Sample::at(10.0, 10.0, 0), None));
     assert!(c.is_drawing());
 }
 
@@ -117,7 +144,7 @@ fn touch_pans_unless_finger_drawing_is_on() {
 fn cancel_discards_live_stroke_and_restores_erased() {
     let mut c = canvas();
     draw_wave(&mut c, 50.0, 350.0, 150.0);
-    c.pointer_down(Device::PenEraser, pen_sample(200.0, 100.0, 0, 1.0), false);
+    c.pointer_down(Device::PenEraser, pen_sample(200.0, 100.0, 0, 1.0), None);
     c.pointer_move(&[pen_sample(200.0, 200.0, 50, 1.0)]);
     c.pointer_cancel();
     assert_eq!(c.document().strokes().len(), 1);
@@ -157,7 +184,7 @@ fn writing_on_the_last_sheet_adds_another() {
 
 fn press_through(c: &mut Canvas, points: &[(f64, f64)]) {
     let (x, y) = points[0];
-    assert!(c.pointer_down(Device::Pen, pen_sample(x, y, 0, 0.6), false));
+    assert!(c.pointer_down(Device::Pen, pen_sample(x, y, 0, 0.6), None));
     for (i, &(x, y)) in points.iter().enumerate().skip(1) {
         c.pointer_move(&[pen_sample(x, y, i as u32 * 8, 0.6)]);
     }
@@ -219,7 +246,7 @@ fn hold_on_a_scribble_keeps_the_ink() {
 fn lasso(c: &mut Canvas, rect: (f64, f64, f64, f64)) {
     let (x0, y0, x1, y1) = rect;
     let ring = [(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)];
-    assert!(c.pointer_down(Device::Pen, pen_sample(x0, y0, 0, 0.5), false));
+    assert!(c.pointer_down(Device::Pen, pen_sample(x0, y0, 0, 0.5), None));
     for (i, &(x, y)) in ring.iter().enumerate().skip(1) {
         c.pointer_move(&[pen_sample(x, y, i as u32 * 10, 0.5)]);
     }
@@ -227,7 +254,7 @@ fn lasso(c: &mut Canvas, rect: (f64, f64, f64, f64)) {
 }
 
 pub(crate) fn drag(c: &mut Canvas, from: (f64, f64), to: (f64, f64)) {
-    assert!(c.pointer_down(Device::Pen, pen_sample(from.0, from.1, 0, 0.5), false));
+    assert!(c.pointer_down(Device::Pen, pen_sample(from.0, from.1, 0, 0.5), None));
     for i in 1..=10 {
         let f = f64::from(i) / 10.0;
         let (x, y) = (from.0 + (to.0 - from.0) * f, from.1 + (to.1 - from.1) * f);
@@ -277,7 +304,7 @@ fn a_moved_selection_shifts_its_tiles_without_redrawing_them() {
             .map(|t| (t.key, t.generation))
             .collect()
     };
-    assert!(c.pointer_down(Device::Pen, pen_sample(100.0, 80.0, 0, 0.5), false));
+    assert!(c.pointer_down(Device::Pen, pen_sample(100.0, 80.0, 0, 0.5), None));
     c.pointer_move(&[pen_sample(100.0, 90.0, 10, 0.5)]);
     let before = overlay(&mut c);
     c.pointer_move(&[pen_sample(100.0, 230.0, 20, 0.5)]);
@@ -304,8 +331,8 @@ fn hand_moves_and_resizes_text_but_pans_over_ink() {
     c.add_text(40.0, 40.0, 120.0, 30.0, "Limits").unwrap();
     c.set_tool(ToolMode::Hand);
     // Ink and empty paper are left to panning.
-    assert!(!c.pointer_down(Device::Pen, pen_sample(100.0, 220.0, 0, 0.5), false));
-    assert!(!c.pointer_down(Device::Touch, pen_sample(300.0, 150.0, 0, 0.5), false));
+    assert!(!c.pointer_down(Device::Pen, pen_sample(100.0, 220.0, 0, 0.5), None));
+    assert!(!c.pointer_down(Device::Touch, pen_sample(300.0, 150.0, 0, 0.5), None));
     assert_eq!(c.selection_count(), 0);
 
     let grab = c.view.to_screen(Point::new(100.0, 55.0));
@@ -352,7 +379,7 @@ fn copy_paste_and_delete_selection() {
 }
 
 fn erase_down(c: &mut Canvas, x: f64) {
-    c.pointer_down(Device::PenEraser, pen_sample(x, 60.0, 0, 1.0), false);
+    c.pointer_down(Device::PenEraser, pen_sample(x, 60.0, 0, 1.0), None);
     for i in 1..=40 {
         c.pointer_move(&[pen_sample(x, 60.0 + f64::from(i) * 5.0, i * 5, 1.0)]);
     }

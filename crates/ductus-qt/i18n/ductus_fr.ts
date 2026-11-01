@@ -1960,6 +1960,26 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Gomme</translation>
     </message>
     <message>
+        <source>Current tool</source>
+        <translation>Outil actuel</translation>
+    </message>
+    <message>
+        <source>Pen</source>
+        <translation>Stylo</translation>
+    </message>
+    <message>
+        <source>Highlighter</source>
+        <translation>Surligneur</translation>
+    </message>
+    <message>
+        <source>Lasso</source>
+        <translation>Lasso</translation>
+    </message>
+    <message>
+        <source>Hand</source>
+        <translation>Main</translation>
+    </message>
+    <message>
         <source>The eraser removes</source>
         <translation>La gomme efface</translation>
     </message>
@@ -1982,6 +2002,46 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     <message>
         <source>Also in the eraser&apos;s menus. The pen shows a ring this large while erasing.</source>
         <translation>Aussi dans les menus de la gomme. Pendant l’effacement, le stylet affiche un anneau de cette taille.</translation>
+    </message>
+    <message>
+        <source>Pen buttons</source>
+        <translation>Boutons du stylet</translation>
+    </message>
+    <message>
+        <source>Side buttons work</source>
+        <translation>Les boutons latéraux agissent</translation>
+    </message>
+    <message>
+        <source>While held</source>
+        <translation>Tant qu&apos;ils sont enfoncés</translation>
+    </message>
+    <message>
+        <source>On click</source>
+        <translation>Au clic</translation>
+    </message>
+    <message>
+        <source>Side button</source>
+        <translation>Bouton latéral</translation>
+    </message>
+    <message>
+        <source>Click it to switch to this tool, and again to switch back.</source>
+        <translation>Cliquez pour passer à cet outil, et à nouveau pour revenir.</translation>
+    </message>
+    <message>
+        <source>Hold it while the tip touches the page to use this instead.</source>
+        <translation>Maintenez-le enfoncé pendant que la pointe touche la page pour utiliser ceci à la place.</translation>
+    </message>
+    <message>
+        <source>Second side button</source>
+        <translation>Deuxième bouton latéral</translation>
+    </message>
+    <message>
+        <source>On pens with two, the one farther from the tip.</source>
+        <translation>Sur les stylets qui en ont deux, celui le plus éloigné de la pointe.</translation>
+    </message>
+    <message>
+        <source>Eraser end</source>
+        <translation>Bout gomme</translation>
     </message>
     <message>
         <source>Touch</source>

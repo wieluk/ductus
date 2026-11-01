@@ -123,11 +123,11 @@ pub fn unload_idle(idle: Duration) {
         .collect();
     let mut unloaded = false;
     for slot in slots {
-        if let Ok(mut loaded) = slot.try_lock() {
-            if loaded.as_ref().is_some_and(|l| l.used.elapsed() >= idle) {
-                *loaded = None;
-                unloaded = true;
-            }
+        if let Ok(mut loaded) = slot.try_lock()
+            && loaded.as_ref().is_some_and(|l| l.used.elapsed() >= idle)
+        {
+            *loaded = None;
+            unloaded = true;
         }
     }
     if unloaded {

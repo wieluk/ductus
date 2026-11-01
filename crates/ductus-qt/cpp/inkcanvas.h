@@ -15,6 +15,31 @@
 
 #include "rust/cxx.h"
 
+#include <array>
+
+// The Qt button a pen's side button arrives as depends on the platform. Windows knows one barrel
+// button: right. GNOME passes the lower one (the only one on most pens) on as right and the upper as
+// middle too, while KDE and other Linux desktops leave them as Qt reads them: middle, then right.
+// Android passes its own flags on, so stylus buttons arrive as ExtraButton3/4, and Samsung's S Pen
+// as the secondary (right) button.
+inline bool lowerPenButtonIsRight()
+{
+#if defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
+    static const bool gnome = qEnvironmentVariable("XDG_CURRENT_DESKTOP").contains(QLatin1String("GNOME"));
+    return gnome;
+#else
+    return true;
+#endif
+}
+inline Qt::MouseButtons firstPenButton()
+{
+    return (lowerPenButtonIsRight() ? Qt::RightButton : Qt::MiddleButton) | Qt::ExtraButton3;
+}
+inline Qt::MouseButtons secondPenButton()
+{
+    return (lowerPenButtonIsRight() ? Qt::MiddleButton : Qt::RightButton) | Qt::ExtraButton4;
+}
+
 struct CanvasEngine;
 class QSGImageNode;
 class QSGNode;
@@ -74,6 +99,9 @@ class InkCanvas : public QQuickItem
     QML_ELEMENT
 
     Q_PROPERTY(Tool tool READ tool WRITE setTool NOTIFY toolChanged)
+    /// The tool the pen uses right now: the one a held side button or the eraser end stands in
+    /// for, otherwise the chosen tool. The tool bars show this one.
+    Q_PROPERTY(Tool shownTool READ shownTool NOTIFY shownToolChanged)
     Q_PROPERTY(QColor penColor READ penColor WRITE setPenColor NOTIFY penColorChanged)
     Q_PROPERTY(qreal penWidth READ penWidth WRITE setPenWidth NOTIFY penWidthChanged)
     /// "solid", "dashed" or "dotted".
@@ -110,6 +138,14 @@ class InkCanvas : public QQuickItem
     Q_PROPERTY(int holdDelay READ holdDelay WRITE setHoldDelay NOTIFY inputSettingsChanged)
     /// Touch is ignored this long (ms) after pen activity, so a resting palm doesn't scroll.
     Q_PROPERTY(int palmRejection READ palmRejection WRITE setPalmRejection NOTIFY inputSettingsChanged)
+    /// What a pen stroke does with its side button held (the second one on pens with two) or with
+    /// the eraser end: a Tool, or -1 for the chosen tool.
+    Q_PROPERTY(int penButtonTool READ penButtonTool WRITE setPenButtonTool NOTIFY inputSettingsChanged)
+    Q_PROPERTY(int penButton2Tool READ penButton2Tool WRITE setPenButton2Tool NOTIFY inputSettingsChanged)
+    Q_PROPERTY(int eraserEndTool READ eraserEndTool WRITE setEraserEndTool NOTIFY inputSettingsChanged)
+    /// A side button's click switches to its tool and the next click back, instead of standing in
+    /// while held.
+    Q_PROPERTY(bool penButtonsSwitch READ penButtonsSwitch WRITE setPenButtonsSwitch NOTIFY inputSettingsChanged)
     Q_PROPERTY(bool penTipVisible READ penTipVisible WRITE setPenTipVisible NOTIFY inputSettingsChanged)
     /// Radius of the pen-tip dot in logical pixels.
     Q_PROPERTY(qreal penTipSize READ penTipSize WRITE setPenTipSize NOTIFY inputSettingsChanged)
@@ -125,6 +161,7 @@ public:
 
     Tool tool() const;
     void setTool(Tool tool);
+    Tool shownTool() const { return m_heldTool >= 0 ? static_cast<Tool>(m_heldTool) : tool(); }
     QColor penColor() const { return m_penColor; }
     void setPenColor(const QColor &color);
     qreal penWidth() const;
@@ -155,6 +192,14 @@ public:
     void setHoldDelay(int ms);
     int palmRejection() const { return m_palmRejection; }
     void setPalmRejection(int ms);
+    int penButtonTool() const { return m_penButtonTools[0]; }
+    int penButton2Tool() const { return m_penButtonTools[1]; }
+    int eraserEndTool() const { return m_penButtonTools[2]; }
+    void setPenButtonTool(int tool) { setPenButtonTool(0, tool); }
+    void setPenButton2Tool(int tool) { setPenButtonTool(1, tool); }
+    void setEraserEndTool(int tool) { setPenButtonTool(2, tool); }
+    bool penButtonsSwitch() const { return m_penButtonsSwitch; }
+    void setPenButtonsSwitch(bool on);
     bool penTipVisible() const { return m_penTipVisible; }
     void setPenTipVisible(bool on);
     qreal penTipSize() const { return m_penTipSize; }
@@ -236,6 +281,7 @@ Q_SIGNALS:
     void repainted();
     void bandsChanged();
     void toolChanged();
+    void shownToolChanged();
     void penColorChanged();
     void penWidthChanged();
     void highlighterChanged();
@@ -280,6 +326,15 @@ protected:
 
 private:
     bool handleTablet(QTabletEvent *event);
+    void setPenButtonTool(int which, int tool);
+    /// The chosen tool, or the one a held pen button or the eraser end stands for.
+    Tool penTool(const QTabletEvent *event) const;
+    /// The settings slot (0, 1 or 2 for the eraser end) of the button held at a pen event, or -1.
+    int heldPenButton(const QTabletEvent *event) const;
+    /// Follows the pen's buttons for the tool bars and, in switch mode, clicks.
+    void trackPenButtons(const QTabletEvent *event);
+    void setHeldTool(int tool);
+    void switchToPenButtonTool(int tool);
     void forwardAsMouse(QTabletEvent *event);
     /// False where a control, popup or dialog is on top.
     bool ownsScenePoint(QPointF scenePosition) const;
@@ -334,6 +389,17 @@ private:
     bool m_shapeAssist = true;
     int m_holdDelay = 500;
     int m_palmRejection = 600;
+    /// Pen button, second pen button, eraser end.
+    std::array<int, 3> m_penButtonTools{Eraser, Eraser, Eraser};
+    bool m_penButtonsSwitch = false;
+    /// What a held side button or the eraser end stands in for, or -1.
+    int m_heldTool = -1;
+    /// The side buttons down at the last pen event, to see a click begin.
+    Qt::MouseButtons m_sideButtons;
+    /// The tool before a side button's click switched away from it, or -1.
+    int m_toolBeforeSwitch = -1;
+    /// Set while a side button's click changes the tool, which keeps m_toolBeforeSwitch.
+    bool m_switchingTool = false;
     bool m_penTipVisible = true;
     qreal m_penTipSize = 2.5;
     bool m_eraserWholeStrokes = true;

@@ -1,4 +1,5 @@
 #include "ductus-qt/cpp/uitest.h"
+#include "ductus-qt/cpp/inkcanvas.h"
 #include "ductus-qt/src/ffi.cxxqt.h"
 
 #include <QClipboard>
@@ -64,6 +65,19 @@ QPointingDevice *touchscreen()
     return device;
 }
 
+// `button=1` or `button=2`: the first or second side button, as this platform's pen reports it.
+Qt::MouseButtons sideButton(const QString &arg)
+{
+    // Of the buttons the canvas takes for one, the pen sends one.
+    auto lowest = [](Qt::MouseButtons buttons) {
+        const int bits = buttons.toInt();
+        return Qt::MouseButtons(bits & -bits);
+    };
+    return arg == u"button=1"   ? lowest(firstPenButton())
+           : arg == u"button=2" ? lowest(secondPenButton())
+                                : Qt::MouseButtons();
+}
+
 QPointF parsePoint(const QString &token)
 {
     const QStringList xy = token.split(QLatin1Char(','));
@@ -112,6 +126,15 @@ public:
             stroke(cmd == u"eraser" ? QPointingDevice::PointerType::Eraser
                                     : QPointingDevice::PointerType::Pen,
                    args);
+        } else if (cmd == u"hover" || cmd == u"pen-click") {
+            // `hover [eraser] [button=1|2] x,y`: the pen in the air there, maybe with a side button
+            // held or the eraser end down; `pen-click button=1|2 x,y` clicks the side button there.
+            hover(args, cmd == u"pen-click");
+        } else if (cmd == u"pen-out") {
+            QWindowSystemInterface::handleTabletEnterLeaveProximityEvent(
+                m_window, m_time += 5, stylus(QPointingDevice::PointerType::Pen), false);
+            QWindowSystemInterface::flushWindowSystemEvents();
+            QTest::qWait(30);
                 } else if (cmd == u"click") {
             QTest::mouseClick(m_window, Qt::LeftButton, {}, parsePoint(args.value(0)).toPoint());
         } else if (cmd == u"drag-item" || cmd == u"touchpad-drag-item") {
@@ -386,10 +409,9 @@ private:
 
     // Through the platform input path, as a real tablet's events arrive.
     void tablet(QEvent::Type type, const QPointingDevice *device, QPointF pos, qreal pressure,
-                Qt::MouseButton button)
+                Qt::MouseButtons held)
     {
-        const Qt::MouseButtons buttons =
-            type == QEvent::TabletRelease ? Qt::NoButton : Qt::MouseButtons(button);
+        const Qt::MouseButtons buttons = type == QEvent::TabletRelease ? Qt::NoButton : held;
         // Platforms report native pixels; Qt scales them, as on a 150% Windows screen.
         QWindowSystemInterface::handleTabletEvent(m_window, m_time += 5, device,
                                                   QHighDpi::toNativeLocalPosition(pos, m_window),
@@ -399,13 +421,17 @@ private:
         QWindowSystemInterface::flushWindowSystemEvents();
     }
 
-    // `pen [p=0.2-1.0] x,y x,y ...`: a stroke with a pressure ramp.
+    // `pen [p=0.2-1.0] [button=1|2] x,y x,y ...`: a stroke with a pressure ramp, maybe with the first
+    // or second side button held, sent as this platform's pen reports it.
     void stroke(QPointingDevice::PointerType type, const QStringList &args)
     {
         qreal p0 = 0.8, p1 = 0.8;
+        Qt::MouseButtons held = Qt::LeftButton;
         QList<QPointF> corners;
         for (const QString &arg : args) {
-            if (arg.startsWith(u"p=")) {
+            if (const Qt::MouseButtons button = sideButton(arg)) {
+                held |= button;
+            } else if (arg.startsWith(u"p=")) {
                 const QStringList range = arg.mid(2).split(QLatin1Char('-'));
                 p0 = range.value(0).toDouble();
                 p1 = range.size() > 1 ? range.value(1).toDouble() : p0;
@@ -417,15 +443,41 @@ private:
         if (points.isEmpty())
             return;
         const auto *device = stylus(type);
-        tablet(QEvent::TabletPress, device, points.first(), p0, Qt::LeftButton);
+        tablet(QEvent::TabletPress, device, points.first(), p0, held);
         for (qsizetype i = 1; i < points.size(); ++i) {
             const qreal f = qreal(i) / qMax<qsizetype>(1, points.size() - 1);
-            tablet(QEvent::TabletMove, device, points[i], p0 + (p1 - p0) * f, Qt::LeftButton);
+            tablet(QEvent::TabletMove, device, points[i], p0 + (p1 - p0) * f, held);
             if (i % 4 == 0)
                 QTest::qWait(8);
         }
-        tablet(QEvent::TabletRelease, device, points.last(), 0, Qt::LeftButton);
+        tablet(QEvent::TabletRelease, device, points.last(), 0, held);
         QTest::qWait(30);
+    }
+
+    void hover(const QStringList &args, bool click)
+    {
+        auto type = QPointingDevice::PointerType::Pen;
+        Qt::MouseButtons held;
+        QPointF at;
+        for (const QString &arg : args) {
+            if (arg == u"eraser")
+                type = QPointingDevice::PointerType::Eraser;
+            else if (const Qt::MouseButtons button = sideButton(arg))
+                held |= button;
+            else
+                at = parsePoint(arg);
+        }
+        const auto *device = stylus(type);
+        if (click) {
+            tablet(QEvent::TabletMove, device, at, 0, Qt::NoButton);
+            QTest::qWait(20);
+        }
+        tablet(QEvent::TabletMove, device, at, 0, held);
+        QTest::qWait(30);
+        if (click) {
+            tablet(QEvent::TabletMove, device, at, 0, Qt::NoButton);
+            QTest::qWait(30);
+        }
     }
 
     void touchDrag(const QStringList &args)
@@ -469,11 +521,30 @@ private:
         return nullptr;
     }
 
+    // An item scrolled out of sight (far down a settings section, say) comes into view first.
+    static void reveal(QQuickItem *item)
+    {
+        for (QQuickItem *view = item->parentItem(); view; view = view->parentItem()) {
+            if (!view->inherits("QQuickFlickable"))
+                continue;
+            auto *content = view->property("contentItem").value<QQuickItem *>();
+            if (!content)
+                continue;
+            const QRectF r = item->mapRectToItem(content, QRectF(0, 0, item->width(), item->height()));
+            const qreal y = view->property("contentY").toReal();
+            if (r.top() >= y && r.bottom() <= y + view->height())
+                continue;
+            const qreal end = qMax(0.0, view->property("contentHeight").toReal() - view->height());
+            view->setProperty("contentY", qBound(0.0, r.center().y() - view->height() / 2, end));
+        }
+    }
+
     bool clickItem(const QString &name, Qt::MouseButton button)
     {
         QQuickItem *item = findItem(m_window->contentItem(), name);
         if (!item)
             return false;
+        reveal(item);
         const QPointF center = item->mapToScene(QPointF(item->width() / 2, item->height() / 2));
         QTest::mouseClick(m_window, button, {}, center.toPoint());
         QTest::qWait(60);

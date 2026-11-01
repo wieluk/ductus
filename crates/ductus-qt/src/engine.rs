@@ -52,6 +52,19 @@ fn sample(s: &PointerSample) -> Sample {
 
 const OVERLAY: u8 = 255;
 
+/// `pointer_down` without a stand-in tool.
+const NO_TOOL: u8 = 255;
+
+fn tool_mode(tool: u8) -> ToolMode {
+    match tool {
+        1 => ToolMode::Highlighter,
+        2 => ToolMode::Eraser,
+        3 => ToolMode::Lasso,
+        4 => ToolMode::Hand,
+        _ => ToolMode::Pen,
+    }
+}
+
 fn layer(index: u8) -> TileLayer {
     match index {
         0 => TileLayer::Base,
@@ -196,14 +209,15 @@ impl CanvasEngine {
         TILE_SIZE
     }
 
-    pub fn pointer_down(&mut self, device: u8, s: &PointerSample, erase_button: bool) -> bool {
+    pub fn pointer_down(&mut self, device: u8, s: &PointerSample, tool: u8) -> bool {
         let device = match device {
             0 => Device::Pen,
             1 => Device::PenEraser,
             2 => Device::Mouse,
             _ => Device::Touch,
         };
-        self.0.pointer_down(device, sample(s), erase_button)
+        let tool = (tool != NO_TOOL).then(|| tool_mode(tool));
+        self.0.pointer_down(device, sample(s), tool)
     }
 
     pub fn pointer_move(&mut self, samples: &[PointerSample]) {
@@ -260,13 +274,7 @@ impl CanvasEngine {
     }
 
     pub fn set_tool(&mut self, tool: u8) {
-        self.0.set_tool(match tool {
-            1 => ToolMode::Highlighter,
-            2 => ToolMode::Eraser,
-            3 => ToolMode::Lasso,
-            4 => ToolMode::Hand,
-            _ => ToolMode::Pen,
-        });
+        self.0.set_tool(tool_mode(tool));
     }
 
     pub fn set_highlighter(&mut self, r: f32, g: f32, b: f32, width: f64) {

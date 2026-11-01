@@ -138,11 +138,8 @@ ApplicationWindow {
     }
 
     function restoreAfterScreenshot() {
-        if (visibility === Window.Minimized) {
-            if (visibilityBeforeScreenshot === Window.FullScreen) showFullScreen()
-            else if (visibilityBeforeScreenshot === Window.Maximized) showMaximized()
-            else showNormal()
-        }
+        if (visibility === Window.Minimized)
+            AppController.setFullScreen(window, visibilityBeforeScreenshot === Window.FullScreen, maximized)
         raise()
         requestActivate()
     }
@@ -154,13 +151,7 @@ ApplicationWindow {
     }
 
     function toggleFullScreen() {
-        // Back to a maximized window if it was one: showNormal() would also restore it.
-        if (visibility !== Window.FullScreen)
-            showFullScreen()
-        else if (maximized)
-            showMaximized()
-        else
-            showNormal()
+        AppController.setFullScreen(window, visibility !== Window.FullScreen, maximized)
     }
 
     Settings {
@@ -175,6 +166,10 @@ ApplicationWindow {
         property alias sidebarRight: window.sidebarRight
         property alias holdDelay: canvasA.holdDelay
         property alias palmRejection: canvasA.palmRejection
+        property alias penButtonTool: canvasA.penButtonTool
+        property alias penButton2Tool: canvasA.penButton2Tool
+        property alias eraserEndTool: canvasA.eraserEndTool
+        property alias penButtonsSwitch: canvasA.penButtonsSwitch
         property alias penTipVisible: canvasA.penTipVisible
         property alias penTipSize: canvasA.penTipSize
         property alias fingerDrawing: canvasA.fingerDrawing
@@ -224,7 +219,8 @@ ApplicationWindow {
     Instantiator {
         model: ["tool", "penColor", "penWidth", "penPattern", "highlighterColor", "highlighterWidth",
                 "eraserWholeStrokes", "eraserSize", "shapeAssist", "fingerDrawing", "holdDelay",
-                "palmRejection", "penTipVisible", "penTipSize", "pressureResponse", "smoothing"]
+                "palmRejection", "penTipVisible", "penTipSize", "pressureResponse", "smoothing",
+                "penButtonTool", "penButton2Tool", "eraserEndTool", "penButtonsSwitch"]
         delegate: Binding {
             required property string modelData
             target: window.idleCanvas
