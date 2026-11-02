@@ -499,7 +499,6 @@ Rectangle {
                 text: qsTr("Add %1").arg(modelData.label)
                 // Each tool once.
                 visible: !bar.items.some(i => i.type === "tool" && i.tool === modelData.tool)
-                height: visible ? implicitHeight : 0
                 onTriggered: bar.add({ type: "tool", tool: modelData.tool })
             }
         }
@@ -536,7 +535,6 @@ Rectangle {
         AppMenuItem {
             objectName: "barEraserPartial"
             visible: toolMenu.eraser
-            height: visible ? implicitHeight : 0
             text: qsTr("Erase only what you touch")
             checkable: true
             checked: !bar.canvas.eraserWholeStrokes
@@ -548,7 +546,6 @@ Rectangle {
         AppMenuItem {
             objectName: "barEraserWhole"
             visible: toolMenu.eraser
-            height: visible ? implicitHeight : 0
             text: qsTr("Erase whole strokes")
             checkable: true
             checked: bar.canvas.eraserWholeStrokes
@@ -564,7 +561,6 @@ Rectangle {
                 required property var modelData
                 objectName: "barEraserSize" + modelData.size
                 visible: toolMenu.eraser
-                height: visible ? implicitHeight : 0
                 text: modelData.label
                 checkable: true
                 checked: bar.canvas.eraserSize === modelData.size
@@ -576,7 +572,6 @@ Rectangle {
         }
         AppMenuSeparator {
             visible: toolMenu.eraser
-            height: visible ? implicitHeight : 0
         }
         AppMenuItem {
             objectName: "toolRemove"

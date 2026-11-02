@@ -1,4 +1,5 @@
 #include "ductus-qt/cpp/updater.h"
+#include "ductus-qt/cpp/rustconv.h"
 #include "ductus-qt/src/ffi.cxxqt.h"
 
 #include <QCoreApplication>
@@ -23,16 +24,6 @@
 #endif
 
 namespace {
-QString toQ(const rust::String &s)
-{
-    return QString::fromUtf8(s.data(), static_cast<qsizetype>(s.size()));
-}
-
-std::string toStd(const QString &s)
-{
-    return s.toStdString();
-}
-
 #if defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
 // The sandbox updates itself through this portal; it never reaches the host's flatpak.
 const QString kPortal = QStringLiteral("org.freedesktop.portal.Flatpak");

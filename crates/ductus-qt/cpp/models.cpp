@@ -1,4 +1,5 @@
 #include "ductus-qt/cpp/models.h"
+#include "ductus-qt/cpp/rustconv.h"
 #include "ductus-qt/cpp/appcontroller.h"
 #include "ductus-qt/src/ffi.cxxqt.h"
 
@@ -8,10 +9,6 @@
 #include <QVariantMap>
 
 namespace {
-QString toQ(const rust::String &s)
-{
-    return QString::fromUtf8(s.data(), static_cast<qsizetype>(s.size()));
-}
 // For lupdate: the names Rust gives (crates/ductus-hwr/src/builtin.rs), translated below.
 [[maybe_unused]] const char *const languageNames[] = {
     QT_TRANSLATE_NOOP("Language", "Arabic"),

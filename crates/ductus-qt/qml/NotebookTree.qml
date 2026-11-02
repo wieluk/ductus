@@ -218,7 +218,6 @@ Rectangle {
                     AppMenuSeparator { visible: !AppController.notebookView }
                     AppMenuItem {
                         visible: !AppController.notebookView
-                        height: visible ? implicitHeight : 0
                         objectName: "filterHideEmpty"
                         text: qsTr("Hide folders without these")
                         checkable: true
@@ -742,49 +741,42 @@ Rectangle {
 
                     AppMenuItem {
                         visible: row.isPage
-                        height: visible ? implicitHeight : 0
                         text: qsTr("Open in new tab")
                         objectName: "menuOpenInNewTab"
                         onTriggered: AppController.openInNewTab(row.path)
                     }
                     AppMenuItem {
                         visible: row.isPage
-                        height: visible ? implicitHeight : 0
                         text: qsTr("Open side by side")
                         objectName: "menuOpenBeside"
                         onTriggered: AppController.openBeside(row.path)
                     }
                     AppMenuItem {
                         visible: row.isFile
-                        height: visible ? implicitHeight : 0
                         text: qsTr("Open with its program")
                         objectName: "menuOpenExternally"
                         onTriggered: AppController.openExternally(row.path)
                     }
                     AppMenuItem {
                         visible: row.canFocus && AppController.treeFocus !== row.path
-                        height: visible ? implicitHeight : 0
                         text: AppController.notebookView ? qsTr("Show only this notebook") : qsTr("Show only this folder")
                         objectName: "menuFocus"
                         onTriggered: AppController.treeFocus = row.path
                     }
                     AppMenuItem {
                         visible: row.isFolder
-                        height: visible ? implicitHeight : 0
                         text: qsTr("New page…")
                         objectName: "menuNewPage"
                         onTriggered: sidebar.newPageRequested(row.path)
                     }
                     AppMenuItem {
                         visible: row.isFolder && !AppController.notebookView
-                        height: visible ? implicitHeight : 0
                         text: qsTr("New notebook inside…")
                         objectName: "menuNewNotebook"
                         onTriggered: sidebar.newNotebookRequested(row.path)
                     }
                     AppMenuItem {
                         visible: row.isFolder
-                        height: visible ? implicitHeight : 0
                         text: AppController.notebookView ? qsTr("New section") : qsTr("New folder inside")
                         objectName: "menuNewFolder"
                         // Beside a section, inside a notebook or group.
@@ -794,14 +786,12 @@ Rectangle {
                     }
                     AppMenuItem {
                         visible: row.isFolder && !row.isNotebook && !AppController.notebookView
-                        height: visible ? implicitHeight : 0
                         text: qsTr("Make this a notebook…")
                         objectName: "menuMakeNotebook"
                         onTriggered: sidebar.makeNotebookRequested(row.path)
                     }
                     AppMenuItem {
                         visible: row.isNotebook && !row.quick
-                        height: visible ? implicitHeight : 0
                         text: qsTr("No longer a notebook")
                         objectName: "menuUnmarkNotebook"
                         onTriggered: AppController.setNotebook(row.path, "")
@@ -813,14 +803,12 @@ Rectangle {
                     }
                     AppMenuItem {
                         visible: AppController.notebookView && (row.quick || row.isNotebook)
-                        height: visible ? implicitHeight : 0
                         text: qsTr("Show in folders")
                         objectName: "menuReveal"
                         onTriggered: AppController.reveal(row.path)
                     }
                     AppMenuItem {
                         visible: !AppController.notebookView && row.isNotebook
-                        height: visible ? implicitHeight : 0
                         text: qsTr("Show in notebooks")
                         objectName: "menuShowNotebook"
                         onTriggered: AppController.showInNotebooks(row.path)
@@ -833,7 +821,6 @@ Rectangle {
                     AppMenuSeparator {}
                     AppMenuItem {
                         visible: !row.quick
-                        height: visible ? implicitHeight : 0
                         text: qsTr("Rename")
                         objectName: "menuRename"
                         onTriggered: sidebar.renaming = row.path
@@ -865,7 +852,6 @@ Rectangle {
                     AppMenuSeparator { visible: !row.quick; height: visible ? implicitHeight : 0 }
                     AppMenuItem {
                         visible: !row.quick
-                        height: visible ? implicitHeight : 0
                         text: qsTr("Move up")
                         objectName: "menuMoveUp"
                         enabled: (rowMenu.moves & 1) !== 0
@@ -873,7 +859,6 @@ Rectangle {
                     }
                     AppMenuItem {
                         visible: !row.quick
-                        height: visible ? implicitHeight : 0
                         text: qsTr("Move down")
                         objectName: "menuMoveDown"
                         enabled: (rowMenu.moves & 2) !== 0
@@ -881,7 +866,6 @@ Rectangle {
                     }
                     AppMenuItem {
                         visible: !row.quick
-                        height: visible ? implicitHeight : 0
                         text: qsTr("Move to…")
                         objectName: "menuMoveTo"
                         onTriggered: sidebar.moveRequested(row.path, row.isNotebook && row.notebookName.length > 0
@@ -889,7 +873,6 @@ Rectangle {
                     }
                     AppMenuItem {
                         visible: row.isFolder
-                        height: visible ? implicitHeight : 0
                         text: qsTr("Export as PDF…")
                         objectName: "menuExportFolder"
                         onTriggered: sidebar.exportRequested(row.path, row.isNotebook && row.notebookName.length > 0
@@ -897,7 +880,6 @@ Rectangle {
                     }
                     AppMenuItem {
                         visible: !row.isFolder && !row.isFile
-                        height: visible ? implicitHeight : 0
                         text: qsTr("Earlier versions…")
                         objectName: "menuHistory"
                         onTriggered: sidebar.historyRequested(row.path)

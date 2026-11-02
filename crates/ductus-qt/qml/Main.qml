@@ -211,6 +211,26 @@ ApplicationWindow {
             toast.show(qsTr("\u201c%1\u201d is in the trash.").arg(name), false, qsTr("Undo"),
                        () => AppController.restoreFromTrash(trashId))
         }
+        function onCurrentPageChanged() {
+            if (window.compact && AppController.currentPage.length > 0)
+                window.drawerOpen = false
+        }
+        // Settings opens scrolled to the download, which sits below a long list of languages.
+        function onModelsNeeded(id) {
+            settingsDialog.showModels()
+            const model = Models.entries.find(e => e.id === id)
+            toast.show(model ? qsTr("Download \u201c%1\u201d first, then try again.").arg(model.title)
+                             : qsTr("Download the recognizer for this first."), false)
+        }
+        function onScreenshotTaken(file) {
+            window.restoreAfterScreenshot()
+            canvas.insertImageFile(file)
+        }
+        function onScreenshotCancelled() { window.restoreAfterScreenshot() }
+        function onScreenshotFailed(message) {
+            window.restoreAfterScreenshot()
+            toast.show(message, true)
+        }
     }
     Connections {
         target: canvasA
@@ -246,23 +266,6 @@ ApplicationWindow {
     }
     // The drawer makes way for the page that was picked in it.
     Connections {
-        target: AppController
-        function onCurrentPageChanged() {
-            if (window.compact && AppController.currentPage.length > 0)
-                window.drawerOpen = false
-        }
-    }
-    Connections {
-        target: AppController
-        // Settings opens scrolled to the download, which sits below a long list of languages.
-        function onModelsNeeded(id) {
-            settingsDialog.showModels()
-            const model = Models.entries.find(e => e.id === id)
-            toast.show(model ? qsTr("Download \u201c%1\u201d first, then try again.").arg(model.title)
-                             : qsTr("Download the recognizer for this first."), false)
-        }
-    }
-    Connections {
         target: Updater
         // One question at a time: the update waits for the storage question.
         function onUpdateFound() {
@@ -276,18 +279,6 @@ ApplicationWindow {
     UpdateDialog {
         id: updateDialog
         parent: Overlay.overlay
-    }
-    Connections {
-        target: AppController
-        function onScreenshotTaken(file) {
-            window.restoreAfterScreenshot()
-            canvas.insertImageFile(file)
-        }
-        function onScreenshotCancelled() { window.restoreAfterScreenshot() }
-        function onScreenshotFailed(message) {
-            window.restoreAfterScreenshot()
-            toast.show(message, true)
-        }
     }
 
     Shortcut { sequences: [StandardKey.Undo]; onActivated: canvas.undo() }

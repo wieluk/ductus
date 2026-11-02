@@ -342,6 +342,10 @@ private:
     bool attempt(const std::function<void()> &action);
     /// Empties the canvas after the open page went away.
     void unloadPage();
+    /// A local copy of the file to read, or "" after saying it can't be read.
+    QString readableOrError(const QString &fileOrUrl);
+    /// Empties a canvas and marks the empty page as saved.
+    static void blank(InkCanvas *canvas, quint64 &savedRevision);
     void moveToSharedStorage();
     /// The siblings `path` moves among; `notebookList` for the notebook list.
     QStringList moveSiblings(const QString &path, bool *notebookList) const;
@@ -371,7 +375,6 @@ private:
     QString createPage(const QString &parent, const QString &baseName = {});
     bool paintPages(QPrinter &printer);
     QByteArray textOverlay();
-    static rust::Slice<const std::uint8_t> bytes(const QByteArray &data);
     /// That canvas's half of a split view becomes the one the ribbon, pen bar and keys act on.
     void activate(InkCanvas *canvas);
 

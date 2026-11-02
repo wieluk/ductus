@@ -44,6 +44,7 @@ fn main() {
         QmlFile::from("qml/MoveDialog.qml"),
         QmlFile::from("qml/PlacePicker.qml"),
         QmlFile::from("qml/ImportDialog.qml"),
+        QmlFile::from("qml/BarSeparator.qml"),
     ]);
     let mut builder = CxxQtBuilder::new_qml_module(qml)
         .qt_module("Quick")

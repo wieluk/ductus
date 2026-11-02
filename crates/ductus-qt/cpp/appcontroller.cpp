@@ -1,4 +1,5 @@
 #include "ductus-qt/cpp/appcontroller.h"
+#include "ductus-qt/cpp/rustconv.h"
 #include "ductus-qt/cpp/app.h"
 #include "ductus-qt/cpp/platformfiles.h"
 #include "ductus-qt/cpp/inkcanvas.h"
@@ -36,17 +37,6 @@
 #include <algorithm>
 
 namespace {
-
-QString toQ(const rust::String &s)
-{
-    return QString::fromUtf8(s.data(), static_cast<qsizetype>(s.size()));
-}
-
-std::string toStd(const QString &s)
-{
-    return s.toStdString();
-}
-
 QString defaultLibraryPath()
 {
     // Tests and portable setups can point the app elsewhere.
@@ -533,9 +523,7 @@ void AppController::openLibrary(const QString &pathOrUrl)
     m_other.preview.clear();
     m_other.views.clear();
     if (m_other.canvas) {
-        m_other.canvas->engine().unload();
-        m_other.canvas->documentReplaced();
-        m_other.savedRevision = m_other.canvas->revision();
+        blank(m_other.canvas, m_other.savedRevision);
     }
 
     // A closed page stays closed; a new library starts on its starter page.
@@ -567,9 +555,7 @@ void AppController::openLibrary(const QString &pathOrUrl)
         openInNewTab(last);
     } else {
         if (m_canvas) {
-            m_canvas->engine().unload();
-            m_canvas->documentReplaced();
-            m_savedRevision = m_canvas->revision();
+            blank(m_canvas, m_savedRevision);
         }
         setDirty(false);
         Q_EMIT openPagesChanged();
@@ -705,19 +691,7 @@ void AppController::closePage()
     m_canvas->finishTextEditing();
     saveNow();
     (*m_library)->close_page();
-    m_canvas->engine().unload();
-    m_canvas->documentReplaced();
-    m_savedRevision = m_canvas->revision();
-    setDirty(false);
-    storePanes();
-    m_views.clear();
-    setOpenPages({});
-    refreshTree();
-    rewatch();
-    Q_EMIT currentPageChanged();
-    // The emptied half of a split gives way to the other.
-    if (!m_other.tabs.isEmpty())
-        activate(m_other.canvas);
+    unloadPage();
 }
 
 void AppController::setHoldRecent(bool hold)
@@ -1342,9 +1316,7 @@ void AppController::remove(const QString &path)
         m_other.preview.clear();
     if (besideInside && m_other.canvas) {
         if (besideTabs.isEmpty()) {
-            m_other.canvas->engine().unload();
-            m_other.canvas->documentReplaced();
-            m_other.savedRevision = m_other.canvas->revision();
+            blank(m_other.canvas, m_other.savedRevision);
         } else {
             InkCanvas *back = m_canvas;
             activate(m_other.canvas);
@@ -1366,18 +1338,32 @@ void AppController::remove(const QString &path)
     Q_EMIT trashed(name, id);
 }
 
+QString AppController::readableOrError(const QString &fileOrUrl)
+{
+    const QString file = PlatformFiles::readable(fileOrUrl);
+    if (file.isEmpty())
+        Q_EMIT errorOccurred(tr("%1 can't be read.").arg(PlatformFiles::displayName(fileOrUrl)));
+    return file;
+}
+
+void AppController::blank(InkCanvas *canvas, quint64 &savedRevision)
+{
+    canvas->engine().unload();
+    canvas->documentReplaced();
+    savedRevision = canvas->revision();
+}
+
 void AppController::unloadPage()
 {
     setOpenPages({});
     m_views.clear();
-    m_canvas->engine().unload();
-    m_canvas->documentReplaced();
-    m_savedRevision = m_canvas->revision();
+    blank(m_canvas, m_savedRevision);
     setDirty(false);
     storePanes();
     refreshTree();
     rewatch();
     Q_EMIT currentPageChanged();
+    // The emptied half of a split gives way to the other.
     if (!m_other.tabs.isEmpty())
         activate(m_other.canvas);
 }
@@ -1684,9 +1670,8 @@ QString AppController::importPdf(const QString &fileOrUrl, bool annotate, const 
 {
     if (!m_library || !ensureFolder(folder))
         return {};
-    const QString file = PlatformFiles::readable(fileOrUrl);
+    const QString file = readableOrError(fileOrUrl);
     if (file.isEmpty()) {
-        Q_EMIT errorOccurred(tr("%1 can't be read.").arg(PlatformFiles::displayName(fileOrUrl)));
         return {};
     }
     QString path;
@@ -1705,9 +1690,8 @@ void AppController::importNotes(const QString &fileOrUrl)
 {
     if (!m_library || m_importing)
         return;
-    const QString file = PlatformFiles::readable(fileOrUrl);
+    const QString file = readableOrError(fileOrUrl);
     if (file.isEmpty()) {
-        Q_EMIT errorOccurred(tr("%1 can't be read.").arg(PlatformFiles::displayName(fileOrUrl)));
         return;
     }
     m_importing = true;
@@ -1977,9 +1961,8 @@ QString AppController::openFile(const QString &fileOrUrl)
 {
     if (!m_library)
         return {};
-    const QString readable = PlatformFiles::readable(fileOrUrl);
+    const QString readable = readableOrError(fileOrUrl);
     if (readable.isEmpty()) {
-        Q_EMIT errorOccurred(tr("%1 can't be read.").arg(PlatformFiles::displayName(fileOrUrl)));
         return {};
     }
     const QFileInfo info(readable);
@@ -2373,11 +2356,6 @@ void AppController::onScreenshotResponse(uint response, const QVariantMap &resul
         Q_EMIT screenshotFailed(tr("The screenshot didn't work."));
 }
 
-rust::Slice<const std::uint8_t> AppController::bytes(const QByteArray &data)
-{
-    return {reinterpret_cast<const std::uint8_t *>(data.constData()),
-            static_cast<std::size_t>(data.size())};
-}
 
 namespace {
 /// The same font the text boxes use on screen; 16 px is 12 pt.
