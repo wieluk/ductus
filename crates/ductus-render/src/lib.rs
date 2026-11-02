@@ -231,7 +231,7 @@ pub fn render_page_background(
     ));
     let paper = solid(settings.background.paper);
     for (index, sheet) in layout.sheet_rects().iter().copied().enumerate() {
-        if !overlaps(sheet, view) {
+        if !sheet.overlaps(view) {
             continue;
         }
         let (x0, y0) = (
@@ -276,7 +276,7 @@ pub fn ink_clip(pixmap: &Pixmap, vp: &Viewport, layout: &PageLayout) -> Option<M
     }
     let mut mask = Mask::new(pixmap.width(), pixmap.height())?;
     let view = vp.doc_rect(pixmap.width(), pixmap.height());
-    for sheet in layout.sheet_rects().iter().filter(|s| overlaps(**s, view)) {
+    for sheet in layout.sheet_rects().iter().filter(|s| s.overlaps(view)) {
         let r = tiny_skia::Rect::from_ltrb(
             sheet.x0 as f32,
             sheet.y0 as f32,
@@ -320,7 +320,7 @@ pub fn render_strokes_moved<'a>(
         ..Paint::default()
     };
     for stroke in strokes {
-        if !overlaps(t.transform_rect_bbox(stroke.bounds), area) {
+        if !t.transform_rect_bbox(stroke.bounds).overlaps(area) {
             continue;
         }
         paint.shader = Shader::SolidColor(stroke.color);
@@ -378,7 +378,7 @@ impl Picture {
         Pixmap::decode_png(bytes).ok().map(Self::from_pixmap)
     }
 
-    pub fn from_pixmap(full: Pixmap) -> Self {
+    fn from_pixmap(full: Pixmap) -> Self {
         let mut levels = vec![full];
         loop {
             let last = levels.last().expect("starts with one level");
@@ -418,7 +418,7 @@ pub fn render_picture(
     clip: Option<&Mask>,
 ) {
     let area = vp.doc_rect(pixmap.width(), pixmap.height());
-    if !overlaps(rect, area) || rect.width() <= 0.0 || rect.height() <= 0.0 {
+    if !rect.overlaps(area) || rect.width() <= 0.0 || rect.height() <= 0.0 {
         return;
     }
     // The smallest copy that still has at least one pixel per device pixel.
@@ -471,11 +471,6 @@ pub fn render_handle(pixmap: &mut Pixmap, vp: &Viewport, at: kurbo::Point, color
             None,
         );
     }
-}
-
-/// Unlike Rect::intersect().area(), this keeps zero-height bounds (flat lines).
-pub fn overlaps(a: Rect, b: Rect) -> bool {
-    a.x0 <= b.x1 && a.x1 >= b.x0 && a.y0 <= b.y1 && a.y1 >= b.y0
 }
 
 #[cfg(test)]

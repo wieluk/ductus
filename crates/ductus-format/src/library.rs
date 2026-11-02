@@ -537,22 +537,6 @@ impl Library {
             .collect())
     }
 
-    pub fn tree(&self) -> Result<Node, Error> {
-        let name = self
-            .root
-            .file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_default();
-        Ok(Node {
-            name,
-            path: String::new(),
-            kind: NodeKind::Folder,
-            color: None,
-            conflict: false,
-            children: self.scan("", true)?,
-        })
-    }
-
     /// Pages and PDFs in a folder and its subfolders, in tree order.
     pub fn pages_in(&self, folder: &str) -> Result<Vec<String>, Error> {
         fn walk(nodes: &[Node], out: &mut Vec<String>) {
@@ -1011,7 +995,7 @@ impl Library {
         snapshot_into(&self.history_dir(key), current, extension, &self.policy)
     }
 
-    pub fn history(&self, page_id: &str) -> Result<Vec<PathBuf>, Error> {
+    pub(crate) fn history(&self, page_id: &str) -> Result<Vec<PathBuf>, Error> {
         history_files(&self.history_dir(page_id))
     }
 }

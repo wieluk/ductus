@@ -55,7 +55,7 @@ impl Stack {
             let band = if lifts {
                 lifting
                     .iter()
-                    .filter(|(r, _, _)| ductus_render::overlaps(*r, rect))
+                    .filter(|(r, _, _)| r.overlaps(rect))
                     .map(|&(_, band, below_text)| band + u8::from(below_text && !text))
                     .max()
                     .unwrap_or(0)

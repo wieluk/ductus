@@ -116,7 +116,7 @@ pub struct Builtin {
 }
 
 /// Unused this long, a model is unloaded: the text models take about 300 MB, the formula one 600 MB.
-pub const IDLE_UNLOAD: Duration = Duration::from_secs(5 * 60);
+const IDLE_UNLOAD: Duration = Duration::from_secs(5 * 60);
 
 struct Loaded {
     model: crate::builtin::Model,
@@ -139,7 +139,7 @@ fn slot(path: &Path) -> Slot {
 }
 
 /// Unloads models unused for `idle`; a model in use stays.
-pub fn unload_idle(idle: Duration) {
+fn unload_idle(idle: Duration) {
     let slots: Vec<Slot> = SLOTS
         .lock()
         .unwrap_or_else(|e| e.into_inner())

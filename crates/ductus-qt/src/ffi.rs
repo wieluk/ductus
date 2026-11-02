@@ -134,7 +134,6 @@ pub mod qobject {
     #[derive(Debug, Default)]
     struct UpdateState {
         busy: bool,
-        checked: bool,
         latest: String,
         notes: String,
         page: String,
@@ -182,8 +181,6 @@ pub mod qobject {
     #[derive(Debug, Default)]
     struct ConvertState {
         busy: bool,
-        done: usize,
-        total: usize,
         result: String,
         /// Ids of the strokes that were read as `result`, space-separated.
         strokes: String,
@@ -473,7 +470,6 @@ pub mod qobject {
         fn offset_x(self: &CanvasEngine) -> f64;
         fn offset_y(self: &CanvasEngine) -> f64;
         fn reset_view(self: &mut CanvasEngine);
-        fn needs_settle(self: &CanvasEngine) -> bool;
         fn settle(self: &mut CanvasEngine);
 
         /// `tool`: 0 = pen, 1 = highlighter, 2 = eraser, 3 = lasso, 4 = hand.

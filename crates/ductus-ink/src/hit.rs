@@ -1,4 +1,4 @@
-use crate::radius_at;
+use crate::outline::radius_at;
 use ductus_core::{InkPoint, Stroke};
 use kurbo::{Line, ParamCurveNearest, Point, Rect};
 

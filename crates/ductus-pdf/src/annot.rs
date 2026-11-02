@@ -456,7 +456,7 @@ fn add_annotation(
     Some(doc.add_object(annot))
 }
 
-pub fn write_ink(bytes: &[u8], ink: &[PageInk]) -> Result<Vec<u8>, Error> {
+pub(crate) fn write_ink(bytes: &[u8], ink: &[PageInk]) -> Result<Vec<u8>, Error> {
     write_annotations(bytes, ink, &[])
 }
 

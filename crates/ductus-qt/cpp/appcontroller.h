@@ -199,8 +199,6 @@ public:
     Q_INVOKABLE void openInNewTab(const QString &path);
     /// A preview tab stays open as a normal one.
     Q_INVOKABLE void keepTab(const QString &path);
-    /// That canvas's half of a split view becomes the one the ribbon, pen bar and keys act on.
-    Q_INVOKABLE void activate(InkCanvas *canvas);
     /// Into the half with that canvas, from the other one or the sidebar.
     Q_INVOKABLE void moveTab(const QString &path, InkCanvas *to);
     /// In the half beside the active one, which splits the view.
@@ -374,9 +372,8 @@ private:
     bool paintPages(QPrinter &printer);
     QByteArray textOverlay();
     static rust::Slice<const std::uint8_t> bytes(const QByteArray &data);
-
-public:
-    static QFont textFont();
+    /// That canvas's half of a split view becomes the one the ribbon, pen bar and keys act on.
+    void activate(InkCanvas *canvas);
 
 protected:
     /// Input anywhere in the app holds back recognition for a moment.

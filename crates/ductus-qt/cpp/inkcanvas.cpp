@@ -778,11 +778,8 @@ void InkCanvas::onHold()
 {
     if (!m_engine->is_drawing())
         return;
-    const QString kind = QString::fromStdString(std::string(m_engine->hold()));
-    if (!kind.isEmpty()) {
+    if (!m_engine->hold().empty())
         repaint();
-        Q_EMIT shapeRecognized(kind);
-    }
 }
 
 void InkCanvas::updateSelection()

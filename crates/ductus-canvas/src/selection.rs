@@ -157,6 +157,7 @@ fn picture_name(bytes: &[u8]) -> String {
     format!("{IMAGE_PREFIX}{h:016x}.png")
 }
 
+/// Touching edges don't count, unlike Rect::overlaps.
 fn overlaps(a: Rect, b: Rect) -> bool {
     a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1
 }

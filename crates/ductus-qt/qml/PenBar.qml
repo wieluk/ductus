@@ -57,7 +57,7 @@ Rectangle {
         try {
             const list = JSON.parse(presetsJson)
             if (Array.isArray(list))
-                return list.filter(i => i.type !== "tool" || tools.some(t => t.tool === i.tool))
+                return list
         } catch (e) {}
         return defaults
     }
@@ -65,7 +65,7 @@ Rectangle {
     function store(list) { presetsJson = JSON.stringify(list) }
 
     function toolInfo(name) {
-        return tools.find(t => t.tool === name) || { tool: name, icon: "more", label: name }
+        return tools.find(t => t.tool === name)
     }
 
     function current() {

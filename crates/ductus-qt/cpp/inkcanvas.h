@@ -253,7 +253,7 @@ public:
     Q_INVOKABLE void cutSelection();
     /// A picture copied after the last ink copy wins.
     Q_INVOKABLE void paste();
-    Q_INVOKABLE bool insertImage(const QImage &image, QPointF at = QPointF(qQNaN(), qQNaN()));
+    bool insertImage(const QImage &image, QPointF at = QPointF(qQNaN(), qQNaN()));
     Q_INVOKABLE bool insertImageFile(const QString &fileOrUrl, QPointF at = QPointF(qQNaN(), qQNaN()));
     /// Its first pages as pictures, like a printout; they arrive once rendered.
     Q_INVOKABLE bool insertPdfFile(const QString &fileOrUrl);
@@ -301,7 +301,6 @@ Q_SIGNALS:
     void mathDraftChanged();
     void textCommitRequested();
     void notice(const QString &message, bool error);
-    void shapeRecognized(const QString &kind);
     void edited();
     /// Pen, mouse or finger went down on it: its half of a split view becomes the active one.
     void pressed();

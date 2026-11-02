@@ -2380,6 +2380,14 @@ rust::Slice<const std::uint8_t> AppController::bytes(const QByteArray &data)
 }
 
 namespace {
+/// The same font the text boxes use on screen; 16 px is 12 pt.
+QFont textFont()
+{
+    QFont font = QGuiApplication::font();
+    font.setPixelSize(16);
+    return font;
+}
+
 /// Markdown from a page may name any picture on this computer: an export never pulls one in.
 class InertDocument : public QTextDocument
 {
@@ -2440,14 +2448,6 @@ QByteArray AppController::textOverlay()
     }
     painter.end();
     return out;
-}
-
-QFont AppController::textFont()
-{
-    // The same font the text boxes use on screen; 16 px is 12 pt.
-    QFont font = QGuiApplication::font();
-    font.setPixelSize(16);
-    return font;
 }
 
 #ifndef DUCTUS_NO_PRINTING

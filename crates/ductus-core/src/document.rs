@@ -252,7 +252,7 @@ impl Document {
         &self.settings
     }
 
-    pub fn content_bottom(&self) -> f64 {
+    fn content_bottom(&self) -> f64 {
         self.strokes
             .iter()
             .flat_map(|s| s.points.iter().map(move |p| p.y + s.style.width / 2.0))

@@ -265,10 +265,6 @@ impl CanvasEngine {
         self.0.reset_view();
     }
 
-    pub fn needs_settle(&self) -> bool {
-        self.0.needs_settle()
-    }
-
     pub fn settle(&mut self) {
         self.0.settle();
     }

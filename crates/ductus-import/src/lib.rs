@@ -11,7 +11,7 @@ use ductus_format::{Error, Library};
 use std::path::Path;
 
 /// File extensions that can be imported, lower case.
-pub const EXTENSIONS: &[&str] = &["xopp", "xoj", "rnote", "one", "onetoc2", "onepkg"];
+const EXTENSIONS: &[&str] = &["xopp", "xoj", "rnote", "one", "onetoc2", "onepkg"];
 
 pub struct ImportedPage {
     pub name: String,

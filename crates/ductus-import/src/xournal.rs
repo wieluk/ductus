@@ -105,7 +105,7 @@ fn parse(
         };
         let mut attrs = HashMap::new();
         for attr in element.attributes() {
-            let attr = attr.map_err(quick_xml::Error::from)?;
+            let attr = attr?;
             let value = attr
                 .normalized_value(quick_xml::XmlVersion::Implicit1_0)?
                 .into_owned();

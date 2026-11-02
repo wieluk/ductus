@@ -504,3 +504,21 @@ fn paths_never_lead_out_of_the_library() {
     assert_eq!(lib.abs("../x"), lib.root().join("x"));
     assert!(lib.exists("Page"));
 }
+
+impl Library {
+    fn tree(&self) -> Result<Node, Error> {
+        let name = self
+            .root
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        Ok(Node {
+            name,
+            path: String::new(),
+            kind: NodeKind::Folder,
+            color: None,
+            conflict: false,
+            children: self.scan("", true)?,
+        })
+    }
+}

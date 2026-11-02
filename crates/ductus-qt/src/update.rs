@@ -7,7 +7,6 @@ use std::sync::{Arc, Mutex};
 #[derive(Default)]
 struct Shared {
     busy: bool,
-    checked: bool,
     latest: Option<Release>,
     /// The notes of every release since the installed one, when there are several.
     notes: String,
@@ -96,7 +95,6 @@ impl UpdateHandle {
                 _ => String::new(),
             };
             let Ok(mut s) = shared.lock() else { return };
-            s.checked = true;
             s.notes = notes;
             match outcome {
                 Ok(latest) => s.latest = latest,
@@ -151,7 +149,6 @@ impl UpdateHandle {
         };
         UpdateState {
             busy: s.busy,
-            checked: s.checked,
             latest: s
                 .latest
                 .as_ref()

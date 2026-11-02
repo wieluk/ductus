@@ -864,7 +864,7 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
         }
         let mut dx = std::collections::HashMap::new();
         for attr in element.attributes() {
-            let attr = attr.map_err(quick_xml::Error::from)?;
+            let attr = attr?;
             let (ans, alocal) = reader.resolver().resolve_attribute(attr.key);
             let key = match ans {
                 ResolveResult::Bound(Namespace(n)) if n == DX_NS => alocal.as_ref().to_owned(),

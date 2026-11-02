@@ -88,7 +88,7 @@ impl TileCache {
                 f64::from(key.x + 1) * size,
                 f64::from(key.y + 1) * size,
             );
-            if ductus_render::overlaps(r, doc) {
+            if r.overlaps(doc) {
                 tile.dirty = true;
             }
         }
