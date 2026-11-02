@@ -997,6 +997,7 @@ dependencies = [
  "base64 0.23.1",
  "ductus-core",
  "ductus-format",
+ "ductus-ink",
  "ductus-math",
  "ductus-pdf",
  "flate2",
