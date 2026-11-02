@@ -13,19 +13,11 @@ Rectangle {
     property bool compact: false
     readonly property bool mobile: Qt.platform.os === "android" || Qt.platform.os === "ios"
 
-    signal settingsRequested()
-    signal exportRequested()
-    signal openFolderRequested()
-    signal openFileRequested()
-    signal importRequested()
-    signal importFolderRequested()
-    signal printRequested()
+    /// The commands Main offers here, in the ribbon and on the keyboard.
+    required property var commands
+
     signal sidebarToggled()
     signal updateRequested()
-    signal newPageRequested()
-    signal newNotebookRequested()
-    signal historyRequested()
-    signal trashRequested()
 
     implicitHeight: Theme.titleHeight
     color: Theme.titleBar
@@ -83,69 +75,69 @@ Rectangle {
                     AppMenuItem {
                         objectName: "menuNewPage"
                         text: qsTr("New Page…")
-                        onTriggered: bar.newPageRequested()
+                        onTriggered: bar.commands.newPage()
                     }
                     AppMenuItem {
                         objectName: "menuNewNotebook"
                         text: qsTr("New Notebook…")
-                        onTriggered: bar.newNotebookRequested()
+                        onTriggered: bar.commands.newNotebook()
                     }
                     AppMenuItem {
                         objectName: "menuOpenFile"
                         text: qsTr("Open…")
-                        onTriggered: bar.openFileRequested()
+                        onTriggered: bar.commands.openFile()
                     }
                     AppMenuItem {
                         objectName: "menuImport"
                         text: qsTr("Import…")
-                        enabled: !AppController.importing
-                        onTriggered: bar.importRequested()
+                        enabled: bar.commands.canImport
+                        onTriggered: bar.commands.importFile()
                     }
                     AppMenuItem {
                         objectName: "menuImportFolder"
                         text: qsTr("Import Folder…")
-                        enabled: !AppController.importing
-                        onTriggered: bar.importFolderRequested()
+                        enabled: bar.commands.canImport
+                        onTriggered: bar.commands.importFolder()
                     }
                     AppMenuItem {
                         objectName: "menuOpenLibrary"
                         text: qsTr("Open Library Folder…")
-                        onTriggered: bar.openFolderRequested()
+                        onTriggered: bar.commands.openLibrary()
                     }
                     AppMenuItem {
                         objectName: "menuSave"
                         text: qsTr("Save Now")
-                        onTriggered: AppController.saveNow()
+                        onTriggered: bar.commands.save()
                     }
                     AppMenuItem {
                         objectName: "menuClosePage"
                         text: qsTr("Close Page")
-                        enabled: AppController.currentPage.length > 0
-                        onTriggered: AppController.closePage()
+                        enabled: bar.commands.pageOpen
+                        onTriggered: bar.commands.closePage()
                     }
                     AppMenuItem {
                         objectName: "menuHistory"
                         text: qsTr("Earlier Versions…")
-                        enabled: AppController.currentPage.length > 0
-                        onTriggered: bar.historyRequested()
+                        enabled: bar.commands.pageOpen
+                        onTriggered: bar.commands.history()
                     }
                     AppMenuItem {
                         objectName: "menuTrash"
                         text: qsTr("Trash…")
-                        onTriggered: bar.trashRequested()
+                        onTriggered: bar.commands.trash()
                     }
                     AppMenuSeparator {}
                     AppMenuItem {
                         objectName: "menuExportPdf"
                         text: qsTr("Export as PDF…")
-                        enabled: AppController.currentPage.length > 0 && AppController.pdfProblem.length === 0
-                        onTriggered: bar.exportRequested()
+                        enabled: bar.commands.canExport
+                        onTriggered: bar.commands.exportPdf()
                     }
                     AppMenuItem {
                         objectName: "menuPrint"
                         text: qsTr("Print…")
-                        enabled: AppController.currentPage.length > 0 && AppController.pdfProblem.length === 0
-                        onTriggered: bar.printRequested()
+                        enabled: bar.commands.canExport
+                        onTriggered: bar.commands.printPage()
                     }
                     AppMenuSeparator {}
                     AppMenuItem {
@@ -157,9 +149,9 @@ Rectangle {
                     AppMenuItem {
                         objectName: "menuSettings"
                         text: qsTr("Settings…")
-                        onTriggered: bar.settingsRequested()
+                        onTriggered: bar.commands.settings()
                     }
-                    AppMenuItem { text: qsTr("Quit"); onTriggered: Qt.quit() }
+                    AppMenuItem { text: qsTr("Quit"); onTriggered: bar.commands.quit() }
                 }
             }
 
