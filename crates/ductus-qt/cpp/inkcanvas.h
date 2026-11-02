@@ -331,8 +331,12 @@ private:
     Tool penTool(const QTabletEvent *event) const;
     /// The settings slot (0, 1 or 2 for the eraser end) of the button held at a pen event, or -1.
     int heldPenButton(const QTabletEvent *event) const;
+    /// The same for the side buttons alone, once they count (see trackPenButtons).
+    int heldSideButton() const;
     /// Follows the pen's buttons for the tool bars and, in switch mode, clicks.
     void trackPenButtons(const QTabletEvent *event);
+    /// A side button held long enough counts: it stands in for its tool, or in switch mode clicks.
+    void settleSideButtons();
     void setHeldTool(int tool);
     void switchToPenButtonTool(int tool);
     void forwardAsMouse(QTabletEvent *event);
@@ -394,8 +398,10 @@ private:
     bool m_penButtonsSwitch = false;
     /// What a held side button or the eraser end stands in for, or -1.
     int m_heldTool = -1;
-    /// The side buttons down at the last pen event, to see a click begin.
+    /// The side buttons the pen reports, and those held long enough to count.
+    Qt::MouseButtons m_reportedSide;
     Qt::MouseButtons m_sideButtons;
+    QTimer m_sideTimer;
     /// The tool before a side button's click switched away from it, or -1.
     int m_toolBeforeSwitch = -1;
     /// Set while a side button's click changes the tool, which keeps m_toolBeforeSwitch.

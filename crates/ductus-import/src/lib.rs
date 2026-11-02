@@ -153,7 +153,7 @@ fn file_name(title: &str) -> String {
 }
 
 /// Unpacked data from one stream or package entry; more than this is a broken or hostile file.
-const MAX_UNPACKED: u64 = 512 << 20;
+pub(crate) const MAX_UNPACKED: u64 = 512 << 20;
 
 /// Reads at most `MAX_UNPACKED` bytes: a few bytes of gzip can unpack to gigabytes.
 pub(crate) fn read_unpacked(reader: impl std::io::Read) -> Result<Vec<u8>, Error> {
@@ -204,7 +204,8 @@ pub(crate) fn resample(mut points: Vec<InkPoint>) -> Vec<InkPoint> {
     const STEP: f64 = 2.0;
     const MIN_STEP: f64 = 0.4;
     const MAX_PER_SEGMENT: f64 = 4096.0;
-    points.retain(|p| p.x.is_finite() && p.y.is_finite() && p.pressure.is_finite());
+    let sane = |v: f64| v.is_finite() && v.abs() <= ductus_core::MAX_COORD;
+    points.retain(|p| sane(p.x) && sane(p.y) && p.pressure.is_finite());
     let end = points.len().saturating_sub(1);
     let mut kept: Vec<InkPoint> = Vec::with_capacity(points.len());
     for (i, p) in points.into_iter().enumerate() {
@@ -219,6 +220,9 @@ pub(crate) fn resample(mut points: Vec<InkPoint>) -> Vec<InkPoint> {
     let points = kept;
     let mut out = Vec::with_capacity(points.len());
     for pair in points.windows(2) {
+        if out.len() >= ductus_core::MAX_POINTS {
+            break;
+        }
         let (a, b) = (pair[0], pair[1]);
         out.push(a);
         let n = ((b.x - a.x).hypot(b.y - a.y) / STEP)

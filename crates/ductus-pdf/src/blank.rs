@@ -47,7 +47,9 @@ pub fn insert_blank_page(bytes: &[u8], after: usize) -> Result<Vec<u8>, Error> {
     kids.insert(at, Object::Reference(blank));
     // Every page tree node above it counts one more page.
     let mut node = Some(parent);
-    while let Some(id) = node {
+    // A broken file's tree can loop.
+    for _ in 0..32 {
+        let Some(id) = node else { break };
         let dict = pdf.get_dictionary_mut(id)?;
         let count = dict.get(b"Count").and_then(Object::as_i64).unwrap_or(0);
         dict.set("Count", count + 1);

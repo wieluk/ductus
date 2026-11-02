@@ -462,9 +462,10 @@ impl Converter {
 
     fn vector(&mut self, v: &Value) -> Option<Image> {
         let rect = rectangle(&v["rectangle"])?;
-        let tree =
-            resvg::usvg::Tree::from_str(v["svg_data"].as_str()?, &resvg::usvg::Options::default())
-                .ok()?;
+        // Only pictures inside the file: a link could name any file on this computer.
+        let mut options = resvg::usvg::Options::default();
+        options.image_href_resolver.resolve_string = Box::new(|_, _| None);
+        let tree = resvg::usvg::Tree::from_str(v["svg_data"].as_str()?, &options).ok()?;
         let size = tree.size();
         let scale = |extent: f64| (extent * self.k * RASTER_SCALE).clamp(1.0, 4096.0);
         let (w, h) = (scale(rect.2 - rect.0), scale(rect.3 - rect.1));

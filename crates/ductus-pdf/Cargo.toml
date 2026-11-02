@@ -11,6 +11,7 @@ ductus-core.workspace = true
 ductus-ink.workspace = true
 ductus-render.workspace = true
 ductus-math.workspace = true
+flate2 = "1"
 kurbo.workspace = true
 lopdf = "0.46"
 pdfium-render = { version = "0.9", default-features = false, features = ["pdfium_latest", "thread_safe"] }

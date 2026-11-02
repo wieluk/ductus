@@ -63,10 +63,18 @@ pen-click button=1 550,500
 expect-prop canvas tool Highlighter
 pen-click button=1 550,500
 expect-prop canvas tool Pen
+# A side button the pen reports for a moment, at the edge of its range, is no click.
+pen-click button=1 ms=10 550,500
+wait 100
+expect-prop canvas tool Pen
 pen-click button=2 550,500
 pen-click button=1 550,500
 expect-prop canvas tool Highlighter
 pen-click button=1 550,500
+expect-prop canvas tool Pen
+# A side button the pen reports for a moment, at the edge of its range, is no click.
+pen-click button=1 ms=10 550,500
+wait 100
 expect-prop canvas tool Pen
 pen-click button=2 550,500
 expect-prop canvas tool Lasso

@@ -406,6 +406,7 @@ pub fn install(
 }
 
 pub fn remove(dir: &Path, id: &str) -> Result<(), String> {
+    model_info(id).ok_or("unknown model")?;
     match std::fs::remove_dir_all(dir.join(id)) {
         Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(err(e)),
         _ => Ok(()),

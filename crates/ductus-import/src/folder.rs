@@ -74,7 +74,7 @@ fn entries(dir: &Path, warnings: &mut Vec<String>) -> Result<Vec<Entry>, Error> 
             .is_ok_and(|m| m.file_type().is_symlink());
         if path.is_dir() && !linked {
             out.extend(folder(&path, false, warnings)?);
-        } else if crate::supports(&path) && !is(&path, "onetoc2") {
+        } else if path.is_file() && crate::supports(&path) && !is(&path, "onetoc2") {
             // One unreadable file shouldn't stop the rest.
             match crate::read(&path) {
                 Ok(import) => {

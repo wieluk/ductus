@@ -36,6 +36,13 @@ pub(crate) fn read(path: &Path) -> Result<Import, Error> {
             } else if name.starts_with("attachments/") && entry.is_file() {
                 attachments.insert(name, crate::read_unpacked(&mut entry)?);
             }
+            // The limit is for the whole package, not each file in it.
+            let unpacked = xml.len() + attachments.values().map(Vec::len).sum::<usize>();
+            if unpacked as u64 > crate::MAX_UNPACKED {
+                return Err(Error::Invalid(
+                    "The file unpacks to more than 512 MB.".into(),
+                ));
+            }
         }
         xml
     } else if raw.starts_with(&[0x1f, 0x8b]) {
@@ -291,8 +298,13 @@ impl Parser<'_> {
         }
         let dir = self.file.parent().unwrap_or(Path::new("."));
         let filename = filename.strip_prefix("file://").unwrap_or(filename);
+        let path = Path::new(filename);
+        let climbs = path
+            .components()
+            .any(|c| matches!(c, std::path::Component::ParentDir));
         let mut candidates = Vec::new();
         if domain == "attach"
+            && !climbs
             && let Some(own) = self.file.file_name()
         {
             let mut name = own.to_os_string();
@@ -302,17 +314,16 @@ impl Parser<'_> {
         }
         // Xournal++ keeps the PDF or picture a page is drawn over by its absolute path; relative
         // names stay next to the notebook.
-        let path = Path::new(filename);
-        let climbs = path
-            .components()
-            .any(|c| matches!(c, std::path::Component::ParentDir));
         if path.is_absolute() && domain == "absolute" || path.is_relative() && !climbs {
             candidates.push(dir.join(filename));
         }
         if let Some(base) = path.file_name() {
             candidates.push(dir.join(base));
         }
-        let path = candidates.into_iter().find(|p| p.is_file())?;
+        let path = candidates.into_iter().find(|p| {
+            p.metadata()
+                .is_ok_and(|m| m.is_file() && m.len() <= crate::MAX_UNPACKED)
+        })?;
         let bytes = std::fs::read(&path).ok()?;
         // A notebook may only bring in PDFs and pictures, not any file it names.
         is_pdf_or_picture(&bytes).then(|| (path.to_string_lossy().into_owned(), bytes))

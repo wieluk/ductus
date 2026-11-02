@@ -892,7 +892,8 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
                         "page format {version} is newer than this app ({FORMAT_VERSION})"
                     )));
                 }
-                id = dx.get("id").cloned();
+                // It names the page's history folder, so only ids this app makes are kept.
+                id = dx.get("id").filter(|id| crate::is_page_id(id)).cloned();
                 if let Some(k) = dx.get("kind") {
                     kind_name.clone_from(k);
                 }

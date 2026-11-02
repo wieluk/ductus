@@ -44,7 +44,10 @@ impl PdfFile {
         origin: (f64, f64),
         scale: f64,
     ) -> Result<(), Error> {
-        let (w, h) = self.sizes[index];
+        let &(w, h) = self
+            .sizes
+            .get(index)
+            .ok_or_else(|| Error::Invalid(format!("no page {index}")))?;
         let page = self.document.pages().get(index as PdfPageIndex)?;
         let (pw, ph) = ((w * scale).round() as i32, (h * scale).round() as i32);
         let (ox, oy) = (origin.0.round() as i32, origin.1.round() as i32);

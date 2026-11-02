@@ -23,6 +23,9 @@ pub struct UpdateHandle {
 }
 
 pub fn open_updater() -> Box<UpdateHandle> {
+    if std::env::var_os("DUCTUS_UPDATE_FEED").is_some() {
+        ductus_update::allow_test_feeds();
+    }
     Box::new(UpdateHandle {
         shared: Arc::default(),
         cancel: Arc::default(),

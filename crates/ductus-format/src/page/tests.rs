@@ -205,13 +205,13 @@ fn pdf_backed_pages_keep_their_sheets_and_source() {
         let crafted = svg.replace(r#"dx:pdf="source.pdf""#, &format!(r#"dx:pdf="{path}""#));
         assert_eq!(read_page(&crafted).unwrap().pdf, None, "{path}");
     }
-    let mut crafted = page.clone();
-    crafted.id = r#"x" onload="alert(1)"#.into();
-    assert_eq!(
-        read_page(&write_page(&crafted)).unwrap().id,
-        crafted.id,
-        "the id stays one attribute"
-    );
+    // The id names the page's history folder: anything but hex gets a new one.
+    for id in [r#"x" onload="alert(1)"#, "../../x", "/home", ""] {
+        let mut crafted = page.clone();
+        crafted.id = id.into();
+        let back = read_page(&write_page(&crafted)).unwrap().id;
+        assert!(crate::is_page_id(&back) && back != id, "{id}");
+    }
     let height = 1122.5 + SHEET_GAP + 793.7;
     assert!(
         svg.contains(&format!("{} {}", num(1122.5, 2), num(height, 2))),

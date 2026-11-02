@@ -173,6 +173,17 @@ pub struct PageSettings {
 pub const MARGIN_LINE: Rgba = Rgba::rgb(0.91, 0.55, 0.6);
 
 impl PageSettings {
+    /// A pattern spacing from a file is kept between 1 and 100 mm.
+    pub fn sanitized(mut self) -> Self {
+        let spacing = self.background.spacing;
+        self.background.spacing = if spacing.is_finite() {
+            spacing.clamp(UNITS_PER_MM, 100.0 * UNITS_PER_MM)
+        } else {
+            self.background.pattern.default_spacing()
+        };
+        self
+    }
+
     /// Ruled paper sheets: heading room and margin line, as (top, left) from the corner.
     pub fn ruled_margins(&self) -> Option<(f64, f64)> {
         (self.background.pattern == PatternStyle::Lined

@@ -153,22 +153,18 @@ pub(crate) fn notes_page_pictures(
 }
 
 pub(crate) fn own_resources(pdf: &lopdf::Document, page: ObjectId) -> Dictionary {
-    let mut id = page;
-    loop {
-        let Ok(dict) = pdf.get_dictionary(id) else {
-            return Dictionary::new();
-        };
-        if let Ok(resources) = dict.get(b"Resources") {
-            return match resources {
-                Object::Reference(r) => pdf.get_dictionary(*r).cloned().unwrap_or_default(),
-                Object::Dictionary(d) => d.clone(),
-                _ => Dictionary::new(),
-            };
-        }
-        match dict.get(b"Parent").and_then(Object::as_reference) {
-            Ok(parent) => id = parent,
-            Err(_) => return Dictionary::new(),
-        }
+    crate::annot::inherited(pdf, page, b"Resources")
+        .and_then(|r| r.as_dict().ok())
+        .cloned()
+        .unwrap_or_default()
+}
+
+/// A dictionary given inline or by reference.
+pub(crate) fn dictionary(pdf: &lopdf::Document, object: Option<&Object>) -> Dictionary {
+    match object {
+        Some(Object::Reference(r)) => pdf.get_dictionary(*r).cloned().unwrap_or_default(),
+        Some(Object::Dictionary(d)) => d.clone(),
+        _ => Dictionary::new(),
     }
 }
 
@@ -180,11 +176,7 @@ pub(crate) fn fresh_xobject_name(
     taken: &mut Vec<String>,
 ) -> String {
     let resources = own_resources(pdf, page);
-    let existing = match resources.get(b"XObject") {
-        Ok(Object::Reference(r)) => pdf.get_dictionary(*r).cloned().unwrap_or_default(),
-        Ok(Object::Dictionary(d)) => d.clone(),
-        _ => Dictionary::new(),
-    };
+    let existing = dictionary(pdf, resources.get(b"XObject").ok());
     let name = (0..)
         .map(|i| format!("{base}{i}"))
         .find(|name| !existing.has(name.as_bytes()) && !taken.contains(name))
@@ -200,11 +192,7 @@ pub(crate) fn draw_on_page(
     ops: Vec<Operation>,
 ) -> Result<(), Error> {
     let mut resources = own_resources(pdf, page);
-    let mut dict = match resources.get(b"XObject") {
-        Ok(Object::Reference(r)) => pdf.get_dictionary(*r).cloned().unwrap_or_default(),
-        Ok(Object::Dictionary(d)) => d.clone(),
-        _ => Dictionary::new(),
-    };
+    let mut dict = dictionary(pdf, resources.get(b"XObject").ok());
     for (name, id) in xobjects {
         dict.set(name.as_bytes(), id);
     }
@@ -268,4 +256,20 @@ pub(crate) fn add_to_pdf(bytes: &[u8], pictures: &[PagePicture]) -> Result<Vec<u
     let mut out = Vec::with_capacity(bytes.len());
     pdf.save_to(&mut out)?;
     Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_page_tree_that_loops_ends() {
+        let mut pdf = lopdf::Document::with_version("1.7");
+        let page = pdf.new_object_id();
+        pdf.objects.insert(
+            page,
+            Object::Dictionary(lopdf::dictionary! { "Type" => "Page", "Parent" => page }),
+        );
+        assert!(own_resources(&pdf, page).is_empty());
+    }
 }

@@ -1043,6 +1043,7 @@ dependencies = [
  "ductus-ink",
  "ductus-math",
  "ductus-render",
+ "flate2",
  "kurbo",
  "lopdf",
  "pdfium-render",

@@ -195,18 +195,18 @@ fn history_keeps_previous_versions_within_limits() {
     let rel = lib
         .create_page("", "Page", PageSettings::default())
         .unwrap();
-    let page = page_with_stroke("page-id");
+    let page = page_with_stroke("0123abcd");
     for _ in 0..5 {
         lib.save_page(&rel, &page).unwrap();
         std::thread::sleep(Duration::from_millis(2));
     }
-    assert_eq!(lib.history("page-id").unwrap().len(), 3);
+    assert_eq!(lib.history("0123abcd").unwrap().len(), 3);
 
     let mut lib = Library::open(dir.path(), &dir.path().join(".app")).unwrap();
-    let before = lib.history("page-id").unwrap().len();
+    let before = lib.history("0123abcd").unwrap().len();
     lib.save_page(&rel, &page).unwrap();
     lib.save_page(&rel, &page).unwrap();
-    assert_eq!(lib.history("page-id").unwrap().len(), before + 1);
+    assert_eq!(lib.history("0123abcd").unwrap().len(), before + 1);
 }
 
 #[test]
@@ -225,12 +225,12 @@ fn large_histories_keep_only_the_newest_versions() {
     let rel = lib
         .create_page("", "Page", PageSettings::default())
         .unwrap();
-    let page = page_with_stroke("page-id");
+    let page = page_with_stroke("0123abcd");
     for _ in 0..8 {
         lib.save_page(&rel, &page).unwrap();
         std::thread::sleep(Duration::from_millis(2));
     }
-    assert_eq!(lib.history("page-id").unwrap().len(), MIN_VERSIONS);
+    assert_eq!(lib.history("0123abcd").unwrap().len(), MIN_VERSIONS);
 }
 
 #[test]
@@ -398,6 +398,8 @@ fn trash_purges_and_empties() {
     let id = lib.delete("Gone").unwrap();
     lib.purge(&id).unwrap();
     assert!(lib.trash().unwrap().is_empty());
+    // Only what is in the trash, and never a path.
+    assert!(lib.purge("../../outside").is_err());
 
     lib.create_page("", "Old notes", PageSettings::default())
         .unwrap();
@@ -422,10 +424,10 @@ fn earlier_versions_can_be_restored_or_copied() {
     let rel = lib
         .create_page("", "Page", PageSettings::default())
         .unwrap();
-    let first = page_with_stroke("page-id");
+    let first = page_with_stroke("0123abcd");
     lib.save_page(&rel, &first).unwrap();
     std::thread::sleep(Duration::from_millis(2));
-    let mut second = page_with_stroke("page-id");
+    let mut second = page_with_stroke("0123abcd");
     second.document = Document::new();
     lib.save_page(&rel, &second).unwrap();
 
@@ -461,7 +463,7 @@ fn a_library_moves_with_its_history_and_notebooks() {
     lib.set_notebook("Physics", Some("Physik")).unwrap();
     lib.create_page("Physics", "Optics", PageSettings::default())
         .unwrap();
-    lib.save_page("Physics/Optics", &page_with_stroke("page-id"))
+    lib.save_page("Physics/Optics", &page_with_stroke("0123abcd"))
         .unwrap();
     let trashed = lib.delete("Physics/Optics").unwrap();
     drop(lib);
@@ -488,4 +490,17 @@ fn an_unreadable_data_file_is_kept_aside() {
     let missing: Vec<String> = read_data(&dir.path().join("none.json"));
     assert!(missing.is_empty());
     assert!(!dir.path().join("none.json.broken").exists());
+}
+
+#[test]
+fn paths_never_lead_out_of_the_library() {
+    let (_d, mut lib) = lib();
+    lib.create_page("", "Page", PageSettings::default())
+        .unwrap();
+    for rel in ["..", "a/..", ".", "Page/../.."] {
+        assert!(lib.delete(rel).is_err(), "{rel}");
+        assert!(lib.rename(rel, "x").is_err(), "{rel}");
+    }
+    assert_eq!(lib.abs("../x"), lib.root().join("x"));
+    assert!(lib.exists("Page"));
 }

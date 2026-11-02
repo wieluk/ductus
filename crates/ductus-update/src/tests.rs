@@ -26,6 +26,27 @@ fn versions_compare_as_semver() {
 }
 
 #[test]
+fn packages_must_carry_the_releases_version() {
+    let asset = |name: &str| Asset {
+        name: name.into(),
+        url: String::new(),
+        size: 0,
+    };
+    let release = Release {
+        version: "0.3.0".into(),
+        notes: String::new(),
+        page: String::new(),
+        assets: vec![
+            asset("Ductus-0.2.0-setup.exe"),
+            asset("Ductus-0.3.0-x.flatpak"),
+        ],
+    };
+    // An old signed installer can't pass for this version.
+    assert!(release.asset_ending("-setup.exe").is_none());
+    assert!(release.asset_ending(".flatpak").is_some());
+}
+
+#[test]
 fn releases_are_read_from_githubs_answer() {
     let json = r#"{"tag_name":"v0.3.0","body":" Notes \n","html_url":"https://example.org/r",
         "draft":false,"prerelease":false,

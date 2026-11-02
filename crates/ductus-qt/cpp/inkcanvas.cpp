@@ -185,6 +185,11 @@ InkCanvas::InkCanvas(QQuickItem *parent)
         repaint();
     });
 
+    // Longer than a flicker, shorter than a press of a finger.
+    m_sideTimer.setSingleShot(true);
+    m_sideTimer.setInterval(50);
+    connect(&m_sideTimer, &QTimer::timeout, this, &InkCanvas::settleSideButtons);
+
     m_holdTimer.setSingleShot(true);
     m_holdTimer.setInterval(m_holdDelay);
     connect(&m_holdTimer, &QTimer::timeout, this, &InkCanvas::onHold);
@@ -941,6 +946,8 @@ bool InkCanvas::eventFilter(QObject *watched, QEvent *event)
     if (watched == qApp) {
         if (event->type() == QEvent::TabletLeaveProximity) {
             setHeldTool(-1);
+            m_sideTimer.stop();
+            m_reportedSide = Qt::NoButton;
             m_sideButtons = Qt::NoButton;
             hidePenTip();
         }
@@ -1068,7 +1075,7 @@ void InkCanvas::forwardAsMouse(QTabletEvent *event)
     if (event->type() == QEvent::TabletPress) {
         type = QEvent::MouseButtonPress;
         // The tip with a barrel button held is a right click.
-        m_forwardButton = sideButtons(event) ? Qt::RightButton : Qt::LeftButton;
+        m_forwardButton = m_sideButtons ? Qt::RightButton : Qt::LeftButton;
     } else if (event->type() == QEvent::TabletRelease) {
         type = QEvent::MouseButtonRelease;
     }
@@ -1394,13 +1401,17 @@ int InkCanvas::heldPenButton(const QTabletEvent *event) const
 {
     if (event->pointerType() == QPointingDevice::PointerType::Eraser)
         return 2;
+    return heldSideButton();
+}
+
+int InkCanvas::heldSideButton() const
+{
     // Switching, the side buttons change the tool itself.
     if (m_penButtonsSwitch)
         return -1;
-    const Qt::MouseButtons side = sideButtons(event);
-    if (side & firstPenButton())
+    if (m_sideButtons & firstPenButton())
         return 0;
-    if (side & secondPenButton())
+    if (m_sideButtons & secondPenButton())
         return 1;
     return -1;
 }
@@ -1412,16 +1423,31 @@ InkCanvas::Tool InkCanvas::penTool(const QTabletEvent *event) const
     return choice < 0 ? tool() : static_cast<Tool>(choice);
 }
 
+// A pen near the edge of its range can report a side button for a few milliseconds that nobody
+// pressed, as it comes and goes between strokes. So a press counts once it lasts a moment
+// (m_sideTimer); letting go counts at once.
 void InkCanvas::trackPenButtons(const QTabletEvent *event)
 {
+    const bool eraser = event->pointerType() == QPointingDevice::PointerType::Eraser;
+    const Qt::MouseButtons side = eraser ? Qt::MouseButtons() : sideButtons(event);
+    if (side != m_reportedSide) {
+        m_reportedSide = side;
+        m_sideButtons &= side;
+        if (side & ~m_sideButtons)
+            m_sideTimer.start();
+        else
+            m_sideTimer.stop();
+    }
     const int which = heldPenButton(event);
     setHeldTool(which < 0 ? -1 : m_penButtonTools[which]);
+}
 
-    const Qt::MouseButtons side = event->pointerType() == QPointingDevice::PointerType::Eraser
-        ? Qt::MouseButtons()
-        : sideButtons(event);
-    const Qt::MouseButtons clicked = side & ~m_sideButtons;
-    m_sideButtons = side;
+void InkCanvas::settleSideButtons()
+{
+    const Qt::MouseButtons clicked = m_reportedSide & ~m_sideButtons;
+    m_sideButtons = m_reportedSide;
+    const int which = heldSideButton();
+    setHeldTool(which < 0 ? -1 : m_penButtonTools[which]);
     if (!m_penButtonsSwitch || !clicked)
         return;
     // Every canvas of the window sees the click; the first one acts for all. Not while writing.

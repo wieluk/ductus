@@ -101,6 +101,11 @@ fn stable_key(rel: &str) -> String {
     format!("{h:016x}")
 }
 
+/// One step of a library path that stays where it is: no "..", and on Windows no drive or "\\".
+fn is_path_part(part: &str) -> bool {
+    !matches!(part, "" | "." | "..") && !(cfg!(windows) && part.contains(['\\', ':']))
+}
+
 pub fn validate_name(name: &str) -> Result<String, Error> {
     let name = name.trim();
     let invalid = |why: &str| Err(Error::Invalid(why.to_owned()));
@@ -187,7 +192,8 @@ pub fn write_atomic(path: &Path, bytes: &[u8]) -> Result<(), Error> {
     static WRITES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let n = WRITES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let tmp = dir.join(format!(".{name}.tmp-{}-{n}", std::process::id()));
-    let written = fs::File::create(&tmp).and_then(|mut file| {
+    // create_new: never through a link someone placed at this name.
+    let written = fs::File::create_new(&tmp).and_then(|mut file| {
         file.write_all(bytes)?;
         file.sync_all()
     });
@@ -294,6 +300,9 @@ fn merge_into(old: &Path, new: &Path) -> Result<(), Error> {
 
 /// Moves a library's notes into another folder, with its history, trash and notebook settings.
 pub fn relocate_library(from: &Path, to: &Path, app_data: &Path) -> Result<(), Error> {
+    if to.starts_with(from) {
+        return Err(Error::Invalid("A library can't move into itself.".into()));
+    }
     if from.is_dir() {
         merge_into(from, to)?;
     } else {
@@ -349,10 +358,10 @@ impl Library {
         &self.root
     }
 
-    /// A library path on disk. It never leads out of the library: "." and ".." parts are dropped.
+    /// A library path on disk. It never leads out of the library: parts that could are dropped.
     pub fn abs(&self, rel: &str) -> PathBuf {
         rel.split('/')
-            .filter(|p| !p.is_empty() && *p != "." && *p != "..")
+            .filter(|p| is_path_part(p))
             .fold(self.root.clone(), |acc, p| acc.join(p))
     }
 
@@ -364,6 +373,12 @@ impl Library {
     }
 
     fn entry_path(&self, rel: &str) -> Result<(PathBuf, NodeKind), Error> {
+        // Otherwise "a/.." would name the library itself.
+        if !rel.is_empty() && !rel.split('/').all(is_path_part) {
+            return Err(Error::Invalid(format!(
+                "\u{201c}{rel}\u{201d} isn't a library path."
+            )));
+        }
         let folder = self.abs(rel);
         let (_, file) = Self::split(rel);
         if pdf_stem(file).is_some() && folder.is_file() {
@@ -828,8 +843,9 @@ impl Library {
     }
 
     pub fn import_page(&self, parent: &str, file: &Path) -> Result<String, Error> {
-        let text = fs::read_to_string(file)?;
-        read_page(&text)?;
+        // A page of its own, with a new id, or both would share one history.
+        let mut page = read_page(&fs::read_to_string(file)?)?;
+        page.id = new_id();
         let stem = file
             .file_stem()
             .map(|s| s.to_string_lossy().into_owned())
@@ -849,7 +865,7 @@ impl Library {
                 }
             }
         }
-        write_atomic(&self.page_file(&rel), text.as_bytes())?;
+        write_atomic(&self.page_file(&rel), write_page(&page).as_bytes())?;
         self.edit_order(parent, |order| {
             order.retain(|n| *n != name);
             order.push(name.clone());

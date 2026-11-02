@@ -61,6 +61,39 @@ pub fn strip_delimiters(source: &str) -> &str {
     s
 }
 
+/// Math without code: `#` runs Typst code and `$` leaves math, and both can come from files.
+/// Only what LaTeX conversion writes is let through: `#text[…]` and `#h(…)`/`#v(…)` lengths.
+fn is_plain_math(math: &str) -> bool {
+    const MAX_LEN: usize = 10_000;
+    let is_length = |rest: &str| {
+        rest.split_once(')').is_some_and(|(arg, _)| {
+            let number = arg.trim_end_matches(|c: char| c.is_ascii_alphabetic() || c == '%');
+            !number.is_empty()
+                && number
+                    .chars()
+                    .all(|c| c.is_ascii_digit() || matches!(c, '.' | '-'))
+        })
+    };
+    let mut escaped = false;
+    math.len() <= MAX_LEN
+        && math.char_indices().all(|(i, c)| {
+            let rest = &math[i + c.len_utf8()..];
+            let ok = escaped
+                || match c {
+                    '$' => false,
+                    '#' => {
+                        rest.starts_with("text[")
+                            || ["h(", "v("]
+                                .iter()
+                                .any(|f| rest.strip_prefix(f).is_some_and(is_length))
+                    }
+                    _ => true,
+                };
+            escaped = !escaped && c == '\\';
+            ok
+        })
+}
+
 pub fn render(source: &str, syntax: Syntax, size: f64) -> Result<Formula, String> {
     let math = match syntax {
         Syntax::Typst => strip_delimiters(source).to_owned(),
@@ -75,6 +108,9 @@ pub fn render(source: &str, syntax: Syntax, size: f64) -> Result<Formula, String
     };
     if math.trim().is_empty() {
         return Err("The formula is empty.".into());
+    }
+    if !is_plain_math(&math) {
+        return Err("The formula may only hold math, not Typst code.".into());
     }
     // A page exactly as big as the formula; display style, like $$…$$.
     let document = format!(
@@ -367,6 +403,23 @@ impl World for MathWorld {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn formulas_hold_no_typst_code() {
+        for code in [
+            "#while true {}",
+            "x $ #range(9)",
+            "#h(range(9).len() * 1em)",
+            "#import \"a\"",
+        ] {
+            let err = render(code, Syntax::Typst, 12.0).unwrap_err();
+            assert!(err.contains("Typst code"), "{code}: {err}");
+        }
+        for fine in ["a \\# b", "a #h(1em) b", "#text[if] x", "\\$ 5"] {
+            assert!(is_plain_math(fine), "{fine}");
+        }
+        assert!(render(r"a \text{if } b \hspace{1em} c", Syntax::Latex, 12.0).is_ok());
+    }
 
     #[test]
     fn mistakes_are_reported() {

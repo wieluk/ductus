@@ -327,6 +327,8 @@ fn resolve<'a>(doc: &'a Document, o: &'a Object) -> Option<&'a Object> {
 }
 
 /// The PNG drawn by a picture annotation's appearance.
+const MAX_PICTURE_PIXELS: usize = 8192 * 8192;
+
 fn picture_png(doc: &Document, annot: &Dictionary) -> Option<Vec<u8>> {
     let ap = resolve(doc, annot.get(b"AP").ok()?)?.as_dict().ok()?;
     let form = resolve(doc, ap.get(b"N").ok()?)?.as_stream().ok()?;
@@ -339,19 +341,34 @@ fn picture_png(doc: &Document, annot: &Dictionary) -> Option<Vec<u8>> {
     let image = resolve(doc, xobjects.get(b"Im0").ok()?)?.as_stream().ok()?;
     let width = u32::try_from(image.dict.get(b"Width").ok()?.as_i64().ok()?).ok()?;
     let height = u32::try_from(image.dict.get(b"Height").ok()?.as_i64().ok()?).ok()?;
-    let data = |s: &Stream| {
-        s.decompressed_content()
-            .unwrap_or_else(|_| s.content.clone())
-    };
-    let rgb = data(image);
     let pixels = width as usize * height as usize;
+    if pixels > MAX_PICTURE_PIXELS {
+        return None;
+    }
+    // Unpacked only as far as the picture needs: a few bytes can unpack to gigabytes.
+    let data = |s: &Stream| -> Option<Vec<u8>> {
+        use std::io::Read as _;
+        match s.dict.get(b"Filter").and_then(Object::as_name) {
+            Err(_) => Some(s.content.clone()),
+            Ok(b"FlateDecode") => {
+                let mut out = Vec::new();
+                flate2::read::ZlibDecoder::new(&s.content[..])
+                    .take(pixels as u64 * 3)
+                    .read_to_end(&mut out)
+                    .ok()?;
+                Some(out)
+            }
+            Ok(_) => None,
+        }
+    };
+    let rgb = data(image)?;
     let alpha = image
         .dict
         .get(b"SMask")
         .ok()
         .and_then(|m| resolve(doc, m))
         .and_then(|m| m.as_stream().ok())
-        .map(data)
+        .and_then(data)
         .filter(|a| a.len() >= pixels);
     if rgb.len() < pixels * 3 {
         return None;
