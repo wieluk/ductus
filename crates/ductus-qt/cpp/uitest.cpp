@@ -128,8 +128,7 @@ public:
                    args);
         } else if (cmd == u"hover" || cmd == u"pen-click") {
             // `hover [eraser] [button=1|2] x,y`: the pen in the air there, maybe with a side button
-            // held or the eraser end down; `pen-click button=1|2 [ms=N] x,y` clicks the side button
-            // there, held N ms.
+            // held or the eraser end down; `pen-click button=1|2 x,y` clicks the side button there.
             hover(args, cmd == u"pen-click");
         } else if (cmd == u"deactivate") {
             // Another app's window takes the focus.
@@ -455,11 +454,6 @@ private:
         if (points.isEmpty())
             return;
         const auto *device = stylus(type);
-        // A side button is down a moment before the tip, as with a hand.
-        if (held != Qt::LeftButton) {
-            tablet(QEvent::TabletMove, device, points.first(), 0, held & ~Qt::LeftButton);
-            QTest::qWait(80);
-        }
         tablet(QEvent::TabletPress, device, points.first(), p0, held);
         for (qsizetype i = 1; i < points.size(); ++i) {
             const qreal f = qreal(i) / qMax<qsizetype>(1, points.size() - 1);
@@ -476,13 +470,9 @@ private:
         auto type = QPointingDevice::PointerType::Pen;
         Qt::MouseButtons held;
         QPointF at;
-        // How long a click holds the button: about as long as a finger's.
-        int ms = 80;
         for (const QString &arg : args) {
             if (arg == u"eraser")
                 type = QPointingDevice::PointerType::Eraser;
-            else if (arg.startsWith(u"ms="))
-                ms = arg.mid(3).toInt();
             else if (const Qt::MouseButtons button = sideButton(arg))
                 held |= button;
             else
@@ -494,7 +484,7 @@ private:
             QTest::qWait(20);
         }
         tablet(QEvent::TabletMove, device, at, 0, held);
-        QTest::qWait(click ? ms : 30);
+        QTest::qWait(30);
         if (click) {
             tablet(QEvent::TabletMove, device, at, 0, Qt::NoButton);
             QTest::qWait(30);

@@ -185,12 +185,6 @@ InkCanvas::InkCanvas(QQuickItem *parent)
         repaint();
     });
 
-    m_sideTimer.setSingleShot(true);
-    connect(&m_sideTimer, &QTimer::timeout, this, &InkCanvas::settleSideButtons);
-    m_clickTimer.setSingleShot(true);
-    m_clickTimer.setInterval(kClickStayMs);
-    connect(&m_clickTimer, &QTimer::timeout, this, &InkCanvas::confirmClick);
-
     m_holdTimer.setSingleShot(true);
     m_holdTimer.setInterval(m_holdDelay);
     connect(&m_holdTimer, &QTimer::timeout, this, &InkCanvas::onHold);
@@ -944,12 +938,7 @@ bool InkCanvas::eventFilter(QObject *watched, QEvent *event)
     if (watched == qApp) {
         if (event->type() == QEvent::TabletLeaveProximity) {
             setHeldTool(-1);
-            m_sideTimer.stop();
-            m_clickTimer.stop();
-            m_inRange.invalidate();
-            m_reportedSide = Qt::NoButton;
             m_sideButtons = Qt::NoButton;
-            m_pendingClick = Qt::NoButton;
             hidePenTip();
         }
         return false;
@@ -1076,7 +1065,7 @@ void InkCanvas::forwardAsMouse(QTabletEvent *event)
     if (event->type() == QEvent::TabletPress) {
         type = QEvent::MouseButtonPress;
         // The tip with a barrel button held is a right click.
-        m_forwardButton = m_sideButtons ? Qt::RightButton : Qt::LeftButton;
+        m_forwardButton = sideButtons(event) ? Qt::RightButton : Qt::LeftButton;
     } else if (event->type() == QEvent::TabletRelease) {
         type = QEvent::MouseButtonRelease;
     }
@@ -1402,17 +1391,13 @@ int InkCanvas::heldPenButton(const QTabletEvent *event) const
 {
     if (event->pointerType() == QPointingDevice::PointerType::Eraser)
         return 2;
-    return heldSideButton();
-}
-
-int InkCanvas::heldSideButton() const
-{
     // Switching, the side buttons change the tool itself.
     if (m_penButtonsSwitch)
         return -1;
-    if (m_sideButtons & firstPenButton())
+    const Qt::MouseButtons side = sideButtons(event);
+    if (side & firstPenButton())
         return 0;
-    if (m_sideButtons & secondPenButton())
+    if (side & secondPenButton())
         return 1;
     return -1;
 }
@@ -1424,78 +1409,30 @@ InkCanvas::Tool InkCanvas::penTool(const QTabletEvent *event) const
     return choice < 0 ? tool() : static_cast<Tool>(choice);
 }
 
-// At the edge of its range a pen can report side-button presses nobody made, as it comes and goes
-// between strokes: Surface pens for up to about 100 ms. So a press counts once it is held a moment
-// (kSideHoldMs), and one that begins as the pen comes into range only once the pen is well in
-// (kArriveMs). Letting go counts at once.
 void InkCanvas::trackPenButtons(const QTabletEvent *event)
 {
-    const bool eraser = event->pointerType() == QPointingDevice::PointerType::Eraser;
-    const Qt::MouseButtons side = eraser ? Qt::MouseButtons() : sideButtons(event);
-    if (!m_inRange.isValid()) {
-        m_inRange.start();
-        // Held before the pen came near: that one is meant.
-        m_sideAtEntry = side != Qt::NoButton;
-    }
-    if (side != m_reportedSide) {
-        // A click let go counts if the pen stays a moment.
-        if (m_pendingClick & ~side)
-            m_clickTimer.start();
-        if (!side)
-            m_sideAtEntry = false;
-        m_reportedSide = side;
-        m_sideButtons &= side;
-        if (side & ~m_sideButtons)
-            m_sideTimer.start(kSideHoldMs);
-        else
-            m_sideTimer.stop();
-    }
-    // The tip on the page shows the pen stayed: the stroke gets the clicked tool.
-    if (m_pendingClick && ((event->buttons() & Qt::LeftButton) || event->pressure() > 0))
-        confirmClick();
     const int which = heldPenButton(event);
     setHeldTool(which < 0 ? -1 : m_penButtonTools[which]);
-}
 
-void InkCanvas::settleSideButtons()
-{
-    const qint64 arriving = kArriveMs - m_inRange.elapsed();
-    if (!m_sideAtEntry && arriving > 0) {
-        m_sideTimer.start(int(arriving));
-        return;
-    }
-    const Qt::MouseButtons clicked = m_reportedSide & ~m_sideButtons;
-    m_sideButtons = m_reportedSide;
-    const int which = heldSideButton();
-    setHeldTool(which < 0 ? -1 : m_penButtonTools[which]);
+    const Qt::MouseButtons side = event->pointerType() == QPointingDevice::PointerType::Eraser
+        ? Qt::MouseButtons()
+        : sideButtons(event);
+    const Qt::MouseButtons clicked = side & ~m_sideButtons;
+    m_sideButtons = side;
     if (!m_penButtonsSwitch || !clicked)
         return;
-    // Not while writing.
+    // Every canvas of the window sees the click; the first one acts for all. Not while writing.
+    const InkCanvas *first = nullptr;
     for (const InkCanvas *canvas : std::as_const(s_canvases)) {
-        if (canvas->window() == window() && canvas->m_tabletGrab)
-            return;
-    }
-    // A second click shows the pen stayed for the first.
-    if (m_pendingClick)
-        confirmClick();
-    // It switches once the pen stays (confirmClick); one as the pen leaves its range is dropped.
-    m_pendingClick = clicked;
-}
-
-void InkCanvas::confirmClick()
-{
-    const Qt::MouseButtons clicked = m_pendingClick;
-    if (!clicked)
-        return;
-    // Every canvas of the window saw the click; one acts for all.
-    for (InkCanvas *canvas : std::as_const(s_canvases)) {
         if (canvas->window() != window())
             continue;
-        canvas->m_pendingClick = Qt::NoButton;
-        canvas->m_clickTimer.stop();
+        if (canvas->m_tabletGrab)
+            return;
+        if (!first)
+            first = canvas;
     }
     const int tool = m_penButtonTools[clicked & firstPenButton() ? 0 : 1];
-    if (tool >= 0)
+    if (first == this && tool >= 0)
         switchToPenButtonTool(tool);
 }
 
