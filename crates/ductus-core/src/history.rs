@@ -46,6 +46,21 @@ pub enum Command {
     Batch(Vec<Command>),
 }
 
+/// The items with these ids and their indices, ascending; None if there are none.
+fn indexed<T: Clone>(
+    items: &[T],
+    id_of: impl Fn(&T) -> StrokeId,
+    ids: &[StrokeId],
+) -> Option<Vec<(usize, T)>> {
+    let found: Vec<(usize, T)> = items
+        .iter()
+        .enumerate()
+        .filter(|(_, item)| ids.contains(&id_of(item)))
+        .map(|(i, item)| (i, item.clone()))
+        .collect();
+    (!found.is_empty()).then_some(found)
+}
+
 impl Command {
     pub fn set_settings(doc: &Document, new: PageSettings) -> Option<Command> {
         let old = *doc.settings();
@@ -61,46 +76,20 @@ impl Command {
         })
     }
 
+    pub fn remove(doc: &Document, ids: &[StrokeId]) -> Option<Command> {
+        indexed(doc.strokes(), |s| s.id, ids).map(Command::RemoveStrokes)
+    }
+
     pub fn remove_images(doc: &Document, ids: &[StrokeId]) -> Option<Command> {
-        let mut items: Vec<(usize, Image)> = ids
-            .iter()
-            .filter_map(|id| {
-                doc.image_index_of(*id)
-                    .map(|i| (i, doc.images()[i].clone()))
-            })
-            .collect();
-        if items.is_empty() {
-            return None;
-        }
-        items.sort_by_key(|(i, _)| *i);
-        items.dedup_by_key(|(i, _)| *i);
-        Some(Command::RemoveImages(items))
+        indexed(doc.images(), |i| i.id, ids).map(Command::RemoveImages)
     }
 
     pub fn remove_texts(doc: &Document, ids: &[StrokeId]) -> Option<Command> {
-        let mut items: Vec<(usize, TextBox)> = ids
-            .iter()
-            .filter_map(|id| doc.text_index_of(*id).map(|i| (i, doc.texts()[i].clone())))
-            .collect();
-        if items.is_empty() {
-            return None;
-        }
-        items.sort_by_key(|(i, _)| *i);
-        items.dedup_by_key(|(i, _)| *i);
-        Some(Command::RemoveTexts(items))
+        indexed(doc.texts(), |t| t.id, ids).map(Command::RemoveTexts)
     }
 
     pub fn remove_maths(doc: &Document, ids: &[StrokeId]) -> Option<Command> {
-        let mut items: Vec<(usize, MathBox)> = ids
-            .iter()
-            .filter_map(|id| doc.math_index_of(*id).map(|i| (i, doc.maths()[i].clone())))
-            .collect();
-        if items.is_empty() {
-            return None;
-        }
-        items.sort_by_key(|(i, _)| *i);
-        items.dedup_by_key(|(i, _)| *i);
-        Some(Command::RemoveMaths(items))
+        indexed(doc.maths(), |m| m.id, ids).map(Command::RemoveMaths)
     }
 
     /// Stacks the page's items in this order, bottom first.
@@ -121,19 +110,6 @@ impl Command {
             1 => commands.pop(),
             _ => Some(Command::Batch(commands)),
         }
-    }
-
-    pub fn remove(doc: &Document, ids: &[StrokeId]) -> Option<Command> {
-        let mut items: Vec<(usize, Stroke)> = ids
-            .iter()
-            .filter_map(|id| doc.index_of(*id).map(|i| (i, doc.strokes()[i].clone())))
-            .collect();
-        if items.is_empty() {
-            return None;
-        }
-        items.sort_by_key(|(i, _)| *i);
-        items.dedup_by_key(|(i, _)| *i);
-        Some(Command::RemoveStrokes(items))
     }
 
     pub fn apply(&self, doc: &mut Document) {

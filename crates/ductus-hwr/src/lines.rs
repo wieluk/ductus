@@ -121,21 +121,17 @@ pub fn find_lines(strokes: &[Stroke]) -> Vec<InkLine> {
 
 /// Over rounded points, so the key survives saving but changes with the ink.
 fn line_key(strokes: &[Stroke], indices: &[usize]) -> String {
-    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
-    let mut eat = |v: i64| {
-        for b in v.to_le_bytes() {
-            h ^= u64::from(b);
-            h = h.wrapping_mul(0x0100_0000_01b3);
-        }
-    };
-    for &i in indices {
-        for p in &strokes[i].points {
-            eat((p.x * 2.0).round() as i64);
-            eat((p.y * 2.0).round() as i64);
-        }
-        eat(-1);
-    }
-    format!("{h:016x}")
+    let values = indices.iter().flat_map(|&i| {
+        strokes[i]
+            .points
+            .iter()
+            .flat_map(|p| [(p.x * 2.0).round() as i64, (p.y * 2.0).round() as i64])
+            .chain([-1])
+    });
+    format!(
+        "{:016x}",
+        ductus_core::fnv1a(values.flat_map(i64::to_le_bytes))
+    )
 }
 
 pub fn line_png(strokes: &[Stroke], line: &InkLine, height: u32) -> Option<Vec<u8>> {

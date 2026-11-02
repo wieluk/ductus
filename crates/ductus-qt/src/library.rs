@@ -78,21 +78,6 @@ pub fn merge_pdf_files(files: Vec<String>, target: &str) -> Result<()> {
     ductus_format::library::write_atomic(Path::new(target), &bytes)
 }
 
-fn hex(c: Rgba) -> String {
-    let b = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
-    format!("#{:02x}{:02x}{:02x}", b(c.r), b(c.g), b(c.b))
-}
-
-fn parse_hex(s: &str) -> Option<Rgba> {
-    let s = s.strip_prefix('#')?;
-    let c = |i: usize| {
-        u8::from_str_radix(s.get(i..i + 2)?, 16)
-            .ok()
-            .map(|v| f32::from(v) / 255.0)
-    };
-    Some(Rgba::rgb(c(0)?, c(2)?, c(4)?))
-}
-
 fn filter(flags: u8) -> Filter {
     Filter {
         pages: flags & 1 != 0,
@@ -345,7 +330,7 @@ impl LibraryHandle {
             is_file: node.kind == NodeKind::File,
             name: node.name.clone(),
             path: node.path.clone(),
-            color: color.map(hex).unwrap_or_default(),
+            color: color.map(Rgba::to_hex).unwrap_or_default(),
             conflict: node.conflict,
             pinned: pinned.contains(&node.path),
             ..TreeRow::default()
@@ -598,7 +583,7 @@ impl LibraryHandle {
     }
 
     pub fn set_color(&self, path: &str, color: &str) -> Result<()> {
-        self.lib().set_color(path, parse_hex(color))
+        self.lib().set_color(path, Rgba::from_hex(color))
     }
 
     pub fn open_page(&self) -> String {

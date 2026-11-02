@@ -13,8 +13,6 @@ use std::f64::consts::TAU;
 
 use std::path::Path;
 
-/// Ductus draws the thinnest part of a pressure stroke at this share of its width.
-const MIN_WIDTH_RATIO: f64 = 0.25;
 /// Room left around the notes of an infinite canvas.
 const MARGIN: f64 = 40.0;
 /// Vector images (such as PDF pages) become pictures with this many pixels per unit.
@@ -43,9 +41,7 @@ pub(crate) fn read(path: &Path) -> Result<Import, Error> {
                 "This Rnote file (version {version}) is too old to import. Open and save it in a current Rnote first."
             ))
         })?;
-    let name = path
-        .file_stem()
-        .map_or_else(|| "Imported".into(), |s| s.to_string_lossy().into_owned());
+    let name = crate::stem(path, "Imported");
     convert(snapshot, name)
 }
 
@@ -352,7 +348,8 @@ impl Converter {
             (
                 x,
                 y,
-                ((r - MIN_WIDTH_RATIO) / (1.0 - MIN_WIDTH_RATIO)).clamp(0.0, 1.0),
+                ((r - ductus_ink::MIN_WIDTH_RATIO) / (1.0 - ductus_ink::MIN_WIDTH_RATIO))
+                    .clamp(0.0, 1.0),
             )
         });
         Some(Stroke {

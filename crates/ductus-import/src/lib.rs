@@ -168,6 +168,12 @@ pub(crate) fn read_unpacked(reader: impl std::io::Read) -> Result<Vec<u8>, Error
     Ok(out)
 }
 
+/// A file's name without extension, or `fallback`.
+pub(crate) fn stem(path: &Path, fallback: &str) -> String {
+    path.file_stem()
+        .map_or_else(|| fallback.into(), |s| s.to_string_lossy().into_owned())
+}
+
 pub(crate) fn pdf_error(e: ductus_pdf::Error) -> Error {
     Error::Invalid(e.to_string())
 }
@@ -183,15 +189,7 @@ pub(crate) fn picture(bytes: &[u8]) -> Option<(String, Vec<u8>)> {
         decoded.write_to(&mut out, image::ImageFormat::Png).ok()?;
         out.into_inner()
     };
-    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
-    for b in &png {
-        h ^= u64::from(*b);
-        h = h.wrapping_mul(0x0100_0000_01b3);
-    }
-    Some((
-        format!("{}{h:016x}.png", ductus_format::library::IMAGE_PREFIX),
-        png,
-    ))
+    Some((ductus_core::picture_name(&png), png))
 }
 
 /// Ductus smooths ink through its points, so sparse ones (shapes, ruler lines) get points

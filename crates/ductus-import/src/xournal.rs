@@ -16,8 +16,6 @@ use std::io::Cursor;
 use std::path::Path;
 
 const K: f64 = UNITS_PER_POINT;
-/// Ductus draws the thinnest part of a pressure stroke at this share of its width.
-const MIN_WIDTH_RATIO: f64 = 0.25;
 
 pub(crate) fn read(path: &Path) -> Result<Import, Error> {
     let raw = std::fs::read(path)?;
@@ -53,9 +51,7 @@ pub(crate) fn read(path: &Path) -> Result<Import, Error> {
     } else {
         String::from_utf8(raw).map_err(|_| Error::Invalid("The file isn't text.".into()))?
     };
-    let name = path
-        .file_stem()
-        .map_or_else(|| "Imported".into(), |s| s.to_string_lossy().into_owned());
+    let name = crate::stem(path, "Imported");
     parse(&xml, path, attachments, name)
 }
 
@@ -530,9 +526,9 @@ fn stroke(attrs: &HashMap<String, String>, coords: &str) -> Option<Stroke> {
         .enumerate()
         .map(|(i, &(x, y))| {
             let pressure = match per_point.get(i).or(per_point.last()) {
-                Some(&w) => {
-                    ((w / width - MIN_WIDTH_RATIO) / (1.0 - MIN_WIDTH_RATIO)).clamp(0.0, 1.0)
-                }
+                Some(&w) => ((w / width - ductus_ink::MIN_WIDTH_RATIO)
+                    / (1.0 - ductus_ink::MIN_WIDTH_RATIO))
+                    .clamp(0.0, 1.0),
                 None => 1.0,
             };
             InkPoint {

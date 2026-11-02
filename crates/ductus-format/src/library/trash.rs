@@ -172,11 +172,7 @@ impl Library {
         }
         index.remove(id);
         self.save_trash_index(&index)?;
-        self.edit_order(&parent, |order| {
-            order.retain(|n| *n != name);
-            let at = position.unwrap_or(order.len()).min(order.len());
-            order.insert(at, name.clone());
-        })?;
+        self.put_in_order(&parent, &name, position)?;
         Ok(rel)
     }
 

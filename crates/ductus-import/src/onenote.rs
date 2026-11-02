@@ -36,9 +36,7 @@ pub(crate) fn read(path: &Path) -> Result<Import, Error> {
     let path = &std::fs::canonicalize(path)?;
     let parser = onenote_parser::Parser::new();
     let typed = typed(path)?;
-    let stem = path
-        .file_stem()
-        .map_or_else(|| "OneNote".into(), |s| s.to_string_lossy().into_owned());
+    let stem = crate::stem(path, "OneNote");
     let mut warnings = Warnings::default();
     let entry = match crate::extension(path).as_deref() {
         Some("one") => {
@@ -132,7 +130,9 @@ fn section_entries(entries: &[SectionEntry], warnings: &mut Warnings) -> Vec<Ent
         .iter()
         .filter_map(|entry| match entry {
             SectionEntry::Section(section) => Some(section_entry(section, warnings)),
-            SectionEntry::SectionGroup(group) if group.display_name() == "OneNote_RecycleBin" => {
+            SectionEntry::SectionGroup(group)
+                if group.display_name() == crate::folder::RECYCLE_BIN =>
+            {
                 None
             }
             SectionEntry::SectionGroup(group) => Some(Entry::Folder {

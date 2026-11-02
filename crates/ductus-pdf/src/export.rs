@@ -292,10 +292,7 @@ pub fn ink_by_page(doc: &Document) -> Vec<crate::PageInk> {
         .iter()
         .filter_map(|stroke| {
             let first = stroke.points.first()?;
-            let index = sheets
-                .iter()
-                .position(|&(_, y, _, h)| first.y < y + h + SHEET_GAP / 2.0)
-                .unwrap_or(sheets.len().checked_sub(1)?);
+            let index = sheet_at(&sheets, first.y)?;
             let (x0, y0, _, _) = sheets[index];
             let mut local = stroke.clone();
             for p in &mut local.points {
@@ -311,7 +308,7 @@ pub fn ink_by_page(doc: &Document) -> Vec<crate::PageInk> {
 }
 
 /// The sheet a thing starting at `y` belongs to, like ink: the gap below a sheet still counts.
-fn sheet_at(sheets: &[(f64, f64, f64, f64)], y: f64) -> Option<usize> {
+pub(crate) fn sheet_at(sheets: &[(f64, f64, f64, f64)], y: f64) -> Option<usize> {
     sheets
         .iter()
         .position(|&(_, top, _, h)| y < top + h + SHEET_GAP / 2.0)

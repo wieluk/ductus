@@ -3,7 +3,7 @@
 
 use super::{PageGeometry, fmt, number, path_ops, text};
 use crate::{Error, PdfImage};
-use ductus_core::{Image, MathBox, Rgba, StrokeId, TextBox, UNITS_PER_POINT};
+use ductus_core::{Image, MathBox, StrokeId, TextBox, UNITS_PER_POINT};
 use kurbo::{BezPath, PathEl, Point, Rect};
 use lopdf::{Dictionary, Document, Object, ObjectId, Stream, StringFormat, dictionary};
 
@@ -429,21 +429,7 @@ pub fn read_objects(bytes: &[u8]) -> Result<Vec<PlacedObject>, Error> {
                     scale,
                 }),
                 "math" => {
-                    let rgb: Vec<f64> = dict
-                        .get(b"C")
-                        .ok()
-                        .and_then(|c| c.as_array().ok())
-                        .map(|a| a.iter().filter_map(number).collect())
-                        .unwrap_or_default();
-                    let color = match rgb[..] {
-                        [r, g, b] => Rgba {
-                            r: r as f32,
-                            g: g as f32,
-                            b: b as f32,
-                            a: 1.0,
-                        },
-                        _ => Rgba::BLACK,
-                    };
+                    let color = super::color_of(dict);
                     PageObject::Math(MathBox {
                         id: StrokeId(0),
                         source,
@@ -484,6 +470,7 @@ pub fn read_objects(bytes: &[u8]) -> Result<Vec<PlacedObject>, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ductus_core::Rgba;
 
     #[test]
     fn plain_text_drops_markdown_marks() {

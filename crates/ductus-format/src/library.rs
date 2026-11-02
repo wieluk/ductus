@@ -18,8 +18,6 @@ const LOCATION_FILE: &str = "library.txt";
 pub const PAGE_EXTENSION: &str = "svg";
 pub const PDF_EXTENSION: &str = "pdf";
 pub const ASSETS_SUFFIX: &str = ".assets";
-/// How picture names start, in the canvas and imports alike.
-pub const IMAGE_PREFIX: &str = "img-";
 const PAGE_PDF: &str = "source.pdf";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -92,13 +90,7 @@ pub fn pdf_stem(name: &str) -> Option<&str> {
 }
 
 fn stable_key(rel: &str) -> String {
-    // FNV-1a: stable across runs and platforms, unlike std's hasher.
-    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
-    for b in rel.as_bytes() {
-        h ^= u64::from(*b);
-        h = h.wrapping_mul(0x0100_0000_01b3);
-    }
-    format!("{h:016x}")
+    format!("{:016x}", ductus_core::fnv1a(rel.bytes()))
 }
 
 /// One step of a library path that stays where it is: no "..", and on Windows no drive or "\\".
@@ -160,24 +152,6 @@ fn is_conflict_copy(name: &str) -> bool {
     name.contains(".sync-conflict-") || name.to_lowercase().contains("conflicted copy")
 }
 
-fn color_to_hex(c: Rgba) -> String {
-    let b = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
-    format!("#{:02x}{:02x}{:02x}", b(c.r), b(c.g), b(c.b))
-}
-
-fn color_from_hex(s: &str) -> Option<Rgba> {
-    let s = s.strip_prefix('#')?;
-    if s.len() != 6 {
-        return None;
-    }
-    let c = |i: usize| {
-        u8::from_str_radix(&s[i..i + 2], 16)
-            .ok()
-            .map(|v| f32::from(v) / 255.0)
-    };
-    Some(Rgba::rgb(c(0)?, c(2)?, c(4)?))
-}
-
 /// Temp file, flush, rename: readers never see a partial file.
 pub fn write_atomic(path: &Path, bytes: &[u8]) -> Result<(), Error> {
     use std::io::Write;
@@ -225,12 +199,7 @@ pub(crate) fn read_data<T: serde::de::DeserializeOwned + Default>(file: &Path) -
 
 /// Stable per library path; the search index uses it too.
 pub fn library_key(root: &Path) -> String {
-    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
-    for b in root.to_string_lossy().as_bytes() {
-        h ^= u64::from(*b);
-        h = h.wrapping_mul(0x0100_0000_01b3);
-    }
-    format!("{h:016x}")
+    stable_key(&root.to_string_lossy())
 }
 
 fn plain_file(name: &str) -> Result<&str, Error> {
@@ -521,6 +490,15 @@ impl Library {
         self.save_folders()
     }
 
+    /// Puts `name` at `at` in its folder's order, or last.
+    fn put_in_order(&self, folder: &str, name: &str, at: Option<usize>) -> Result<(), Error> {
+        self.edit_order(folder, |order| {
+            order.retain(|n| n != name);
+            let at = at.unwrap_or(order.len()).min(order.len());
+            order.insert(at, name.to_owned());
+        })
+    }
+
     fn edit_order(&self, folder: &str, f: impl FnOnce(&mut Vec<String>)) -> Result<(), Error> {
         let mut meta = self.read_meta(folder);
         // Start from the displayed order so unordered entries keep their place.
@@ -573,7 +551,7 @@ impl Library {
         self.read_meta(folder)
             .color
             .as_deref()
-            .and_then(color_from_hex)
+            .and_then(Rgba::from_hex)
     }
 
     pub(crate) fn read_folder(&self, folder: &str) -> Result<Vec<Node>, Error> {
@@ -662,10 +640,7 @@ impl Library {
         self.ensure_free(parent, &name)?;
         let rel = Self::join(parent, &name);
         fs::create_dir(self.abs(&rel))?;
-        self.edit_order(parent, |order| {
-            order.retain(|n| n != &name);
-            order.push(name.clone());
-        })?;
+        self.put_in_order(parent, &name, None)?;
         Ok(rel)
     }
 
@@ -709,10 +684,7 @@ impl Library {
             pictures: pictures.iter().cloned().collect(),
         };
         write_atomic(&self.page_file(&rel), write_page(&page).as_bytes())?;
-        self.edit_order(parent, |order| {
-            order.retain(|n| n != &name);
-            order.push(name.clone());
-        })?;
+        self.put_in_order(parent, &name, None)?;
         Ok(rel)
     }
 
@@ -817,11 +789,7 @@ impl Library {
             self.relocate(rel, &from, kind, &new_rel, &to)?;
             self.edit_order(&old_parent, |order| order.retain(|n| *n != name))?;
         }
-        self.edit_order(new_parent, |order| {
-            order.retain(|n| *n != name);
-            let at = index.unwrap_or(order.len()).min(order.len());
-            order.insert(at, name.clone());
-        })?;
+        self.put_in_order(new_parent, &name, index)?;
         self.path_lists_moved(rel, &new_rel)?;
         Ok(new_rel)
     }
@@ -850,10 +818,7 @@ impl Library {
             }
         }
         write_atomic(&self.page_file(&rel), write_page(&page).as_bytes())?;
-        self.edit_order(parent, |order| {
-            order.retain(|n| *n != name);
-            order.push(name.clone());
-        })?;
+        self.put_in_order(parent, &name, None)?;
         Ok(rel)
     }
 
@@ -873,10 +838,7 @@ impl Library {
             .expect("some number is free");
         let rel = Self::join(parent, &name);
         write_atomic(&self.abs(&rel), bytes)?;
-        self.edit_order(parent, |order| {
-            order.retain(|n| *n != name);
-            order.push(name.clone());
-        })?;
+        self.put_in_order(parent, &name, None)?;
         Ok(rel)
     }
 
@@ -885,10 +847,7 @@ impl Library {
         self.ensure_free(parent, &name)?;
         let (rel, path) = self.target(parent, &name, NodeKind::Pdf);
         write_atomic(&path, bytes)?;
-        self.edit_order(parent, |order| {
-            order.retain(|n| *n != name);
-            order.push(name.clone());
-        })?;
+        self.put_in_order(parent, &name, None)?;
         Ok(rel)
     }
 
@@ -959,7 +918,7 @@ impl Library {
 
     pub fn set_color(&self, folder: &str, color: Option<Rgba>) -> Result<(), Error> {
         let mut meta = self.read_meta(folder);
-        meta.color = color.map(color_to_hex);
+        meta.color = color.map(Rgba::to_hex);
         self.write_meta(folder, &meta)
     }
 

@@ -5,7 +5,7 @@ use ductus_format::Error;
 use std::path::{Path, PathBuf};
 
 /// OneNote's deleted pages; they stay behind.
-const RECYCLE_BIN: &str = "OneNote_RecycleBin";
+pub(crate) const RECYCLE_BIN: &str = "OneNote_RecycleBin";
 
 pub(crate) fn read(dir: &Path) -> Result<Import, Error> {
     let mut warnings = Vec::new();

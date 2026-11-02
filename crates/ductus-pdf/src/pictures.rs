@@ -1,6 +1,6 @@
 use crate::Error;
 use crate::annot::PageGeometry;
-use ductus_core::{Document, SHEET_GAP};
+use ductus_core::Document;
 use kurbo::{Point, Rect};
 use lopdf::content::{Content, Operation};
 use lopdf::{Dictionary, Object, ObjectId, Stream, dictionary};
@@ -78,10 +78,7 @@ pub fn pictures_by_page(
     doc.images()
         .iter()
         .filter_map(|picture| {
-            let index = sheets
-                .iter()
-                .position(|&(_, y, _, h)| picture.y < y + h + SHEET_GAP / 2.0)
-                .unwrap_or(sheets.len().checked_sub(1)?);
+            let index = crate::export::sheet_at(&sheets, picture.y)?;
             let (x0, y0, _, _) = sheets[index];
             Some(PagePicture {
                 page: index,

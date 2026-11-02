@@ -40,9 +40,7 @@ impl StrokePath {
             color: skia_color(style.color),
         })
     }
-}
 
-impl StrokePath {
     pub fn fill(path: &kurbo::BezPath, color: Rgba) -> Option<Self> {
         Some(Self {
             bounds: kurbo::Shape::bounding_box(path),

@@ -3,6 +3,7 @@
 //! The decoder is Optimum's merged export: the first step runs without a cache, every later one
 //! feeds only the newest token and the keys and values the previous step returned.
 
+use crate::builtin::{err, json};
 use crate::image::{gray_scaled, ink_bounds};
 use ort::session::{Session, SessionInputValue};
 use ort::value::{DynValue, Tensor};
@@ -13,10 +14,6 @@ use tiny_skia::Pixmap;
 const MAX_TOKENS: usize = 256;
 /// Formula images are cut to whatever is not near-white.
 const INK: u32 = 240;
-
-fn err(e: impl std::fmt::Display) -> String {
-    e.to_string()
-}
 
 #[derive(serde::Deserialize)]
 struct Config {
@@ -60,10 +57,6 @@ pub struct FormulaModel {
     layers: usize,
     heads: usize,
     head_dim: usize,
-}
-
-fn json<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, String> {
-    serde_json::from_slice(&std::fs::read(path).map_err(err)?).map_err(err)
 }
 
 impl FormulaModel {

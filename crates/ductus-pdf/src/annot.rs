@@ -40,6 +40,20 @@ fn number(o: &Object) -> Option<f64> {
     }
 }
 
+/// An annotation's /C colour, opaque; black without one.
+pub(crate) fn color_of(dict: &Dictionary) -> Rgba {
+    let rgb: Vec<f64> = dict
+        .get(b"C")
+        .ok()
+        .and_then(|c| c.as_array().ok())
+        .map(|a| a.iter().filter_map(number).collect())
+        .unwrap_or_default();
+    match rgb[..] {
+        [r, g, b] => Rgba::rgb(r as f32, g as f32, b as f32),
+        _ => Rgba::BLACK,
+    }
+}
+
 pub(crate) fn inherited<'a>(doc: &'a Document, page: ObjectId, key: &[u8]) -> Option<&'a Object> {
     let mut id = page;
     for _ in 0..32 {
@@ -255,21 +269,9 @@ pub fn read_ink(bytes: &[u8]) -> Result<Vec<PageInk>, Error> {
                 Some("highlighter") => Tool::Highlighter,
                 _ => Tool::Pen,
             };
-            let rgb: Vec<f64> = dict
-                .get(b"C")
-                .ok()
-                .and_then(|c| c.as_array().ok())
-                .map(|a| a.iter().filter_map(number).collect())
-                .unwrap_or_default();
-            let alpha = dict.get(b"CA").ok().and_then(number).unwrap_or(1.0);
-            let color = match rgb.as_slice() {
-                [r, g, b] => Rgba {
-                    r: *r as f32,
-                    g: *g as f32,
-                    b: *b as f32,
-                    a: alpha as f32,
-                },
-                _ => Rgba::BLACK,
+            let color = Rgba {
+                a: dict.get(b"CA").ok().and_then(number).unwrap_or(1.0) as f32,
+                ..color_of(dict)
             };
             let width = dict
                 .get(KEY_WIDTH.as_bytes())
