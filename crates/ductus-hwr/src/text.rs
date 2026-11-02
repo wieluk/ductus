@@ -1,8 +1,5 @@
-//! Handwritten lines to text: two small CTC models, DE·HTR (German) and PP-OCRv6 (50 languages).
-//!
-//! Each reads a whole line in one pass. With the language unknown both read it and the more confident
-//! reading wins; measured on pen ink that keeps German at DE·HTR's error rate and English near
-//! PP-OCRv6's, see docs/HANDWRITING.md.
+//! Handwritten lines to text with two CTC models, DE·HTR (German) and PP-OCRv6 (50 languages);
+//! with the language unknown both read a line and the more confident reading wins.
 
 use crate::builtin::{err, json};
 use crate::image::{gray_scaled, ink_bounds};

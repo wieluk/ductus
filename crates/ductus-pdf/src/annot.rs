@@ -1,4 +1,5 @@
-//! Standard /Ink annotations with an appearance stream, so every reader shows the ink; saves append one incremental update and keep the original bytes.
+//! Standard /Ink annotations with an appearance stream, so every reader shows the ink.
+//! Saves append one incremental update and keep the original bytes.
 
 use crate::Error;
 use ductus_core::{

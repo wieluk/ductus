@@ -192,12 +192,8 @@ pub(crate) fn picture(bytes: &[u8]) -> Option<(String, Vec<u8>)> {
     Some((ductus_core::picture_name(&png), png))
 }
 
-/// Ductus smooths ink through its points, so sparse ones (shapes, ruler lines) get points
-/// every two units, like its own shapes, to keep their corners.
-/// Points closer than Ductus's pen keeps them are merged: other apps sample far more densely,
-/// which made imported pages several times larger and slower than written ones.
-/// Points that aren't numbers are dropped, and a segment gets at most a few thousand points:
-/// the files come from elsewhere.
+/// Points every two units, like Ductus's own: sparse ones (shapes, rulers) would lose their
+/// corners to smoothing, and dense ones (other apps sample far more) make pages slow.
 pub(crate) fn resample(mut points: Vec<InkPoint>) -> Vec<InkPoint> {
     const STEP: f64 = 2.0;
     const MIN_STEP: f64 = 0.4;
