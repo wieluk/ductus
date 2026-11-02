@@ -19,6 +19,7 @@ fn main() {
         QmlFile::from("qml/AppComboBox.qml"),
         QmlFile::from("qml/NameField.qml"),
         QmlFile::from("qml/ScrollArrows.qml"),
+        QmlFile::from("qml/AppScrollBar.qml"),
         QmlFile::from("qml/NotebookTree.qml"),
         QmlFile::from("qml/Toast.qml"),
         QmlFile::from("qml/AppDialog.qml"),

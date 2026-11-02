@@ -291,6 +291,20 @@ AppController::~AppController() = default;
 
 bool AppController::eventFilter(QObject *watched, QEvent *event)
 {
+#if !defined(Q_OS_ANDROID)
+    // Some systems (KWin before Plasma 6.3) don't focus the window a pen touches, so keys and
+    // the pointer stay with the window the mouse last clicked. Asked right after the press, the
+    // compositor grants it. A moment later, so systems that focus it themselves come first.
+    if (event->type() == QEvent::TabletPress) {
+        auto *window = qobject_cast<QWindow *>(watched);
+        if (window && !window->isActive() && window->type() == Qt::Window) {
+            QTimer::singleShot(100, window, [window] {
+                if (!window->isActive())
+                    window->requestActivate();
+            });
+        }
+    }
+#endif
     switch (event->type()) {
     case QEvent::TabletPress:
     case QEvent::TabletMove:

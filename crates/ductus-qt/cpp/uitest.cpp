@@ -130,6 +130,17 @@ public:
             // `hover [eraser] [button=1|2] x,y`: the pen in the air there, maybe with a side button
             // held or the eraser end down; `pen-click button=1|2 x,y` clicks the side button there.
             hover(args, cmd == u"pen-click");
+        } else if (cmd == u"deactivate") {
+            // Another app's window takes the focus.
+            QWindowSystemInterface::handleFocusWindowChanged(nullptr, Qt::ActiveWindowFocusReason);
+            QWindowSystemInterface::flushWindowSystemEvents();
+            QTest::qWait(30);
+        } else if (cmd == u"expect-active") {
+            const bool want = args.value(0) != u"false";
+            for (int i = 0; i < 50 && m_window->isActive() != want; ++i)
+                QTest::qWait(20);
+            if (m_window->isActive() != want)
+                return fail(want ? QStringLiteral("window is not active") : QStringLiteral("window is active"));
         } else if (cmd == u"pen-out") {
             QWindowSystemInterface::handleTabletEnterLeaveProximityEvent(
                 m_window, m_time += 5, stylus(QPointingDevice::PointerType::Pen), false);

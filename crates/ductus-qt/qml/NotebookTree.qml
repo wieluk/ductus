@@ -405,7 +405,7 @@ Rectangle {
             acceptedButtons: Qt.NoButton
             model: AppController.tree
             spacing: 1
-            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+            ScrollBar.vertical: AppScrollBar {}
 
             // A row dragged to an edge scrolls the list towards rows out of view.
             Timer {

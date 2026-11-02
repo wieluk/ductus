@@ -17,7 +17,7 @@ Dialog {
         section = 4
         open()
         Qt.callLater(() => {
-            const flick = handwritingSection.contentItem
+            const flick = handwritingSection
             const y = modelsAnchor.mapToItem(flick.contentItem, 0, 0).y - 8
             flick.contentY = Math.max(0, Math.min(y, flick.contentHeight - flick.height))
         })
@@ -275,16 +275,23 @@ Dialog {
         }
     }
 
-    component Section: ScrollView {
+    // A Flickable, not a ScrollView: that one doesn't scroll for a mouse drag, and the pen
+    // off the page is a mouse.
+    component Section: Flickable {
         id: section
         default property alias content: column.data
-        // The scroll bar gets its own strip instead of covering the options.
-        rightPadding: ScrollBar.vertical.visible ? ScrollBar.vertical.width + 8 : 0
-        contentWidth: availableWidth
+        contentHeight: column.implicitHeight
+        boundsBehavior: Flickable.StopAtBounds
+        flickableDirection: Flickable.VerticalFlick
         clip: true
+        ScrollBar.vertical: AppScrollBar {
+            id: bar
+            objectName: section.objectName + "Bar"
+        }
         ColumnLayout {
             id: column
-            width: section.availableWidth
+            // The scroll bar gets its own strip instead of covering the options.
+            width: section.width - (bar.visible ? bar.width + 8 : 0)
             spacing: 18
         }
     }
@@ -357,6 +364,7 @@ Dialog {
             currentIndex: dialog.section
 
             Section {
+                objectName: "penSettings"
                 Heading { text: qsTr("Writing") }
                 Choice {
                     objectName: "pressure"
@@ -782,7 +790,7 @@ Dialog {
                         Layout.preferredHeight: Math.min(contentHeight, 200)
                         clip: true
                         boundsBehavior: Flickable.StopAtBounds
-                        ScrollBar.vertical: ScrollBar {}
+                        ScrollBar.vertical: AppScrollBar {}
                         // Chosen languages first; the search matches English and own names.
                         model: Models.languages
                             .filter(l => langs.query.length === 0 || l.name.toLowerCase().includes(langs.query)

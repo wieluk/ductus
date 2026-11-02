@@ -42,7 +42,7 @@ AppDialog {
             clip: true
             model: dialog.rows
             boundsBehavior: Flickable.StopAtBounds
-            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+            ScrollBar.vertical: AppScrollBar {}
             delegate: Item {
                 id: item
                 required property var modelData

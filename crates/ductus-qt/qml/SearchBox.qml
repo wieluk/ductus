@@ -258,7 +258,7 @@ Item {
                 clip: true
                 model: box.results
                 boundsBehavior: Flickable.StopAtBounds
-                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+                ScrollBar.vertical: AppScrollBar {}
                 delegate: AbstractButton {
                     id: result
                     required property var modelData
