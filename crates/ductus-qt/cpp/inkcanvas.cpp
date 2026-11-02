@@ -1081,24 +1081,13 @@ void InkCanvas::forwardAsMouse(QTabletEvent *event)
 
 bool InkCanvas::handleTablet(QTabletEvent *event)
 {
-    const QPointF scenePosition = event->scenePosition();
-    const bool press = event->type() == QEvent::TabletPress;
+    event->accept();
     // Outside the page the pen is a mouse: Qt's own fallback loses taps to stylus-aware handlers.
-    if (m_tabletForward || (!m_tabletGrab && !ownsScenePoint(scenePosition))) {
-        hidePenTip();
-        hideCursor(false);
-        if (press)
-            m_tabletForward = true;
-        forwardAsMouse(event);
-        // One event behind, since the forwarded mouse event is queued.
-        setPenCursor(window(), window()->cursor());
-        if (event->type() == QEvent::TabletRelease)
-            m_tabletForward = false;
-        event->accept();
+    if (m_tabletForward || (!m_tabletGrab && !ownsScenePoint(event->scenePosition()))) {
+        forwardOffPage(event);
         return true;
     }
-    event->accept();
-    if (press)
+    if (event->type() == QEvent::TabletPress)
         Q_EMIT pressed();
     m_penSeen.restart();
     hideCursor(true);
@@ -1108,7 +1097,7 @@ bool InkCanvas::handleTablet(QTabletEvent *event)
         QWindowSystemInterface::handleLeaveEvent(window());
     }
 
-    const QPointF position = mapFromScene(scenePosition);
+    const QPointF position = mapFromScene(event->scenePosition());
     const PointerSample sample{position.x(),
                                position.y(),
                                event->pressure(),
@@ -1116,57 +1105,82 @@ bool InkCanvas::handleTablet(QTabletEvent *event)
                                event->xTilt(),
                                event->yTilt(),
                                static_cast<std::uint32_t>(event->timestamp())};
-    const bool eraserEnd = event->pointerType() == QPointingDevice::PointerType::Eraser;
     const Tool penTool = this->penTool(event);
     m_tipEraser = penTool == Eraser;
-
-    if (press && penTool == Text) {
-        m_tabletGrab = true;
-        Q_EMIT textRequested(position,
-                             static_cast<qint64>(m_engine->text_at(position.x(), position.y())));
-    } else if (press && penTool == Math) {
-        m_tabletGrab = true;
-        Q_EMIT mathRequested(position,
-                             static_cast<qint64>(m_engine->math_at(position.x(), position.y())));
-    } else if (press) {
-        m_tabletGrab = true;
-        // Drawing ends typing in a text box.
-        forceActiveFocus();
-        if (m_engine->pointer_down(eraserEnd ? 1 : 0, sample, engineTool(penTool))) {
-            trackHold(position);
-        } else {
-            m_tabletPanning = true;
-            m_lastPanPosition = position;
-        }
-        hidePenTip();
-    } else if (event->type() == QEvent::TabletMove) {
-        if (m_tabletPanning) {
-            const QPointF delta = position - m_lastPanPosition;
-            m_lastPanPosition = position;
-            m_engine->pan_by(delta.x(), delta.y());
-            viewMoved();
-        } else if (m_engine->is_drawing()) {
-            m_engine->pointer_move(rust::Slice<const PointerSample>(&sample, 1));
-            trackHold(position);
-            updateSelection();
-            if (m_engine->has_selection_drag())
-                refreshTexts();
-        } else {
-            showPenTip(position);
-        }
-    } else {
-        m_tabletGrab = false;
-        m_tabletPanning = false;
-        stopHold();
-        if (m_engine->is_drawing()) {
-            m_engine->pointer_move(rust::Slice<const PointerSample>(&sample, 1));
-            m_engine->pointer_up();
-            afterEdit();
-        }
-        showPenTip(position);
-    }
+    if (event->type() == QEvent::TabletPress)
+        tabletPress(position, sample, penTool, event->pointerType() == QPointingDevice::PointerType::Eraser);
+    else if (event->type() == QEvent::TabletMove)
+        tabletMove(position, sample);
+    else
+        tabletRelease(position, sample);
     repaint();
     return true;
+}
+
+void InkCanvas::forwardOffPage(QTabletEvent *event)
+{
+    hidePenTip();
+    hideCursor(false);
+    if (event->type() == QEvent::TabletPress)
+        m_tabletForward = true;
+    forwardAsMouse(event);
+    // One event behind, since the forwarded mouse event is queued.
+    setPenCursor(window(), window()->cursor());
+    if (event->type() == QEvent::TabletRelease)
+        m_tabletForward = false;
+}
+
+void InkCanvas::tabletPress(QPointF position, const PointerSample &sample, Tool penTool, bool eraserEnd)
+{
+    m_tabletGrab = true;
+    if (penTool == Text) {
+        Q_EMIT textRequested(position, static_cast<qint64>(m_engine->text_at(position.x(), position.y())));
+        return;
+    }
+    if (penTool == Math) {
+        Q_EMIT mathRequested(position, static_cast<qint64>(m_engine->math_at(position.x(), position.y())));
+        return;
+    }
+    // Drawing ends typing in a text box.
+    forceActiveFocus();
+    if (m_engine->pointer_down(eraserEnd ? 1 : 0, sample, engineTool(penTool))) {
+        trackHold(position);
+    } else {
+        m_tabletPanning = true;
+        m_lastPanPosition = position;
+    }
+    hidePenTip();
+}
+
+void InkCanvas::tabletMove(QPointF position, const PointerSample &sample)
+{
+    if (m_tabletPanning) {
+        const QPointF delta = position - m_lastPanPosition;
+        m_lastPanPosition = position;
+        m_engine->pan_by(delta.x(), delta.y());
+        viewMoved();
+    } else if (m_engine->is_drawing()) {
+        m_engine->pointer_move(rust::Slice<const PointerSample>(&sample, 1));
+        trackHold(position);
+        updateSelection();
+        if (m_engine->has_selection_drag())
+            refreshTexts();
+    } else {
+        showPenTip(position);
+    }
+}
+
+void InkCanvas::tabletRelease(QPointF position, const PointerSample &sample)
+{
+    m_tabletGrab = false;
+    m_tabletPanning = false;
+    stopHold();
+    if (m_engine->is_drawing()) {
+        m_engine->pointer_move(rust::Slice<const PointerSample>(&sample, 1));
+        m_engine->pointer_up();
+        afterEdit();
+    }
+    showPenTip(position);
 }
 
 void InkCanvas::mousePressEvent(QMouseEvent *event)
@@ -1248,16 +1262,11 @@ void InkCanvas::touchEvent(QTouchEvent *event)
         Q_EMIT pressed();
     // Palm rejection: a hand resting on the screen while writing must not pan.
     if (m_penSeen.isValid() && m_penSeen.elapsed() < m_palmRejection) {
-        if (m_touchDrawing) {
-            m_engine->pointer_cancel();
-            m_touchDrawing = false;
-        }
+        cancelTouchStroke();
         return;
     }
     if (event->type() == QEvent::TouchCancel) {
-        if (m_touchDrawing)
-            m_engine->pointer_cancel();
-        m_touchDrawing = false;
+        cancelTouchStroke();
         m_pinching = false;
         repaint();
         return;
@@ -1268,77 +1277,90 @@ void InkCanvas::touchEvent(QTouchEvent *event)
         if (point.state() != QEventPoint::Released)
             active.append(point);
     }
-
-    if (active.size() >= 2) {
-        m_tapCandidate = false;
-        // A second finger turns an accidental finger stroke into navigation.
-        if (m_touchDrawing) {
-            m_engine->pointer_cancel();
-            m_touchDrawing = false;
-        }
-        const QPointF a = active[0].position();
-        const QPointF b = active[1].position();
-        const QPointF center = (a + b) / 2;
-        const qreal distance = qMax<qreal>(QLineF(a, b).length(), 1);
-        if (!m_pinching) {
-            m_pinching = true;
-            m_pinchStartZoom = m_engine->zoom();
-            m_pinchStartOffset = QPointF(m_engine->offset_x(), m_engine->offset_y());
-            m_pinchStartCenter = center;
-            m_pinchStartDistance = distance;
-        } else {
-            const qreal zoom = qBound(kMinZoom, m_pinchStartZoom * distance / m_pinchStartDistance,
-                                      kMaxZoom);
-            const QPointF anchor = (m_pinchStartCenter - m_pinchStartOffset) / m_pinchStartZoom;
-            const QPointF offset = center - anchor * zoom;
-            m_engine->set_view(zoom, offset.x(), offset.y());
-            viewMoved();
-        }
-    } else if (active.size() == 1) {
-        const QEventPoint &point = active.first();
-        if (m_pinching) {
-            // Back to one finger: continue as a pan from here.
-            m_pinching = false;
-            m_lastTouchPosition = point.position();
-        } else if (point.state() == QEventPoint::Pressed) {
-            m_touchDrawing = m_engine->pointer_down(3, sampleAt(point.position(), point.timestamp()), 255);
-            if (m_touchDrawing)
-                trackHold(point.position());
-            m_lastTouchPosition = point.position();
-            m_tapCandidate = !m_touchDrawing && (m_textTool || m_mathTool);
-            m_tapStart = point.position();
-            m_tapTime.start();
-        } else if (m_touchDrawing) {
-            const PointerSample sample = sampleAt(point.position(), point.timestamp());
-            m_engine->pointer_move(rust::Slice<const PointerSample>(&sample, 1));
-            trackHold(point.position());
-        } else {
-            if (QLineF(point.position(), m_tapStart).length() > kTapSlop)
-                m_tapCandidate = false;
-            const QPointF delta = point.position() - m_lastTouchPosition;
-            m_lastTouchPosition = point.position();
-            m_engine->pan_by(delta.x(), delta.y());
-            viewMoved();
-        }
-    } else {
-        if (m_touchDrawing) {
-            stopHold();
-            m_engine->pointer_up();
-            afterEdit();
-        }
-        const bool tap = m_tapCandidate && !m_pinching && m_tapTime.elapsed() < kTapTime;
-        m_tapCandidate = false;
-        m_touchDrawing = false;
-        m_pinching = false;
-        if (tap) {
-            const QPointF p = m_tapStart;
-            if (m_textTool)
-                Q_EMIT textRequested(p, static_cast<qint64>(m_engine->text_at(p.x(), p.y())));
-            else if (m_mathTool)
-                Q_EMIT mathRequested(p, static_cast<qint64>(m_engine->math_at(p.x(), p.y())));
-        }
-    }
+    if (active.size() >= 2)
+        pinch(active[0].position(), active[1].position());
+    else if (active.size() == 1)
+        moveOneFinger(active.first());
+    else
+        endTouch();
     repaint();
+}
+
+void InkCanvas::cancelTouchStroke()
+{
+    if (m_touchDrawing)
+        m_engine->pointer_cancel();
+    m_touchDrawing = false;
+}
+
+void InkCanvas::pinch(QPointF a, QPointF b)
+{
+    m_tapCandidate = false;
+    // A second finger turns an accidental finger stroke into navigation.
+    cancelTouchStroke();
+    const QPointF center = (a + b) / 2;
+    const qreal distance = qMax<qreal>(QLineF(a, b).length(), 1);
+    if (!m_pinching) {
+        m_pinching = true;
+        m_pinchStartZoom = m_engine->zoom();
+        m_pinchStartOffset = QPointF(m_engine->offset_x(), m_engine->offset_y());
+        m_pinchStartCenter = center;
+        m_pinchStartDistance = distance;
+        return;
+    }
+    const qreal zoom = qBound(kMinZoom, m_pinchStartZoom * distance / m_pinchStartDistance, kMaxZoom);
+    const QPointF anchor = (m_pinchStartCenter - m_pinchStartOffset) / m_pinchStartZoom;
+    const QPointF offset = center - anchor * zoom;
+    m_engine->set_view(zoom, offset.x(), offset.y());
+    viewMoved();
+}
+
+void InkCanvas::moveOneFinger(const QEventPoint &point)
+{
+    if (m_pinching) {
+        // Back to one finger: continue as a pan from here.
+        m_pinching = false;
+        m_lastTouchPosition = point.position();
+    } else if (point.state() == QEventPoint::Pressed) {
+        m_touchDrawing = m_engine->pointer_down(3, sampleAt(point.position(), point.timestamp()), 255);
+        if (m_touchDrawing)
+            trackHold(point.position());
+        m_lastTouchPosition = point.position();
+        m_tapCandidate = !m_touchDrawing && (m_textTool || m_mathTool);
+        m_tapStart = point.position();
+        m_tapTime.start();
+    } else if (m_touchDrawing) {
+        const PointerSample sample = sampleAt(point.position(), point.timestamp());
+        m_engine->pointer_move(rust::Slice<const PointerSample>(&sample, 1));
+        trackHold(point.position());
+    } else {
+        if (QLineF(point.position(), m_tapStart).length() > kTapSlop)
+            m_tapCandidate = false;
+        const QPointF delta = point.position() - m_lastTouchPosition;
+        m_lastTouchPosition = point.position();
+        m_engine->pan_by(delta.x(), delta.y());
+        viewMoved();
+    }
+}
+
+void InkCanvas::endTouch()
+{
+    if (m_touchDrawing) {
+        stopHold();
+        m_engine->pointer_up();
+        afterEdit();
+    }
+    const bool tap = m_tapCandidate && !m_pinching && m_tapTime.elapsed() < kTapTime;
+    m_tapCandidate = false;
+    m_touchDrawing = false;
+    m_pinching = false;
+    if (!tap)
+        return;
+    const QPointF p = m_tapStart;
+    if (m_textTool)
+        Q_EMIT textRequested(p, static_cast<qint64>(m_engine->text_at(p.x(), p.y())));
+    else if (m_mathTool)
+        Q_EMIT mathRequested(p, static_cast<qint64>(m_engine->math_at(p.x(), p.y())));
 }
 
 void InkCanvas::wheelEvent(QWheelEvent *event)
@@ -1547,6 +1569,30 @@ QSGNode *InkCanvas::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
     return paintLayer(oldNode, 0, m_pageNodes);
 }
 
+namespace {
+/// The dot that follows the pen, or for the eraser a ring as large as what it removes.
+QImage penTipImage(qreal radius, qreal dpr, bool eraser, const QColor &color)
+{
+    const int px = qCeil(radius * 2 * dpr) + 2;
+    QImage dot(px, px, QImage::Format_ARGB32_Premultiplied);
+    dot.fill(Qt::transparent);
+    QPainter painter(&dot);
+    painter.setRenderHint(QPainter::Antialiasing);
+    if (eraser) {
+        const QRectF ring(1.5 * dpr, 1.5 * dpr, px - 3 * dpr, px - 3 * dpr);
+        painter.setPen(QPen(QColor(255, 255, 255, 220), 3 * dpr));
+        painter.drawEllipse(ring);
+        painter.setPen(QPen(QColor(60, 60, 70, 230), 1.2 * dpr));
+        painter.drawEllipse(ring);
+    } else {
+        painter.setPen(QPen(QColor(255, 255, 255, 200), 1));
+        painter.setBrush(color);
+        painter.drawEllipse(QRectF(1, 1, px - 2, px - 2));
+    }
+    return dot;
+}
+}
+
 QSGNode *InkCanvas::paintLayer(QSGNode *oldNode, int layer, LayerNodes &nodes)
 {
     QQuickWindow *win = window();
@@ -1565,6 +1611,14 @@ QSGNode *InkCanvas::paintLayer(QSGNode *oldNode, int layer, LayerNodes &nodes)
         nodes.tiles.clear();
         nodes.tip = nullptr;
     }
+    updateTiles(win, layer, nodes);
+    if (layer == OverlayLayer)
+        updatePenTip(win, nodes);
+    return root;
+}
+
+void InkCanvas::updateTiles(QQuickWindow *win, int layer, LayerNodes &nodes)
+{
     m_engine->set_viewport(width(), height(), win->effectiveDevicePixelRatio());
     const rust::Vec<TileInfo> tiles = m_engine->frame(static_cast<std::uint8_t>(layer));
     const int size = static_cast<int>(m_engine->tile_size());
@@ -1616,9 +1670,10 @@ QSGNode *InkCanvas::paintLayer(QSGNode *oldNode, int layer, LayerNodes &nodes)
         delete stale.node;
     }
     nodes.tiles = std::move(visible);
-    if (layer != OverlayLayer)
-        return root;
+}
 
+void InkCanvas::updatePenTip(QQuickWindow *win, LayerNodes &nodes)
+{
     const qreal tipRadius = m_tipEraser ? m_eraserSize : m_penTipSize;
     if (nodes.tip && (!m_tipVisible || m_tipColor != m_penColor || m_tipBuiltEraser != m_tipEraser
                       || m_tipBuiltRadius != tipRadius)) {
@@ -1628,27 +1683,9 @@ QSGNode *InkCanvas::paintLayer(QSGNode *oldNode, int layer, LayerNodes &nodes)
     }
     if (m_tipVisible) {
         if (!nodes.tip) {
-            const qreal dpr = win->effectiveDevicePixelRatio();
-            const int px = qCeil(tipRadius * 2 * dpr) + 2;
-            QImage dot(px, px, QImage::Format_ARGB32_Premultiplied);
-            dot.fill(Qt::transparent);
-            QPainter painter(&dot);
-            painter.setRenderHint(QPainter::Antialiasing);
-            if (m_tipEraser) {
-                // A ring as large as what the eraser removes.
-                painter.setPen(QPen(QColor(255, 255, 255, 220), 3 * dpr));
-                painter.drawEllipse(QRectF(1.5 * dpr, 1.5 * dpr, px - 3 * dpr, px - 3 * dpr));
-                painter.setPen(QPen(QColor(60, 60, 70, 230), 1.2 * dpr));
-                painter.drawEllipse(QRectF(1.5 * dpr, 1.5 * dpr, px - 3 * dpr, px - 3 * dpr));
-            } else {
-                painter.setPen(QPen(QColor(255, 255, 255, 200), 1));
-                painter.setBrush(m_penColor);
-                painter.drawEllipse(QRectF(1, 1, px - 2, px - 2));
-            }
-            painter.end();
+            const QImage dot = penTipImage(tipRadius, win->effectiveDevicePixelRatio(), m_tipEraser, m_penColor);
             nodes.tip = win->createImageNode();
-            nodes.tip->setTexture(
-                win->createTextureFromImage(dot, QQuickWindow::TextureHasAlphaChannel));
+            nodes.tip->setTexture(win->createTextureFromImage(dot, QQuickWindow::TextureHasAlphaChannel));
             nodes.tip->setOwnsTexture(true);
             m_tipColor = m_penColor;
             m_tipBuiltEraser = m_tipEraser;
@@ -1658,7 +1695,6 @@ QSGNode *InkCanvas::paintLayer(QSGNode *oldNode, int layer, LayerNodes &nodes)
         const qreal r = tipRadius + 1;
         nodes.tip->setRect(QRectF(m_tipPosition.x() - r, m_tipPosition.y() - r, 2 * r, 2 * r));
     }
-    return root;
 }
 
 void InkCanvas::releaseResources()

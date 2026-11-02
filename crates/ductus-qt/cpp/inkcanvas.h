@@ -41,6 +41,7 @@ inline Qt::MouseButtons secondPenButton()
 }
 
 struct CanvasEngine;
+struct PointerSample;
 class QSGImageNode;
 class QSGNode;
 class QTabletEvent;
@@ -229,6 +230,8 @@ public:
     };
     /// The nodes of one layer: this item shows the page, InkLayer items the others.
     QSGNode *paintLayer(QSGNode *oldNode, int layer, LayerNodes &nodes);
+    void updateTiles(QQuickWindow *win, int layer, LayerNodes &nodes);
+    void updatePenTip(QQuickWindow *win, LayerNodes &nodes);
     QRectF mathDraftRect() const { return m_mathDraftRect; }
     bool selectionHasInk() const { return m_selectionHasInk; }
     bool selectionTurns() const { return m_selectionTurns; }
@@ -325,6 +328,15 @@ protected:
 
 private:
     bool handleTablet(QTabletEvent *event);
+    /// Off the page the pen acts as a mouse.
+    void forwardOffPage(QTabletEvent *event);
+    void tabletPress(QPointF position, const PointerSample &sample, Tool penTool, bool eraserEnd);
+    void tabletMove(QPointF position, const PointerSample &sample);
+    void tabletRelease(QPointF position, const PointerSample &sample);
+    void cancelTouchStroke();
+    void pinch(QPointF a, QPointF b);
+    void moveOneFinger(const QEventPoint &point);
+    void endTouch();
     void setPenButtonTool(int which, int tool);
     /// The chosen tool, or the one a held pen button or the eraser end stands for.
     Tool penTool(const QTabletEvent *event) const;
