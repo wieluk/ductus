@@ -131,6 +131,18 @@ QTabletEvent tabletMoveFrom(const QTabletEvent *event)
 }
 #endif
 
+// The side buttons held, from Qt's own button bits except on Windows (see WinPen::barrelHeld).
+Qt::MouseButtons sideButtons(const QTabletEvent *event)
+{
+#ifdef Q_OS_WIN
+    // UI tests run offscreen, without the native messages.
+    static const bool native = QGuiApplication::platformName() == u"windows";
+    if (native)
+        return WinPen::barrelHeld() ? Qt::RightButton : Qt::NoButton;
+#endif
+    return event->buttons() & (firstPenButton() | secondPenButton());
+}
+
 bool isMouse(const QPointerEvent *event)
 {
     const auto *device = event->pointingDevice();
@@ -1056,8 +1068,7 @@ void InkCanvas::forwardAsMouse(QTabletEvent *event)
     if (event->type() == QEvent::TabletPress) {
         type = QEvent::MouseButtonPress;
         // The tip with a barrel button held is a right click.
-        m_forwardButton = event->buttons() & (firstPenButton() | secondPenButton()) ? Qt::RightButton
-                                                                                : Qt::LeftButton;
+        m_forwardButton = sideButtons(event) ? Qt::RightButton : Qt::LeftButton;
     } else if (event->type() == QEvent::TabletRelease) {
         type = QEvent::MouseButtonRelease;
     }
@@ -1386,9 +1397,10 @@ int InkCanvas::heldPenButton(const QTabletEvent *event) const
     // Switching, the side buttons change the tool itself.
     if (m_penButtonsSwitch)
         return -1;
-    if (event->buttons() & firstPenButton())
+    const Qt::MouseButtons side = sideButtons(event);
+    if (side & firstPenButton())
         return 0;
-    if (event->buttons() & secondPenButton())
+    if (side & secondPenButton())
         return 1;
     return -1;
 }
@@ -1407,7 +1419,7 @@ void InkCanvas::trackPenButtons(const QTabletEvent *event)
 
     const Qt::MouseButtons side = event->pointerType() == QPointingDevice::PointerType::Eraser
         ? Qt::MouseButtons()
-        : event->buttons() & (firstPenButton() | secondPenButton());
+        : sideButtons(event);
     const Qt::MouseButtons clicked = side & ~m_sideButtons;
     m_sideButtons = side;
     if (!m_penButtonsSwitch || !clicked)
