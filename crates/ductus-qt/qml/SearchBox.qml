@@ -299,6 +299,7 @@ Item {
                                 Label {
                                     visible: !box.onPage
                                     text: result.modelData.title
+                                    textFormat: Text.PlainText
                                     color: Theme.text
                                     font.pixelSize: 13
                                     font.weight: Font.DemiBold
@@ -311,6 +312,7 @@ Item {
                                            result.modelData.kind === "pdf"
                                            ? qsTr("page %1").arg(result.modelData.page + 1) : ""]
                                           .filter(t => t.length > 0).join("  ·  ")
+                                    textFormat: Text.PlainText
                                     color: Theme.textMuted
                                     font.pixelSize: 11
                                     elide: Text.ElideMiddle

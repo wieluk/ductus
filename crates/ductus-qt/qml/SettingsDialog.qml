@@ -921,12 +921,12 @@ Dialog {
                 }
                 Described {
                     visible: hwr.backend === "server"
-                    readonly property bool local: hwr.url.length === 0
-                        || /^https?:\/\/(localhost|127\.|192\.168\.|10\.|\[::1\])/.test(hwr.url)
+                    readonly property bool local: hwr.url.length === 0 || AppController.isLocalUrl(hwr.url)
                     label: local ? qsTr("Your handwriting stays on your computer or network.")
                                  : qsTr("Your handwriting is sent to this server.")
                     hint: local ? ""
-                                : qsTr("Line images leave your computer. Use a cloud service only if you are fine with that.")
+                          : !hwr.url.startsWith("https://") ? qsTr("Servers outside your network need an https:// address.")
+                          : qsTr("Line images leave your computer. Use a cloud service only if you are fine with that.")
                 }
 
                 Heading { text: qsTr("Search") }

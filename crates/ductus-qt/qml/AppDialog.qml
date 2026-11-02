@@ -33,6 +33,8 @@ Dialog {
     header: Label {
         width: dialog.width
         text: dialog.title
+        // Titles and messages quote file names, which must never be read as markup.
+        textFormat: Text.PlainText
         visible: text.length > 0
         padding: 20
         bottomPadding: 0
@@ -49,6 +51,7 @@ Dialog {
             id: messageLabel
             width: dialog.width - dialog.leftPadding - dialog.rightPadding
             text: dialog.message
+            textFormat: Text.PlainText
             wrapMode: Text.WordWrap
             color: Theme.textMuted
             font.pixelSize: 13

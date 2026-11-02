@@ -39,6 +39,8 @@ Rectangle {
         Label {
             id: label
             objectName: "toastLabel"
+            // Errors quote file names and servers' answers.
+            textFormat: Text.PlainText
             anchors.verticalCenter: parent.verticalCenter
             width: Math.min(implicitWidth, toast.parent.width - 80 - (button.visible ? button.width + row.spacing : 0))
             wrapMode: Text.WordWrap

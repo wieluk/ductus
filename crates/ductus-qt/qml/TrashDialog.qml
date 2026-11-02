@@ -66,6 +66,7 @@ AppDialog {
                         Label {
                             Layout.fillWidth: true
                             text: item.modelData.name
+                            textFormat: Text.PlainText
                             elide: Text.ElideRight
                             color: Theme.text
                             font.pixelSize: 13

@@ -1,10 +1,14 @@
 #include "ductus-qt/cpp/app.h"
 #include "ductus-qt/cpp/appcontroller.h"
 #include "ductus-qt/cpp/translations.h"
+#ifdef DUCTUS_TEST_HOOKS
 #include "ductus-qt/cpp/uitest.h"
+#endif
 
 #include <QApplication>
 #include <QDir>
+#include <QNetworkAccessManager>
+#include <QQmlNetworkAccessManagerFactory>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 #include <QQuickWindow>
@@ -37,6 +41,29 @@ bool softwareRendering()
 }
 
 namespace {
+/// Pages may hold Markdown or names with links to pictures on the web: the interface loads nothing
+/// from outside the app, so opening a page never tells anyone.
+class LocalOnly : public QNetworkAccessManager
+{
+public:
+    using QNetworkAccessManager::QNetworkAccessManager;
+
+protected:
+    QNetworkReply *createRequest(Operation op, const QNetworkRequest &request, QIODevice *data) override
+    {
+        const QString scheme = request.url().scheme();
+        if (scheme == u"file" || scheme == u"qrc" || scheme == u"data")
+            return QNetworkAccessManager::createRequest(op, request, data);
+        return QNetworkAccessManager::createRequest(op, QNetworkRequest(), data);
+    }
+};
+
+class LocalOnlyFactory : public QQmlNetworkAccessManagerFactory
+{
+public:
+    QNetworkAccessManager *create(QObject *parent) override { return new LocalOnly(parent); }
+};
+
 
 #if defined(Q_OS_ANDROID)
 /// The file an "Open with" intent points to, or "".
@@ -114,13 +141,17 @@ std::int32_t run_app(rust::Str program, rust::Vec<rust::String> files)
         QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
     // Our own look on every platform; the controls are restyled in QML.
     QQuickStyle::setStyle(QStringLiteral("Basic"));
+#ifdef DUCTUS_TEST_HOOKS
     const QString script = qEnvironmentVariable("DUCTUS_UI_SCRIPT");
     // The offscreen platform turns hover off; tests need it like a desktop has it.
     if (!script.isEmpty())
         QGuiApplication::styleHints()->setUseHoverEffects(true);
+#endif
 
     Translations::apply();
     QQmlApplicationEngine engine;
+    LocalOnlyFactory network;
+    engine.setNetworkAccessManagerFactory(&network);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
                      [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
     engine.loadFromModule("Ductus", "Main");
@@ -159,10 +190,12 @@ std::int32_t run_app(rust::Str program, rust::Vec<rust::String> files)
     });
 #endif
 
+#ifdef DUCTUS_TEST_HOOKS
     if (!script.isEmpty()) {
         auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().first());
         const QString shots = qEnvironmentVariable("DUCTUS_UI_SHOTS", QStringLiteral("ui-shots"));
         startUiTest(window, script, shots);
     }
+#endif
     return app.exec();
 }

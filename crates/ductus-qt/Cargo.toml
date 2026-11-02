@@ -13,6 +13,10 @@ path = "src/lib.rs"
 name = "ductus"
 path = "src/main.rs"
 
+[features]
+# The UI test driver and the environment variables tests steer the app with; never in releases.
+test-hooks = []
+
 [dependencies]
 ductus-core.workspace = true
 ductus-canvas.workspace = true

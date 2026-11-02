@@ -81,6 +81,7 @@ AppDialog {
         Label {
             objectName: "importNote"
             Layout.fillWidth: true
+            textFormat: Text.PlainText
             wrapMode: Text.WordWrap
             text: dialog.savedAs.length > 0 && dialog.savedAs !== dialog.name
                   ? qsTr("“%1” already exists there, so this is saved as “%2”. Nothing is overwritten.")

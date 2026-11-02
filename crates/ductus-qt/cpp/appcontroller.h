@@ -218,6 +218,7 @@ public:
     Q_INVOKABLE QString defaultNotebookLocation() const;
     /// A folder as "Library › Notebook › Section", notebooks under their names.
     Q_INVOKABLE QString placeLabel(const QString &folder) const;
+    Q_INVOKABLE static bool isLocalUrl(const QString &url);
     /// Every notebook as {path, name}, in the user's order.
     Q_INVOKABLE QVariantList notebookList() const;
     /// Notebooks and sections as {path, label}, the Inbox first.
@@ -286,7 +287,8 @@ public:
     Q_INVOKABLE bool exportFolder(const QString &folder, const QString &fileOrUrl);
     /// "pdf" for a PDF from outside the library: it needs the import choice.
     Q_INVOKABLE QString openFile(const QString &fileOrUrl);
-    Q_INVOKABLE void openExternally(const QString &path);
+    /// Programs and scripts are opened only once `confirmed`: a synced library may hold any file.
+    Q_INVOKABLE void openExternally(const QString &path, bool confirmed = false);
     Q_INVOKABLE void showInFolder(const QString &path);
     Q_INVOKABLE void setPinned(const QString &path, bool pinned);
     Q_INVOKABLE void reveal(const QString &path);
@@ -321,6 +323,7 @@ Q_SIGNALS:
     void autosaveDelayChanged();
     void unsavedChanged();
     void revealRequested(const QString &path);
+    void openProgramRequested(const QString &path, const QString &name);
     void screenshotTaken(const QString &file);
     void indexStatusChanged();
     void recognitionStatusChanged();

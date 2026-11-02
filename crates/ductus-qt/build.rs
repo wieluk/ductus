@@ -49,7 +49,7 @@ fn main() {
         .qt_module("Quick")
         .qt_module("QuickControls2")
         .qt_module("Svg")
-        .qt_module("Test")
+        .qt_module("Network")
         .qt_module("Widgets")
         .files(["src/ffi.rs"])
         .cpp_files([
@@ -58,7 +58,6 @@ fn main() {
             "cpp/inkcanvas.cpp",
             "cpp/appcontroller.h",
             "cpp/appcontroller.cpp",
-            "cpp/uitest.cpp",
             "cpp/textformatter.h",
             "cpp/textformatter.cpp",
             "cpp/updater.h",
@@ -73,6 +72,10 @@ fn main() {
         .qrc_resources(QResources::from(icons()))
         .qrc_resources(translations());
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let test_hooks = std::env::var_os("CARGO_FEATURE_TEST_HOOKS").is_some();
+    if test_hooks {
+        builder = builder.qt_module("Test").cpp_files(["cpp/uitest.cpp"]);
+    }
     // Screenshots go through the desktop portal on D-Bus; the pen's cursor goes through Qt's Wayland client.
     if target_os == "linux" {
         builder = builder.qt_module("DBus").qt_module("WaylandClient");
@@ -81,12 +84,13 @@ fn main() {
     if target_os == "windows" {
         builder = builder.cpp_files(["cpp/winframe.h", "cpp/winframe.cpp"]);
         println!("cargo:rustc-link-lib=user32");
+        println!("cargo:rustc-link-lib=shell32");
+        println!("cargo:rustc-link-lib=ole32");
     }
     // Android has no printing, and runs one copy of an app by itself.
     if target_os != "android" {
         builder = builder
             .qt_module("PrintSupport")
-            .qt_module("Network")
             .cpp_files(["cpp/singleinstance.h", "cpp/singleinstance.cpp"]);
     } else {
         link_android_qt_libraries();
@@ -109,6 +113,9 @@ fn main() {
             // MSVC reads sources as the system code page otherwise, which garbles translated text.
             if std::env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("msvc") {
                 cc.flag("/utf-8");
+            }
+            if test_hooks {
+                cc.define("DUCTUS_TEST_HOOKS", None);
             }
             // Development builds don't look for updates.
             if std::env::var("PROFILE").as_deref() == Ok("debug") {

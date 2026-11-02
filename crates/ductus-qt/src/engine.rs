@@ -97,11 +97,11 @@ pub(crate) fn styled(
     } else if let Some(size) = PaperSize::from_name(kind) {
         settings.kind = PageKind::Paper { size, orientation };
     }
-    if let Some(p) = PatternStyle::from_name(pattern) {
-        if p != settings.background.pattern {
-            settings.background.pattern = p;
-            settings.background.spacing = p.default_spacing();
-        }
+    if let Some(p) = PatternStyle::from_name(pattern)
+        && p != settings.background.pattern
+    {
+        settings.background.pattern = p;
+        settings.background.spacing = p.default_spacing();
     }
     settings
 }

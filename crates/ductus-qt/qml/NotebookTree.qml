@@ -629,6 +629,7 @@ Rectangle {
                             Layout.fillWidth: true
                             text: row.placeholder === "section" ? qsTr("New section")
                                   : row.placeholder ? qsTr("No pages yet. Tap to add one.") : row.name
+                            textFormat: Text.PlainText
                             elide: Text.ElideRight
                             color: row.isFile || row.placeholder ? Theme.textMuted : Theme.text
                             font.italic: row.placeholder === "page"

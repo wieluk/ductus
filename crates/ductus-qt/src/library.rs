@@ -868,23 +868,21 @@ impl LibraryHandle {
             path,
             kind: OpenKind::Svg { recognized, .. },
         }) = &mut self.open
+            && path == page
         {
-            if path == page {
-                recognized.retain(|l| l.key != key);
-                recognized.push(line);
-                return Ok(true);
-            }
+            recognized.retain(|l| l.key != key);
+            recognized.push(line);
+            return Ok(true);
         }
         // The other half was saved when it was left, so its file below is current too.
         if let Some(OpenPage {
             path,
             kind: OpenKind::Svg { recognized, .. },
         }) = &mut self.parked
+            && path == page
         {
-            if path == page {
-                recognized.retain(|l| l.key != key);
-                recognized.push(line.clone());
-            }
+            recognized.retain(|l| l.key != key);
+            recognized.push(line.clone());
         }
         // Not open (any more): update the file if that ink is still there. A cache, so no history.
         let save = self.library.prepare_page_save_without_history(page);

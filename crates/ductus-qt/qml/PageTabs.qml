@@ -112,6 +112,7 @@ Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
                     width: Math.min(implicitWidth, close.x - x - 2)
                     text: tab.active && bar.focused ? bar.pageTitle : AppController.displayName(tab.modelData)
+                    textFormat: Text.PlainText
                     color: tab.active ? Theme.text : Theme.textMuted
                     font.pixelSize: 12
                     font.weight: tab.active ? Font.DemiBold : Font.Normal

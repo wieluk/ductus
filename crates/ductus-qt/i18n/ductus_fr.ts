@@ -660,6 +660,18 @@
         <translation>Le fichier d’origine est seulement lu, jamais modifié.</translation>
     </message>
     <message>
+        <source>Run “%1”?</source>
+        <translation>Exécuter « %1 » ?</translation>
+    </message>
+    <message>
+        <source>This file is a program or script. Run it only if you trust where it came from.</source>
+        <translation>Ce fichier est un programme ou un script. Exécutez-le uniquement si vous faites confiance à sa provenance.</translation>
+    </message>
+    <message>
+        <source>Run</source>
+        <translation>Exécuter</translation>
+    </message>
+    <message>
         <source>Import as note pages</source>
         <translation>Importer comme pages de notes</translation>
     </message>
@@ -2396,6 +2408,10 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
         <translation>Votre écriture est envoyée à ce serveur.</translation>
     </message>
     <message>
+        <source>Servers outside your network need an https:// address.</source>
+        <translation>Les serveurs hors de votre réseau nécessitent une adresse https://.</translation>
+    </message>
+    <message>
         <source>Line images leave your computer. Use a cloud service only if you are fine with that.</source>
         <translation>Les images des lignes quittent votre ordinateur. N’utilisez un service cloud que si cela vous convient.</translation>
     </message>
@@ -2823,12 +2839,6 @@ Créez-en un avec le bouton + ou faites d’un dossier un carnet sous Dossiers.<
     <message>
         <source>Installing version %1…</source>
         <translation>Installation de la version %1…</translation>
-    </message>
-    <message>
-        <source>This copy was installed from a file that doesn&apos;t follow the Ductus repository, so it can&apos;t update. Install it from the repository once (notes and settings stay):
-flatpak remote-add --user --if-not-exists ductus %1 &amp;&amp; flatpak uninstall -y %2 &amp;&amp; flatpak install --user -y ductus %2</source>
-        <translation>Cette copie a été installée depuis un fichier qui ne suit pas le dépôt Ductus, elle ne peut donc pas se mettre à jour. Installez-la une fois depuis le dépôt (les notes et les paramètres sont conservés) :
-flatpak remote-add --user --if-not-exists ductus %1 &amp;&amp; flatpak uninstall -y %2 &amp;&amp; flatpak install --user -y ductus %2</translation>
     </message>
     <message>
         <source>Version %1 is installed. Restart Ductus to use it.</source>

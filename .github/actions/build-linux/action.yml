@@ -17,7 +17,7 @@ runs:
     - shell: bash
       run: build-aux/linux/build-flatpak.sh binary
     - shell: bash
-      run: build-aux/sdk-run.sh build-aux/ui-tests.sh target/sdk-6.10/release/ductus
+      run: build-aux/sdk-run.sh build-aux/ui-tests.sh target/sdk-6.10/release/ductus-test
     - shell: bash
       env:
         FLATPAK_ARGS: --disable-rofiles-fuse

@@ -106,10 +106,10 @@ impl SearchHandle {
         if let Ok(mut s) = self.status.lock() {
             s.pending += 1;
         }
-        if self.jobs.send(job).is_err() {
-            if let Ok(mut s) = self.status.lock() {
-                s.pending -= 1;
-            }
+        if self.jobs.send(job).is_err()
+            && let Ok(mut s) = self.status.lock()
+        {
+            s.pending -= 1;
         }
     }
 

@@ -16,6 +16,12 @@ if (-not $Version) {
 # Git Bash by path: a bare `bash` can be WSL's.
 $bash = Join-Path $env:ProgramFiles "Git\bin\bash.exe"
 $env:QMAKE = "$env:QT_ROOT_DIR\bin\qmake.exe"
+# The UI tests need the test hooks, which releases never carry: only ductus-qt builds twice.
+if (-not $SkipTests) {
+    cargo build --release --locked -p ductus-qt --features test-hooks
+    if ($LASTEXITCODE -ne 0) { throw "cargo build failed" }
+    Copy-Item target\release\ductus.exe target\release\ductus-test.exe
+}
 cargo build --release --locked -p ductus-qt
 if ($LASTEXITCODE -ne 0) { throw "cargo build failed" }
 
@@ -47,8 +53,12 @@ if ($LASTEXITCODE -ne 0) { throw "windeployqt failed" }
 Copy-Item "$env:QT_ROOT_DIR\plugins\platforms\qoffscreen.dll" $app\platforms\
 
 if (-not $SkipTests) {
-    & $bash build-aux/ui-tests.sh target/windows/Ductus/ductus.exe
-    if ($LASTEXITCODE -ne 0) { throw "UI tests failed" }
+    # Next to the deployed Qt, pdfium and ONNX Runtime it needs.
+    Copy-Item target\release\ductus-test.exe $app\
+    & $bash build-aux/ui-tests.sh target/windows/Ductus/ductus-test.exe
+    $failed = $LASTEXITCODE
+    Remove-Item $app\ductus-test.exe
+    if ($failed -ne 0) { throw "UI tests failed" }
 }
 
 New-Item -ItemType Directory -Force dist | Out-Null

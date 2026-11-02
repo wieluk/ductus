@@ -197,6 +197,11 @@ ApplicationWindow {
         function onErrorOccurred(message) { toast.show(message, true) }
         function onOpenRequested(file) { window.openFile(file) }
         function onNotice(message) { toast.show(message, false) }
+        function onOpenProgramRequested(path, name) {
+            openProgramDialog.path = path
+            openProgramDialog.name = name
+            openProgramDialog.open()
+        }
         function onImportReady(kind, name, pages, sections, location) {
             // "Importing…" is over: the dialog says what was read.
             toast.hide()
@@ -683,7 +688,9 @@ ApplicationWindow {
     FolderDialog {
         id: folderDialog
         title: qsTr("Choose a library folder")
-        currentFolder: "file://" + AppController.libraryPath
+        // Three slashes before Windows' C:/ too.
+        currentFolder: AppController.libraryPath.indexOf("://") >= 0 ? AppController.libraryPath
+                       : "file:///" + AppController.libraryPath.replace(/^\/+/, "")
         onAccepted: AppController.openLibrary(selectedFolder.toString())
     }
 
@@ -909,6 +916,20 @@ ApplicationWindow {
         destructive: true
         acceptButton.objectName: "confirmDelete"
         onAccepted: AppController.remove(path)
+    }
+
+    AppDialog {
+        id: openProgramDialog
+        objectName: "openProgramDialog"
+
+        property string path
+        property string name
+
+        title: qsTr("Run \u201c%1\u201d?").arg(name)
+        message: qsTr("This file is a program or script. Run it only if you trust where it came from.")
+        acceptText: qsTr("Run")
+        destructive: true
+        onAccepted: AppController.openExternally(path, true)
     }
 
     SettingsDialog {

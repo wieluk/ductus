@@ -23,6 +23,7 @@ pub struct UpdateHandle {
 }
 
 pub fn open_updater() -> Box<UpdateHandle> {
+    #[cfg(feature = "test-hooks")]
     if std::env::var_os("DUCTUS_UPDATE_FEED").is_some() {
         ductus_update::allow_test_feeds();
     }
@@ -34,7 +35,11 @@ pub fn open_updater() -> Box<UpdateHandle> {
 
 /// Tests use their own key.
 fn signing_key() -> String {
-    std::env::var("DUCTUS_UPDATE_KEY").unwrap_or_else(|_| ductus_update::PUBLIC_KEY.to_owned())
+    #[cfg(feature = "test-hooks")]
+    if let Ok(key) = std::env::var("DUCTUS_UPDATE_KEY") {
+        return key;
+    }
+    ductus_update::PUBLIC_KEY.to_owned()
 }
 
 pub fn update_is_newer(latest: &str, current: &str) -> bool {

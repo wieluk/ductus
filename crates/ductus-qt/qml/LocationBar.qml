@@ -102,6 +102,7 @@ Rectangle {
                 Label {
                     anchors.verticalCenter: parent.verticalCenter
                     text: crumb.modelData.name
+                    textFormat: Text.PlainText
                     color: crumb.hovered ? Theme.accent : crumb.last ? Theme.text : Theme.textMuted
                     font.pixelSize: 12
                     font.weight: crumb.last || crumb.modelData.notebook ? Font.DemiBold : Font.Normal

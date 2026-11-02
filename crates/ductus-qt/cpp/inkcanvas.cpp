@@ -1608,6 +1608,12 @@ QSGNode *InkCanvas::paintLayer(QSGNode *oldNode, int layer, LayerNodes &nodes)
         if (!entry.node || entry.generation != tile.generation) {
             const rust::Slice<const std::uint8_t> pixels =
                 m_engine->tile_pixels(tile.layer, tile.x, tile.y);
+            // A tile the engine no longer has keeps its old picture rather than reading past the end.
+            if (pixels.size() < std::size_t(size) * std::size_t(size) * 4) {
+                if (entry.node)
+                    visible.insert(key, entry);
+                continue;
+            }
             const QImage image(pixels.data(), size, size, size * 4,
                                QImage::Format_RGBA8888_Premultiplied);
             // Deep copy: the engine may redraw this buffer before the upload happens.
