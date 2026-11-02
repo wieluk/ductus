@@ -2841,12 +2841,14 @@ Crie um com o botão + ou transforme uma pasta em caderno em Pastas.</translatio
         <translation>Instalando a versão %1…</translation>
     </message>
     <message>
-        <source>Version %1 is installed. Restart Ductus to use it.</source>
-        <translation>A versão %1 está instalada. Reinicie o Ductus para usá-la.</translation>
+        <source>Flatpak found no version %1 where this copy came from. If it was installed from a downloaded file, install it from the Ductus repository once (notes and settings stay):
+flatpak remote-add --user --if-not-exists ductus %2 &amp;&amp; flatpak uninstall -y %3 &amp;&amp; flatpak install --user -y ductus %3</source>
+        <translation>O Flatpak não encontrou a versão %1 na origem desta cópia. Se ela foi instalada de um arquivo baixado, instale-a uma vez a partir do repositório do Ductus (notas e configurações são mantidas):
+flatpak remote-add --user --if-not-exists ductus %2 &amp;&amp; flatpak uninstall -y %3 &amp;&amp; flatpak install --user -y ductus %3</translation>
     </message>
     <message>
-        <source>The Ductus repository doesn&apos;t offer version %1 yet%2. Try again later.</source>
-        <translation>O repositório do Ductus ainda não oferece a versão %1%2. Tente mais tarde.</translation>
+        <source>Version %1 is installed. Restart Ductus to use it.</source>
+        <translation>A versão %1 está instalada. Reinicie o Ductus para usá-la.</translation>
     </message>
     <message>
         <source>Flatpak couldn&apos;t install version %1%2.</source>

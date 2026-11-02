@@ -2846,12 +2846,14 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>Установка версии %1…</translation>
     </message>
     <message>
-        <source>Version %1 is installed. Restart Ductus to use it.</source>
-        <translation>Версия %1 установлена. Перезапустите Ductus, чтобы её использовать.</translation>
+        <source>Flatpak found no version %1 where this copy came from. If it was installed from a downloaded file, install it from the Ductus repository once (notes and settings stay):
+flatpak remote-add --user --if-not-exists ductus %2 &amp;&amp; flatpak uninstall -y %3 &amp;&amp; flatpak install --user -y ductus %3</source>
+        <translation>Flatpak не нашёл версию %1 там, откуда установлена эта копия. Если она установлена из скачанного файла, установите её один раз из репозитория Ductus (заметки и настройки сохранятся):
+flatpak remote-add --user --if-not-exists ductus %2 &amp;&amp; flatpak uninstall -y %3 &amp;&amp; flatpak install --user -y ductus %3</translation>
     </message>
     <message>
-        <source>The Ductus repository doesn&apos;t offer version %1 yet%2. Try again later.</source>
-        <translation>В репозитории Ductus ещё нет версии %1%2. Повторите попытку позже.</translation>
+        <source>Version %1 is installed. Restart Ductus to use it.</source>
+        <translation>Версия %1 установлена. Перезапустите Ductus, чтобы её использовать.</translation>
     </message>
     <message>
         <source>Flatpak couldn&apos;t install version %1%2.</source>

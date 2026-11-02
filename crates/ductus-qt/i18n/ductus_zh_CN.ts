@@ -2836,12 +2836,14 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>正在安装版本 %1…</translation>
     </message>
     <message>
-        <source>Version %1 is installed. Restart Ductus to use it.</source>
-        <translation>版本 %1 已安装。重启 Ductus 即可使用。</translation>
+        <source>Flatpak found no version %1 where this copy came from. If it was installed from a downloaded file, install it from the Ductus repository once (notes and settings stay):
+flatpak remote-add --user --if-not-exists ductus %2 &amp;&amp; flatpak uninstall -y %3 &amp;&amp; flatpak install --user -y ductus %3</source>
+        <translation>Flatpak 在此副本的来源处未找到版本 %1。如果它是从下载的文件安装的，请从 Ductus 仓库重新安装一次（笔记和设置会保留）：
+flatpak remote-add --user --if-not-exists ductus %2 &amp;&amp; flatpak uninstall -y %3 &amp;&amp; flatpak install --user -y ductus %3</translation>
     </message>
     <message>
-        <source>The Ductus repository doesn&apos;t offer version %1 yet%2. Try again later.</source>
-        <translation>Ductus 软件仓库还没有提供版本 %1%2。请稍后再试。</translation>
+        <source>Version %1 is installed. Restart Ductus to use it.</source>
+        <translation>版本 %1 已安装。重启 Ductus 即可使用。</translation>
     </message>
     <message>
         <source>Flatpak couldn&apos;t install version %1%2.</source>

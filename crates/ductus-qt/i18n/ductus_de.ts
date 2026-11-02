@@ -2841,12 +2841,14 @@ Erstelle eines mit der Taste + oder mache unter Ordner einen Ordner zum Notizbuc
         <translation>Version %1 wird installiert…</translation>
     </message>
     <message>
-        <source>Version %1 is installed. Restart Ductus to use it.</source>
-        <translation>Version %1 ist installiert. Starte Ductus neu, um sie zu nutzen.</translation>
+        <source>Flatpak found no version %1 where this copy came from. If it was installed from a downloaded file, install it from the Ductus repository once (notes and settings stay):
+flatpak remote-add --user --if-not-exists ductus %2 &amp;&amp; flatpak uninstall -y %3 &amp;&amp; flatpak install --user -y ductus %3</source>
+        <translation>Flatpak hat Version %1 dort, woher diese Kopie stammt, nicht gefunden. Wurde sie aus einer heruntergeladenen Datei installiert, installiere sie einmal aus dem Ductus-Repository (Notizen und Einstellungen bleiben erhalten):
+flatpak remote-add --user --if-not-exists ductus %2 &amp;&amp; flatpak uninstall -y %3 &amp;&amp; flatpak install --user -y ductus %3</translation>
     </message>
     <message>
-        <source>The Ductus repository doesn&apos;t offer version %1 yet%2. Try again later.</source>
-        <translation>Das Ductus-Repository bietet Version %1 noch nicht an%2. Versuche es später noch einmal.</translation>
+        <source>Version %1 is installed. Restart Ductus to use it.</source>
+        <translation>Version %1 ist installiert. Starte Ductus neu, um sie zu nutzen.</translation>
     </message>
     <message>
         <source>Flatpak couldn&apos;t install version %1%2.</source>

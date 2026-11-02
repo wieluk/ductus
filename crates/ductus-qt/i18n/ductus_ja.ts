@@ -2836,12 +2836,14 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>バージョン %1 をインストール中…</translation>
     </message>
     <message>
-        <source>Version %1 is installed. Restart Ductus to use it.</source>
-        <translation>バージョン %1 をインストールしました。使うには Ductus を再起動してください。</translation>
+        <source>Flatpak found no version %1 where this copy came from. If it was installed from a downloaded file, install it from the Ductus repository once (notes and settings stay):
+flatpak remote-add --user --if-not-exists ductus %2 &amp;&amp; flatpak uninstall -y %3 &amp;&amp; flatpak install --user -y ductus %3</source>
+        <translation>このコピーの入手元に Flatpak がバージョン %1 を見つけられませんでした。ダウンロードしたファイルからインストールした場合は、一度 Ductus リポジトリからインストールしてください（ノートと設定はそのまま残ります）:
+flatpak remote-add --user --if-not-exists ductus %2 &amp;&amp; flatpak uninstall -y %3 &amp;&amp; flatpak install --user -y ductus %3</translation>
     </message>
     <message>
-        <source>The Ductus repository doesn&apos;t offer version %1 yet%2. Try again later.</source>
-        <translation>Ductus リポジトリではまだバージョン %1 を提供していません%2。後でもう一度お試しください。</translation>
+        <source>Version %1 is installed. Restart Ductus to use it.</source>
+        <translation>バージョン %1 をインストールしました。使うには Ductus を再起動してください。</translation>
     </message>
     <message>
         <source>Flatpak couldn&apos;t install version %1%2.</source>

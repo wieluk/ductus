@@ -368,7 +368,13 @@ void Updater::flatpakProgress(const QVariantMap &info)
         setStatus(tr("Updating…"), info.value(QStringLiteral("progress")).toUInt() / 100.0);
         break;
     case 1:
-        finishFlatpak(tr("The Ductus repository doesn't offer version %1 yet%2. Try again later.").arg(m_latest, reason));
+        // Also what a copy installed from a downloaded file hears: it follows no repository.
+        finishFlatpak(tr("Flatpak found no version %1 where this copy came from. If it was installed from a "
+                         "downloaded file, install it from the Ductus repository once (notes and settings stay):\n"
+                         "flatpak remote-add --user --if-not-exists ductus %2 && flatpak uninstall -y %3 && "
+                         "flatpak install --user -y ductus %3")
+                          .arg(m_latest, QStringLiteral("https://wieluk.github.io/ductus/repo/ductus.flatpakrepo"),
+                               QStringLiteral("app.ductus.Ductus")));
         break;
     case 2:
         m_restartNeeded = true;
