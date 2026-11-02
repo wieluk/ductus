@@ -172,33 +172,27 @@ impl Library {
         }
         index.remove(id);
         self.save_trash_index(&index)?;
-        self.edit_order(&parent, |order| {
-            order.retain(|n| *n != name);
-            let at = position.unwrap_or(order.len()).min(order.len());
-            order.insert(at, name.clone());
-        })?;
+        self.put_in_order(&parent, &name, position)?;
         Ok(rel)
     }
 
     /// Deletes an entry from the trash for good.
     pub fn purge(&self, id: &str) -> Result<(), Error> {
-        let dir = self.trash_dir();
         let mut index = self.trash_index();
-        let mut doomed = vec![dir.join(id)];
-        if let Some(assets) = index.get(id).and_then(|d| d.assets.clone()) {
-            doomed.push(dir.join(assets));
-        }
-        for path in doomed {
+        let Some(entry) = index.remove(id) else {
+            return Err(Error::Invalid(format!(
+                "\u{201c}{id}\u{201d} isn't in the trash."
+            )));
+        };
+        let dir = self.trash_dir();
+        for path in std::iter::once(dir.join(id)).chain(entry.assets.map(|a| dir.join(a))) {
             if path.is_dir() {
                 fs::remove_dir_all(&path)?;
             } else if path.exists() {
                 fs::remove_file(&path)?;
             }
         }
-        if index.remove(id).is_some() {
-            self.save_trash_index(&index)?;
-        }
-        Ok(())
+        self.save_trash_index(&index)
     }
 
     /// Empties the trash.

@@ -66,7 +66,7 @@ ColumnLayout {
             clip: true
             model: picker.folders
             boundsBehavior: Flickable.StopAtBounds
-            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+            ScrollBar.vertical: AppScrollBar {}
             delegate: ItemDelegate {
                 required property var modelData
                 objectName: "placeFolder_" + modelData.name

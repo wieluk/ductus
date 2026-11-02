@@ -121,6 +121,8 @@ pub mod qobject {
         /// `kind`: "off", "server" or "fixed:<text>".
         /// Built-in recognizers use about this share of the processor's cores, in percent.
         fn set_processor_share(percent: u32);
+        /// A recognition server on this computer or network, by its address.
+        fn is_local_url(url: &str) -> bool;
         /// Recognition pauses between lines while the user is busy.
         fn user_active(self: &RecognitionHandle);
         fn configure(self: &RecognitionHandle, kind: &str, url: &str, model: &str, key: &str);
@@ -132,7 +134,6 @@ pub mod qobject {
     #[derive(Debug, Default)]
     struct UpdateState {
         busy: bool,
-        checked: bool,
         latest: String,
         notes: String,
         page: String,
@@ -180,8 +181,6 @@ pub mod qobject {
     #[derive(Debug, Default)]
     struct ConvertState {
         busy: bool,
-        done: usize,
-        total: usize,
         result: String,
         /// Ids of the strokes that were read as `result`, space-separated.
         strokes: String,
@@ -471,7 +470,6 @@ pub mod qobject {
         fn offset_x(self: &CanvasEngine) -> f64;
         fn offset_y(self: &CanvasEngine) -> f64;
         fn reset_view(self: &mut CanvasEngine);
-        fn needs_settle(self: &CanvasEngine) -> bool;
         fn settle(self: &mut CanvasEngine);
 
         /// `tool`: 0 = pen, 1 = highlighter, 2 = eraser, 3 = lasso, 4 = hand.
@@ -595,4 +593,5 @@ pub use crate::models::{
 pub use crate::recognize::{RecognitionHandle, open_recognizer};
 pub use crate::search::{SearchHandle, open_search};
 pub use crate::update::{UpdateHandle, open_updater, update_is_newer};
+pub use ductus_hwr::backend::is_local_url;
 pub use ductus_hwr::set_processor_share;

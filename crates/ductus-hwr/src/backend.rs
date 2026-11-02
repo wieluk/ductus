@@ -34,6 +34,24 @@ fn clean(reply: &str) -> String {
     t.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+/// A server on this computer or the local network, by address rather than name.
+pub fn is_local_url(url: &str) -> bool {
+    use std::net::IpAddr;
+    let Some(host) = url
+        .parse::<ureq::http::Uri>()
+        .ok()
+        .and_then(|u| u.host().map(str::to_owned))
+    else {
+        return false;
+    };
+    let host = host.trim_start_matches('[').trim_end_matches(']');
+    match host.parse::<IpAddr>() {
+        Ok(IpAddr::V4(ip)) => ip.is_loopback() || ip.is_private() || ip.is_link_local(),
+        Ok(IpAddr::V6(ip)) => ip.is_loopback() || ip.is_unique_local(),
+        Err(_) => host.eq_ignore_ascii_case("localhost"),
+    }
+}
+
 pub struct Server {
     pub url: String,
     pub model: String,
@@ -55,6 +73,13 @@ impl Recognizer for Server {
                 ],
             }],
         });
+        // Handwriting and the key never cross the internet unencrypted.
+        if !self.url.starts_with("https://") && !is_local_url(&self.url) {
+            return Err(format!(
+                "{}: only https:// addresses can be used, or one on this network.",
+                self.url
+            ));
+        }
         let base = self.url.trim_end_matches('/');
         let url = match base.ends_with("/v1") {
             true => format!("{base}/chat/completions"),
@@ -91,7 +116,7 @@ pub struct Builtin {
 }
 
 /// Unused this long, a model is unloaded: the text models take about 300 MB, the formula one 600 MB.
-pub const IDLE_UNLOAD: Duration = Duration::from_secs(5 * 60);
+const IDLE_UNLOAD: Duration = Duration::from_secs(5 * 60);
 
 struct Loaded {
     model: crate::builtin::Model,
@@ -114,7 +139,7 @@ fn slot(path: &Path) -> Slot {
 }
 
 /// Unloads models unused for `idle`; a model in use stays.
-pub fn unload_idle(idle: Duration) {
+fn unload_idle(idle: Duration) {
     let slots: Vec<Slot> = SLOTS
         .lock()
         .unwrap_or_else(|e| e.into_inner())
@@ -231,6 +256,36 @@ pub fn from_settings(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn local_servers_are_told_apart_from_lookalikes() {
+        for url in [
+            "http://localhost:11434/v1",
+            "http://127.0.0.1",
+            "http://192.168.1.5:8080",
+            "http://10.0.0.2",
+            "http://172.20.0.1",
+            "http://[::1]:80",
+        ] {
+            assert!(is_local_url(url), "{url}");
+        }
+        for url in [
+            "http://localhost.evil.com",
+            "http://10.attacker.net",
+            "http://127.example.com",
+            "https://api.openai.com",
+            "http://8.8.8.8",
+            "nonsense",
+        ] {
+            assert!(!is_local_url(url), "{url}");
+        }
+        let server = Server {
+            url: "http://example.com".into(),
+            model: String::new(),
+            api_key: "secret".into(),
+        };
+        assert!(server.recognize(&[], "en").unwrap_err().contains("https"));
+    }
 
     #[test]
     fn replies_are_cleaned_up() {

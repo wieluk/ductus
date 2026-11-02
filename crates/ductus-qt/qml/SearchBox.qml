@@ -258,7 +258,7 @@ Item {
                 clip: true
                 model: box.results
                 boundsBehavior: Flickable.StopAtBounds
-                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+                ScrollBar.vertical: AppScrollBar {}
                 delegate: AbstractButton {
                     id: result
                     required property var modelData
@@ -299,6 +299,7 @@ Item {
                                 Label {
                                     visible: !box.onPage
                                     text: result.modelData.title
+                                    textFormat: Text.PlainText
                                     color: Theme.text
                                     font.pixelSize: 13
                                     font.weight: Font.DemiBold
@@ -311,6 +312,7 @@ Item {
                                            result.modelData.kind === "pdf"
                                            ? qsTr("page %1").arg(result.modelData.page + 1) : ""]
                                           .filter(t => t.length > 0).join("  ·  ")
+                                    textFormat: Text.PlainText
                                     color: Theme.textMuted
                                     font.pixelSize: 11
                                     elide: Text.ElideMiddle

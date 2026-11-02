@@ -7,7 +7,6 @@ use std::sync::{Arc, Mutex};
 #[derive(Default)]
 struct Shared {
     busy: bool,
-    checked: bool,
     latest: Option<Release>,
     /// The notes of every release since the installed one, when there are several.
     notes: String,
@@ -23,6 +22,10 @@ pub struct UpdateHandle {
 }
 
 pub fn open_updater() -> Box<UpdateHandle> {
+    #[cfg(feature = "test-hooks")]
+    if std::env::var_os("DUCTUS_UPDATE_FEED").is_some() {
+        ductus_update::allow_test_feeds();
+    }
     Box::new(UpdateHandle {
         shared: Arc::default(),
         cancel: Arc::default(),
@@ -31,7 +34,11 @@ pub fn open_updater() -> Box<UpdateHandle> {
 
 /// Tests use their own key.
 fn signing_key() -> String {
-    std::env::var("DUCTUS_UPDATE_KEY").unwrap_or_else(|_| ductus_update::PUBLIC_KEY.to_owned())
+    #[cfg(feature = "test-hooks")]
+    if let Ok(key) = std::env::var("DUCTUS_UPDATE_KEY") {
+        return key;
+    }
+    ductus_update::PUBLIC_KEY.to_owned()
 }
 
 pub fn update_is_newer(latest: &str, current: &str) -> bool {
@@ -88,7 +95,6 @@ impl UpdateHandle {
                 _ => String::new(),
             };
             let Ok(mut s) = shared.lock() else { return };
-            s.checked = true;
             s.notes = notes;
             match outcome {
                 Ok(latest) => s.latest = latest,
@@ -143,7 +149,6 @@ impl UpdateHandle {
         };
         UpdateState {
             busy: s.busy,
-            checked: s.checked,
             latest: s
                 .latest
                 .as_ref()

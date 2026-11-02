@@ -32,7 +32,12 @@ QString cacheFile(const QString &folder, const QString &name)
     const QString dir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
                         + QLatin1Char('/') + folder;
     QDir().mkpath(dir);
-    return dir + QLatin1Char('/') + (name.isEmpty() ? QStringLiteral("file") : name);
+    // The name comes from another app: it never leads out of this folder.
+    QString plain = name;
+    plain.replace(QLatin1Char('/'), QLatin1Char('_')).replace(QLatin1Char('\\'), QLatin1Char('_'));
+    while (plain.startsWith(QLatin1Char('.')))
+        plain.remove(0, 1);
+    return dir + QLatin1Char('/') + (plain.isEmpty() ? QStringLiteral("file") : plain);
 }
 
 /// The path in shared storage that a storage provider's link names, or "". After `kind` ("tree"
@@ -52,6 +57,8 @@ QString storagePath(const QString &url, const QString &kind)
         id = id.section(QStringLiteral("/document/"), 0, 0);
     const QString volume = id.section(QLatin1Char(':'), 0, 0);
     const QString rest = id.section(QLatin1Char(':'), 1);
+    if (rest.split(QLatin1Char('/')).contains(QStringLiteral("..")))
+        return {};
     const QString base = volume == u"primary" ? QStringLiteral("/storage/emulated/0")
                                                : QStringLiteral("/storage/") + volume;
     return rest.isEmpty() ? base : base + QLatin1Char('/') + rest;

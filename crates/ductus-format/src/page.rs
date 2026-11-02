@@ -109,11 +109,6 @@ pub(crate) fn escape_attr(s: &str) -> String {
         .replace('<', "&lt;")
 }
 
-fn hex(c: Rgba) -> String {
-    let b = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
-    format!("#{:02x}{:02x}{:02x}", b(c.r), b(c.g), b(c.b))
-}
-
 fn path_data(path: &BezPath) -> String {
     let mut d = String::new();
     push_path_data(&mut d, path);
@@ -298,7 +293,7 @@ fn canvas_rect(doc: &Document) -> Rect {
 
 fn pattern_def(bg: &PageBackground, origin: kurbo::Point) -> Option<String> {
     let s = num(bg.spacing, 3);
-    let ink = hex(bg.ink);
+    let ink = bg.ink.to_hex();
     let (x, y) = (num(origin.x, 2), num(origin.y, 2));
     let content = match bg.pattern {
         PatternStyle::Blank => return None,
@@ -321,7 +316,7 @@ fn push_stroke_element(el: &mut String, stroke: &Stroke) {
     let outline = ductus_ink::outline(&stroke.points, &stroke.style);
     el.push_str(r#"<path d=""#);
     push_path_data(el, &outline);
-    write!(el, r#"" fill="{}""#, hex(stroke.style.color)).unwrap();
+    write!(el, r#"" fill="{}""#, stroke.style.color.to_hex()).unwrap();
     if stroke.style.color.a < 1.0 {
         write!(
             el,
@@ -508,7 +503,7 @@ fn math_element(math: &MathBox) -> String {
         num(math.width, 2),
         num(math.height, 2),
         num(math.scale, 3),
-        hex(math.color)
+        math.color.to_hex()
     );
     for (path, _) in ductus_math::outlines(math) {
         write!(el, r#"<path d="{}"/>"#, path_data(&path)).unwrap();
@@ -582,8 +577,8 @@ pub fn write_page(page: &PageFile) -> String {
         r#" dx:pattern="{}" dx:spacing="{}" dx:paper-color="{}" dx:pattern-color="{}""#,
         bg.pattern.name(),
         num(bg.spacing, 3),
-        hex(bg.paper),
-        hex(bg.ink)
+        bg.paper.to_hex(),
+        bg.ink.to_hex()
     )
     .unwrap();
     // Physical size for paper pages, so viewers and printers use real dimensions.
@@ -628,7 +623,7 @@ pub fn write_page(page: &PageFile) -> String {
             num(r.width(), 2),
             num(r.height(), 2)
         );
-        write!(svg, r#"<rect {geom} fill="{}"/>"#, hex(bg.paper)).unwrap();
+        write!(svg, r#"<rect {geom} fill="{}"/>"#, bg.paper.to_hex()).unwrap();
         match settings.ruled_margins().filter(|_| patterned) {
             Some((top, left)) => {
                 // Lines below the heading room, and the margin line.
@@ -647,7 +642,7 @@ pub fn write_page(page: &PageFile) -> String {
                     num(r.x0 + left, 2),
                     num(r.y0, 2),
                     num(r.y1, 2),
-                    hex(ductus_core::MARGIN_LINE)
+                    ductus_core::MARGIN_LINE.to_hex()
                 )
                 .unwrap();
             }
@@ -753,19 +748,6 @@ pub fn write_page(page: &PageFile) -> String {
     svg
 }
 
-fn parse_color(s: &str) -> Option<Rgba> {
-    let s = s.strip_prefix('#')?;
-    if s.len() != 6 {
-        return None;
-    }
-    let c = |i: usize| {
-        u8::from_str_radix(&s[i..i + 2], 16)
-            .ok()
-            .map(|v| f32::from(v) / 255.0)
-    };
-    Some(Rgba::rgb(c(0)?, c(2)?, c(4)?))
-}
-
 fn parse_ink(ink: &str, tilt: Option<&str>) -> Result<Vec<InkPoint>, Error> {
     let tilts: Vec<(f32, f32)> = match tilt {
         Some(t) => t
@@ -864,7 +846,7 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
         }
         let mut dx = std::collections::HashMap::new();
         for attr in element.attributes() {
-            let attr = attr.map_err(quick_xml::Error::from)?;
+            let attr = attr?;
             let (ans, alocal) = reader.resolver().resolve_attribute(attr.key);
             let key = match ans {
                 ResolveResult::Bound(Namespace(n)) if n == DX_NS => alocal.as_ref().to_owned(),
@@ -892,7 +874,8 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
                         "page format {version} is newer than this app ({FORMAT_VERSION})"
                     )));
                 }
-                id = dx.get("id").cloned();
+                // It names the page's history folder, so only ids this app makes are kept.
+                id = dx.get("id").filter(|id| crate::is_page_id(id)).cloned();
                 if let Some(k) = dx.get("kind") {
                     kind_name.clone_from(k);
                 }
@@ -908,10 +891,10 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
                 if let Some(s) = dx.get("spacing").and_then(|s| s.parse().ok()) {
                     background.spacing = s;
                 }
-                if let Some(c) = dx.get("paper-color").and_then(|c| parse_color(c)) {
+                if let Some(c) = dx.get("paper-color").and_then(|c| Rgba::from_hex(c)) {
                     background.paper = c;
                 }
-                if let Some(c) = dx.get("pattern-color").and_then(|c| parse_color(c)) {
+                if let Some(c) = dx.get("pattern-color").and_then(|c| Rgba::from_hex(c)) {
                     background.ink = c;
                 }
                 // A file name next to the page, never a path: pages come from other devices and apps.
@@ -936,7 +919,7 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
                 };
                 let mut color = dx
                     .get("svg:fill")
-                    .and_then(|c| parse_color(c))
+                    .and_then(|c| Rgba::from_hex(c))
                     .unwrap_or(Rgba::BLACK);
                 if let Some(a) = dx.get("svg:fill-opacity").and_then(|a| a.parse().ok()) {
                     color.a = a;
@@ -996,7 +979,7 @@ pub fn read_page(svg: &str) -> Result<PageFile, Error> {
                     scale: number("scale").filter(|s| *s > 0.0).unwrap_or(1.0),
                     color: dx
                         .get("svg:fill")
-                        .and_then(|c| parse_color(c))
+                        .and_then(|c| Rgba::from_hex(c))
                         .unwrap_or(Rgba::BLACK),
                 }));
             }

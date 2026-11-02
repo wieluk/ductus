@@ -48,7 +48,6 @@ QtObject {
     readonly property color popup: dark ? tone(0.14, 0.2) : "#ffffff"
     /// Text fields and lists inside popups.
     readonly property color field: dark ? tone(0.12, 0.157) : "#ffffff"
-    readonly property color overlayBg: "#d0181620"
     readonly property color sidebar: dark ? tone(0.13, 0.153) : tone(0.29, 0.945)
     readonly property color sidebarBorder: dark ? tone(0.12, 0.22) : tone(0.22, 0.884)
     readonly property color desk: dark ? tone(0.12, 0.116) : tone(0.12, 0.875)

@@ -655,6 +655,18 @@
         <translation>只读取原始文件，绝不修改它。</translation>
     </message>
     <message>
+        <source>Run “%1”?</source>
+        <translation>运行“%1”？</translation>
+    </message>
+    <message>
+        <source>This file is a program or script. Run it only if you trust where it came from.</source>
+        <translation>此文件是程序或脚本。只有在信任其来源时才运行它。</translation>
+    </message>
+    <message>
+        <source>Run</source>
+        <translation>运行</translation>
+    </message>
+    <message>
         <source>Import as note pages</source>
         <translation>作为笔记页面导入</translation>
     </message>
@@ -2391,6 +2403,10 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>你的手写内容会发送到此服务器。</translation>
     </message>
     <message>
+        <source>Servers outside your network need an https:// address.</source>
+        <translation>网络外的服务器需要 https:// 地址。</translation>
+    </message>
+    <message>
         <source>Line images leave your computer. Use a cloud service only if you are fine with that.</source>
         <translation>行图像会离开你的电脑。只有在你接受的情况下才使用云服务。</translation>
     </message>
@@ -2820,18 +2836,14 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>正在安装版本 %1…</translation>
     </message>
     <message>
-        <source>This copy was installed from a file that doesn&apos;t follow the Ductus repository, so it can&apos;t update. Install it from the repository once (notes and settings stay):
-flatpak remote-add --user --if-not-exists ductus %1 &amp;&amp; flatpak uninstall -y %2 &amp;&amp; flatpak install --user -y ductus %2</source>
-        <translation>此副本是从不跟随 Ductus 软件仓库的文件安装的，因此无法更新。请从软件仓库重新安装一次（笔记和设置会保留）：
-flatpak remote-add --user --if-not-exists ductus %1 &amp;&amp; flatpak uninstall -y %2 &amp;&amp; flatpak install --user -y ductus %2</translation>
+        <source>Flatpak found no version %1 where this copy came from. If it was installed from a downloaded file, install it from the Ductus repository once (notes and settings stay):
+flatpak remote-add --user --if-not-exists ductus %2 &amp;&amp; flatpak uninstall -y %3 &amp;&amp; flatpak install --user -y ductus %3</source>
+        <translation>Flatpak 在此副本的来源处未找到版本 %1。如果它是从下载的文件安装的，请从 Ductus 仓库重新安装一次（笔记和设置会保留）：
+flatpak remote-add --user --if-not-exists ductus %2 &amp;&amp; flatpak uninstall -y %3 &amp;&amp; flatpak install --user -y ductus %3</translation>
     </message>
     <message>
         <source>Version %1 is installed. Restart Ductus to use it.</source>
         <translation>版本 %1 已安装。重启 Ductus 即可使用。</translation>
-    </message>
-    <message>
-        <source>The Ductus repository doesn&apos;t offer version %1 yet%2. Try again later.</source>
-        <translation>Ductus 软件仓库还没有提供版本 %1%2。请稍后再试。</translation>
     </message>
     <message>
         <source>Flatpak couldn&apos;t install version %1%2.</source>

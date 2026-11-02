@@ -7,6 +7,8 @@ MenuItem {
     id: item
 
     implicitHeight: 34
+    // Hidden entries take no room, so menus can list every case.
+    height: visible ? implicitHeight : 0
     leftPadding: 14
     rightPadding: 14
     font.pixelSize: 13

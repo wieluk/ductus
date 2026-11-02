@@ -19,8 +19,6 @@ const INSERT_SHARE: f64 = 0.7;
 pub type NewPicture = (Vec<u8>, Option<(f64, f64)>);
 /// Between the pages of a printout, in document units.
 const PICTURE_GAP: f64 = 16.0;
-/// Must match ductus_format::library::IMAGE_PREFIX.
-const IMAGE_PREFIX: &str = "img-";
 
 pub(crate) struct PictureData {
     bytes: Rc<[u8]>,
@@ -147,16 +145,7 @@ fn transform_image(image: &Image, t: Affine) -> Image {
     }
 }
 
-/// Named by content (FNV-1a), so the same picture is stored once.
-fn picture_name(bytes: &[u8]) -> String {
-    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
-    for b in bytes {
-        h ^= u64::from(*b);
-        h = h.wrapping_mul(0x0100_0000_01b3);
-    }
-    format!("{IMAGE_PREFIX}{h:016x}.png")
-}
-
+/// Touching edges don't count, unlike Rect::overlaps.
 fn overlaps(a: Rect, b: Rect) -> bool {
     a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1
 }
@@ -853,7 +842,7 @@ impl Canvas {
     pub fn insert_pictures(&mut self, pictures: Vec<NewPicture>, at: Option<Point>) -> bool {
         let mut placed = Vec::new();
         for (bytes, size) in pictures {
-            let name = picture_name(&bytes);
+            let name = ductus_core::picture_name(&bytes);
             self.add_picture(&name, bytes);
             let Some((w, h)) = self.pictures[&name].picture().map(Picture::size) else {
                 self.pictures.remove(&name);

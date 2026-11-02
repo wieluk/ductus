@@ -1,0 +1,41 @@
+# The commands the title bar menu, the ribbon and the keyboard share each open the same thing.
+size 1280 800
+click-item appMenuButton
+click-item menuNewPage
+expect-prop newPageWhere visible true
+key Escape
+expect-hidden newPageWhere
+key Ctrl+N
+expect-prop newPageWhere visible true
+key Escape
+click-item tab_file
+click-item fileNewNotebook
+expect-prop newNotebookOwnFolder visible true
+key Escape
+click-item appMenuButton
+click-item menuHistory
+expect-prop historyClose visible true
+click-item historyClose
+click-item fileTrash
+expect-prop trashClose visible true
+click-item trashClose
+click-item appMenuButton
+click-item menuTrash
+expect-prop trashClose visible true
+click-item trashClose
+click-item fileSettings
+expect-prop settingsClose visible true
+click-item settingsClose
+# Without an open page there is nothing to close, export, print or look back at.
+expect-prop fileExport enabled true
+click-item fileClosePage
+expect-prop noPage visible true
+expect-prop fileClosePage enabled false
+expect-prop fileExport enabled false
+expect-prop filePrint enabled false
+expect-prop fileHistory enabled false
+click-item appMenuButton
+expect-prop menuExportPdf enabled false
+expect-prop menuPrint enabled false
+expect-prop menuClosePage enabled false
+key Escape

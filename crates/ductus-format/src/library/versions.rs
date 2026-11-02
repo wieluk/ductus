@@ -91,10 +91,7 @@ impl Library {
         } else {
             super::write_atomic(&to, &bytes)?;
         }
-        self.edit_order(parent, |order| {
-            order.retain(|n| *n != name);
-            order.push(name.clone());
-        })?;
+        self.put_in_order(parent, &name, None)?;
         Ok(new_rel)
     }
 }

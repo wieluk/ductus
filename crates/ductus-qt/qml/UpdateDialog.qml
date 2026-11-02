@@ -50,11 +50,16 @@ AppDialog {
             font.pixelSize: 13
             wrapMode: Text.WordWrap
         }
-        ScrollView {
+        // A Flickable, so the pen drags the notes too (see SettingsDialog's Section).
+        Flickable {
             Layout.fillWidth: true
             Layout.preferredHeight: Math.min(220, notes.implicitHeight)
             visible: Updater.notes.length > 0 && !Updater.restartNeeded
             clip: true
+            contentHeight: notes.implicitHeight
+            boundsBehavior: Flickable.StopAtBounds
+            flickableDirection: Flickable.VerticalFlick
+            ScrollBar.vertical: AppScrollBar {}
             Label {
                 id: notes
                 objectName: "updateNotes"

@@ -32,6 +32,23 @@ impl Rgba {
     pub const fn rgb(r: f32, g: f32, b: f32) -> Self {
         Self { r, g, b, a: 1.0 }
     }
+
+    /// "#rrggbb", without the alpha.
+    pub fn to_hex(self) -> String {
+        let b = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
+        format!("#{:02x}{:02x}{:02x}", b(self.r), b(self.g), b(self.b))
+    }
+
+    /// From "#rrggbb".
+    pub fn from_hex(s: &str) -> Option<Self> {
+        let s = s.strip_prefix('#').filter(|s| s.len() == 6)?;
+        let c = |i: usize| {
+            u8::from_str_radix(s.get(i..i + 2)?, 16)
+                .ok()
+                .map(|v| f32::from(v) / 255.0)
+        };
+        Some(Self::rgb(c(0)?, c(2)?, c(4)?))
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]

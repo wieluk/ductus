@@ -1,4 +1,5 @@
 #include "ductus-qt/cpp/appcontroller.h"
+#include "ductus-qt/cpp/rustconv.h"
 #include "ductus-qt/cpp/app.h"
 #include "ductus-qt/cpp/platformfiles.h"
 #include "ductus-qt/cpp/inkcanvas.h"
@@ -10,6 +11,7 @@
 #include <QClipboard>
 #include <QDesktopServices>
 #include <QRandomGenerator>
+#include <QTemporaryDir>
 #include <QTemporaryFile>
 #if defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
 #include <QDBusConnection>
@@ -35,17 +37,6 @@
 #include <algorithm>
 
 namespace {
-
-QString toQ(const rust::String &s)
-{
-    return QString::fromUtf8(s.data(), static_cast<qsizetype>(s.size()));
-}
-
-std::string toStd(const QString &s)
-{
-    return s.toStdString();
-}
-
 QString defaultLibraryPath()
 {
     // Tests and portable setups can point the app elsewhere.
@@ -256,12 +247,12 @@ AppController::AppController(QObject *parent)
         if (image.isNull())
             return;
         m_awaitingSnip = false;
-        // Hand the snip over as a file, like the portal does.
+        // Hand the snip over as a file, like the portal does; it is inserted by the time this returns.
         QTemporaryFile file(QDir::tempPath() + QStringLiteral("/ductus-snip-XXXXXX.png"));
-        file.setAutoRemove(false);
-        if (file.open() && image.save(&file, "PNG"))
+        if (file.open() && image.save(&file, "PNG") && file.flush()) {
+            file.close();
             Q_EMIT screenshotTaken(file.fileName());
-        else
+        } else
             Q_EMIT screenshotFailed(tr("The screenshot could not be read."));
     });
     // Only open folders are watched; catch up on the rest when we come back.
@@ -291,6 +282,20 @@ AppController::~AppController() = default;
 
 bool AppController::eventFilter(QObject *watched, QEvent *event)
 {
+#if !defined(Q_OS_ANDROID)
+    // Some systems (KWin before Plasma 6.3) don't focus the window a pen touches, so keys and
+    // the pointer stay with the window the mouse last clicked. Asked right after the press, the
+    // compositor grants it. A moment later, so systems that focus it themselves come first.
+    if (event->type() == QEvent::TabletPress) {
+        auto *window = qobject_cast<QWindow *>(watched);
+        if (window && !window->isActive() && window->type() == Qt::Window) {
+            QTimer::singleShot(100, window, [window] {
+                if (!window->isActive())
+                    window->requestActivate();
+            });
+        }
+    }
+#endif
     switch (event->type()) {
     case QEvent::TabletPress:
     case QEvent::TabletMove:
@@ -518,9 +523,7 @@ void AppController::openLibrary(const QString &pathOrUrl)
     m_other.preview.clear();
     m_other.views.clear();
     if (m_other.canvas) {
-        m_other.canvas->engine().unload();
-        m_other.canvas->documentReplaced();
-        m_other.savedRevision = m_other.canvas->revision();
+        blank(m_other.canvas, m_other.savedRevision);
     }
 
     // A closed page stays closed; a new library starts on its starter page.
@@ -552,9 +555,7 @@ void AppController::openLibrary(const QString &pathOrUrl)
         openInNewTab(last);
     } else {
         if (m_canvas) {
-            m_canvas->engine().unload();
-            m_canvas->documentReplaced();
-            m_savedRevision = m_canvas->revision();
+            blank(m_canvas, m_savedRevision);
         }
         setDirty(false);
         Q_EMIT openPagesChanged();
@@ -690,19 +691,7 @@ void AppController::closePage()
     m_canvas->finishTextEditing();
     saveNow();
     (*m_library)->close_page();
-    m_canvas->engine().unload();
-    m_canvas->documentReplaced();
-    m_savedRevision = m_canvas->revision();
-    setDirty(false);
-    storePanes();
-    m_views.clear();
-    setOpenPages({});
-    refreshTree();
-    rewatch();
-    Q_EMIT currentPageChanged();
-    // The emptied half of a split gives way to the other.
-    if (!m_other.tabs.isEmpty())
-        activate(m_other.canvas);
+    unloadPage();
 }
 
 void AppController::setHoldRecent(bool hold)
@@ -1327,9 +1316,7 @@ void AppController::remove(const QString &path)
         m_other.preview.clear();
     if (besideInside && m_other.canvas) {
         if (besideTabs.isEmpty()) {
-            m_other.canvas->engine().unload();
-            m_other.canvas->documentReplaced();
-            m_other.savedRevision = m_other.canvas->revision();
+            blank(m_other.canvas, m_other.savedRevision);
         } else {
             InkCanvas *back = m_canvas;
             activate(m_other.canvas);
@@ -1351,18 +1338,32 @@ void AppController::remove(const QString &path)
     Q_EMIT trashed(name, id);
 }
 
+QString AppController::readableOrError(const QString &fileOrUrl)
+{
+    const QString file = PlatformFiles::readable(fileOrUrl);
+    if (file.isEmpty())
+        Q_EMIT errorOccurred(tr("%1 can't be read.").arg(PlatformFiles::displayName(fileOrUrl)));
+    return file;
+}
+
+void AppController::blank(InkCanvas *canvas, quint64 &savedRevision)
+{
+    canvas->engine().unload();
+    canvas->documentReplaced();
+    savedRevision = canvas->revision();
+}
+
 void AppController::unloadPage()
 {
     setOpenPages({});
     m_views.clear();
-    m_canvas->engine().unload();
-    m_canvas->documentReplaced();
-    m_savedRevision = m_canvas->revision();
+    blank(m_canvas, m_savedRevision);
     setDirty(false);
     storePanes();
     refreshTree();
     rewatch();
     Q_EMIT currentPageChanged();
+    // The emptied half of a split gives way to the other.
     if (!m_other.tabs.isEmpty())
         activate(m_other.canvas);
 }
@@ -1669,9 +1670,8 @@ QString AppController::importPdf(const QString &fileOrUrl, bool annotate, const 
 {
     if (!m_library || !ensureFolder(folder))
         return {};
-    const QString file = PlatformFiles::readable(fileOrUrl);
+    const QString file = readableOrError(fileOrUrl);
     if (file.isEmpty()) {
-        Q_EMIT errorOccurred(tr("%1 can't be read.").arg(PlatformFiles::displayName(fileOrUrl)));
         return {};
     }
     QString path;
@@ -1690,9 +1690,8 @@ void AppController::importNotes(const QString &fileOrUrl)
 {
     if (!m_library || m_importing)
         return;
-    const QString file = PlatformFiles::readable(fileOrUrl);
+    const QString file = readableOrError(fileOrUrl);
     if (file.isEmpty()) {
-        Q_EMIT errorOccurred(tr("%1 can't be read.").arg(PlatformFiles::displayName(fileOrUrl)));
         return;
     }
     m_importing = true;
@@ -1782,14 +1781,14 @@ bool AppController::exportFolder(const QString &folder, const QString &fileOrUrl
         return false;
     }
     // Each page goes through the canvas engine, like a single page export.
+    const QTemporaryDir dir;
+    if (!dir.isValid())
+        return false;
     const QString back = currentPage();
-    const QString dir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + QStringLiteral("/export");
-    QDir(dir).removeRecursively();
-    QDir().mkpath(dir);
     rust::Vec<rust::String> parts;
     bool ok = true;
     for (const rust::String &page : pages) {
-        const QString part = dir + QStringLiteral("/%1.pdf").arg(parts.size());
+        const QString part = dir.filePath(QStringLiteral("%1.pdf").arg(parts.size()));
         ok = attempt([&] {
             (*m_library)->load_into(page, m_canvas->engine());
             (*m_library)->export_pdf(toStd(part), m_canvas->engine(), bytes(textOverlay()));
@@ -1807,7 +1806,6 @@ bool AppController::exportFolder(const QString &folder, const QString &fileOrUrl
     const QString target = PlatformFiles::writable(fileOrUrl);
     ok = ok && attempt([&] { merge_pdf_files(std::move(parts), toStd(target)); })
          && PlatformFiles::deliver(target, fileOrUrl);
-    QDir(dir).removeRecursively();
     if (ok)
         Q_EMIT notice(tr("Exported %n page(s) to %1", "", int(pages.size())).arg(PlatformFiles::displayName(fileOrUrl)));
     return ok;
@@ -1922,12 +1920,30 @@ void AppController::reveal(const QString &path)
     Q_EMIT revealRequested(path);
 }
 
-void AppController::openExternally(const QString &path)
+namespace {
+/// Files the system would run rather than show.
+bool isRunnable(const QString &file)
+{
+    using namespace Qt::StringLiterals;
+    static const QStringList kinds{
+        u"exe"_s, u"com"_s, u"bat"_s, u"cmd"_s, u"scr"_s, u"pif"_s, u"msi"_s, u"msp"_s, u"lnk"_s, u"url"_s,
+        u"hta"_s, u"js"_s, u"jse"_s, u"vbs"_s, u"vbe"_s, u"wsf"_s, u"wsh"_s, u"ps1"_s, u"psm1"_s, u"reg"_s,
+        u"cpl"_s, u"jar"_s, u"appref-ms"_s, u"application"_s, u"desktop"_s, u"sh"_s, u"run"_s, u"appimage"_s,
+        u"apk"_s, u"deb"_s, u"rpm"_s, u"flatpakref"_s, u"py"_s, u"pyw"_s};
+    return kinds.contains(QFileInfo(file).suffix().toLower());
+}
+}
+
+void AppController::openExternally(const QString &path, bool confirmed)
 {
     if (!m_library)
         return;
     finishSaves();
     const QString file = toQ((*m_library)->absolute_path(toStd(path)));
+    if (!confirmed && isRunnable(file)) {
+        Q_EMIT openProgramRequested(path, QFileInfo(file).fileName());
+        return;
+    }
     if (!QDesktopServices::openUrl(QUrl::fromLocalFile(file)))
         Q_EMIT errorOccurred(tr("No program is set up to open %1.").arg(QFileInfo(file).fileName()));
 }
@@ -1945,9 +1961,8 @@ QString AppController::openFile(const QString &fileOrUrl)
 {
     if (!m_library)
         return {};
-    const QString readable = PlatformFiles::readable(fileOrUrl);
+    const QString readable = readableOrError(fileOrUrl);
     if (readable.isEmpty()) {
-        Q_EMIT errorOccurred(tr("%1 can't be read.").arg(PlatformFiles::displayName(fileOrUrl)));
         return {};
     }
     const QFileInfo info(readable);
@@ -2085,12 +2100,28 @@ void AppController::openSearchHit(const QVariantMap &hit)
     }
 }
 
-QString AppController::recognizerKind() const
+namespace {
+/// Tests: every line reads as this text.
+QString testRecognizer()
 {
-    // Tests: every line reads as this text.
+#ifdef DUCTUS_TEST_HOOKS
     const QString fixed = qEnvironmentVariable("DUCTUS_TEST_RECOGNIZER");
     if (!fixed.isEmpty())
         return QStringLiteral("fixed:") + fixed;
+#endif
+    return {};
+}
+}
+
+bool AppController::isLocalUrl(const QString &url)
+{
+    return is_local_url(toStd(url));
+}
+
+QString AppController::recognizerKind() const
+{
+    if (const QString fixed = testRecognizer(); !fixed.isEmpty())
+        return fixed;
     QSettings settings;
     if (!settings.value(QStringLiteral("hwr/search"), false).toBool())
         return QStringLiteral("off");
@@ -2156,10 +2187,8 @@ void AppController::convertSelection(const QString &kind)
     // "text" reads with the models of all chosen languages.
     QString model = math ? QStringLiteral("math") : QStringLiteral("text");
     const QString missing = math ? (Models::installed(model) ? QString() : model) : missingTextModel();
-    // Tests: every line reads as this text.
-    const QString fixed = qEnvironmentVariable("DUCTUS_TEST_RECOGNIZER");
-    if (!fixed.isEmpty()) {
-        recognizer = QStringLiteral("fixed:") + fixed;
+    if (const QString fixed = testRecognizer(); !fixed.isEmpty()) {
+        recognizer = fixed;
     } else if (recognizer == u"server") {
         url = settings.value(QStringLiteral("hwr/url")).toString();
         model = settings.value(QStringLiteral("hwr/model")).toString();
@@ -2257,6 +2286,7 @@ void AppController::setFullScreen(QWindow *window, bool fullScreen, bool maximiz
 
 void AppController::takeScreenshot()
 {
+#ifdef DUCTUS_TEST_HOOKS
     // Tests supply the picture.
     const QString injected = qEnvironmentVariable("DUCTUS_TEST_SCREENSHOT");
     if (!injected.isEmpty()) {
@@ -2265,6 +2295,7 @@ void AppController::takeScreenshot()
         });
         return;
     }
+#endif
 #if defined(Q_OS_LINUX) && !defined(Q_OS_ANDROID)
     QDBusConnection bus = QDBusConnection::sessionBus();
     if (!bus.isConnected()) {
@@ -2325,10 +2356,22 @@ void AppController::onScreenshotResponse(uint response, const QVariantMap &resul
         Q_EMIT screenshotFailed(tr("The screenshot didn't work."));
 }
 
-rust::Slice<const std::uint8_t> AppController::bytes(const QByteArray &data)
+
+namespace {
+/// The same font the text boxes use on screen; 16 px is 12 pt.
+QFont textFont()
 {
-    return {reinterpret_cast<const std::uint8_t *>(data.constData()),
-            static_cast<std::size_t>(data.size())};
+    QFont font = QGuiApplication::font();
+    font.setPixelSize(16);
+    return font;
+}
+
+/// Markdown from a page may name any picture on this computer: an export never pulls one in.
+class InertDocument : public QTextDocument
+{
+protected:
+    QVariant loadResource(int, const QUrl &) override { return {}; }
+};
 }
 
 QByteArray AppController::textOverlay()
@@ -2367,10 +2410,11 @@ QByteArray AppController::textOverlay()
             const QRectF box(t.x, t.y, t.width, t.height);
             if (!box.intersects(area))
                 continue;
-            QTextDocument doc;
+            InertDocument doc;
             doc.setDefaultFont(textFont());
             doc.setDocumentMargin(0);
-            doc.setMarkdown(toQ(t.markdown));
+            doc.setMarkdown(toQ(t.markdown), QTextDocument::MarkdownFeatures(QTextDocument::MarkdownDialectGitHub
+                                                                             | QTextDocument::MarkdownNoHTML));
             doc.setTextWidth(t.width / t.scale);
             painter.save();
             painter.translate(box.topLeft());
@@ -2382,14 +2426,6 @@ QByteArray AppController::textOverlay()
     }
     painter.end();
     return out;
-}
-
-QFont AppController::textFont()
-{
-    // The same font the text boxes use on screen; 16 px is 12 pt.
-    QFont font = QGuiApplication::font();
-    font.setPixelSize(16);
-    return font;
 }
 
 #ifndef DUCTUS_NO_PRINTING

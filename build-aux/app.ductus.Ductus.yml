@@ -13,8 +13,6 @@ finish-args:
   - --socket=cups
   # Handwriting recognizer servers and the update check.
   - --share=network
-  # Updates run `flatpak update` on the host.
-  - --talk-name=org.freedesktop.Flatpak
 build-options:
   no-debuginfo: true
 modules:

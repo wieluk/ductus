@@ -9,8 +9,6 @@ type Config = (String, String, String, String);
 #[derive(Default)]
 struct Shared {
     busy: bool,
-    done: usize,
-    total: usize,
     result: String,
     strokes: String,
     error: String,
@@ -47,7 +45,7 @@ impl ConvertHandle {
             if s.busy {
                 return;
             }
-            (s.busy, s.done, s.total) = (true, 0, jobs.len());
+            s.busy = true;
             s.result.clear();
             s.strokes.clear();
             s.error.clear();
@@ -86,9 +84,6 @@ impl ConvertHandle {
                                     break;
                                 }
                             }
-                            if let Ok(mut s) = shared.lock() {
-                                s.done += 1;
-                            }
                         }
                     }
                     None => error = "no recognizer".into(),
@@ -110,8 +105,6 @@ impl ConvertHandle {
         };
         ConvertState {
             busy: s.busy,
-            done: s.done,
-            total: s.total,
             result: s.result.clone(),
             strokes: s.strokes.clone(),
             error: s.error.clone(),

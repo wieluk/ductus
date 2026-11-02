@@ -15,7 +15,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use tiles::{Tile, TileCache};
-use tiny_skia::{Pixmap, PixmapPaint, Transform};
+use tiny_skia::Pixmap;
 
 const ERASER_RADIUS: f64 = 8.0;
 /// Trailing points whose outline still changes while drawing.
@@ -867,7 +867,7 @@ impl Canvas {
                     return out;
                 };
                 let area = bounds.inflate(2.0, 2.0).intersect(visible);
-                if band == 0 || !ductus_render::overlaps(bounds.inflate(2.0, 2.0), visible) {
+                if band == 0 || !bounds.inflate(2.0, 2.0).overlaps(visible) {
                     return out;
                 }
                 let r = self.tiles.range(area);
@@ -883,7 +883,7 @@ impl Canvas {
                     let range = self.tiles.range(visible);
                     self.tiles.evict_outside(layer, range, TILE_MARGIN);
                     let area = bounds.intersect(visible);
-                    if ductus_render::overlaps(bounds, visible) {
+                    if bounds.overlaps(visible) {
                         let r = self.tiles.range(area);
                         for y in r.1..=r.3 {
                             for x in r.0..=r.2 {
@@ -931,8 +931,7 @@ impl Canvas {
                     .entry(stroke.id)
                     .or_insert_with(|| Outline::Pending(Outline::reach(stroke)));
                 if let Outline::Pending(reach) = *outline
-                    && (ductus_render::overlaps(reach, shown)
-                        || (moving && self.selection.contains(&stroke.id)))
+                    && (reach.overlaps(shown) || (moving && self.selection.contains(&stroke.id)))
                 {
                     *outline = Outline::Built(StrokePath::new(stroke));
                 }
@@ -947,7 +946,7 @@ impl Canvas {
         let keep = |band: u8, x: i32, y: i32| {
             bounds.get(usize::from(band)).is_some_and(|b| {
                 tiles::within(range, TILE_MARGIN, x, y)
-                    && ductus_render::overlaps(tiles.tile_doc_rect(x, y), b.inflate(2.0, 2.0))
+                    && tiles.tile_doc_rect(x, y).overlaps(b.inflate(2.0, 2.0))
             })
         };
         let stale: Vec<TileKey> = tiles
@@ -1062,7 +1061,7 @@ impl Canvas {
         for entry in stack.entries.iter().filter(|e| {
             e.band == band
                 && e.kind != stack::Kind::Text
-                && ductus_render::overlaps(e.rect, area)
+                && e.rect.overlaps(area)
                 && !self.is_hidden(e.id)
         }) {
             match entry.kind {
@@ -1087,37 +1086,6 @@ impl Canvas {
 
     pub fn tile_pixels(&self, key: TileKey) -> Option<&[u8]> {
         self.tiles.tiles.get(&key).map(|t| t.pixmap.data())
-    }
-
-    pub fn snapshot(&mut self) -> Option<Pixmap> {
-        let dpr = self.view.dpr;
-        let mut target = Pixmap::new(
-            (self.view.width * dpr).round() as u32,
-            (self.view.height * dpr).round() as u32,
-        )?;
-        for tile in self.frame() {
-            let Some(src) = self.tiles.tiles.get(&tile.key) else {
-                continue;
-            };
-            let scale = (tile.rect.width() * dpr / f64::from(TILE_SIZE)) as f32;
-            let transform = Transform::from_row(
-                scale,
-                0.0,
-                0.0,
-                scale,
-                (tile.rect.x0 * dpr) as f32,
-                (tile.rect.y0 * dpr) as f32,
-            );
-            target.draw_pixmap(
-                0,
-                0,
-                src.pixmap.as_ref(),
-                &PixmapPaint::default(),
-                transform,
-                None,
-            );
-        }
-        Some(target)
     }
 }
 

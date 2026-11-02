@@ -3,7 +3,7 @@
 // Linked for its Qt type registrations, which cxx-qt initializes at startup.
 extern crate cxx_qt_lib;
 
-// cxx bridges are inherently unsafe FFI; this is the only place unsafe is allowed.
+// cxx bridges are unsafe FFI by nature.
 mod convert;
 mod engine;
 #[allow(unsafe_code)]

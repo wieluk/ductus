@@ -3,6 +3,7 @@ import QtQuick.Controls
 import Ductus
 
 MenuSeparator {
+    height: visible ? implicitHeight : 0
     topPadding: 4
     bottomPadding: 4
     contentItem: Rectangle {

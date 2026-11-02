@@ -1,0 +1,151 @@
+# Builds, tests and packages every platform; ci.yml and release.yml call it.
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      release:
+        description: Apply the release version, sign with the release keys and keep the packages
+        type: boolean
+        default: false
+      linux:
+        type: boolean
+        default: true
+      windows:
+        type: boolean
+        default: true
+      android:
+        type: boolean
+        default: true
+      android_abi:
+        type: string
+        default: arm64-v8a
+    secrets:
+      FLATPAK_GPG_PRIVATE_KEY:
+        required: false
+      ANDROID_KEYSTORE_BASE64:
+        required: false
+      ANDROID_KEYSTORE_PASSWORD:
+        required: false
+      ANDROID_KEY_ALIAS:
+        required: false
+
+permissions:
+  contents: read
+
+# actions/checkout runs `git init`, which hints about the default branch name otherwise.
+env:
+  GIT_CONFIG_COUNT: 1
+  GIT_CONFIG_KEY_0: init.defaultBranch
+  GIT_CONFIG_VALUE_0: main
+  # Release keys sign tags only; a build started by hand gets throwaway keys.
+  SIGN_RELEASE: ${{ inputs.release && github.ref_type == 'tag' }}
+
+jobs:
+  linux:
+    if: inputs.linux
+    runs-on: ubuntu-26.04
+    timeout-minutes: 90
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
+      options: --privileged
+      # build-linux deletes these unused runner toolchains: the build needs their disk space.
+      volumes:
+        - /usr/share/dotnet:/runner-tools/dotnet
+        - /usr/local/lib/android:/runner-tools/android
+        - /usr/local/.ghcup:/runner-tools/ghcup
+        - /opt/hostedtoolcache:/runner-tools/toolcache
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - if: inputs.release
+        uses: ./.github/actions/stamp
+      - uses: ./.github/actions/build-linux
+      # Only now, after everything was compiled: build code never sees the key.
+      - if: env.SIGN_RELEASE == 'true'
+        env:
+          FLATPAK_GPG_PRIVATE_KEY: ${{ secrets.FLATPAK_GPG_PRIVATE_KEY }}
+        run: build-aux/linux/import-key.sh
+      - env:
+          FLATPAK_ARGS: --disable-rofiles-fuse
+        run: build-aux/linux/build-flatpak.sh package
+      - if: inputs.release
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ductus-linux
+          path: dist/*.flatpak
+          if-no-files-found: error
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ui-shots-linux
+          path: target/ui-shots
+          # The build may have failed before any UI test ran.
+          if-no-files-found: ignore
+
+  windows:
+    if: inputs.windows
+    runs-on: windows-2025
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - if: inputs.release
+        uses: ./.github/actions/stamp
+      - uses: ./.github/actions/build-windows
+        with:
+          installer: ${{ inputs.release }}
+      - if: inputs.release
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ductus-windows
+          path: |
+            dist/*.zip
+            dist/*-setup.exe
+          if-no-files-found: error
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ui-shots-windows
+          path: target/ui-shots
+          if-no-files-found: ignore
+
+  android:
+    if: inputs.android
+    runs-on: ubuntu-26.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - if: inputs.release
+        uses: ./.github/actions/stamp
+      - uses: ./.github/actions/build-android
+        with:
+          abi: ${{ inputs.android_abi }}
+      # Signed in a step of its own, after Gradle and everything else that ran build code.
+      - shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ env.SIGN_RELEASE == 'true' && secrets.ANDROID_KEYSTORE_BASE64 || '' }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ env.SIGN_RELEASE == 'true' && secrets.ANDROID_KEYSTORE_PASSWORD || '' }}
+          ANDROID_KEY_ALIAS: ${{ env.SIGN_RELEASE == 'true' && secrets.ANDROID_KEY_ALIAS || '' }}
+          ABI: ${{ inputs.android_abi }}
+        run: |
+          umask 077
+          trap 'rm -f "$RUNNER_TEMP/release.keystore"' EXIT
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            export ANDROID_KEYSTORE=$RUNNER_TEMP/release.keystore
+          elif [ "$SIGN_RELEASE" = true ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 is not set: the APK wouldn't update the installed app."
+            exit 1
+          fi
+          ANDROID_SDK_ROOT=$ANDROID_HOME JAVA_HOME=$JAVA_HOME_17_X64 build-aux/android/build-apk.sh sign
+      - if: inputs.release
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ductus-android
+          path: dist/*.apk
+          if-no-files-found: error

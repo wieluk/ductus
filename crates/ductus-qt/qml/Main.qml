@@ -197,6 +197,11 @@ ApplicationWindow {
         function onErrorOccurred(message) { toast.show(message, true) }
         function onOpenRequested(file) { window.openFile(file) }
         function onNotice(message) { toast.show(message, false) }
+        function onOpenProgramRequested(path, name) {
+            openProgramDialog.path = path
+            openProgramDialog.name = name
+            openProgramDialog.open()
+        }
         function onImportReady(kind, name, pages, sections, location) {
             // "Importing…" is over: the dialog says what was read.
             toast.hide()
@@ -205,6 +210,26 @@ ApplicationWindow {
         function onTrashed(name, trashId) {
             toast.show(qsTr("\u201c%1\u201d is in the trash.").arg(name), false, qsTr("Undo"),
                        () => AppController.restoreFromTrash(trashId))
+        }
+        function onCurrentPageChanged() {
+            if (window.compact && AppController.currentPage.length > 0)
+                window.drawerOpen = false
+        }
+        // Settings opens scrolled to the download, which sits below a long list of languages.
+        function onModelsNeeded(id) {
+            settingsDialog.showModels()
+            const model = Models.entries.find(e => e.id === id)
+            toast.show(model ? qsTr("Download \u201c%1\u201d first, then try again.").arg(model.title)
+                             : qsTr("Download the recognizer for this first."), false)
+        }
+        function onScreenshotTaken(file) {
+            window.restoreAfterScreenshot()
+            canvas.insertImageFile(file)
+        }
+        function onScreenshotCancelled() { window.restoreAfterScreenshot() }
+        function onScreenshotFailed(message) {
+            window.restoreAfterScreenshot()
+            toast.show(message, true)
         }
     }
     Connections {
@@ -241,23 +266,6 @@ ApplicationWindow {
     }
     // The drawer makes way for the page that was picked in it.
     Connections {
-        target: AppController
-        function onCurrentPageChanged() {
-            if (window.compact && AppController.currentPage.length > 0)
-                window.drawerOpen = false
-        }
-    }
-    Connections {
-        target: AppController
-        // Settings opens scrolled to the download, which sits below a long list of languages.
-        function onModelsNeeded(id) {
-            settingsDialog.showModels()
-            const model = Models.entries.find(e => e.id === id)
-            toast.show(model ? qsTr("Download \u201c%1\u201d first, then try again.").arg(model.title)
-                             : qsTr("Download the recognizer for this first."), false)
-        }
-    }
-    Connections {
         target: Updater
         // One question at a time: the update waits for the storage question.
         function onUpdateFound() {
@@ -272,17 +280,29 @@ ApplicationWindow {
         id: updateDialog
         parent: Overlay.overlay
     }
-    Connections {
-        target: AppController
-        function onScreenshotTaken(file) {
-            window.restoreAfterScreenshot()
-            canvas.insertImageFile(file)
-        }
-        function onScreenshotCancelled() { window.restoreAfterScreenshot() }
-        function onScreenshotFailed(message) {
-            window.restoreAfterScreenshot()
-            toast.show(message, true)
-        }
+
+    // What the title bar menu, the ribbon and the keyboard offer alike, in one place.
+    QtObject {
+        id: commands
+        readonly property bool pageOpen: AppController.currentPage.length > 0
+        readonly property bool canExport: pageOpen && AppController.pdfProblem.length === 0
+        readonly property bool canImport: !AppController.importing
+        function newPage() { newPageDialog.show("") }
+        function newNotebook() { newNotebookDialog.show(AppController.defaultNotebookLocation()) }
+        function openFile() { openFileDialog.open() }
+        function importFile() { importFileDialog.open() }
+        function importFolder() { importFolderDialog.open() }
+        function openLibrary() { folderDialog.open() }
+        function save() { AppController.saveNow() }
+        function closePage() { AppController.closePage() }
+        function history() { historyDialog.show(AppController.currentPage) }
+        function trash() { trashDialog.show() }
+        function exportPdf() { exportDialog.show() }
+        function printPage() { AppController.print() }
+        function settings() { settingsDialog.open() }
+        function insertPicture() { imageFileDialog.open() }
+        function writeOnPdf() { pdfFileDialog.open() }
+        function quit() { Qt.quit() }
     }
 
     Shortcut { sequences: [StandardKey.Undo]; onActivated: canvas.undo() }
@@ -300,7 +320,7 @@ ApplicationWindow {
     }
     Shortcut { sequences: [StandardKey.ZoomOut]; onActivated: canvas.zoomBy(0.8) }
     Shortcut { sequence: "F11"; onActivated: window.toggleFullScreen() }
-    Shortcut { sequence: "Ctrl+N"; onActivated: newPageDialog.show("") }
+    Shortcut { sequence: "Ctrl+N"; onActivated: commands.newPage() }
     Shortcut { sequence: "Ctrl+\\"; onActivated: window.toggleSidebar() }
     // Renames the open page where it is listed, like a file manager.
     Shortcut {
@@ -311,7 +331,7 @@ ApplicationWindow {
             tree.renaming = AppController.currentPage
         }
     }
-    Shortcut { sequences: [StandardKey.Open]; onActivated: openFileDialog.open() }
+    Shortcut { sequences: [StandardKey.Open]; onActivated: commands.openFile() }
     Shortcut {
         sequences: [StandardKey.Find]
         onActivated: titleBar.focusSearch(true)
@@ -322,8 +342,8 @@ ApplicationWindow {
         onActivated: titleBar.focusSearch(false)
         onActivatedAmbiguously: titleBar.focusSearch(false)
     }
-    Shortcut { sequences: [StandardKey.Save]; onActivated: AppController.saveNow() }
-    Shortcut { sequence: "Ctrl+W"; onActivated: AppController.closePage() }
+    Shortcut { sequences: [StandardKey.Save]; onActivated: commands.save() }
+    Shortcut { sequence: "Ctrl+W"; onActivated: commands.closePage() }
     Shortcut { sequences: [StandardKey.NextChild, "Ctrl+PgDown"]; onActivated: AppController.switchTab(1) }
     Shortcut {
         sequences: [StandardKey.PreviousChild, "Ctrl+Shift+Tab", "Ctrl+PgUp"]
@@ -331,8 +351,8 @@ ApplicationWindow {
         onActivatedAmbiguously: AppController.switchTab(-1)
     }
     // Not StandardKey.Quit: on Linux that is Ctrl+Q as well.
-    Shortcut { sequence: "Ctrl+Q"; onActivated: Qt.quit() }
-    Shortcut { sequences: [StandardKey.Print]; onActivated: AppController.print() }
+    Shortcut { sequence: "Ctrl+Q"; onActivated: commands.quit() }
+    Shortcut { sequences: [StandardKey.Print]; enabled: commands.canExport; onActivated: commands.printPage() }
     // Selection editing; text fields keep these keys while they have focus.
     Shortcut { sequences: [StandardKey.Copy]; onActivated: canvas.copySelection() }
     Shortcut { sequences: [StandardKey.Cut]; onActivated: canvas.cutSelection() }
@@ -377,17 +397,7 @@ ApplicationWindow {
             canvas: window.canvas
             compact: window.compact
             visible: !window.fullScreen
-            onNewPageRequested: newPageDialog.show("")
-            onNewNotebookRequested: newNotebookDialog.show(AppController.defaultNotebookLocation())
-            onHistoryRequested: historyDialog.show(AppController.currentPage)
-            onTrashRequested: trashDialog.show()
-            onSettingsRequested: settingsDialog.open()
-            onExportRequested: exportDialog.show()
-            onOpenFolderRequested: folderDialog.open()
-            onOpenFileRequested: openFileDialog.open()
-            onImportRequested: importFileDialog.open()
-            onImportFolderRequested: importFolderDialog.open()
-            onPrintRequested: AppController.print()
+            commands: commands
             onSidebarToggled: window.toggleSidebar()
             onUpdateRequested: updateDialog.open()
         }
@@ -398,19 +408,7 @@ ApplicationWindow {
             canvas: window.canvas
             window: window
             tab: titleBar.currentTab
-            onPdfImportRequested: pdfFileDialog.open()
-            onImageInsertRequested: imageFileDialog.open()
-            onOpenFileRequested: openFileDialog.open()
-            onImportRequested: importFileDialog.open()
-            onImportFolderRequested: importFolderDialog.open()
-            onOpenFolderRequested: folderDialog.open()
-            onExportRequested: exportDialog.show()
-            onPrintRequested: AppController.print()
-            onSettingsRequested: settingsDialog.open()
-            onNewPageRequested: newPageDialog.show("")
-            onNewNotebookRequested: newNotebookDialog.show(AppController.defaultNotebookLocation())
-            onHistoryRequested: historyDialog.show(AppController.currentPage)
-            onTrashRequested: trashDialog.show()
+            commands: commands
         }
 
         // Beside the page, or a drawer over it on narrow screens.
@@ -470,7 +468,7 @@ ApplicationWindow {
                     deleteDialog.isFolder = isFolder
                     deleteDialog.open()
                 }
-                onOpenFolderRequested: folderDialog.open()
+                onOpenFolderRequested: commands.openLibrary()
                 onCollapseRequested: window.toggleSidebar()
                 onNewPageRequested: (folder) => newPageDialog.show(folder)
                 onNewNotebookRequested: (location) => newNotebookDialog.show(location)
@@ -544,7 +542,7 @@ ApplicationWindow {
                         rightInset: pageArea.rightPane === paneA && penBar.visible && window.penBarRight
                                     ? pageArea.width - penBar.x + 8 : 8
                         onShowInSidebar: (path, view) => window.showInSidebar(path, view)
-                        onNewPageRequested: newPageDialog.show("")
+                        onNewPageRequested: commands.newPage()
                         onTabDragged: (path, scenePosition, dropped) => pageArea.tabDragged(paneA, path, scenePosition, dropped)
 
                         InkCanvas {
@@ -606,7 +604,7 @@ ApplicationWindow {
                         rightInset: pageArea.rightPane === paneB && penBar.visible && window.penBarRight
                                     ? width - (penBar.x - x) + 8 : 8
                         onShowInSidebar: (path, view) => window.showInSidebar(path, view)
-                        onNewPageRequested: newPageDialog.show("")
+                        onNewPageRequested: commands.newPage()
                         onTabDragged: (path, scenePosition, dropped) => pageArea.tabDragged(paneB, path, scenePosition, dropped)
 
                         InkCanvas {
@@ -626,7 +624,7 @@ ApplicationWindow {
                     canvas: window.canvas
                     onRight: window.penBarRight
                     onScreenshotRequested: window.takeScreenshot()
-                    onPictureRequested: imageFileDialog.open()
+                    onPictureRequested: commands.insertPicture()
                     fullScreen: window.fullScreen
                     onFullScreenToggled: window.toggleFullScreen()
                     // Full screen has no ribbon, so the bar is the way to the tools and back.
@@ -683,7 +681,9 @@ ApplicationWindow {
     FolderDialog {
         id: folderDialog
         title: qsTr("Choose a library folder")
-        currentFolder: "file://" + AppController.libraryPath
+        // Three slashes before Windows' C:/ too.
+        currentFolder: AppController.libraryPath.indexOf("://") >= 0 ? AppController.libraryPath
+                       : "file:///" + AppController.libraryPath.replace(/^\/+/, "")
         onAccepted: AppController.openLibrary(selectedFolder.toString())
     }
 
@@ -911,11 +911,25 @@ ApplicationWindow {
         onAccepted: AppController.remove(path)
     }
 
+    AppDialog {
+        id: openProgramDialog
+        objectName: "openProgramDialog"
+
+        property string path
+        property string name
+
+        title: qsTr("Run \u201c%1\u201d?").arg(name)
+        message: qsTr("This file is a program or script. Run it only if you trust where it came from.")
+        acceptText: qsTr("Run")
+        destructive: true
+        onAccepted: AppController.openExternally(path, true)
+    }
+
     SettingsDialog {
         id: settingsDialog
         canvas: window.canvas
         window: window
-        onOpenFolderRequested: folderDialog.open()
+        onOpenFolderRequested: commands.openLibrary()
         onUpdateRequested: {
             close()
             updateDialog.open()

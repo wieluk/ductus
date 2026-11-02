@@ -8,21 +8,9 @@ Rectangle {
 
     required property InkCanvas canvas
     required property ApplicationWindow window
+    /// The commands Main offers here, in the title bar menu and on the keyboard.
+    required property var commands
     property string tab: "draw"
-
-    signal pdfImportRequested()
-    signal imageInsertRequested()
-    signal openFileRequested()
-    signal importRequested()
-    signal importFolderRequested()
-    signal openFolderRequested()
-    signal exportRequested()
-    signal printRequested()
-    signal settingsRequested()
-    signal newPageRequested()
-    signal newNotebookRequested()
-    signal historyRequested()
-    signal trashRequested()
 
     implicitHeight: Theme.ribbonHeight
     color: Theme.ribbon
@@ -143,12 +131,12 @@ Rectangle {
         AppMenuItem {
             objectName: "importFile"
             text: qsTr("Notes file…")
-            onTriggered: ribbon.importRequested()
+            onTriggered: ribbon.commands.importFile()
         }
         AppMenuItem {
             objectName: "importFolder"
             text: qsTr("Notebook folder…")
-            onTriggered: ribbon.importFolderRequested()
+            onTriggered: ribbon.commands.importFolder()
         }
     }
 
@@ -274,22 +262,22 @@ Rectangle {
                     iconName: "page-add"
                     text: qsTr("New page")
                     tip: qsTr("New page: choose its name and notebook (Ctrl+N)")
-                    onClicked: ribbon.newPageRequested()
+                    onClicked: ribbon.commands.newPage()
                 }
                 RibbonButton {
                     objectName: "fileNewNotebook"
                     iconName: "plus"
                     text: qsTr("New notebook")
                     tip: qsTr("New notebook: choose its name and where it is saved")
-                    onClicked: ribbon.newNotebookRequested()
+                    onClicked: ribbon.commands.newNotebook()
                 }
                 RibbonButton {
                     objectName: "fileClosePage"
                     iconName: "close"
                     text: qsTr("Close page")
                     tip: qsTr("Close page (Ctrl+W)")
-                    enabled: AppController.currentPage.length > 0
-                    onClicked: AppController.closePage()
+                    enabled: ribbon.commands.pageOpen
+                    onClicked: ribbon.commands.closePage()
                 }
                 Separator {}
                 RibbonButton {
@@ -297,14 +285,14 @@ Rectangle {
                     iconName: "file-open"
                     text: qsTr("Open…")
                     tip: qsTr("Open a notes page or PDF (Ctrl+O)")
-                    onClicked: ribbon.openFileRequested()
+                    onClicked: ribbon.commands.openFile()
                 }
                 RibbonButton {
                     objectName: "fileImport"
                     iconName: "import"
                     text: AppController.importing ? qsTr("Importing…") : qsTr("Import…")
                     tip: qsTr("Bring in notes from Xournal++, Rnote or OneNote: a file or a whole notebook folder")
-                    enabled: !AppController.importing
+                    enabled: ribbon.commands.canImport
                     onClicked: importMenu.popup(this, 0, height)
                 }
                 RibbonButton {
@@ -312,7 +300,7 @@ Rectangle {
                     iconName: "folder-open"
                     text: qsTr("Library…")
                     tip: qsTr("Choose the folder your notebooks live in")
-                    onClicked: ribbon.openFolderRequested()
+                    onClicked: ribbon.commands.openLibrary()
                 }
                 RibbonButton {
                     objectName: "fileSave"
@@ -320,7 +308,7 @@ Rectangle {
                     text: qsTr("Save")
                     tip: qsTr("Pages save automatically; this saves right now (Ctrl+S)")
                     onClicked: {
-                        AppController.saveNow()
+                        ribbon.commands.save()
                         AppController.notice(qsTr("Saved."))
                     }
                 }
@@ -329,37 +317,38 @@ Rectangle {
                     iconName: "history"
                     text: qsTr("Versions…")
                     tip: qsTr("Earlier versions of this page")
-                    enabled: AppController.currentPage.length > 0
-                    onClicked: ribbon.historyRequested()
+                    enabled: ribbon.commands.pageOpen
+                    onClicked: ribbon.commands.history()
                 }
                 RibbonButton {
                     objectName: "fileTrash"
                     iconName: "delete"
                     text: qsTr("Trash…")
                     tip: qsTr("Deleted pages and notebooks, to restore them")
-                    onClicked: ribbon.trashRequested()
+                    onClicked: ribbon.commands.trash()
                 }
                 Separator {}
                 RibbonButton {
                     objectName: "fileExport"
                     iconName: "export"
                     text: qsTr("Export PDF…")
-                    onClicked: ribbon.exportRequested()
+                    enabled: ribbon.commands.canExport
+                    onClicked: ribbon.commands.exportPdf()
                 }
                 RibbonButton {
                     objectName: "filePrint"
                     iconName: "print"
                     text: qsTr("Print…")
                     tip: qsTr("Print this page (Ctrl+P)")
-                    enabled: AppController.pdfProblem.length === 0
-                    onClicked: ribbon.printRequested()
+                    enabled: ribbon.commands.canExport
+                    onClicked: ribbon.commands.printPage()
                 }
                 Separator {}
                 RibbonButton {
                     objectName: "fileSettings"
                     iconName: "settings"
                     text: qsTr("Settings")
-                    onClicked: ribbon.settingsRequested()
+                    onClicked: ribbon.commands.settings()
                 }
                 Item { Layout.fillWidth: true }
             }
@@ -427,7 +416,7 @@ Rectangle {
                     text: qsTr("Picture…")
                     tip: qsTr("Add a picture file; you can also drop pictures onto the page")
                     enabled: ribbon.canvas.enabled
-                    onClicked: ribbon.imageInsertRequested()
+                    onClicked: ribbon.commands.insertPicture()
                 }
                 RibbonButton {
                     objectName: "insertPdf"
@@ -436,7 +425,7 @@ Rectangle {
                     tip: AppController.pdfProblem.length > 0 ? AppController.pdfProblem
                                                              : qsTr("Write on a PDF, e.g. lecture slides")
                     enabled: AppController.pdfProblem.length === 0
-                    onClicked: ribbon.pdfImportRequested()
+                    onClicked: ribbon.commands.writeOnPdf()
                 }
                 Separator {}
                 RibbonButton {

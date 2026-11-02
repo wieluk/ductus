@@ -38,8 +38,8 @@ impl From<std::io::Error> for Error {
     }
 }
 
-/// Bumped when what is indexed changes; older indexes are rebuilt.
-const SCHEMA: i64 = 1;
+/// Part of the index's file name: bumped when what is indexed changes, so a new index is built.
+const SCHEMA: u32 = 1;
 /// The stamp of a file indexed by name only, so the next scan looks at it again.
 const UNREAD: i64 = -1;
 /// Deeper folders are skipped, which also stops symlink loops.
@@ -125,7 +125,7 @@ struct PdfMemo {
     entries: Vec<Entry>,
 }
 
-pub fn markdown_text(markdown: &str) -> String {
+fn markdown_text(markdown: &str) -> String {
     use pulldown_cmark::{Event, Parser};
     let mut out = String::new();
     for event in Parser::new(markdown) {
@@ -190,33 +190,16 @@ impl Index {
 
     fn ensure_schema(&self) -> Result<()> {
         self.conn.execute_batch(
-            "CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value INTEGER);",
+            "CREATE TABLE IF NOT EXISTS files(path TEXT PRIMARY KEY, stamp INTEGER NOT NULL);
+             CREATE VIRTUAL TABLE IF NOT EXISTS entries USING fts5(
+                 text, path UNINDEXED, kind UNINDEXED, page UNINDEXED,
+                 x UNINDEXED, y UNINDEXED, w UNINDEXED, h UNINDEXED,
+                 tokenize = 'trigram remove_diacritics 1');",
         )?;
-        let version: Option<i64> = self
-            .conn
-            .query_row("SELECT value FROM meta WHERE key = 'schema'", [], |r| {
-                r.get(0)
-            })
-            .optional()?;
-        if version != Some(SCHEMA) {
-            self.conn.execute_batch(
-                "DROP TABLE IF EXISTS files;
-                 DROP TABLE IF EXISTS entries;
-                 CREATE TABLE files(path TEXT PRIMARY KEY, stamp INTEGER NOT NULL);
-                 CREATE VIRTUAL TABLE entries USING fts5(
-                     text, path UNINDEXED, kind UNINDEXED, page UNINDEXED,
-                     x UNINDEXED, y UNINDEXED, w UNINDEXED, h UNINDEXED,
-                     tokenize = 'trigram remove_diacritics 1');",
-            )?;
-            self.conn.execute(
-                "INSERT OR REPLACE INTO meta(key, value) VALUES ('schema', ?1)",
-                [SCHEMA],
-            )?;
-        }
         Ok(())
     }
 
-    pub fn set_entries(&mut self, path: &str, stamp: i64, entries: &[Entry]) -> Result<()> {
+    fn set_entries(&mut self, path: &str, stamp: i64, entries: &[Entry]) -> Result<()> {
         let tx = self.conn.transaction()?;
         tx.execute("DELETE FROM entries WHERE path = ?1", [path])?;
         {
@@ -596,7 +579,7 @@ fn mark(text: &str, words: &[&str]) -> String {
 
 pub fn index_path(cache_dir: &Path, library_root: &Path) -> PathBuf {
     cache_dir.join(format!(
-        "search-{}.sqlite",
+        "search-{}-v{SCHEMA}.sqlite",
         ductus_format::library_key(library_root)
     ))
 }

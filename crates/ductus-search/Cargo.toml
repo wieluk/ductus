@@ -7,13 +7,13 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-ductus-core.workspace = true
 ductus-format.workspace = true
 ductus-pdf.workspace = true
 pulldown-cmark = { version = "0.13", default-features = false }
 rusqlite = { version = "0.41", features = ["bundled"] }
 
 [dev-dependencies]
+ductus-core.workspace = true
 tempfile = "3"
 
 [lints]

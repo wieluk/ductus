@@ -72,14 +72,9 @@ Rectangle {
             id: inks
             visible: bar.canvas.selectionHasInk
             spacing: 2
-            Rectangle {
+            BarSeparator {
                 // Only between groups on the same row; opacity, so the wrapping doesn't change.
                 opacity: inks.x > 0 ? 1 : 0
-                Layout.preferredWidth: 1
-                Layout.preferredHeight: 22
-                Layout.leftMargin: 4
-                Layout.rightMargin: 4
-                color: Theme.separator
             }
             Repeater {
                 model: ["#1a1a1f", "#1f4fd1", "#d12f2f", "#1d8a3b"]
@@ -102,13 +97,8 @@ Rectangle {
         RowLayout {
             id: transforms
             spacing: 2
-            Rectangle {
+            BarSeparator {
                 opacity: transforms.x > 0 ? 1 : 0
-                Layout.preferredWidth: 1
-                Layout.preferredHeight: 22
-                Layout.leftMargin: 4
-                Layout.rightMargin: 4
-                color: Theme.separator
             }
             RibbonButton {
                 objectName: "selectionRotateLeft"
@@ -149,13 +139,8 @@ Rectangle {
             id: converts
             visible: bar.canvas.selectionHasInk
             spacing: 2
-            Rectangle {
+            BarSeparator {
                 opacity: converts.x > 0 ? 1 : 0
-                Layout.preferredWidth: 1
-                Layout.preferredHeight: 22
-                Layout.leftMargin: 4
-                Layout.rightMargin: 4
-                color: Theme.separator
             }
             RibbonButton {
                 objectName: "selectionToText"

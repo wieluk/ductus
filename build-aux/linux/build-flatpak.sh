@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Builds dist/Ductus-<version>-linux-x86_64.flatpak.
 #   build-flatpak.sh [binary|package]   (default: both)
+# binary also leaves target/sdk-6.10/release/ductus-test, with the UI test hooks, for ui-tests.sh.
 # Compiles in the KDE SDK (so CI can cache target/) instead of inside flatpak-builder.
 # FLATPAK_GPG_KEY_ID signs the build and makes the bundle follow the update repository.
 set -euo pipefail
@@ -23,6 +24,9 @@ else
 fi
 
 if [ "$step" != package ]; then
+  # Only ductus-qt builds twice: releases never carry the test hooks.
+  build-aux/sdk-run.sh cargo build --release --locked -p ductus-qt --features test-hooks
+  cp target/sdk-6.10/release/ductus target/sdk-6.10/release/ductus-test
   build-aux/sdk-run.sh cargo build --release --locked -p ductus-qt
   build-aux/fetch-pdfium.sh linux-x64 target/pdfium
   build-aux/fetch-onnxruntime.sh linux-x64 target/onnxruntime

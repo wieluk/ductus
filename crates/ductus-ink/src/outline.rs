@@ -2,7 +2,8 @@ use ductus_core::{InkPoint, LinePattern, StrokeStyle, Tool};
 use kurbo::{Arc, BezPath, Circle, Point, Shape, Vec2};
 use std::f64::consts::PI;
 
-const MIN_WIDTH_RATIO: f64 = 0.25;
+/// The thinnest part of a pressure stroke, as a share of its width.
+pub const MIN_WIDTH_RATIO: f64 = 0.25;
 const CAP_TOLERANCE: f64 = 0.05;
 
 pub fn radius_at(style: &StrokeStyle, p: &InkPoint) -> f64 {
@@ -40,7 +41,7 @@ pub fn outline(points: &[InkPoint], style: &StrokeStyle) -> BezPath {
     }
 }
 
-fn lerp(a: &InkPoint, b: &InkPoint, f: f64) -> InkPoint {
+pub(crate) fn lerp(a: &InkPoint, b: &InkPoint, f: f64) -> InkPoint {
     let mix = |u: f32, v: f32| u + (v - u) * f as f32;
     InkPoint {
         x: a.x + (b.x - a.x) * f,
@@ -48,7 +49,7 @@ fn lerp(a: &InkPoint, b: &InkPoint, f: f64) -> InkPoint {
         pressure: mix(a.pressure, b.pressure),
         tilt_x: mix(a.tilt_x, b.tilt_x),
         tilt_y: mix(a.tilt_y, b.tilt_y),
-        t: a.t,
+        t: a.t + ((f64::from(b.t.saturating_sub(a.t))) * f) as u32,
     }
 }
 

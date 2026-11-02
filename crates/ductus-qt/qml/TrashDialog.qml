@@ -42,7 +42,7 @@ AppDialog {
             clip: true
             model: dialog.rows
             boundsBehavior: Flickable.StopAtBounds
-            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+            ScrollBar.vertical: AppScrollBar {}
             delegate: Item {
                 id: item
                 required property var modelData
@@ -66,6 +66,7 @@ AppDialog {
                         Label {
                             Layout.fillWidth: true
                             text: item.modelData.name
+                            textFormat: Text.PlainText
                             elide: Text.ElideRight
                             color: Theme.text
                             font.pixelSize: 13

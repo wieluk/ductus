@@ -8,6 +8,13 @@ use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
+static TEST_FEEDS: AtomicBool = AtomicBool::new(cfg!(test));
+
+/// Lets feeds and downloads come from files and plain HTTP: only for UI tests.
+pub fn allow_test_feeds() {
+    TEST_FEEDS.store(true, Ordering::Relaxed);
+}
+
 pub const LATEST_RELEASE_URL: &str = "https://api.github.com/repos/wieluk/ductus/releases/latest";
 
 /// The newest releases, for the notes of every version since the one installed.
@@ -41,8 +48,13 @@ impl Release {
         self.assets.iter().find(|a| a.name == name)
     }
 
+    /// The package for this version: the checksums are signed, the version in the feed isn't,
+    /// so an old signed package can't pass for a newer release.
     pub fn asset_ending(&self, suffix: &str) -> Option<&Asset> {
-        self.assets.iter().find(|a| a.name.ends_with(suffix))
+        let version = format!("-{}-", self.version);
+        self.assets
+            .iter()
+            .find(|a| a.name.ends_with(suffix) && a.name.contains(&version))
     }
 }
 
@@ -132,25 +144,26 @@ fn agent() -> ureq::Agent {
         .timeout_connect(Some(Duration::from_secs(15)))
         .timeout_recv_body(Some(Duration::from_secs(600)))
         .user_agent(concat!("Ductus/", env!("CARGO_PKG_VERSION")))
+        .https_only(!TEST_FEEDS.load(Ordering::Relaxed))
         .build()
         .into()
 }
 
-/// Plain paths and file:// URLs are read from disk, but only for tests (a feed set in
-/// DUCTUS_UPDATE_FEED); releases always come over HTTPS.
+/// Releases always come over HTTPS; tests may read plain paths and file:// URLs.
 fn open(url: &str) -> Result<(Box<dyn Read + Send>, u64), String> {
+    let tests = TEST_FEEDS.load(Ordering::Relaxed);
     if let Some(path) = url
         .strip_prefix("file://")
         .or((!url.contains("://")).then_some(url))
     {
-        if !cfg!(test) && std::env::var_os("DUCTUS_UPDATE_FEED").is_none() {
+        if !tests {
             return Err(format!("{url} isn't a web address"));
         }
         let file = std::fs::File::open(path).map_err(|e| format!("{path}: {e}"))?;
         let size = file.metadata().map(|m| m.len()).unwrap_or(0);
         return Ok((Box::new(file), size));
     }
-    if !url.starts_with("https://") && std::env::var_os("DUCTUS_UPDATE_FEED").is_none() {
+    if !url.starts_with("https://") && !tests {
         return Err(format!("{url} isn't a secure web address"));
     }
     let response = agent()
@@ -191,7 +204,7 @@ pub fn releases(feed: &str) -> Result<Vec<Release>, String> {
     parse_releases(&String::from_utf8_lossy(&body))
 }
 
-pub fn parse_checksums(text: &str) -> HashMap<String, [u8; 32]> {
+fn parse_checksums(text: &str) -> HashMap<String, [u8; 32]> {
     text.lines()
         .filter_map(|line| {
             let (hex, name) = line.trim().split_once(char::is_whitespace)?;
@@ -251,8 +264,10 @@ pub fn download(
     let (mut reader, size) = open(&asset.url)?;
     let total = if asset.size > 0 { asset.size } else { size };
     let partial = dest.with_extension("part");
+    // create_new: never through a link someone placed at this name.
+    let _ = std::fs::remove_file(&partial);
     let mut file =
-        std::fs::File::create(&partial).map_err(|e| format!("{}: {e}", partial.display()))?;
+        std::fs::File::create_new(&partial).map_err(|e| format!("{}: {e}", partial.display()))?;
     let result = (|| {
         let mut hasher = Sha256::new();
         let mut buffer = vec![0u8; 64 * 1024];
@@ -271,6 +286,9 @@ pub fn download(
             file.write_all(&buffer[..n])
                 .map_err(|e| format!("{}: {e}", partial.display()))?;
             done += n as u64;
+            if total > 0 && done > total {
+                return Err("the download is larger than the release says".to_owned());
+            }
             progress(done, total);
         }
         file.flush().map_err(|e| e.to_string())?;

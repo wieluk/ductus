@@ -1,2 +1,5 @@
+# LF everywhere, Windows included: Git Bash runs the scripts and UI tests, and release
+# version patches apply to the same bytes on every platform.
+* text=auto eol=lf
 # Signed test release: the bytes must stay exactly as committed.
 tests/fixtures/update/** -text

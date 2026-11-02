@@ -3,6 +3,11 @@
 set -euo pipefail
 
 if [ -z "${FLATPAK_GPG_PRIVATE_KEY:-}" ]; then
+  # A release without it would leave every install behind.
+  if [ "${GITHUB_REF_TYPE:-}" = tag ]; then
+    echo "::error::FLATPAK_GPG_PRIVATE_KEY is not set: Flatpak installs won't update."
+    exit 1
+  fi
   echo "::warning::FLATPAK_GPG_PRIVATE_KEY is not set: Flatpak installs won't update."
   exit 0
 fi

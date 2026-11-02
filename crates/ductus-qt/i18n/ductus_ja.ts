@@ -655,6 +655,18 @@
         <translation>元のファイルは読み取るだけで、変更しません。</translation>
     </message>
     <message>
+        <source>Run “%1”?</source>
+        <translation>「%1」を実行しますか？</translation>
+    </message>
+    <message>
+        <source>This file is a program or script. Run it only if you trust where it came from.</source>
+        <translation>このファイルはプログラムまたはスクリプトです。入手元を信頼できる場合にのみ実行してください。</translation>
+    </message>
+    <message>
+        <source>Run</source>
+        <translation>実行</translation>
+    </message>
+    <message>
         <source>Import as note pages</source>
         <translation>ノートページとして取り込む</translation>
     </message>
@@ -2391,6 +2403,10 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>手書きはこのサーバーに送信されます。</translation>
     </message>
     <message>
+        <source>Servers outside your network need an https:// address.</source>
+        <translation>ネットワーク外のサーバーには https:// のアドレスが必要です。</translation>
+    </message>
+    <message>
         <source>Line images leave your computer. Use a cloud service only if you are fine with that.</source>
         <translation>行の画像がコンピューターの外に送られます。クラウドサービスは、それで問題ない場合にだけ使ってください。</translation>
     </message>
@@ -2820,18 +2836,14 @@ Create one with the + button, or make a folder a notebook under Folders.</source
         <translation>バージョン %1 をインストール中…</translation>
     </message>
     <message>
-        <source>This copy was installed from a file that doesn&apos;t follow the Ductus repository, so it can&apos;t update. Install it from the repository once (notes and settings stay):
-flatpak remote-add --user --if-not-exists ductus %1 &amp;&amp; flatpak uninstall -y %2 &amp;&amp; flatpak install --user -y ductus %2</source>
-        <translation>このコピーは Ductus リポジトリに従わないファイルからインストールされたため、更新できません。一度リポジトリからインストールしてください（ノートと設定は残ります）：
-flatpak remote-add --user --if-not-exists ductus %1 &amp;&amp; flatpak uninstall -y %2 &amp;&amp; flatpak install --user -y ductus %2</translation>
+        <source>Flatpak found no version %1 where this copy came from. If it was installed from a downloaded file, install it from the Ductus repository once (notes and settings stay):
+flatpak remote-add --user --if-not-exists ductus %2 &amp;&amp; flatpak uninstall -y %3 &amp;&amp; flatpak install --user -y ductus %3</source>
+        <translation>このコピーの入手元に Flatpak がバージョン %1 を見つけられませんでした。ダウンロードしたファイルからインストールした場合は、一度 Ductus リポジトリからインストールしてください（ノートと設定はそのまま残ります）:
+flatpak remote-add --user --if-not-exists ductus %2 &amp;&amp; flatpak uninstall -y %3 &amp;&amp; flatpak install --user -y ductus %3</translation>
     </message>
     <message>
         <source>Version %1 is installed. Restart Ductus to use it.</source>
         <translation>バージョン %1 をインストールしました。使うには Ductus を再起動してください。</translation>
-    </message>
-    <message>
-        <source>The Ductus repository doesn&apos;t offer version %1 yet%2. Try again later.</source>
-        <translation>Ductus リポジトリではまだバージョン %1 を提供していません%2。後でもう一度お試しください。</translation>
     </message>
     <message>
         <source>Flatpak couldn&apos;t install version %1%2.</source>

@@ -1,9 +1,9 @@
 name: Build for Windows
 description: Builds, tests and packages with build-aux/windows/package.ps1.
 inputs:
-  args:
-    description: Arguments for package.ps1
-    default: ""
+  installer:
+    description: Also make the zip and installer (CI builds only test)
+    default: "false"
 runs:
   using: composite
   steps:
@@ -20,8 +20,15 @@ runs:
         version: "6.10.3"
         arch: win64_msvc2022_64
         cache: true
-    - shell: pwsh
+        # renovate: datasource=pypi depName=aqtinstall
+        aqtversion: ==3.3.0
+    - if: inputs.installer == 'true'
+      shell: pwsh
       run: |
-        if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup --no-progress -y }
+        if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup --version 6.7.1 --no-progress -y }
+    # The version comes from Cargo.toml, which the stamp action set for releases.
     - shell: pwsh
-      run: build-aux\windows\package.ps1 ${{ inputs.args }}
+      env:
+        INSTALLER: ${{ inputs.installer }}
+      run: |
+        if ($env:INSTALLER -eq 'true') { build-aux\windows\package.ps1 } else { build-aux\windows\package.ps1 -NoPackage }

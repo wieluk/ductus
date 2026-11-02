@@ -1,0 +1,25 @@
+# cargo deny check advisories bans sources (CI's Core tests run it).
+[graph]
+all-features = true
+
+[advisories]
+# Unmaintained crates deep in typst and resvg are theirs to replace.
+unmaintained = "workspace"
+yanked = "deny"
+ignore = [
+  # quick-xml 0.38 only reads typst's bibliographies and syntax themes, never page data
+  # (pages go through quick-xml 0.42).
+  { id = "RUSTSEC-2026-0194", reason = "typst's own data only" },
+  { id = "RUSTSEC-2026-0195", reason = "typst's own data only" },
+  # rkyv 0.7 only reads mitex's built-in command list.
+  { id = "RUSTSEC-2026-0235", reason = "built-in data only" },
+  # Unmaintained: typst draws with it too, and it only reads the bundled fonts.
+  { id = "RUSTSEC-2026-0192", reason = "bundled fonts only, as in typst" },
+]
+
+[bans]
+multiple-versions = "allow"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

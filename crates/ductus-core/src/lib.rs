@@ -1,12 +1,14 @@
 //! Coordinates are document units: CSS pixels (1/96 inch).
 
 mod document;
+mod hash;
 mod history;
 mod memory;
 mod page;
 mod stroke;
 
-pub use document::{Document, Item, ItemRef};
+pub use document::{Document, Item, ItemRef, MAX_COORD, MAX_POINTS};
+pub use hash::{IMAGE_PREFIX, fnv1a, picture_name};
 pub use history::{Command, History};
 pub use memory::release_freed_memory;
 pub use page::{

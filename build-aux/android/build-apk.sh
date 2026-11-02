@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Builds dist/Ductus-<version>-android-arm64.apk (ABI=x86_64: -android-x86_64.apk, for emulators).
+#   build-apk.sh [build|sign]   (default: both; signing alone needs no build tools or code)
 # Needs Rust (aarch64- or x86_64-linux-android), JDK 17, Android SDK 35 + NDK r27c and Qt 6.10
 # for Android plus the same desktop Qt: ANDROID_SDK_ROOT, ANDROID_NDK_ROOT, QT_ANDROID, QT_HOST.
 # Without ANDROID_KEYSTORE (+ _PASSWORD, ANDROID_KEY_ALIAS) a throwaway key signs it.
@@ -7,19 +8,26 @@ set -euo pipefail
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$root"
-: "${ANDROID_SDK_ROOT:?}" "${ANDROID_NDK_ROOT:?}" "${QT_ANDROID:?}" "${QT_HOST:?}"
+step=${1:-all}
+: "${ANDROID_SDK_ROOT:?}" "${JAVA_HOME:?}"
+# apksigner runs the `java` on PATH; a newer one warns about its native access.
+export PATH="$JAVA_HOME/bin:$PATH"
 version=${VERSION:-$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -1)}
 api=28
 abi=${ABI:-arm64-v8a}
 case $abi in
-  arm64-v8a) target=aarch64-linux-android; pdfium_platform=android-arm64; arch=arm64 ;;
-  x86_64) target=x86_64-linux-android; pdfium_platform=android-x64; arch=x86_64 ;;
+  arm64-v8a) target=aarch64-linux-android; platform=android-arm64; arch=arm64 ;;
+  x86_64) target=x86_64-linux-android; platform=android-x64; arch=x86_64 ;;
   *) echo "unknown ABI $abi" >&2; exit 1 ;;
 esac
 target_env=${target//-/_}
 build=$root/target/android
 apk_dir=$build/apk
+unsigned=$build/ductus-$arch-unsigned.apk
 mkdir -p "$build" dist
+
+if [ "$step" != sign ]; then
+: "${ANDROID_NDK_ROOT:?}" "${QT_ANDROID:?}" "${QT_HOST:?}"
 
 toolchain=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64
 export "CC_$target_env=$toolchain/bin/$target$api-clang"
@@ -51,9 +59,14 @@ if [ -n "$missing" ]; then
 fi
 
 pdfium=$build/pdfium-$arch
-build-aux/fetch-pdfium.sh "$pdfium_platform" "$pdfium"
+build-aux/fetch-pdfium.sh "$platform" "$pdfium"
 onnxruntime=$build/onnxruntime-$arch
-build-aux/fetch-onnxruntime.sh "$pdfium_platform" "$onnxruntime"
+build-aux/fetch-onnxruntime.sh "$platform" "$onnxruntime"
+# The licenses of what the APK bundles.
+mkdir -p "$apk_dir/assets/licenses"
+cp LICENSE "$apk_dir/assets/licenses/ductus.txt"
+cp "$pdfium/LICENSE" "$apk_dir/assets/licenses/pdfium.txt"
+cp "$onnxruntime/LICENSE" "$apk_dir/assets/licenses/onnxruntime.txt"
 
 # Android counts versions with one number: 1.2.3 becomes 10203.
 IFS=. read -r major minor patch <<<"${version%%[-+]*}"
@@ -106,26 +119,31 @@ cat > "$build/deployment-settings.json" <<EOF
 }
 EOF
 
-sign=()
-if [ -n "${ANDROID_KEYSTORE:-}" ]; then
-  sign=(--sign "$ANDROID_KEYSTORE" "${ANDROID_KEY_ALIAS:?}" --storepass "${ANDROID_KEYSTORE_PASSWORD:?}")
-else
-  echo "No ANDROID_KEYSTORE: signing with a throwaway key (updates won't install over it)." >&2
-  keystore=$build/throwaway.keystore
-  [ -f "$keystore" ] || keytool -genkeypair -keystore "$keystore" -alias ductus -keyalg RSA \
-    -keysize 2048 -validity 10000 -storepass throwaway -keypass throwaway \
-    -dname "CN=Ductus test build" >/dev/null
-  sign=(--sign "$keystore" ductus --storepass throwaway)
-fi
-
-# apksigner runs the `java` on PATH; a newer one warns about its native access.
-export PATH="$JAVA_HOME/bin:$PATH"
 # Gradle names each deprecated feature instead of only counting them.
 export GRADLE_OPTS="${GRADLE_OPTS:+$GRADLE_OPTS }-Dorg.gradle.warning.mode=all"
 "$QT_HOST/bin/androiddeployqt" --input "$build/deployment-settings.json" --output "$apk_dir" \
-  --android-platform android-35 --jdk "${JAVA_HOME:?}" --gradle --release "${sign[@]}"
+  --android-platform android-35 --jdk "$JAVA_HOME" --gradle --release
+cp "$(find "$apk_dir/build/outputs/apk/release" -name '*.apk' | head -1)" "$unsigned"
+fi
+[ "$step" = build ] && exit 0
 
-apk=$(find "$apk_dir/build/outputs/apk/release" -name '*-signed.apk' | head -1)
-[ -n "$apk" ] || { echo "no signed APK was produced" >&2; exit 1; }
-cp "$apk" "dist/Ductus-$version-android-$arch.apk"
-echo "dist/Ductus-$version-android-$arch.apk"
+# Passwords go through the environment, never on a command line.
+if [ -n "${ANDROID_KEYSTORE:-}" ]; then
+  keystore=$ANDROID_KEYSTORE alias=${ANDROID_KEY_ALIAS:?}
+  : "${ANDROID_KEYSTORE_PASSWORD:?}"
+else
+  echo "No ANDROID_KEYSTORE: signing with a throwaway key (updates won't install over it)." >&2
+  keystore=$build/throwaway.keystore alias=ductus
+  export ANDROID_KEYSTORE_PASSWORD=throwaway
+  [ -f "$keystore" ] || keytool -genkeypair -keystore "$keystore" -alias ductus -keyalg RSA \
+    -keysize 2048 -validity 10000 -storepass throwaway -keypass throwaway \
+    -dname "CN=Ductus test build" >/dev/null
+fi
+tools=$ANDROID_SDK_ROOT/build-tools/35.0.0
+apk=dist/Ductus-$version-android-$arch.apk
+# Libraries aligned to 16 KB pages, which newer devices use.
+"$tools/zipalign" -f -P 16 4 "$unsigned" "$build/aligned.apk"
+"$tools/apksigner" sign --ks "$keystore" --ks-key-alias "$alias" --ks-pass env:ANDROID_KEYSTORE_PASSWORD \
+  --key-pass env:ANDROID_KEYSTORE_PASSWORD --out "$apk" "$build/aligned.apk"
+rm "$build/aligned.apk"
+echo "$apk"

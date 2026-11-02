@@ -1,4 +1,5 @@
-//! Standard /Ink annotations with an appearance stream, so every reader shows the ink; saves append one incremental update and keep the original bytes.
+//! Standard /Ink annotations with an appearance stream, so every reader shows the ink.
+//! Saves append one incremental update and keep the original bytes.
 
 use crate::Error;
 use ductus_core::{
@@ -37,6 +38,20 @@ fn number(o: &Object) -> Option<f64> {
         Object::Integer(i) => Some(*i as f64),
         Object::Real(r) => Some(f64::from(*r)),
         _ => None,
+    }
+}
+
+/// An annotation's /C colour, opaque; black without one.
+pub(crate) fn color_of(dict: &Dictionary) -> Rgba {
+    let rgb: Vec<f64> = dict
+        .get(b"C")
+        .ok()
+        .and_then(|c| c.as_array().ok())
+        .map(|a| a.iter().filter_map(number).collect())
+        .unwrap_or_default();
+    match rgb[..] {
+        [r, g, b] => Rgba::rgb(r as f32, g as f32, b as f32),
+        _ => Rgba::BLACK,
     }
 }
 
@@ -255,21 +270,9 @@ pub fn read_ink(bytes: &[u8]) -> Result<Vec<PageInk>, Error> {
                 Some("highlighter") => Tool::Highlighter,
                 _ => Tool::Pen,
             };
-            let rgb: Vec<f64> = dict
-                .get(b"C")
-                .ok()
-                .and_then(|c| c.as_array().ok())
-                .map(|a| a.iter().filter_map(number).collect())
-                .unwrap_or_default();
-            let alpha = dict.get(b"CA").ok().and_then(number).unwrap_or(1.0);
-            let color = match rgb.as_slice() {
-                [r, g, b] => Rgba {
-                    r: *r as f32,
-                    g: *g as f32,
-                    b: *b as f32,
-                    a: alpha as f32,
-                },
-                _ => Rgba::BLACK,
+            let color = Rgba {
+                a: dict.get(b"CA").ok().and_then(number).unwrap_or(1.0) as f32,
+                ..color_of(dict)
             };
             let width = dict
                 .get(KEY_WIDTH.as_bytes())
@@ -456,7 +459,7 @@ fn add_annotation(
     Some(doc.add_object(annot))
 }
 
-pub fn write_ink(bytes: &[u8], ink: &[PageInk]) -> Result<Vec<u8>, Error> {
+pub(crate) fn write_ink(bytes: &[u8], ink: &[PageInk]) -> Result<Vec<u8>, Error> {
     write_annotations(bytes, ink, &[])
 }
 

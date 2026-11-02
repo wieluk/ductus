@@ -41,6 +41,7 @@ inline Qt::MouseButtons secondPenButton()
 }
 
 struct CanvasEngine;
+struct PointerSample;
 class QSGImageNode;
 class QSGNode;
 class QTabletEvent;
@@ -229,6 +230,8 @@ public:
     };
     /// The nodes of one layer: this item shows the page, InkLayer items the others.
     QSGNode *paintLayer(QSGNode *oldNode, int layer, LayerNodes &nodes);
+    void updateTiles(QQuickWindow *win, int layer, LayerNodes &nodes);
+    void updatePenTip(QQuickWindow *win, LayerNodes &nodes);
     QRectF mathDraftRect() const { return m_mathDraftRect; }
     bool selectionHasInk() const { return m_selectionHasInk; }
     bool selectionTurns() const { return m_selectionTurns; }
@@ -253,7 +256,7 @@ public:
     Q_INVOKABLE void cutSelection();
     /// A picture copied after the last ink copy wins.
     Q_INVOKABLE void paste();
-    Q_INVOKABLE bool insertImage(const QImage &image, QPointF at = QPointF(qQNaN(), qQNaN()));
+    bool insertImage(const QImage &image, QPointF at = QPointF(qQNaN(), qQNaN()));
     Q_INVOKABLE bool insertImageFile(const QString &fileOrUrl, QPointF at = QPointF(qQNaN(), qQNaN()));
     /// Its first pages as pictures, like a printout; they arrive once rendered.
     Q_INVOKABLE bool insertPdfFile(const QString &fileOrUrl);
@@ -301,7 +304,6 @@ Q_SIGNALS:
     void mathDraftChanged();
     void textCommitRequested();
     void notice(const QString &message, bool error);
-    void shapeRecognized(const QString &kind);
     void edited();
     /// Pen, mouse or finger went down on it: its half of a split view becomes the active one.
     void pressed();
@@ -326,6 +328,15 @@ protected:
 
 private:
     bool handleTablet(QTabletEvent *event);
+    /// Off the page the pen acts as a mouse.
+    void forwardOffPage(QTabletEvent *event);
+    void tabletPress(QPointF position, const PointerSample &sample, Tool penTool, bool eraserEnd);
+    void tabletMove(QPointF position, const PointerSample &sample);
+    void tabletRelease(QPointF position, const PointerSample &sample);
+    void cancelTouchStroke();
+    void pinch(QPointF a, QPointF b);
+    void moveOneFinger(const QEventPoint &point);
+    void endTouch();
     void setPenButtonTool(int which, int tool);
     /// The chosen tool, or the one a held pen button or the eraser end stands for.
     Tool penTool(const QTabletEvent *event) const;

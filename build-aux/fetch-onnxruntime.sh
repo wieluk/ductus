@@ -34,6 +34,9 @@ case $platform in
     cp "$tmp/${file%.zip}/LICENSE" "$dest/LICENSE" ;;
   android-*)
     abi=$([ "$platform" = android-arm64 ] && echo arm64-v8a || echo x86_64)
-    unzip -q -j "$tmp/$file" "jni/$abi/libonnxruntime.so" -d "$dest/lib" ;;
+    unzip -q -j "$tmp/$file" "jni/$abi/libonnxruntime.so" -d "$dest/lib"
+    # The Android archive comes without its license (MIT, the same text in every release).
+    curl -sSfL -o "$dest/LICENSE" "https://raw.githubusercontent.com/microsoft/onnxruntime/v$version/LICENSE"
+    echo "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c  $dest/LICENSE" | sha256sum -c - > /dev/null ;;
 esac
 touch "$dest/.$platform-$version"

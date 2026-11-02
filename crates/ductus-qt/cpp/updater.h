@@ -3,8 +3,8 @@
 #define DUCTUS_UPDATER_H
 
 #include <QObject>
-#include <QProcess>
 #include <QTimer>
+#include <QVariantMap>
 #include <QtQml/qqmlregistration.h>
 #include <optional>
 
@@ -12,7 +12,7 @@
 
 struct UpdateHandle;
 
-/// Channels: flatpak (host flatpak update), installer (signed Windows installer), android (signed APK handed to the package installer), manual (release page), none (development builds).
+/// Channels: flatpak (the Flatpak portal's update), installer (signed Windows installer), android (signed APK handed to the package installer), manual (release page), none (development builds).
 class Updater : public QObject
 {
     Q_OBJECT
@@ -52,7 +52,6 @@ public:
     Q_INVOKABLE void check();
     Q_INVOKABLE void install();
     Q_INVOKABLE void cancel();
-    Q_INVOKABLE void openReleasePage();
     Q_INVOKABLE void restart();
     /// "Later": the automatic check stops offering this version.
     Q_INVOKABLE void dismiss();
@@ -62,8 +61,12 @@ Q_SIGNALS:
     void autoCheckChanged();
     void updateFound();
 
+private Q_SLOTS:
+    void flatpakProgress(const QVariantMap &info);
+
 private:
     enum class Task { None, Check, Download, Flatpak };
+    void openReleasePage();
     void poll();
     void setStatus(const QString &status, double progress = -1);
     void finishCheck(const QString &error);
@@ -71,7 +74,7 @@ private:
     void runInstaller(const QString &file);
     void openApk(const QString &file);
     void flatpakUpdate();
-    void flatpakFinished(int exitCode);
+    void finishFlatpak(const QString &status);
 
     std::optional<rust::Box<UpdateHandle>> m_handle;
     QString m_channel;
@@ -88,9 +91,8 @@ private:
     Task m_task = Task::None;
     QTimer m_poll;
     QTimer m_daily;
-    QProcess m_flatpak;
-    QString m_flatpakOutput;
-    QString m_flatpakCommit;
+    /// The portal's update monitor while a Flatpak update runs.
+    QString m_monitor;
 };
 
 #endif

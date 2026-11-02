@@ -199,8 +199,6 @@ public:
     Q_INVOKABLE void openInNewTab(const QString &path);
     /// A preview tab stays open as a normal one.
     Q_INVOKABLE void keepTab(const QString &path);
-    /// That canvas's half of a split view becomes the one the ribbon, pen bar and keys act on.
-    Q_INVOKABLE void activate(InkCanvas *canvas);
     /// Into the half with that canvas, from the other one or the sidebar.
     Q_INVOKABLE void moveTab(const QString &path, InkCanvas *to);
     /// In the half beside the active one, which splits the view.
@@ -218,6 +216,7 @@ public:
     Q_INVOKABLE QString defaultNotebookLocation() const;
     /// A folder as "Library › Notebook › Section", notebooks under their names.
     Q_INVOKABLE QString placeLabel(const QString &folder) const;
+    Q_INVOKABLE static bool isLocalUrl(const QString &url);
     /// Every notebook as {path, name}, in the user's order.
     Q_INVOKABLE QVariantList notebookList() const;
     /// Notebooks and sections as {path, label}, the Inbox first.
@@ -286,7 +285,8 @@ public:
     Q_INVOKABLE bool exportFolder(const QString &folder, const QString &fileOrUrl);
     /// "pdf" for a PDF from outside the library: it needs the import choice.
     Q_INVOKABLE QString openFile(const QString &fileOrUrl);
-    Q_INVOKABLE void openExternally(const QString &path);
+    /// Programs and scripts are opened only once `confirmed`: a synced library may hold any file.
+    Q_INVOKABLE void openExternally(const QString &path, bool confirmed = false);
     Q_INVOKABLE void showInFolder(const QString &path);
     Q_INVOKABLE void setPinned(const QString &path, bool pinned);
     Q_INVOKABLE void reveal(const QString &path);
@@ -321,6 +321,7 @@ Q_SIGNALS:
     void autosaveDelayChanged();
     void unsavedChanged();
     void revealRequested(const QString &path);
+    void openProgramRequested(const QString &path, const QString &name);
     void screenshotTaken(const QString &file);
     void indexStatusChanged();
     void recognitionStatusChanged();
@@ -341,6 +342,10 @@ private:
     bool attempt(const std::function<void()> &action);
     /// Empties the canvas after the open page went away.
     void unloadPage();
+    /// A local copy of the file to read, or "" after saying it can't be read.
+    QString readableOrError(const QString &fileOrUrl);
+    /// Empties a canvas and marks the empty page as saved.
+    static void blank(InkCanvas *canvas, quint64 &savedRevision);
     void moveToSharedStorage();
     /// The siblings `path` moves among; `notebookList` for the notebook list.
     QStringList moveSiblings(const QString &path, bool *notebookList) const;
@@ -370,10 +375,8 @@ private:
     QString createPage(const QString &parent, const QString &baseName = {});
     bool paintPages(QPrinter &printer);
     QByteArray textOverlay();
-    static rust::Slice<const std::uint8_t> bytes(const QByteArray &data);
-
-public:
-    static QFont textFont();
+    /// That canvas's half of a split view becomes the one the ribbon, pen bar and keys act on.
+    void activate(InkCanvas *canvas);
 
 protected:
     /// Input anywhere in the app holds back recognition for a moment.

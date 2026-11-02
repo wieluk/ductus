@@ -1,4 +1,4 @@
-use crate::radius_at;
+use crate::outline::{lerp, radius_at};
 use ductus_core::{InkPoint, Stroke};
 use kurbo::{Line, ParamCurveNearest, Point, Rect};
 
@@ -32,18 +32,6 @@ pub fn hits_circle(stroke: &Stroke, center: Point, r: f64) -> bool {
                 .distance_sq
                 <= reach * reach
         }),
-    }
-}
-
-fn lerp(a: &InkPoint, b: &InkPoint, f: f64) -> InkPoint {
-    let mix = |u: f32, v: f32| u + (v - u) * f as f32;
-    InkPoint {
-        x: a.x + (b.x - a.x) * f,
-        y: a.y + (b.y - a.y) * f,
-        pressure: mix(a.pressure, b.pressure),
-        tilt_x: mix(a.tilt_x, b.tilt_x),
-        tilt_y: mix(a.tilt_y, b.tilt_y),
-        t: a.t + ((f64::from(b.t.saturating_sub(a.t))) * f) as u32,
     }
 }
 

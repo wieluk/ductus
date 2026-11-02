@@ -23,6 +23,19 @@ key Escape
 pen-tap appMenuButton
 pen-tap menuSettings
 expect-prop settingsClose visible true
+# The pen drags the settings along, and their scroll bar.
+expect-prop penSettings atYBeginning true
+pen p=0.6 700,600 700,250
+expect-prop penSettings atYBeginning false
+pen p=0.6 1002,450 1002,100
+expect-prop penSettings atYBeginning true
+pen p=0.6 1002,600 1002,750
+expect-prop penSettings atYEnd true
 pen-tap settingsClose
 pen p=0.6 400,300 700,320
 expect-prop canvas canUndo true
+# The pen focuses the window, also where the system doesn't.
+deactivate
+expect-active false
+pen p=0.6 400,500 600,500
+expect-active

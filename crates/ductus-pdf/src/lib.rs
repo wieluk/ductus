@@ -11,7 +11,7 @@ mod testpdf;
 
 pub use annot::{
     PageInk, PageObject, PlacedObject, flatten, read_ink, read_objects, strip_ductus_annotations,
-    write_annotations, write_ink,
+    write_annotations,
 };
 pub use blank::insert_blank_page;
 pub use engine::{engine, pdfium_status};

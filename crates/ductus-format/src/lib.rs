@@ -25,6 +25,10 @@ pub enum Error {
     Invalid(String),
 }
 
+pub fn is_page_id(id: &str) -> bool {
+    (1..=64).contains(&id.len()) && id.bytes().all(|b| b.is_ascii_hexdigit())
+}
+
 pub fn new_id() -> String {
     use std::hash::{BuildHasher, Hasher};
     static COUNTER: AtomicU64 = AtomicU64::new(0);

@@ -1,4 +1,5 @@
 use super::*;
+use tiny_skia::{PixmapPaint, Transform};
 
 fn canvas() -> Canvas {
     let mut c = Canvas::new();
@@ -746,4 +747,37 @@ fn a_lone_picture_does_not_flip_or_turn() {
     c.flip_selection(true);
     c.rotate_selection(1);
     assert_eq!(c.revision(), revision, "no empty undo steps");
+}
+
+impl Canvas {
+    fn snapshot(&mut self) -> Option<Pixmap> {
+        let dpr = self.view.dpr;
+        let mut target = Pixmap::new(
+            (self.view.width * dpr).round() as u32,
+            (self.view.height * dpr).round() as u32,
+        )?;
+        for tile in self.frame() {
+            let Some(src) = self.tiles.tiles.get(&tile.key) else {
+                continue;
+            };
+            let scale = (tile.rect.width() * dpr / f64::from(TILE_SIZE)) as f32;
+            let transform = Transform::from_row(
+                scale,
+                0.0,
+                0.0,
+                scale,
+                (tile.rect.x0 * dpr) as f32,
+                (tile.rect.y0 * dpr) as f32,
+            );
+            target.draw_pixmap(
+                0,
+                0,
+                src.pixmap.as_ref(),
+                &PixmapPaint::default(),
+                transform,
+                None,
+            );
+        }
+        Some(target)
+    }
 }

@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Runs tests/ui/*.uitest against the app on the offscreen platform; screenshots go to target/ui-shots.
-#   ui-tests.sh [path/to/ductus] [script-glob]
+#   ui-tests.sh [path/to/ductus] [script-glob]   (a build with --features test-hooks)
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 binary=${1:-target/debug/ductus}
 if [ -z "${DUCTUS_PDFIUM:-}" ] && [ -d target/pdfium/lib ]; then
   export DUCTUS_PDFIUM=$PWD/target/pdfium/lib
+fi
+if [ -z "${DUCTUS_ONNXRUNTIME:-}" ] && [ -d target/onnxruntime/lib ]; then
+  export DUCTUS_ONNXRUNTIME=$PWD/target/onnxruntime/lib
 fi
 # Windows' offscreen platform finds no fonts unless pointed at them.
 if [ -n "${WINDIR:-}" ]; then

@@ -4,6 +4,27 @@ use crate::{
 };
 use std::collections::HashMap;
 
+/// Largest coordinate or size a file may hold; anything beyond is dropped when a page is read.
+pub const MAX_COORD: f64 = 1e6;
+pub const MAX_POINTS: usize = 100_000;
+const MAX_SHEETS: usize = 10_000;
+
+fn sane(v: f64) -> bool {
+    v.is_finite() && v.abs() <= MAX_COORD
+}
+
+fn sane_size(v: f64) -> bool {
+    sane(v) && v >= 0.0
+}
+
+fn sane_scale(scale: f64) -> f64 {
+    if scale.is_finite() {
+        scale.clamp(0.01, 100.0)
+    } else {
+        1.0
+    }
+}
+
 /// Anything on a page, owned.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Item {
@@ -20,6 +41,35 @@ pub enum ItemRef<'a> {
     Image(&'a Image),
     Text(&'a TextBox),
     Math(&'a MathBox),
+}
+
+impl Item {
+    /// Within bounds, or None if nothing drawable is left.
+    fn sanitized(self) -> Option<Self> {
+        let boxed =
+            |x: f64, y: f64, w: f64, h: f64| sane(x) && sane(y) && sane_size(w) && sane_size(h);
+        match self {
+            Item::Stroke(mut s) => {
+                s.points.retain(|p| sane(p.x) && sane(p.y));
+                s.points.truncate(MAX_POINTS);
+                s.style.width = if s.style.width.is_finite() {
+                    s.style.width.clamp(0.1, 500.0)
+                } else {
+                    3.0
+                };
+                (!s.points.is_empty()).then_some(Item::Stroke(s))
+            }
+            Item::Image(i) => boxed(i.x, i.y, i.width, i.height).then_some(Item::Image(i)),
+            Item::Text(mut t) => {
+                t.scale = sane_scale(t.scale);
+                boxed(t.x, t.y, t.width, t.height).then_some(Item::Text(t))
+            }
+            Item::Math(mut m) => {
+                m.scale = sane_scale(m.scale);
+                boxed(m.x, m.y, m.width, m.height).then_some(Item::Math(m))
+            }
+        }
+    }
 }
 
 impl ItemRef<'_> {
@@ -60,71 +110,58 @@ impl Document {
         settings: PageSettings,
         strokes: impl IntoIterator<Item = Stroke>,
     ) -> Self {
-        let mut doc = Self {
-            settings,
-            ..Self::default()
-        };
-        for mut stroke in strokes {
-            stroke.id = doc.alloc_id();
-            doc.stack_on_top(stroke.id);
-            doc.strokes.push(stroke);
-        }
-        doc
+        Self::with_items(settings, strokes.into_iter().map(Item::Stroke))
     }
 
     /// Stacked in the given order, bottom first; ids are reassigned like `with_contents`.
+    /// Pages come from other devices and apps, so items are kept within bounds.
     pub fn with_items(settings: PageSettings, items: impl IntoIterator<Item = Item>) -> Self {
-        let mut doc = Self::with_contents(settings, []);
-        for item in items {
-            let id = doc.alloc_id();
-            doc.stack_on_top(id);
-            match item {
-                Item::Stroke(mut s) => {
-                    s.id = id;
-                    doc.strokes.push(s);
-                }
-                Item::Image(mut i) => {
-                    i.id = id;
-                    doc.images.push(i);
-                }
-                Item::Text(mut t) => {
-                    t.id = id;
-                    doc.texts.push(t);
-                }
-                Item::Math(mut m) => {
-                    m.id = id;
-                    doc.maths.push(m);
-                }
-            }
-        }
+        let mut doc = Self {
+            settings: settings.sanitized(),
+            ..Self::default()
+        };
+        doc.extend(items);
         doc
     }
 
     pub fn with_images(mut self, images: impl IntoIterator<Item = Image>) -> Self {
-        for mut image in images {
-            image.id = self.alloc_id();
-            self.stack_on_top(image.id);
-            self.images.push(image);
-        }
+        self.extend(images.into_iter().map(Item::Image));
         self
     }
 
     pub fn with_texts(mut self, texts: impl IntoIterator<Item = TextBox>) -> Self {
-        for mut text in texts {
-            text.id = self.alloc_id();
-            self.stack_on_top(text.id);
-            self.texts.push(text);
-        }
+        self.extend(texts.into_iter().map(Item::Text));
         self
     }
 
     pub fn with_maths(mut self, maths: impl IntoIterator<Item = MathBox>) -> Self {
-        for mut math in maths {
-            math.id = self.alloc_id();
-            self.stack_on_top(math.id);
-            self.maths.push(math);
-        }
+        self.extend(maths.into_iter().map(Item::Math));
         self
+    }
+
+    fn extend(&mut self, items: impl IntoIterator<Item = Item>) {
+        for item in items.into_iter().filter_map(Item::sanitized) {
+            let id = self.alloc_id();
+            self.stack_on_top(id);
+            match item {
+                Item::Stroke(mut s) => {
+                    s.id = id;
+                    self.strokes.push(s);
+                }
+                Item::Image(mut i) => {
+                    i.id = id;
+                    self.images.push(i);
+                }
+                Item::Text(mut t) => {
+                    t.id = id;
+                    self.texts.push(t);
+                }
+                Item::Math(mut m) => {
+                    m.id = id;
+                    self.maths.push(m);
+                }
+            }
+        }
     }
 
     pub fn maths(&self) -> &[MathBox] {
@@ -215,7 +252,7 @@ impl Document {
         &self.settings
     }
 
-    pub fn content_bottom(&self) -> f64 {
+    fn content_bottom(&self) -> f64 {
         self.strokes
             .iter()
             .flat_map(|s| s.points.iter().map(move |p| p.y + s.style.width / 2.0))
@@ -228,7 +265,7 @@ impl Document {
     pub fn sheets_used(&self) -> Option<usize> {
         let (_, h) = self.settings.kind.sheet_size()?;
         let pitch = h + SHEET_GAP;
-        Some((self.content_bottom() / pitch).floor() as usize + 1)
+        Some(((self.content_bottom() / pitch).floor() as usize + 1).min(MAX_SHEETS))
     }
 
     /// Moves everything that starts below `y` down by `dy`, making room for a new sheet.
@@ -257,7 +294,9 @@ impl Document {
         }
     }
 
-    pub fn set_pdf_sheets(&mut self, sizes: Vec<(f64, f64)>) {
+    pub fn set_pdf_sheets(&mut self, mut sizes: Vec<(f64, f64)>) {
+        sizes.truncate(MAX_SHEETS);
+        sizes.retain(|&(w, h)| sane_size(w) && sane_size(h) && w > 0.0 && h > 0.0);
         self.pdf_sheets = sizes;
     }
 
@@ -401,6 +440,48 @@ impl Document {
 mod tests {
     use super::*;
     use crate::{InkPoint, StrokeStyle};
+
+    #[test]
+    fn items_from_files_are_kept_within_bounds() {
+        let point = |x: f64| InkPoint {
+            x,
+            y: 1.0,
+            pressure: 1.0,
+            tilt_x: 0.0,
+            tilt_y: 0.0,
+            t: 0,
+        };
+        let stroke = |xs: &[f64], width: f64| {
+            Item::Stroke(Stroke {
+                id: StrokeId(0),
+                style: StrokeStyle {
+                    width,
+                    ..StrokeStyle::default()
+                },
+                points: xs.iter().map(|&x| point(x)).collect(),
+            })
+        };
+        let mut settings = PageSettings::default();
+        settings.background.spacing = 1e-9;
+        let doc = Document::with_items(
+            settings,
+            [
+                stroke(&[1.0, f64::NAN, 1e12], f64::INFINITY),
+                stroke(&[1e12], 3.0),
+                Item::Text(text_at(f64::INFINITY)),
+                Item::Text(TextBox {
+                    scale: 1e9,
+                    ..text_at(5.0)
+                }),
+            ],
+        );
+        assert_eq!(doc.strokes().len(), 1);
+        assert_eq!(doc.strokes()[0].points.len(), 1);
+        assert_eq!(doc.strokes()[0].style.width, 3.0);
+        assert_eq!(doc.texts().len(), 1);
+        assert_eq!(doc.texts()[0].scale, 100.0);
+        assert!(doc.settings().background.spacing >= crate::UNITS_PER_MM);
+    }
 
     fn text_at(y: f64) -> TextBox {
         TextBox {

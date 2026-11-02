@@ -16,8 +16,6 @@ use std::io::Cursor;
 use std::path::Path;
 
 const K: f64 = UNITS_PER_POINT;
-/// Ductus draws the thinnest part of a pressure stroke at this share of its width.
-const MIN_WIDTH_RATIO: f64 = 0.25;
 
 pub(crate) fn read(path: &Path) -> Result<Import, Error> {
     let raw = std::fs::read(path)?;
@@ -36,6 +34,13 @@ pub(crate) fn read(path: &Path) -> Result<Import, Error> {
             } else if name.starts_with("attachments/") && entry.is_file() {
                 attachments.insert(name, crate::read_unpacked(&mut entry)?);
             }
+            // The limit is for the whole package, not each file in it.
+            let unpacked = xml.len() + attachments.values().map(Vec::len).sum::<usize>();
+            if unpacked as u64 > crate::MAX_UNPACKED {
+                return Err(Error::Invalid(
+                    "The file unpacks to more than 512 MB.".into(),
+                ));
+            }
         }
         xml
     } else if raw.starts_with(&[0x1f, 0x8b]) {
@@ -46,9 +51,7 @@ pub(crate) fn read(path: &Path) -> Result<Import, Error> {
     } else {
         String::from_utf8(raw).map_err(|_| Error::Invalid("The file isn't text.".into()))?
     };
-    let name = path
-        .file_stem()
-        .map_or_else(|| "Imported".into(), |s| s.to_string_lossy().into_owned());
+    let name = crate::stem(path, "Imported");
     parse(&xml, path, attachments, name)
 }
 
@@ -98,7 +101,7 @@ fn parse(
         };
         let mut attrs = HashMap::new();
         for attr in element.attributes() {
-            let attr = attr.map_err(quick_xml::Error::from)?;
+            let attr = attr?;
             let value = attr
                 .normalized_value(quick_xml::XmlVersion::Implicit1_0)?
                 .into_owned();
@@ -291,8 +294,13 @@ impl Parser<'_> {
         }
         let dir = self.file.parent().unwrap_or(Path::new("."));
         let filename = filename.strip_prefix("file://").unwrap_or(filename);
+        let path = Path::new(filename);
+        let climbs = path
+            .components()
+            .any(|c| matches!(c, std::path::Component::ParentDir));
         let mut candidates = Vec::new();
         if domain == "attach"
+            && !climbs
             && let Some(own) = self.file.file_name()
         {
             let mut name = own.to_os_string();
@@ -302,17 +310,16 @@ impl Parser<'_> {
         }
         // Xournal++ keeps the PDF or picture a page is drawn over by its absolute path; relative
         // names stay next to the notebook.
-        let path = Path::new(filename);
-        let climbs = path
-            .components()
-            .any(|c| matches!(c, std::path::Component::ParentDir));
         if path.is_absolute() && domain == "absolute" || path.is_relative() && !climbs {
             candidates.push(dir.join(filename));
         }
         if let Some(base) = path.file_name() {
             candidates.push(dir.join(base));
         }
-        let path = candidates.into_iter().find(|p| p.is_file())?;
+        let path = candidates.into_iter().find(|p| {
+            p.metadata()
+                .is_ok_and(|m| m.is_file() && m.len() <= crate::MAX_UNPACKED)
+        })?;
         let bytes = std::fs::read(&path).ok()?;
         // A notebook may only bring in PDFs and pictures, not any file it names.
         is_pdf_or_picture(&bytes).then(|| (path.to_string_lossy().into_owned(), bytes))
@@ -519,9 +526,9 @@ fn stroke(attrs: &HashMap<String, String>, coords: &str) -> Option<Stroke> {
         .enumerate()
         .map(|(i, &(x, y))| {
             let pressure = match per_point.get(i).or(per_point.last()) {
-                Some(&w) => {
-                    ((w / width - MIN_WIDTH_RATIO) / (1.0 - MIN_WIDTH_RATIO)).clamp(0.0, 1.0)
-                }
+                Some(&w) => ((w / width - ductus_ink::MIN_WIDTH_RATIO)
+                    / (1.0 - ductus_ink::MIN_WIDTH_RATIO))
+                    .clamp(0.0, 1.0),
                 None => 1.0,
             };
             InkPoint {

@@ -17,9 +17,10 @@ case $platform in
 esac
 [ -f "$dest/.$platform-$build" ] && exit 0
 mkdir -p "$dest"
-curl -sSL -o "$dest/pdfium.tgz" \
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+curl -sSfL -o "$tmp/pdfium.tgz" \
   "https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F$build/pdfium-$platform.tgz"
-echo "$sha  $dest/pdfium.tgz" | sha256sum -c - > /dev/null
-tar -xzf "$dest/pdfium.tgz" -C "$dest"
-rm "$dest/pdfium.tgz"
+echo "$sha  $tmp/pdfium.tgz" | sha256sum -c - > /dev/null
+tar -xzf "$tmp/pdfium.tgz" -C "$dest"
 touch "$dest/.$platform-$build"

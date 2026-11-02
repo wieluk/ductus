@@ -6,6 +6,9 @@
 #include <QStandardPaths>
 
 #include <memory>
+#if defined(Q_OS_WIN)
+#include <windows.h>
+#endif
 
 QString SingleInstance::serverName()
 {
@@ -18,8 +21,10 @@ QString SingleInstance::serverName()
                                           .toHex()
                                           .left(12));
 #if defined(Q_OS_WIN)
-    // Named pipes are machine-wide.
-    return name + QLatin1Char('-') + qEnvironmentVariable("USERNAME");
+    // Named pipes are machine-wide: the session keeps other users' pipes apart.
+    DWORD session = 0;
+    ProcessIdToSessionId(GetCurrentProcessId(), &session);
+    return name + QLatin1Char('-') + qEnvironmentVariable("USERNAME") + QLatin1Char('-') + QString::number(session);
 #else
     // A Flatpak sandbox shares only its app folder in the runtime directory with its other copies.
     QString dir = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);

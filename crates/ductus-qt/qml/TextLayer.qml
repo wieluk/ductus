@@ -383,13 +383,7 @@ Item {
                         }
                     }
                 }
-                Rectangle {
-                    Layout.preferredWidth: 1
-                    Layout.preferredHeight: 22
-                    Layout.leftMargin: 4
-                    Layout.rightMargin: 4
-                    color: Theme.separator
-                }
+                BarSeparator {}
                 Repeater {
                     model: [{ level: 1, label: "H1", tip: qsTr("Title") },
                             { level: 2, label: "H2", tip: qsTr("Heading") },
@@ -403,13 +397,7 @@ Item {
                         onClicked: formatter.setHeading(checked ? modelData.level : 0)
                     }
                 }
-                Rectangle {
-                    Layout.preferredWidth: 1
-                    Layout.preferredHeight: 22
-                    Layout.leftMargin: 4
-                    Layout.rightMargin: 4
-                    color: Theme.separator
-                }
+                BarSeparator {}
                 FormatButton {
                     objectName: "formatBullets"
                     text: "•"
@@ -424,13 +412,7 @@ Item {
                     checked: formatter.list === 2
                     onClicked: formatter.toggleList(2)
                 }
-                Rectangle {
-                    Layout.preferredWidth: 1
-                    Layout.preferredHeight: 22
-                    Layout.leftMargin: 4
-                    Layout.rightMargin: 4
-                    color: Theme.separator
-                }
+                BarSeparator {}
                 RibbonButton {
                     objectName: "formatDone"
                     text: qsTr("Done")

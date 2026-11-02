@@ -8,6 +8,7 @@ rust-version.workspace = true
 
 [dependencies]
 ductus-core.workspace = true
+ductus-ink.workspace = true
 ductus-format.workspace = true
 ductus-math.workspace = true
 ductus-pdf.workspace = true

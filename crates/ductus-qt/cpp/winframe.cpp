@@ -13,6 +13,10 @@ constexpr LONG_PTR kFrameStyle = WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | W
 
 DWORD s_penDown = MAXDWORD;
 DWORD s_penUp = MAXDWORD;
+bool s_barrel = false;
+
+// From tpcshrd.h: the pen held still is no right click.
+constexpr DWORD kDisablePressAndHold = 0x00000001;
 
 class Filter : public QAbstractNativeEventFilter
 {
@@ -25,10 +29,26 @@ public:
     bool nativeEventFilter(const QByteArray &, void *message, qintptr *result) override
     {
         const MSG *msg = static_cast<const MSG *>(message);
-        if (msg->message == WM_POINTERDOWN || msg->message == WM_POINTERUP) {
+        switch (msg->message) {
+        case WM_POINTERDOWN:
+        case WM_POINTERUP:
+        case WM_POINTERUPDATE:
+        case WM_POINTERLEAVE: {
+            const UINT32 id = GET_POINTERID_WPARAM(msg->wParam);
             POINTER_INPUT_TYPE type = PT_POINTER;
-            if (GetPointerType(GET_POINTERID_WPARAM(msg->wParam), &type) && type == PT_PEN)
+            if (!GetPointerType(id, &type) || type != PT_PEN)
+                break;
+            if (msg->message == WM_POINTERDOWN || msg->message == WM_POINTERUP)
                 (msg->message == WM_POINTERDOWN ? s_penDown : s_penUp) = msg->time;
+            // Hovering, only the pen's own flags tell; leaving, no message lets go of it.
+            POINTER_PEN_INFO pen{};
+            s_barrel = msg->message != WM_POINTERLEAVE && GetPointerPenInfo(id, &pen)
+                && ((pen.penFlags & PEN_FLAG_BARREL)
+                    || (pen.pointerInfo.pointerFlags & POINTER_FLAG_SECONDBUTTON));
+            break;
+        }
+        default:
+            break;
         }
         if (msg->hwnd != m_hwnd)
             return false;
@@ -69,6 +89,9 @@ void WinFrame::install(QWindow *window)
         return;
     const HWND hwnd = reinterpret_cast<HWND>(window->winId());
     qApp->installNativeEventFilter(new Filter(hwnd));
+    // Resting the pen to make a shape would turn into a right click, which reads as a side button.
+    SetPropW(hwnd, L"MicrosoftTabletPenServiceProperty",
+             reinterpret_cast<HANDLE>(static_cast<ULONG_PTR>(kDisablePressAndHold)));
     const LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
     SetWindowLongPtrW(hwnd, GWL_STYLE, (style & ~LONG_PTR(WS_POPUP)) | kFrameStyle);
     SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
@@ -80,4 +103,9 @@ int WinPen::contactChangeAt(quint64 timestamp)
     if (timestamp == s_penDown)
         return 1;
     return timestamp == s_penUp ? -1 : 0;
+}
+
+bool WinPen::barrelHeld()
+{
+    return s_barrel;
 }

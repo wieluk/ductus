@@ -58,8 +58,8 @@ AppDialog {
         Label {
             Layout.fillWidth: true
             text: {
-                AppController.libraryPath // displayName() follows it.
-                return qsTr("Folder: %1").arg([AppController.displayName("")].concat(dialog.folder.split("/")).join(" › "))
+                AppController.libraryPath // placeLabel() follows it.
+                return qsTr("Folder: %1").arg(AppController.placeLabel(dialog.folder))
             }
             color: Theme.textMuted
             font.pixelSize: 11

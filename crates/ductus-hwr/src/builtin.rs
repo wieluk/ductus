@@ -406,14 +406,19 @@ pub fn install(
 }
 
 pub fn remove(dir: &Path, id: &str) -> Result<(), String> {
+    model_info(id).ok_or("unknown model")?;
     match std::fs::remove_dir_all(dir.join(id)) {
         Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(err(e)),
         _ => Ok(()),
     }
 }
 
-fn err(e: impl std::fmt::Display) -> String {
+pub(crate) fn err(e: impl std::fmt::Display) -> String {
     e.to_string()
+}
+
+pub(crate) fn json<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, String> {
+    serde_json::from_slice(&std::fs::read(path).map_err(err)?).map_err(err)
 }
 
 /// A loaded built-in model.

@@ -29,12 +29,12 @@
     },
     {
       // The bridge's build and runtime halves must be the same release.
-      matchPackageNames: ["cxx-qt", "cxx-qt-lib", "cxx-qt-build"],
+      matchPackageNames: ["cxx-qt", "cxx-qt-lib", "cxx-qt-build", "qt-build-utils"],
       groupName: "cxx-qt",
     },
     {
       // Pinned to the cxx-gen that cxx-qt uses; it moves by hand together with cxx-qt.
-      matchPackageNames: ["cxx", "cxx-build", "/^cxxbridge-/"],
+      matchPackageNames: ["cxx"],
       enabled: false,
     },
     {

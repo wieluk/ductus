@@ -3,7 +3,7 @@
 
 use super::{PageGeometry, fmt, number, path_ops, text};
 use crate::{Error, PdfImage};
-use ductus_core::{Image, MathBox, Rgba, StrokeId, TextBox, UNITS_PER_POINT};
+use ductus_core::{Image, MathBox, StrokeId, TextBox, UNITS_PER_POINT};
 use kurbo::{BezPath, PathEl, Point, Rect};
 use lopdf::{Dictionary, Document, Object, ObjectId, Stream, StringFormat, dictionary};
 
@@ -327,6 +327,8 @@ fn resolve<'a>(doc: &'a Document, o: &'a Object) -> Option<&'a Object> {
 }
 
 /// The PNG drawn by a picture annotation's appearance.
+const MAX_PICTURE_PIXELS: usize = 8192 * 8192;
+
 fn picture_png(doc: &Document, annot: &Dictionary) -> Option<Vec<u8>> {
     let ap = resolve(doc, annot.get(b"AP").ok()?)?.as_dict().ok()?;
     let form = resolve(doc, ap.get(b"N").ok()?)?.as_stream().ok()?;
@@ -339,19 +341,34 @@ fn picture_png(doc: &Document, annot: &Dictionary) -> Option<Vec<u8>> {
     let image = resolve(doc, xobjects.get(b"Im0").ok()?)?.as_stream().ok()?;
     let width = u32::try_from(image.dict.get(b"Width").ok()?.as_i64().ok()?).ok()?;
     let height = u32::try_from(image.dict.get(b"Height").ok()?.as_i64().ok()?).ok()?;
-    let data = |s: &Stream| {
-        s.decompressed_content()
-            .unwrap_or_else(|_| s.content.clone())
-    };
-    let rgb = data(image);
     let pixels = width as usize * height as usize;
+    if pixels > MAX_PICTURE_PIXELS {
+        return None;
+    }
+    // Unpacked only as far as the picture needs: a few bytes can unpack to gigabytes.
+    let data = |s: &Stream| -> Option<Vec<u8>> {
+        use std::io::Read as _;
+        match s.dict.get(b"Filter").and_then(Object::as_name) {
+            Err(_) => Some(s.content.clone()),
+            Ok(b"FlateDecode") => {
+                let mut out = Vec::new();
+                flate2::read::ZlibDecoder::new(&s.content[..])
+                    .take(pixels as u64 * 3)
+                    .read_to_end(&mut out)
+                    .ok()?;
+                Some(out)
+            }
+            Ok(_) => None,
+        }
+    };
+    let rgb = data(image)?;
     let alpha = image
         .dict
         .get(b"SMask")
         .ok()
         .and_then(|m| resolve(doc, m))
         .and_then(|m| m.as_stream().ok())
-        .map(data)
+        .and_then(data)
         .filter(|a| a.len() >= pixels);
     if rgb.len() < pixels * 3 {
         return None;
@@ -412,21 +429,7 @@ pub fn read_objects(bytes: &[u8]) -> Result<Vec<PlacedObject>, Error> {
                     scale,
                 }),
                 "math" => {
-                    let rgb: Vec<f64> = dict
-                        .get(b"C")
-                        .ok()
-                        .and_then(|c| c.as_array().ok())
-                        .map(|a| a.iter().filter_map(number).collect())
-                        .unwrap_or_default();
-                    let color = match rgb[..] {
-                        [r, g, b] => Rgba {
-                            r: r as f32,
-                            g: g as f32,
-                            b: b as f32,
-                            a: 1.0,
-                        },
-                        _ => Rgba::BLACK,
-                    };
+                    let color = super::color_of(dict);
                     PageObject::Math(MathBox {
                         id: StrokeId(0),
                         source,
@@ -467,6 +470,7 @@ pub fn read_objects(bytes: &[u8]) -> Result<Vec<PlacedObject>, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ductus_core::Rgba;
 
     #[test]
     fn plain_text_drops_markdown_marks() {
