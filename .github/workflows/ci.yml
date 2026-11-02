@@ -4,6 +4,7 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore: ["**.md", LICENSE]
   pull_request:
   workflow_dispatch:
 
@@ -24,50 +25,31 @@ jobs:
   tests:
     uses: ./.github/workflows/tests.yml
 
-  linux:
+  # Android builds on main (to keep its cache warm for releases) and for pull requests that touch it.
+  changes:
     runs-on: ubuntu-26.04
-    timeout-minutes: 60
-    container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
-      options: --privileged
-      # build-linux deletes these unused runner toolchains: the build needs their disk space.
-      volumes:
-        - /usr/share/dotnet:/runner-tools/dotnet
-        - /usr/local/lib/android:/runner-tools/android
-        - /usr/local/.ghcup:/runner-tools/ghcup
-        - /opt/hostedtoolcache:/runner-tools/toolcache
+    timeout-minutes: 5
+    outputs:
+      android: ${{ steps.diff.outputs.android }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/build-linux
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: failure()
+      - if: github.event_name == 'pull_request'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          name: ui-shots-linux
-          path: target/ui-shots
-          # The build may have failed before any UI test ran.
-          if-no-files-found: ignore
+          fetch-depth: 0
+          persist-credentials: false
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          android=true
+          if [ "$GITHUB_EVENT_NAME" = pull_request ] && ! git diff --name-only "$BASE" HEAD \
+            | grep -qE '^(crates/ductus-qt/|build-aux/(android/|fetch-)|Cargo\.lock$|\.github/)'; then
+            android=false
+          fi
+          echo "android=$android" >> "$GITHUB_OUTPUT"
 
-  windows:
-    runs-on: windows-2025
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/build-windows
-        with:
-          args: -NoInstaller
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: failure()
-        with:
-          name: ui-shots-windows
-          path: target/ui-shots
-          # The build may have failed before any UI test ran.
-          if-no-files-found: ignore
-
-  # Only on main, to keep its cache warm for releases.
-  android:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-26.04
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/build-android
+  build:
+    needs: changes
+    uses: ./.github/workflows/build.yml
+    with:
+      android: ${{ needs.changes.outputs.android == 'true' }}

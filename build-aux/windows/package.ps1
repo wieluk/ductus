@@ -1,10 +1,11 @@
 # Builds dist/Ductus-<version>-windows-x64.zip and -setup.exe.
 # Needs Rust (MSVC), Qt 6.10 for MSVC (QT_ROOT_DIR), Git Bash and Inno Setup 6.
-#   package.ps1 [-Version 0.2.0] [-SkipTests] [-NoInstaller]
+#   package.ps1 [-Version 0.2.0] [-SkipTests] [-NoInstaller] [-NoPackage (build and test only)]
 param(
     [string]$Version = "",
     [switch]$SkipTests,
-    [switch]$NoInstaller
+    [switch]$NoInstaller,
+    [switch]$NoPackage
 )
 $ErrorActionPreference = "Stop"
 Set-Location (Resolve-Path "$PSScriptRoot\..\..")
@@ -16,14 +17,16 @@ if (-not $Version) {
 # Git Bash by path: a bare `bash` can be WSL's.
 $bash = Join-Path $env:ProgramFiles "Git\bin\bash.exe"
 $env:QMAKE = "$env:QT_ROOT_DIR\bin\qmake.exe"
-# The UI tests need the test hooks, which releases never carry: only ductus-qt builds twice.
+# The UI tests need the test hooks, which packages never carry: only ductus-qt builds twice.
 if (-not $SkipTests) {
     cargo build --release --locked -p ductus-qt --features test-hooks
     if ($LASTEXITCODE -ne 0) { throw "cargo build failed" }
     Copy-Item target\release\ductus.exe target\release\ductus-test.exe
 }
-cargo build --release --locked -p ductus-qt
-if ($LASTEXITCODE -ne 0) { throw "cargo build failed" }
+if (-not $NoPackage) {
+    cargo build --release --locked -p ductus-qt
+    if ($LASTEXITCODE -ne 0) { throw "cargo build failed" }
+}
 
 $app = "target\windows\Ductus"
 Remove-Item -Recurse -Force $app -ErrorAction SilentlyContinue
@@ -36,6 +39,9 @@ Copy-Item target\pdfium\bin\pdfium.dll $app\
 if ($LASTEXITCODE -ne 0) { throw "ONNX Runtime download failed" }
 Copy-Item target\onnxruntime\lib\onnxruntime.dll $app\
 Copy-Item LICENSE $app\LICENSE.txt
+New-Item -ItemType Directory -Force $app\licenses | Out-Null
+Copy-Item target\pdfium\LICENSE $app\licenses\pdfium.txt
+Copy-Item target\onnxruntime\LICENSE $app\licenses\onnxruntime.txt
 # The MSVC runtime goes next to ductus.exe, so neither the zip nor the installer needs the
 # VC++ redistributable on the machine (windeployqt would only add its installer).
 $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -53,14 +59,18 @@ if ($LASTEXITCODE -ne 0) { throw "windeployqt failed" }
 Copy-Item "$env:QT_ROOT_DIR\plugins\platforms\qoffscreen.dll" $app\platforms\
 
 if (-not $SkipTests) {
-    # Next to the deployed Qt, pdfium and ONNX Runtime it needs.
+    # Next to the deployed Qt, pdfium and ONNX Runtime it needs, with the QtTest packages lack.
     Copy-Item target\release\ductus-test.exe $app\
+    $qtTest = -not (Test-Path $app\Qt6Test.dll)
+    if ($qtTest) { Copy-Item "$env:QT_ROOT_DIR\bin\Qt6Test.dll" $app\ }
     & $bash build-aux/ui-tests.sh target/windows/Ductus/ductus-test.exe
     $failed = $LASTEXITCODE
     Remove-Item $app\ductus-test.exe
+    if ($qtTest) { Remove-Item $app\Qt6Test.dll }
     if ($failed -ne 0) { throw "UI tests failed" }
 }
 
+if ($NoPackage) { exit 0 }
 New-Item -ItemType Directory -Force dist | Out-Null
 $zip = "dist\Ductus-$Version-windows-x64.zip"
 Remove-Item -Force $zip -ErrorAction SilentlyContinue

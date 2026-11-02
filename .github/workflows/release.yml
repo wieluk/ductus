@@ -56,9 +56,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # notes come from the commits since the last tag
+          persist-credentials: false
       - id: version
         env:
           INPUT_VERSION: ${{ inputs.version }}
+          CREATE_RELEASE: ${{ inputs.create_release }}
         run: |
           if [ -n "$INPUT_VERSION" ]; then
             version=${INPUT_VERSION#v}
@@ -66,6 +68,11 @@ jobs:
             version=${GITHUB_REF_NAME#v}
           else
             version=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -1)
+          fi
+          # A draft must never land in a published release of the same version.
+          if [ "$CREATE_RELEASE" = true ] && git rev-parse -q --verify "refs/tags/v$version" > /dev/null; then
+            echo "::error::v$version is already released: give this build a version of its own."
+            exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
       - env:
@@ -87,91 +94,19 @@ jobs:
             notes.md
           retention-days: 3
 
-  linux:
+  build:
     needs: prepare
-    if: github.event_name != 'workflow_dispatch' || inputs.linux
-    runs-on: ubuntu-26.04
-    timeout-minutes: 60
-    container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.10
-      options: --privileged
-      # build-linux deletes these unused runner toolchains: the build needs their disk space.
-      volumes:
-        - /usr/share/dotnet:/runner-tools/dotnet
-        - /usr/local/lib/android:/runner-tools/android
-        - /usr/local/.ghcup:/runner-tools/ghcup
-        - /opt/hostedtoolcache:/runner-tools/toolcache
-    env:
-      VERSION: ${{ needs.prepare.outputs.version }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/stamp
-      # Signed bundles follow the update repository.
-      - if: github.ref_type == 'tag'
-        env:
-          FLATPAK_GPG_PRIVATE_KEY: ${{ secrets.FLATPAK_GPG_PRIVATE_KEY }}
-        run: build-aux/linux/import-key.sh
-      - uses: ./.github/actions/build-linux
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: ductus-linux
-          path: dist/*.flatpak
-          if-no-files-found: error
-
-  windows:
-    needs: prepare
-    if: github.event_name != 'workflow_dispatch' || inputs.windows
-    runs-on: windows-2025
-    timeout-minutes: 75
-    env:
-      VERSION: ${{ needs.prepare.outputs.version }}
-    steps:
-      # The version patch has LF line endings.
-      - run: git config --global core.autocrlf false
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/stamp
-      - uses: ./.github/actions/build-windows
-        with:
-          args: -Version ${{ env.VERSION }}
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: ductus-windows
-          path: |
-            dist/*.zip
-            dist/*-setup.exe
-          if-no-files-found: error
-
-  android:
-    needs: prepare
-    if: github.event_name != 'workflow_dispatch' || inputs.android
-    runs-on: ubuntu-26.04
-    timeout-minutes: 90
-    env:
-      VERSION: ${{ needs.prepare.outputs.version }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/stamp
-      - env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
-            echo "ANDROID_KEYSTORE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
-          fi
-      - uses: ./.github/actions/build-android
-        with:
-          abi: ${{ inputs.android_abi || 'arm64-v8a' }}
-        env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: ductus-android
-          path: dist/*.apk
-          if-no-files-found: error
+    uses: ./.github/workflows/build.yml
+    with:
+      release: true
+      linux: ${{ github.event_name != 'workflow_dispatch' || inputs.linux }}
+      windows: ${{ github.event_name != 'workflow_dispatch' || inputs.windows }}
+      android: ${{ github.event_name != 'workflow_dispatch' || inputs.android }}
+      android_abi: ${{ inputs.android_abi || 'arm64-v8a' }}
+    secrets: inherit
 
   release:
-    needs: [tests, prepare, linux, windows, android]
+    needs: [tests, prepare, build]
     # Skipped platforms don't block a draft; a failed one blocks everything.
     if: |
       always() && !cancelled() && !contains(needs.*.result, 'failure')
@@ -196,16 +131,21 @@ jobs:
         with:
           name: stamp
           path: stamp
-      # Apps only install updates whose checksums carry this signature.
+      # Apps only install updates whose checksums carry this signature; only tags get it.
       - env:
-          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+          UPDATE_SIGNING_KEY: ${{ github.ref_type == 'tag' && secrets.UPDATE_SIGNING_KEY || '' }}
         run: |
           cd packages && sha256sum -- * > SHA256SUMS.txt && cd ..
           if [ -z "$UPDATE_SIGNING_KEY" ]; then
-            echo "::warning::UPDATE_SIGNING_KEY is not set: apps won't install this release."
+            if [ "$GITHUB_REF_TYPE" = tag ]; then
+              echo "::error::UPDATE_SIGNING_KEY is not set: apps wouldn't install this release."
+              exit 1
+            fi
+            echo "::warning::Not a tag: the draft isn't signed for updates."
             exit 0
           fi
           umask 077
+          trap 'rm -f "$RUNNER_TEMP/update.pem"' EXIT
           printf '%s\n' "$UPDATE_SIGNING_KEY" > "$RUNNER_TEMP/update.pem"
           public=$(openssl pkey -in "$RUNNER_TEMP/update.pem" -pubout -outform DER | tail -c 32 | base64 -w0)
           if ! grep -qF "\"$public\"" crates/ductus-update/src/lib.rs; then
@@ -251,7 +191,15 @@ jobs:
       # Start from the published repository to keep its history.
       - id: pages
         if: env.FLATPAK_GPG_KEY_ID != ''
-        run: git ls-remote --exit-code --heads origin gh-pages > /dev/null && echo "exists=true" >> "$GITHUB_OUTPUT" || true
+        # Exit code 2 means no such branch; anything else is an error, not a reason to start over.
+        run: |
+          status=0
+          git ls-remote --exit-code --heads origin gh-pages > /dev/null || status=$?
+          case $status in
+            0) echo "exists=true" >> "$GITHUB_OUTPUT" ;;
+            2) ;;
+            *) exit "$status" ;;
+          esac
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.pages.outputs.exists == 'true'
         with:

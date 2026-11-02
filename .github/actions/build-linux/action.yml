@@ -1,5 +1,5 @@
 name: Build for Linux
-description: Builds in the KDE SDK, runs the UI tests and packages the Flatpak (in the flatpak-github-actions container).
+description: Builds in the KDE SDK and runs ductus-qt's checks and the UI tests (in the flatpak-github-actions container); build-flatpak.sh package makes the bundle.
 runs:
   using: composite
   steps:
@@ -16,9 +16,10 @@ runs:
         cache-on-failure: true
     - shell: bash
       run: build-aux/linux/build-flatpak.sh binary
+    # The Qt half only builds here, where Qt is: its unit tests and lints too.
+    - shell: bash
+      run: |
+        build-aux/sdk-run.sh cargo test --release --locked -p ductus-qt --features test-hooks
+        build-aux/sdk-run.sh cargo clippy --release --locked -p ductus-qt --all-targets --features test-hooks -- -D warnings
     - shell: bash
       run: build-aux/sdk-run.sh build-aux/ui-tests.sh target/sdk-6.10/release/ductus-test
-    - shell: bash
-      env:
-        FLATPAK_ARGS: --disable-rofiles-fuse
-      run: build-aux/linux/build-flatpak.sh package
