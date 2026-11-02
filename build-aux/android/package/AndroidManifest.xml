@@ -19,6 +19,7 @@
         android:largeScreens="true"
         android:normalScreens="true"
         android:smallScreens="true" />
+    <!-- No backups: settings hold the recognition server's key, and notes sync by themselves. -->
     <application
         android:name="org.qtproject.qt.android.bindings.QtApplication"
         android:hardwareAccelerated="true"
@@ -26,8 +27,7 @@
         android:icon="@drawable/icon"
         android:requestLegacyExternalStorage="true"
         android:enableOnBackInvokedCallback="false"
-        android:allowBackup="true"
-        android:fullBackupOnly="false">
+        android:allowBackup="false">
         <activity
             android:name="org.qtproject.qt.android.bindings.QtActivity"
             android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation|mcc|mnc|density"
@@ -45,7 +45,6 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="content" />
-                <data android:scheme="file" />
                 <data android:mimeType="image/svg+xml" />
             </intent-filter>
 
