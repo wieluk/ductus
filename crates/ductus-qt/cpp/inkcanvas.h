@@ -337,6 +337,8 @@ private:
     void trackPenButtons(const QTabletEvent *event);
     /// A side button held long enough counts: it stands in for its tool, or in switch mode clicks.
     void settleSideButtons();
+    /// In switch mode, a click switches once the pen stayed after it.
+    void confirmClick();
     void setHeldTool(int tool);
     void switchToPenButtonTool(int tool);
     void forwardAsMouse(QTabletEvent *event);
@@ -402,6 +404,15 @@ private:
     Qt::MouseButtons m_reportedSide;
     Qt::MouseButtons m_sideButtons;
     QTimer m_sideTimer;
+    static constexpr int kSideHoldMs = 50;
+    static constexpr int kArriveMs = 200;
+    /// Since the pen came into range, and whether a side button was down then.
+    QElapsedTimer m_inRange;
+    bool m_sideAtEntry = false;
+    /// A click in switch mode, until the pen stays this long after it or touches the page.
+    Qt::MouseButtons m_pendingClick;
+    QTimer m_clickTimer;
+    static constexpr int kClickStayMs = 150;
     /// The tool before a side button's click switched away from it, or -1.
     int m_toolBeforeSwitch = -1;
     /// Set while a side button's click changes the tool, which keeps m_toolBeforeSwitch.

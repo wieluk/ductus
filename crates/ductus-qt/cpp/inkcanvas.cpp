@@ -185,10 +185,11 @@ InkCanvas::InkCanvas(QQuickItem *parent)
         repaint();
     });
 
-    // Longer than a flicker, shorter than a press of a finger.
     m_sideTimer.setSingleShot(true);
-    m_sideTimer.setInterval(50);
     connect(&m_sideTimer, &QTimer::timeout, this, &InkCanvas::settleSideButtons);
+    m_clickTimer.setSingleShot(true);
+    m_clickTimer.setInterval(kClickStayMs);
+    connect(&m_clickTimer, &QTimer::timeout, this, &InkCanvas::confirmClick);
 
     m_holdTimer.setSingleShot(true);
     m_holdTimer.setInterval(m_holdDelay);
@@ -947,8 +948,11 @@ bool InkCanvas::eventFilter(QObject *watched, QEvent *event)
         if (event->type() == QEvent::TabletLeaveProximity) {
             setHeldTool(-1);
             m_sideTimer.stop();
+            m_clickTimer.stop();
+            m_inRange.invalidate();
             m_reportedSide = Qt::NoButton;
             m_sideButtons = Qt::NoButton;
+            m_pendingClick = Qt::NoButton;
             hidePenTip();
         }
         return false;
@@ -1423,45 +1427,78 @@ InkCanvas::Tool InkCanvas::penTool(const QTabletEvent *event) const
     return choice < 0 ? tool() : static_cast<Tool>(choice);
 }
 
-// A pen near the edge of its range can report a side button for a few milliseconds that nobody
-// pressed, as it comes and goes between strokes. So a press counts once it lasts a moment
-// (m_sideTimer); letting go counts at once.
+// At the edge of its range a pen can report side-button presses nobody made, as it comes and goes
+// between strokes: Surface pens for up to about 100 ms. So a press counts once it is held a moment
+// (kSideHoldMs), and one that begins as the pen comes into range only once the pen is well in
+// (kArriveMs). Letting go counts at once.
 void InkCanvas::trackPenButtons(const QTabletEvent *event)
 {
     const bool eraser = event->pointerType() == QPointingDevice::PointerType::Eraser;
     const Qt::MouseButtons side = eraser ? Qt::MouseButtons() : sideButtons(event);
+    if (!m_inRange.isValid()) {
+        m_inRange.start();
+        // Held before the pen came near: that one is meant.
+        m_sideAtEntry = side != Qt::NoButton;
+    }
     if (side != m_reportedSide) {
+        // A click let go counts if the pen stays a moment.
+        if (m_pendingClick & ~side)
+            m_clickTimer.start();
+        if (!side)
+            m_sideAtEntry = false;
         m_reportedSide = side;
         m_sideButtons &= side;
         if (side & ~m_sideButtons)
-            m_sideTimer.start();
+            m_sideTimer.start(kSideHoldMs);
         else
             m_sideTimer.stop();
     }
+    // The tip on the page shows the pen stayed: the stroke gets the clicked tool.
+    if (m_pendingClick && ((event->buttons() & Qt::LeftButton) || event->pressure() > 0))
+        confirmClick();
     const int which = heldPenButton(event);
     setHeldTool(which < 0 ? -1 : m_penButtonTools[which]);
 }
 
 void InkCanvas::settleSideButtons()
 {
+    const qint64 arriving = kArriveMs - m_inRange.elapsed();
+    if (!m_sideAtEntry && arriving > 0) {
+        m_sideTimer.start(int(arriving));
+        return;
+    }
     const Qt::MouseButtons clicked = m_reportedSide & ~m_sideButtons;
     m_sideButtons = m_reportedSide;
     const int which = heldSideButton();
     setHeldTool(which < 0 ? -1 : m_penButtonTools[which]);
     if (!m_penButtonsSwitch || !clicked)
         return;
-    // Every canvas of the window sees the click; the first one acts for all. Not while writing.
-    const InkCanvas *first = nullptr;
+    // Not while writing.
     for (const InkCanvas *canvas : std::as_const(s_canvases)) {
+        if (canvas->window() == window() && canvas->m_tabletGrab)
+            return;
+    }
+    // A second click shows the pen stayed for the first.
+    if (m_pendingClick)
+        confirmClick();
+    // It switches once the pen stays (confirmClick); one as the pen leaves its range is dropped.
+    m_pendingClick = clicked;
+}
+
+void InkCanvas::confirmClick()
+{
+    const Qt::MouseButtons clicked = m_pendingClick;
+    if (!clicked)
+        return;
+    // Every canvas of the window saw the click; one acts for all.
+    for (InkCanvas *canvas : std::as_const(s_canvases)) {
         if (canvas->window() != window())
             continue;
-        if (canvas->m_tabletGrab)
-            return;
-        if (!first)
-            first = canvas;
+        canvas->m_pendingClick = Qt::NoButton;
+        canvas->m_clickTimer.stop();
     }
     const int tool = m_penButtonTools[clicked & firstPenButton() ? 0 : 1];
-    if (first == this && tool >= 0)
+    if (tool >= 0)
         switchToPenButtonTool(tool);
 }
 
