@@ -2070,15 +2070,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "itertools"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b4baf93f58d4425749ca49a51c50ebab072c5df6994d08fed93541c331481dc"
-dependencies = [
- "either",
-]
-
-[[package]]
 name = "itoa"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2573,7 +2564,7 @@ dependencies = [
  "cab",
  "encoding_rs",
  "enum-primitive-derive",
- "itertools 0.14.0",
+ "itertools",
  "log",
  "lru",
  "num-traits",
@@ -2680,9 +2671,9 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "pdfium-render"
-version = "0.9.4"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8948a803616a9e936b15a6637af2cd48c5fb8ae0fcdeb3c32eac3a540e255a19"
+checksum = "296b1146652b486ea6eea0d316e85ab6837ff69e8d2b1568e6fa7bc38bd4c00e"
 dependencies = [
  "bitflags",
  "bytemuck",
@@ -2690,7 +2681,7 @@ dependencies = [
  "chrono",
  "console_error_panic_hook",
  "console_log",
- "itertools 0.15.0",
+ "itertools",
  "js-sys",
  "libloading",
  "log",
