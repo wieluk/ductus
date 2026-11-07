@@ -13,7 +13,7 @@ ductus-render.workspace = true
 ductus-math.workspace = true
 flate2 = "1"
 kurbo.workspace = true
-lopdf = "0.46"
+lopdf = "0.47"
 pdfium-render = { version = "0.9", default-features = false, features = ["pdfium_latest", "thread_safe"] }
 thiserror = "2"
 tiny-skia = "0.12"
