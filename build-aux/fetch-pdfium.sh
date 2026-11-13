@@ -6,7 +6,7 @@ set -euo pipefail
 platform=$1
 dest=$2
 # renovate: datasource=github-releases depName=bblanchon/pdfium-binaries
-build=8125
+build=8152
 case $platform in
   linux-x64) sha=e1c3ce6e270cb5e0c20816b379ad9f2c1309972697c505f508de92bf5e7d6659 ;;
   linux-arm64) sha=8b8818f2ec57d1b213d952ca6d7f0ffeca9d0110487d0e20ad83ba918bc92efa ;;
