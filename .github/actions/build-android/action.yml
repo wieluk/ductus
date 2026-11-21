@@ -14,7 +14,7 @@ runs:
     # The NDK the APK builds with.
     - shell: bash
       run: echo "NDK=27.2.12479018" >> "$GITHUB_ENV"
-    - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+    - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
       with:
         targets: ${{ inputs.abi == 'x86_64' && 'x86_64-linux-android' || 'aarch64-linux-android' }}
     # Tags can only restore caches saved on main.
